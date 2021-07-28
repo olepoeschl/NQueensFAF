@@ -28,51 +28,39 @@ class IntegrationTest {
 
 	@Test
 	void test() {
-		// sync solve
-		NQueensFAF nqf = new NQueensFAF();
+		
+		// cpu
+		NQueensFAF nqf = new NQueensFAF(new CpuSolver().setThreadcount(2));
 		nqf.setN(16);
-		nqf.setThreadcount(1);
-		nqf.setOnProgress((done, total) -> {
-			float progress = done / total;
-			System.out.println("Progress: " + progress);
+		nqf.setOnUpdateCallback((done, total, duration, solutions) -> {
+			// ...
 		});
-		nqf.setOnProgressDelay(NQueensFAF.DEFAULT_ON_PROGRESS_DELAY);
-		nqf.setSolver(NQueensFAF.DEFAULT);
-		nqf.solve();
-		long solutions = nqf.getSolutionCount();
-		long duration = nqf.getDuration();
-		int score = nqf.getScore();
-		
-		// async solve
-		nqf = new NQueensFAF(16, NQueensFAF.MAX_THREADS);
-		nqf.setOnProgress((done, total) -> {
-			float progress = done / total;
-			System.out.println("Progress: " + progress);
-		});
-		nqf.setOnProgressDelay(128); 	// progress update delay in ms
-		nqf.setSolver(NQueensFAF.OPENCL);
-		OpenCLDevice[] dvcs = nqf.getOpenCLDevices();		
-		nqf.setOpenCLDevice(dvcs[0]);
-		nqf.solveAsync();
-		nqf.waitFor();
-		solutions = nqf.getSolutionCount();
-		duration = nqf.getDuration();
-		score = nqf.getScore();
-		
-		// async solve with while loop for doing stuff during computation
-		nqf = new NQueensFAF(16, NQueensFAF.MAX_THREADS);
-		nqf.setOnProgress((done, total) -> {
-			float progress = done / total;
-			System.out.println("Progress: " + progress);
-		});
-		nqf.setSolver(NQueensFAF.DEFAULT);
+		nqf.setUpdateDelay(128);
 		nqf.solveAsync();
 		while(nqf.isRunning()) {
 			// do stuff
+			nqf.pause();
+			// Thread.sleep(500)
+			nqf.unpause();
+			// Thread.sleep(500)
 		}
-		solutions = nqf.getSolutionCount();
+		long duration = nqf.getDuration();
+		long solutions = nqf.getSolutions();
+		
+		// gpu
+		nqf.setSolver(new GpuSolver().useDefaultDevice().setWorkgroupSize(64));
+		nqf.setN(17);
+		nqf.setOnUpdateCallback((done, total, duration, solutions) -> {
+			// ...
+		});
+		// nqf.setUpdateDelay(NQueensFAF.DEFAULT_UPDATE_DELAY);
+		nqf.solve();
 		duration = nqf.getDuration();
-		score = nqf.getScore();
+		solutions = nqf.getSolutions();
+		
+		// custom solver
+		nqf.setSolver(new MySolver().setAttributeX(0).setAttributeY(1));
+		// ... see above ...
 	}
 
 }
