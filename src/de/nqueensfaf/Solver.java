@@ -165,7 +165,6 @@ public abstract class Solver {
 		this.progressUpdateDelay = progressUpdateDelay;
 	}
 
-
 	public void addOnStartCallback(Runnable r) {
 		if(r == null) {
 			throw new IllegalArgumentException("OnStartCallback must not be null");
