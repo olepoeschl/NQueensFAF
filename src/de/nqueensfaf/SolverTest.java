@@ -1,5 +1,7 @@
 package de.nqueensfaf;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,6 +53,13 @@ class SolverTest {
 			public void restore() {}
 
 			@Override
+			public void reset() {
+				done = 0;
+				start = 0;
+				end = 0;
+			}
+			
+			@Override
 			public long getDuration() {
 				return end - start;
 			}
@@ -77,23 +86,27 @@ class SolverTest {
 		});
 		solver.setProgressUpdateDelay(1000);
 		solver.solve();
-//		solver.solveAsync();
-//		while(solver.isRunning()) {
-//			System.out.println("läuft");
-//			try {
-//				Thread.sleep(1000);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-//			if(solver.getDuration() > 2500)
-//				break;
-//		}
-//		System.out.println("warte auf beendigung...");
-//		try {
-//			solver.waitFor();
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
+		
+		solver.reset();
+		solver.solveAsync();
+		assertThrows(IllegalStateException.class, () -> solver.solve());
+		while(solver.isIdle() || solver.isInitializing());
+		while(solver.isRunning()) {
+			System.out.println("läuft");
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			if(solver.getDuration() > 2500)
+				break;
+		}
+		System.out.println("warte auf beendigung...");
+		try {
+			solver.waitFor();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 }
