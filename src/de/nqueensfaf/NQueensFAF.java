@@ -2,6 +2,8 @@ package de.nqueensfaf;
 
 public class NQueensFAF {
 	
+	private NQueensFAF() {}
+	
 	static final int
 	// Solver states
 		IDLE = 1,

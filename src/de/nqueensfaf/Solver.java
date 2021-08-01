@@ -11,13 +11,13 @@ import de.nqueensfaf.util.OnTimeUpdateCallback;
 public abstract class Solver {
 	
 	protected int N;
-	protected OnTimeUpdateCallback  onTimeUpdateCallback;
-	protected OnProgressUpdateCallback  onProgressUpdateCallback;
+	protected OnTimeUpdateCallback  onTimeUpdateCallback = (duration) -> {};
+	protected OnProgressUpdateCallback  onProgressUpdateCallback = (progress, solutions) -> {};
 	protected long 
 		timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY,
 		progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
 	private ThreadPoolExecutor ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
-	private ArrayList<Runnable> onStart = new ArrayList<Runnable>(), onEnd = new ArrayList<Runnable>();
+	private ArrayList<Runnable> initialization = new ArrayList<Runnable>(), termination = new ArrayList<Runnable>();
 	
 	private int state = NQueensFAF.IDLE;
 	private Thread t = new Thread(() -> solve());
@@ -31,7 +31,7 @@ public abstract class Solver {
 	public abstract float getProgress();
 	public abstract long getSolutions();
 	
-	public void solve() {
+	public final void solve() {
 		if(N == 0) {
 			throw new IllegalStateException("Board size was not set");
 		}
@@ -39,34 +39,36 @@ public abstract class Solver {
 			throw new IllegalStateException("Solver is already started");
 		}
 		state = NQueensFAF.INITIALIZING;
-		onStartCaller();
+		initializationCaller();
 		startUpdateCallerThreads();
 		
 		state = NQueensFAF.RUNNING;
 		run();
 		
 		state = NQueensFAF.TERMINATING;
-		onEndCaller();
+		terminationCaller();
 		try {
 			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay : progressUpdateDelay, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			// nothing
 		}
 		// call callback methods with the final solver values
-		onTimeUpdateCallback.onTimeUpdate(getDuration());
-		onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
+		if(onTimeUpdateCallback != null)
+			onTimeUpdateCallback.onTimeUpdate(getDuration());
+		if(onProgressUpdateCallback != null)
+			onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
 		
 		state = NQueensFAF.IDLE;
 	}
 	
-	public void solveAsync() {
+	public final void solveAsync() {
+		if(!isIdle()) {
+			throw new IllegalStateException("Solver is already started");
+		}
 		t.start();
 	}
 	
-	public void waitFor() throws InterruptedException {
-		if(t == null) {
-			throw new IllegalStateException("solveAsync was not called");
-		} 
+	public final void waitFor() throws InterruptedException {
 		if(!t.isAlive()) {
 			throw new IllegalStateException("Solver is not running");
 		}
@@ -116,98 +118,113 @@ public abstract class Solver {
 		}
 	}
 
-	public void addOnStartCallback(Runnable r) {
+	public final Solver addInitializationCallback(Runnable r) {
 		if(r == null) {
-			throw new IllegalArgumentException("onStartCallback must not be null");
+			throw new IllegalArgumentException("initializationCallback must not be null");
 		}
-		onStart.add(r);
+		initialization.add(r);
+		return this;
 	}
 	
-	public void addOnEndCallback(Runnable r) {
+	public final Solver addTerminationCallback(Runnable r) {
 		if(r == null) {
-			throw new IllegalArgumentException("onEndCallback must not be null");
+			throw new IllegalArgumentException("terminationCallback must not be null");
 		}
-		onEnd.add(r);
+		termination.add(r);
+		return this;
 	}
 	
-	private void onStartCaller() {
-		for(int i = onStart.size()-1; i >= 0; i--) {
-			onStart.get(i).run();
+	private void initializationCaller() {
+		for(int i = initialization.size()-1; i >= 0; i--) {
+			initialization.get(i).run();
 		}
 	}
 	
-	private void onEndCaller() {
-		for(int i = onEnd.size()-1; i >= 0; i--) {
-			onEnd.get(i).run();
+	private void terminationCaller() {
+		for(int i = termination.size()-1; i >= 0; i--) {
+			termination.get(i).run();
 		}
 	}
 	
 	// Getters and Setters
-	public int getN() {
+	public final int getN() {
 		return N;
 	}
 	
-	public void setN(int n) {
+	public final Solver setN(int n) {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot set board size while solving");
 		}
-		if(n < 0) {
-			throw new IllegalStateException("Board size must be a number >= 0");
+		if(n < 0 || n > 31) {
+			throw new IllegalArgumentException("Board size must be a number between 0 and 32 (not inclusive)");
 		}
 		N = n;
+		return this;
 	}
 	
-	public OnTimeUpdateCallback getOnTimeUpdateCallback() {
+	public final OnTimeUpdateCallback getOnTimeUpdateCallback() {
 		return onTimeUpdateCallback;
 	}
 	
-	public void setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
-		this.onTimeUpdateCallback = onTimeUpdateCallback;
+	public final Solver setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
+		if(onTimeUpdateCallback == null) {
+			this.onTimeUpdateCallback = (duration) -> {};
+		} else {
+			this.onTimeUpdateCallback = onTimeUpdateCallback;
+		}
+		return this;
 	}
 	
-	public OnProgressUpdateCallback getOnProgressUpdateCallback() {
+	public final OnProgressUpdateCallback getOnProgressUpdateCallback() {
 		return onProgressUpdateCallback;
 	}
 	
-	public void setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
-		this.onProgressUpdateCallback = onProgressUpdateCallback;
+	public final Solver setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
+		if(onProgressUpdateCallback == null) {
+			this.onProgressUpdateCallback = (progress, solutions) -> {};
+		} else {
+			this.onProgressUpdateCallback = onProgressUpdateCallback;
+		}
+		return this;
 	}
 	
-	public long getTimeUpdateDelay() {
+	public final long getTimeUpdateDelay() {
 		return timeUpdateDelay;
 	}
 	
-	public void setTimeUpdateDelay(long timeUpdateDelay) {
+	public final Solver setTimeUpdateDelay(long timeUpdateDelay) {
 		if(timeUpdateDelay < 0) {
 			throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
 		}
 		this.timeUpdateDelay = timeUpdateDelay;
+		return this;
 	}
 	
-	public long getProgressUpdateDelay() {
+	public final long getProgressUpdateDelay() {
 		return progressUpdateDelay;
 	}
 	
-	public void setProgressUpdateDelay(long progressUpdateDelay) {
+	public final Solver setProgressUpdateDelay(long progressUpdateDelay) {
 		if(progressUpdateDelay < 0) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
 		}
 		this.progressUpdateDelay = progressUpdateDelay;
+		return this;
 	}
 
-	public boolean isIdle() {
+	public final boolean isIdle() {
 		return state == NQueensFAF.IDLE;
 	}
 
-	public boolean isInitializing() {
+	public final boolean isInitializing() {
 		return state == NQueensFAF.INITIALIZING;
 	}
 	
-	public boolean isRunning() {
+	public final boolean isRunning() {
 		return state == NQueensFAF.RUNNING;
 	}
 
-	public boolean isTerminating() {
+	public final boolean isTerminating() {
 		return state == NQueensFAF.TERMINATING;
 	}
 }

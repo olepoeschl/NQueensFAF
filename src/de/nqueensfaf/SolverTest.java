@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 class SolverTest {
 
+	Solver solver;
+	
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
 	}
@@ -29,54 +31,10 @@ class SolverTest {
 	// Manual test
 	@Test
 	void test() {
-		Solver solver = new Solver() {
-			int total, done;
-			long start, end;
-			
-			@Override
-			protected void run() {
-				total = 100*N;
-				start = System.currentTimeMillis();
-				for(done = 0; done < total; done++) {
-					end = System.currentTimeMillis();
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-			@Override
-			public void save() {}
-			@Override
-			public void restore() {}
-
-			@Override
-			public void reset() {
-				done = 0;
-				start = 0;
-				end = 0;
-			}
-			
-			@Override
-			public long getDuration() {
-				return end - start;
-			}
-
-			@Override
-			public float getProgress() {
-				return ((float) done) / total;
-			}
-
-			@Override
-			public long getSolutions() {
-				return done*10;
-			}
-		};
+		solver = new MockSolver();
 		solver.setN(5);
-		solver.addOnStartCallback(() -> System.out.println("starte..."));
-		solver.addOnEndCallback(() -> System.out.println("fertig!"));
+		solver.addInitializationCallback(() -> System.out.println("starte..."));
+		solver.addTerminationCallback(() -> System.out.println("fertig!"));
 		solver.setOnTimeUpdateCallback((duration) -> {
 			System.out.println("Duration: " + duration/1000 + "." + duration%1000);
 		});
@@ -89,7 +47,6 @@ class SolverTest {
 		
 		solver.reset();
 		solver.solveAsync();
-		assertThrows(IllegalStateException.class, () -> solver.solve());
 		while(solver.isIdle() || solver.isInitializing());
 		while(solver.isRunning()) {
 			System.out.println("läuft");
@@ -109,4 +66,90 @@ class SolverTest {
 		}
 	}
 
+	@Test
+	void testFail() {
+		
+		// setN
+		assertThrows(IllegalArgumentException.class, () -> new MockSolver().setN(-2));
+		assertThrows(IllegalArgumentException.class, () -> new MockSolver().setN(32));
+		solver = new MockSolver();
+		solver.setN(2);
+		solver.solveAsync();
+		assertThrows(IllegalStateException.class, () -> solver.setN(15));
+		try {
+			solver.waitFor();
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		
+		// set<X>UpdateDelay
+		assertThrows(IllegalArgumentException.class, () -> solver.setTimeUpdateDelay(-7));
+		assertThrows(IllegalArgumentException.class, () -> solver.setProgressUpdateDelay(-13));
+		
+		// solve, solveAsync
+		solver = new MockSolver();
+		assertThrows(IllegalStateException.class, () -> solver.solve());
+		solver.setN(1);
+		solver.solveAsync();
+		assertThrows(IllegalStateException.class, () -> solver.solve());
+		assertThrows(IllegalStateException.class, () -> solver.solveAsync());
+		try {
+			solver.waitFor();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		// waitFor
+		assertThrows(IllegalStateException.class, () -> solver.waitFor());
+		
+		// initialization, termination
+		assertThrows(IllegalArgumentException.class, () -> solver.addInitializationCallback(null));
+		assertThrows(IllegalArgumentException.class, () -> solver.addTerminationCallback(null));
+	}
+	
+	class MockSolver extends Solver {
+		int total, done;
+		long start, end;
+		
+		@Override
+		protected void run() {
+			total = 100*N;
+			start = System.currentTimeMillis();
+			for(done = 0; done < total; done++) {
+				end = System.currentTimeMillis();
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public void save() {}
+		@Override
+		public void restore() {}
+
+		@Override
+		public void reset() {
+			done = 0;
+			start = 0;
+			end = 0;
+		}
+		
+		@Override
+		public long getDuration() {
+			return end - start;
+		}
+
+		@Override
+		public float getProgress() {
+			return ((float) done) / total;
+		}
+
+		@Override
+		public long getSolutions() {
+			return done*10;
+		}
+	}
 }
