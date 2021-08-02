@@ -16,7 +16,7 @@ public abstract class Solver {
 	protected long 
 		timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY,
 		progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
-	private ThreadPoolExecutor ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+	private ThreadPoolExecutor ucExecutor;
 	private ArrayList<Runnable> initialization = new ArrayList<Runnable>(), termination = new ArrayList<Runnable>();
 	
 	private int state = NQueensFAF.IDLE;
@@ -24,8 +24,8 @@ public abstract class Solver {
 	
 	// abstract methods
 	protected abstract void run();
-	public abstract void save();
-	public abstract void restore();
+	public abstract void save(String filename);
+	public abstract void restore(String filename);
 	public abstract void reset();
 	public abstract long getDuration();
 	public abstract float getProgress();
@@ -40,6 +40,7 @@ public abstract class Solver {
 		}
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
+		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 		startUpdateCallerThreads();
 		
 		state = NQueensFAF.RUNNING;
@@ -47,16 +48,12 @@ public abstract class Solver {
 		
 		state = NQueensFAF.TERMINATING;
 		terminationCaller();
+		ucExecutor.shutdown();
 		try {
 			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay : progressUpdateDelay, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
-			// nothing
+			e.printStackTrace();
 		}
-		// call callback methods with the final solver values
-		if(onTimeUpdateCallback != null)
-			onTimeUpdateCallback.onTimeUpdate(getDuration());
-		if(onProgressUpdateCallback != null)
-			onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
 		
 		state = NQueensFAF.IDLE;
 	}
@@ -93,6 +90,7 @@ public abstract class Solver {
 						e.printStackTrace();
 					}
 				}
+				onTimeUpdateCallback.onTimeUpdate(getDuration());
 			});
 		}
 		if(onProgressUpdateCallback != null) {
@@ -114,6 +112,7 @@ public abstract class Solver {
 						e.printStackTrace();
 					}
 				}
+				onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
 			});
 		}
 	}

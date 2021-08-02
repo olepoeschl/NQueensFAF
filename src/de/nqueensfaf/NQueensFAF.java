@@ -12,5 +12,5 @@ public class NQueensFAF {
 		TERMINATING = 4,
 	// default values for Solver variables
 		DEFAULT_TIME_UPDATE_DELAY = 128,
-		DEFAULT_PROGRESS_UPDATE_DELAY = 200;
+		DEFAULT_PROGRESS_UPDATE_DELAY = 128;
 }

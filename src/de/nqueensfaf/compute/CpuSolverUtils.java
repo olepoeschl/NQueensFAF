@@ -2,7 +2,7 @@ package de.nqueensfaf.compute;
 
 import java.util.HashSet;
 
-class ConstellationsGeneratorCpu {
+class CpuSolverUtils {
 	
 	private static int N;
 	private static final HashSet<Integer> startConstellations = new HashSet<Integer>();
@@ -11,7 +11,7 @@ class ConstellationsGeneratorCpu {
 		startConstellations.clear();
 		
 		// halfN half of N rounded up
-		ConstellationsGeneratorCpu.N = N;
+		CpuSolverUtils.N = N;
 		final int halfN = (N + 1) / 2;
 
 		// calculating start constellations with the first Queen on square (0,0)

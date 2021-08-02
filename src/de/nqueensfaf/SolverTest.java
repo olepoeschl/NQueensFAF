@@ -126,9 +126,9 @@ class SolverTest {
 		}
 
 		@Override
-		public void save() {}
+		public void save(String filename) {}
 		@Override
-		public void restore() {}
+		public void restore(String filename) {}
 
 		@Override
 		public void reset() {
