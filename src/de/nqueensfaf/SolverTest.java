@@ -68,7 +68,6 @@ class SolverTest {
 
 	@Test
 	void testFail() {
-		
 		// setN
 		assertThrows(IllegalArgumentException.class, () -> new MockSolver().setN(-2));
 		assertThrows(IllegalArgumentException.class, () -> new MockSolver().setN(32));

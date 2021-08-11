@@ -14,7 +14,7 @@ class CpuSolverThread extends Thread {
 	private ArrayDeque<Integer> startConstellations;
 
 	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations) {
-		this.N = N;	
+		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
 		N5 = N - 5;

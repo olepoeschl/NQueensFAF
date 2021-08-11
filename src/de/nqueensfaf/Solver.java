@@ -63,6 +63,13 @@ public abstract class Solver {
 			throw new IllegalStateException("Solver is already started");
 		}
 		t.start();
+		while(isIdle()) {
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public final void waitFor() throws InterruptedException {
