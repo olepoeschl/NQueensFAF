@@ -1,9 +1,20 @@
 package de.nqueensfaf;
 
+/**
+ * 
+ * @author olepo
+ * 
+ * <p>
+ * Provides all constants used by this library.
+ * </p>
+ */
 public class NQueensFAF {
 	
 	private NQueensFAF() {}
 	
+	/**
+	 * integer constant
+	 */
 	static final int
 	// Solver states
 		IDLE = 1,

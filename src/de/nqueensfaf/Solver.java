@@ -8,18 +8,61 @@ import java.util.concurrent.TimeUnit;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
 import de.nqueensfaf.util.OnTimeUpdateCallback;
 
+/**
+ * 
+ * @author olepo
+ *
+ * <p>
+ * Abstract class for implementing new Solvers.
+ * </p>
+ * <p>
+ * To implement an own solver for the n queens problem, simply create a class that extends this one. 
+ * Then the solver will automatically have the util functions like adding callbacks etc. and the given basic solver class structure makes it easier.
+ * </p>
+ */
 public abstract class Solver {
 	
+	/**
+	 * board size
+	 */
 	protected int N;
+	/**
+	 * callback that is executed on every time update
+	 */
 	protected OnTimeUpdateCallback  onTimeUpdateCallback = (duration) -> {};
+	/**
+	 * callback that is executed on every progress update
+	 */
 	protected OnProgressUpdateCallback  onProgressUpdateCallback = (progress, solutions) -> {};
-	protected long 
-		timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY,
-		progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+	/**
+	 * delay between time updates
+	 */
+	protected long timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY;
+	/**
+	 * delay between progress updates
+	 */
+	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+	/**
+	 * executor of the update callbacks (uc)
+	 */
 	private ThreadPoolExecutor ucExecutor;
-	private ArrayList<Runnable> initialization = new ArrayList<Runnable>(), termination = new ArrayList<Runnable>();
+	/**
+	 * list of callbacks to be executed before the run() function of the solver is called
+	 */
+	private ArrayList<Runnable> initialization = new ArrayList<Runnable>();
+	/**
+	 * list of callbacks to be executed after the run() function of the solver is finished
+	 */
+	private ArrayList<Runnable> termination = new ArrayList<Runnable>();
 	
+	/**
+	 * current state of the solver
+	 * @see NQueensFAF
+	 */
 	private int state = NQueensFAF.IDLE;
+	/**
+	 * Thread that executes the solvers run() function if {@link #solveAsync()} is called
+	 */
 	private Thread t = new Thread(() -> solve());
 	
 	// abstract methods

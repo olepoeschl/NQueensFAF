@@ -31,7 +31,8 @@ public class CpuSolver extends Solver {
 		
 		start = System.currentTimeMillis();
 		if(!restored) {
-			startConstellations.addAll(CpuSolverUtils.genConstellations(N));
+//			startConstellations.addAll(CpuSolverUtils.genConstellations(N));
+			genConstellations();
 			total = startConstellations.size();
 		}
 
@@ -93,6 +94,60 @@ public class CpuSolver extends Solver {
 		System.gc();
 	}
 
+	private void genConstellations() {
+		startConstellations.clear();
+
+		// halfN half of N rounded up
+		final int halfN = (N + 1) / 2;
+
+		// calculating start constellations with the first Queen on square (0,0)
+		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
+			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
+				startConstellations.add(toijkl(0, j, 0, l));
+			}
+		}
+
+		// calculate starting constellations for no Queens in corners
+		for(int k = 1; k < halfN; k++) {						// go through first col
+			for(int l = k+1; l < N-1; l++) {					// go through last col
+				for(int i = k+1; i < N-1; i++) {				// go through first row
+					if(i == N-1-l)								// skip if occupied
+						continue;
+					for(int j = N-k-2; j > 0; j--) {			// go through last row
+						if(j==i || l == j)
+							continue;
+
+						if(!checkRotations(i, j, k, l)) {		// if no rotation-symmetric starting constellation already found
+							startConstellations.add(toijkl(i, j, k, l));
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// true, if starting constellation rotated by any angle has already been found
+	private boolean checkRotations(int i, int j, int k, int l) {
+		// rot90
+		if(startConstellations.contains(((N-1-k)<<24) + ((N-1-l)<<16) + (j<<8) + i)) 
+			return true;
+
+		// rot180
+		if(startConstellations.contains(((N-1-j)<<24) + ((N-1-i)<<16) + ((N-1-l)<<8) + N-1-k)) 
+			return true;
+
+		// rot270
+		if(startConstellations.contains((l<<24) + (k<<16) + ((N-1-i)<<8) + N-1-j)) 
+			return true;
+
+		return false;
+	}
+
+	// wrap i, j, k and l to one integer using bitwise movement
+	private int toijkl(int i, int j, int k, int l) {
+		return (i<<24) + (j<<16) + (k<<8) + l;
+	}
+
 	@Override
 	public long getDuration() {
 		return isRunning() ? passed + System.currentTimeMillis() - start : passed + end - start;
@@ -116,7 +171,6 @@ public class CpuSolver extends Solver {
 		return solutions;
 	}
 	
-	// getters and setters
 	public void setThreadcount(int threadcount) {
 		if(threadcount < 1 || threadcount > Runtime.getRuntime().availableProcessors()) {
 			throw new IllegalArgumentException("threadcount must be a number between 1 and " + Runtime.getRuntime().availableProcessors() + " (=your CPU's number of logical cores) (inclusive)");
@@ -136,7 +190,7 @@ public class CpuSolver extends Solver {
 		s.setThreadcount(1);
 		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
 		s.addTerminationCallback(() -> System.out.println("solutions: " + s.getSolutions()));
-		for(int i = 0; i < 5; i++) {
+		for(int i = 0; i < 100; i++) {
 			s.solve();
 			s.threads.clear();
 			in.nextLine();
