@@ -9,16 +9,15 @@ import de.nqueensfaf.util.OnProgressUpdateCallback;
 import de.nqueensfaf.util.OnTimeUpdateCallback;
 
 /**
- * 
- * @author olepo
- *
  * <p>
- * Abstract class for implementing new Solvers.
+ * Abstract class for implementing Solvers.
  * </p>
  * <p>
  * To implement an own solver for the n queens problem, simply create a class that extends this one. 
  * Then the solver will automatically have the util functions like adding callbacks etc. and the given basic solver class structure makes it easier.
  * </p>
+ * 
+ * @author olepo
  */
 public abstract class Solver {
 	
@@ -44,19 +43,22 @@ public abstract class Solver {
 	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
 	/**
 	 * executor of the update callbacks (uc)
+	 * @see #startUpdateCallerThreads()
 	 */
 	private ThreadPoolExecutor ucExecutor;
 	/**
 	 * list of callbacks to be executed before the run() function of the solver is called
+	 * @see #solve()
 	 */
 	private ArrayList<Runnable> initialization = new ArrayList<Runnable>();
 	/**
 	 * list of callbacks to be executed after the run() function of the solver is finished
+	 * @see #solve()
 	 */
 	private ArrayList<Runnable> termination = new ArrayList<Runnable>();
 	
 	/**
-	 * current state of the solver
+	 * current state of the {@link Solver}
 	 * @see NQueensFAF
 	 */
 	private int state = NQueensFAF.IDLE;
@@ -66,14 +68,45 @@ public abstract class Solver {
 	private Thread t = new Thread(() -> solve());
 	
 	// abstract methods
+	/**
+	 * Solves the N-Queens Problem.
+	 */
 	protected abstract void run();
+	/**
+	 * Saves the current progress of the {@link Solver} in a file so that it can be continued at some time later.
+	 * @param filename name of the file the progress should be written in (existent or non existent)
+	 */
 	public abstract void save(String filename);
+	/**
+	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
+	 * @param filename name of the file the progress was written in
+	 */
 	public abstract void restore(String filename);
+	/**
+	 * Resets the {@link Solver}; therefore, applies default values to all Solver-state and progress related variables.
+	 */
 	public abstract void reset();
+	/**
+	 * Gets the total runtime of the {@link Solver} in the current run.
+	 * @return total runtime of the current run or 0 if the Solver is currently not running
+	 */
 	public abstract long getDuration();
+	/**
+	 * Gets the percentage of the {@link Solver}'s task that is completed.
+	 * @return percentage of the {@link Solver}'s task that is completed
+	 */
 	public abstract float getProgress();
+	/**
+	 * Gets the current count of found solutions.
+	 * @return current count of found solutions
+	 */
 	public abstract long getSolutions();
 	
+	/**
+	 * Calls all initialization callbacks, then starts the {@link Solver}'s run()-method, then calls all termination callbacks.
+	 * @throws {@link IllegalStateException} if N equals 0 or the {@link Solver} is already running
+	 * @see #run()
+	 */
 	public final void solve() {
 		if(N == 0) {
 			throw new IllegalStateException("Board size was not set");
@@ -100,7 +133,11 @@ public abstract class Solver {
 		
 		state = NQueensFAF.IDLE;
 	}
-	
+	/**
+	 * Asynchronously starts the {@link Solver} using a new thread and then waits till the Solver is successfully started.
+	 * @throws {@link IllegalStateException} if the {@link Solver} is already running
+	 * @see #solve()
+	 */
 	public final void solveAsync() {
 		if(!isIdle()) {
 			throw new IllegalStateException("Solver is already started");
@@ -114,7 +151,11 @@ public abstract class Solver {
 			}
 		}
 	}
-	
+	/**
+	 * Waits for the asynchronously running {@link Solver} to finish.
+	 * @throws {@link InterruptedException} if the {@link Solver} is not running
+	 * @see #solveAsync()
+	 */
 	public final void waitFor() throws InterruptedException {
 		if(!t.isAlive()) {
 			throw new IllegalStateException("Solver is not running");
@@ -122,6 +163,12 @@ public abstract class Solver {
 		t.join();
 	}
 	
+	/**
+	 * Starts the threads that continously update the {@link Solver}'s duration and progress using the related delay.
+	 * The threads run until the {@link Solver} is finished.
+	 * @see #timeUpdateDelay
+	 * @see #progressUpdateDelay
+	 */
 	private void startUpdateCallerThreads() {
 		if(onTimeUpdateCallback != null) {
 			ucExecutor.submit(() -> {
@@ -167,6 +214,15 @@ public abstract class Solver {
 		}
 	}
 
+	/**
+	 * Adds a callback that will be executed on start of the {@link Solver}.
+	 * The callbacks will be called in reversed insertion order.
+	 * Chainable.
+	 * @param r the callback as {@link Runnable}
+	 * @return the {@link Solver}
+	 * @throws {@link IllegalArgumentException} if r is null
+	 * @see #solve()
+	 */
 	public final Solver addInitializationCallback(Runnable r) {
 		if(r == null) {
 			throw new IllegalArgumentException("initializationCallback must not be null");
@@ -174,7 +230,16 @@ public abstract class Solver {
 		initialization.add(r);
 		return this;
 	}
-	
+
+	/**
+	 * Adds a callback that will be executed on finish of the {@link Solver}.
+	 * The callbacks will be called in reversed insertion order.
+	 * Chainable.
+	 * @param r the callback as {@link Runnable}
+	 * @return the {@link Solver}
+	 * @throws {@link IllegalArgumentException} if r is null
+	 * @see #solve()
+	 */
 	public final Solver addTerminationCallback(Runnable r) {
 		if(r == null) {
 			throw new IllegalArgumentException("terminationCallback must not be null");
@@ -183,12 +248,18 @@ public abstract class Solver {
 		return this;
 	}
 	
+	/**
+	 * Calls all initialization callbacks in reversed insertion order.
+	 */
 	private void initializationCaller() {
 		for(int i = initialization.size()-1; i >= 0; i--) {
 			initialization.get(i).run();
 		}
 	}
 	
+	/**
+	 * Calls all termination callbacks in reversed insertion order.
+	 */
 	private void terminationCaller() {
 		for(int i = termination.size()-1; i >= 0; i--) {
 			termination.get(i).run();
@@ -196,10 +267,21 @@ public abstract class Solver {
 	}
 	
 	// Getters and Setters
+	/**
+	 * Gets {@link #N}.
+	 * @return {@link #N}
+	 */
 	public final int getN() {
 		return N;
 	}
-	
+	/**
+	 * Sets {@link #N}.
+	 * Chainable.
+	 * @param n boardsize 
+	 * @return the {@link Solver}
+	 * @throws {@link IllegalStateException} if the {@link Solver} is already running
+	 * @throws {@link IllegalArgumentException} if the boardsize is invalid 
+	 */
 	public final Solver setN(int n) {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot set board size while solving");
@@ -211,10 +293,19 @@ public abstract class Solver {
 		return this;
 	}
 	
+	/**
+	 * Gets {@link #onTimeUpdateCallback}.
+	 * @return {@link #onTimeUpdateCallback}
+	 */
 	public final OnTimeUpdateCallback getOnTimeUpdateCallback() {
 		return onTimeUpdateCallback;
 	}
-	
+	/**
+	 * Sets {@link #onTimeUpdateCallback} or sets a void callback if the parameter is null.
+	 * Chainable.
+	 * @param onTimeUpdateCallback callback to be called on each time update
+	 * @return the {@link Solver}
+	 */
 	public final Solver setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
 		if(onTimeUpdateCallback == null) {
 			this.onTimeUpdateCallback = (duration) -> {};
@@ -223,11 +314,20 @@ public abstract class Solver {
 		}
 		return this;
 	}
-	
+
+	/**
+	 * Gets {@link #onProgressUpdateCallback}.
+	 * @return {@link #onProgressUpdateCallback}
+	 */
 	public final OnProgressUpdateCallback getOnProgressUpdateCallback() {
 		return onProgressUpdateCallback;
 	}
-	
+	/**
+	 * Sets {@link #onProgressUpdateCallback} or sets a void callback if the parameter is null.
+	 * Chainable.
+	 * @param onProgressUpdateCallback callback to be called on each progress update
+	 * @return the {@link Solver}
+	 */
 	public final Solver setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
 		if(onProgressUpdateCallback == null) {
 			this.onProgressUpdateCallback = (progress, solutions) -> {};
@@ -237,10 +337,20 @@ public abstract class Solver {
 		return this;
 	}
 	
+	/**
+	 * Gets {@link #timeUpdateDelay}.
+	 * @return {@link #timeUpdateDelay}
+	 */
 	public final long getTimeUpdateDelay() {
 		return timeUpdateDelay;
 	}
-	
+	/**
+	 * Sets {@link #timeUpdateDelay}.
+	 * Chainable.
+	 * @param timeUpdateDelay
+	 * @return the {@link Solver}
+	 * @throws {@link IllegalArgumentException} if the given delay is <= 0
+	 */
 	public final Solver setTimeUpdateDelay(long timeUpdateDelay) {
 		if(timeUpdateDelay < 0) {
 			throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
@@ -248,11 +358,21 @@ public abstract class Solver {
 		this.timeUpdateDelay = timeUpdateDelay;
 		return this;
 	}
-	
+
+	/**
+	 * Gets {@link #progressUpdateDelay}.
+	 * @return {@link #progressUpdateDelay}
+	 */
 	public final long getProgressUpdateDelay() {
 		return progressUpdateDelay;
 	}
-	
+	/**
+	 * Sets {@link #progressUpdateDelay}.
+	 * Chainable.
+	 * @param progressUpdateDelay
+	 * @return the {@link Solver}
+	 * @throws {@link IllegalArgumentException} if the given delay is <= 0
+	 */
 	public final Solver setProgressUpdateDelay(long progressUpdateDelay) {
 		if(progressUpdateDelay < 0) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
@@ -261,18 +381,31 @@ public abstract class Solver {
 		return this;
 	}
 
+	/**
+	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#IDLE}
+	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#IDLE}
+	 */
 	public final boolean isIdle() {
 		return state == NQueensFAF.IDLE;
 	}
-
+	/**
+	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#INITIALIZING}
+	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#INITIALIZING}
+	 */
 	public final boolean isInitializing() {
 		return state == NQueensFAF.INITIALIZING;
 	}
-	
+	/**
+	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#RUNNING}
+	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#RUNNING}
+	 */
 	public final boolean isRunning() {
 		return state == NQueensFAF.RUNNING;
 	}
-
+	/**
+	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#TERMINATING}
+	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#TERMINATING}
+	 */
 	public final boolean isTerminating() {
 		return state == NQueensFAF.TERMINATING;
 	}

@@ -1,27 +1,40 @@
 package de.nqueensfaf;
 
 /**
- * 
- * @author olepo
- * 
  * <p>
  * Provides all constants used by this library.
  * </p>
+ * 
+ * @author olepo
  */
-public class NQueensFAF {
+public final class NQueensFAF {
 	
 	private NQueensFAF() {}
 	
 	/**
-	 * integer constant
+	 * The {@link Solver} is idle.
 	 */
-	static final int
-	// Solver states
-		IDLE = 1,
-		INITIALIZING = 2,
-		RUNNING = 3,
-		TERMINATING = 4,
-	// default values for Solver variables
-		DEFAULT_TIME_UPDATE_DELAY = 128,
-		DEFAULT_PROGRESS_UPDATE_DELAY = 128;
+	static final int IDLE = 1;
+	/**
+	 * The {@link Solver} calls the initialization callbacks and starts the threads for continous time and progress updates.
+	 */
+	static final int INITIALIZING = 2;
+	/**
+	 * The {@link Solver} is executing the solving mechanism.
+	 */
+	static final int RUNNING = 3;
+	/**
+	 * The {@link Solver} calls the termination callbacks and terminates all threads.
+	 */
+	static final int TERMINATING = 4;
+	
+	/**
+	 * Default value for the {@link Solver#timeUpdateDelay} in milliseconds.
+	 */
+	static final int DEFAULT_TIME_UPDATE_DELAY = 128;
+	/**
+	 * Default value for the {@link Solver#progressUpdateDelay} in milliseconds.
+	 */
+	static final int DEFAULT_PROGRESS_UPDATE_DELAY = 128;
+	
 }
