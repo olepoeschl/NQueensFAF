@@ -1,5 +1,11 @@
 package de.nqueensfaf.compute;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,11 +23,12 @@ public class CpuSolver extends Solver {
 	private HashSet<Integer> 
 		startConstellations = new HashSet<Integer>();
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
-	private int total;
-	private long passed = 0;
+	private int total, done;
+	private long timePassed = 0;
 	private long solutions;
 	private boolean restored = false;
 	
+	// inherited functions
 	@Override
 	protected void run() {
 		// check if run is called without calling reset after a run call had finished
@@ -31,7 +38,6 @@ public class CpuSolver extends Solver {
 		
 		start = System.currentTimeMillis();
 		if(!restored) {
-//			startConstellations.addAll(CpuSolverUtils.genConstellations(N));
 			genConstellations();
 			total = startConstellations.size();
 		}
@@ -70,22 +76,61 @@ public class CpuSolver extends Solver {
 	}
 	
 	@Override
-	public void save(String filename) {
-		// write passed, startConstellations, solutions, total into file
+	public void save(String filepath) throws IOException {
+		// if Solver was not even started yet, throw exception
+		if(start == 0) {
+			throw new IllegalStateException("Nothing to be saved");
+		}
+		// get current progress values
+		HashSet<Integer> startConstellations = new HashSet<Integer>();
+		for(CpuSolverThread t : threads) {
+			startConstellations.addAll(t.getRemainingConstellations());
+		}
+		long solutions = this.solutions;
+		for(CpuSolverThread t : threads) {
+			solutions += t.getSolutions();
+		}
+		long timePassed;
+		if(isRunning()) {
+			timePassed = this.timePassed + System.currentTimeMillis() - start;
+		} else {
+			timePassed = this.timePassed + end - start;
+		}
+		RestorationInformation resInfo = new RestorationInformation(N, startConstellations, timePassed, solutions, total);
+		System.out.println("saving: solutions: " + resInfo.solutions + "; total: " + resInfo.total);
+		
+		FileOutputStream fos = new FileOutputStream(filepath);
+		ObjectOutputStream oos = new ObjectOutputStream(fos);
+		oos.writeObject(resInfo);
+		oos.flush();
+		oos.close();
+		fos.close();
 	}
 
 	@Override
-	public void restore(String filename) {
+	public void restore(String filepath) throws IOException, ClassNotFoundException {
+		RestorationInformation resInfo;
+		FileInputStream fis = new FileInputStream(filepath);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		resInfo = (RestorationInformation) ois.readObject();
+		ois.close();
+		fis.close();
+
 		reset();
-		// read passed, startConstellations, solutions, total from file
+		N = resInfo.N;
+		startConstellations = resInfo.startConstellations;
+		timePassed = resInfo.timePassed;
+		solutions = resInfo.solutions;
+		total = resInfo.total;
+		done = total - startConstellations.size();
 		restored = true;
 	}
-
+	
 	@Override
 	public void reset() {
 		start = 0;
 		end = 0;
-		passed = 0;
+		timePassed = 0;
 		startConstellations.clear();
 		solutions = 0;
 		threads.clear();
@@ -94,6 +139,30 @@ public class CpuSolver extends Solver {
 		System.gc();
 	}
 
+	@Override
+	public long getDuration() {
+		return isRunning() ? timePassed + System.currentTimeMillis() - start : timePassed + end - start;
+	}
+
+	@Override
+	public float getProgress() {
+		float done = this.done;
+		for(CpuSolverThread t : threads) {
+			done += t.getDone();
+		}
+		return done / total;
+	}
+
+	@Override
+	public long getSolutions() {
+		long solutions = this.solutions;
+		for(CpuSolverThread t : threads) {
+			solutions += t.getSolutions();
+		}
+		return solutions;
+	}
+	
+	// own functions
 	private void genConstellations() {
 		startConstellations.clear();
 
@@ -148,29 +217,13 @@ public class CpuSolver extends Solver {
 		return (i<<24) + (j<<16) + (k<<8) + l;
 	}
 
-	@Override
-	public long getDuration() {
-		return isRunning() ? passed + System.currentTimeMillis() - start : passed + end - start;
-	}
-
-	@Override
-	public float getProgress() {
-		float done = 0;
+	public void cancel() {
 		for(CpuSolverThread t : threads) {
-			done += t.getDone();
+			t.cancel();
 		}
-		return done / total;
-	}
-
-	@Override
-	public long getSolutions() {
-		long solutions = this.solutions;
-		for(CpuSolverThread t : threads) {
-			solutions += t.getSolutions();
-		}
-		return solutions;
 	}
 	
+	// getters and setters
 	public void setThreadcount(int threadcount) {
 		if(threadcount < 1 || threadcount > Runtime.getRuntime().availableProcessors()) {
 			throw new IllegalArgumentException("threadcount must be a number between 1 and " + Runtime.getRuntime().availableProcessors() + " (=your CPU's number of logical cores) (inclusive)");
@@ -182,20 +235,79 @@ public class CpuSolver extends Solver {
 		return threadcount;
 	}
 	
+	// for saving and restoring
+	private record RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int total) implements Serializable {
+		RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int total) {
+			this.N = N;
+			this.startConstellations = startConstellations;
+			this.timePassed = timePassed;
+			this.solutions = solutions;
+			this.total = total;
+		}
+	}
+	
+	
+	
+	
 	// for testing
 	public static void main(String[] args) {
+//		write();
+		read();
+//		goOn();
+	}
+	
+	static void write() {
 		Scanner in = new Scanner(System.in);
 		CpuSolver s = new CpuSolver();
-		s.setN(16);
-		s.setThreadcount(1);
-		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
-		s.addTerminationCallback(() -> System.out.println("solutions: " + s.getSolutions()));
-		for(int i = 0; i < 100; i++) {
-			s.solve();
+		s.setN(17);
+		s.setThreadcount(4);
+//		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
+		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions));
+		for(int i = 0; i < 4; i++) {
+			s.solveAsync();
+			String str = in.nextLine();
+			if(str.equals("hi")) {
+				try {
+					s.save("hi.faf");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 			s.threads.clear();
-			in.nextLine();
 		}
-		s.solve();
 		in.close();
+	}
+	
+	static void read() {
+		CpuSolver s = new CpuSolver();
+		try {
+			s.restore("hi.faf");
+			System.out.println("solutions: " + s.getSolutions());
+			System.out.println("duration: " + s.getDuration());
+			System.out.println("progress: " + s.getProgress());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	static void goOn() {
+		Scanner in = new Scanner(System.in);
+		CpuSolver s = new CpuSolver();
+		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions));
+		try {
+			s.restore("hi.faf");
+			s.solveAsync();
+			
+			in.nextLine();
+			s.save("hi.faf");
+			s.cancel();
+			in.close();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

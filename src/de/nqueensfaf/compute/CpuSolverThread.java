@@ -12,6 +12,9 @@ class CpuSolverThread extends Thread {
  
 	// list of uncalculated starting positions, their indices
 	private ArrayDeque<Integer> startConstellations;
+	
+	// for cancelling the run
+	private boolean running = false, cancel = false;
 
 	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations) {
 		this.N = N;
@@ -633,6 +636,8 @@ class CpuSolverThread extends Thread {
 	
 	@Override
 	public void run() {
+		running = true;
+		
 		final int listsize = startConstellations.size();
 		int i, j, k, l, ijkl, ld, rd, col;
 		final int N = this.N, L = this.L;
@@ -820,9 +825,27 @@ class CpuSolverThread extends Thread {
 			
 			// update the current startconstellation-index
 			done++;
+			
+			// check for cancelling
+			if(cancel) {
+				break;
+			}
 		}
+		running = false;
 	}
 
+	public void cancel() {
+		cancel = true;
+		while(running) {
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	// getters and setters
 	int getDone() {
 		return done;
 	}

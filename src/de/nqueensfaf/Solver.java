@@ -1,5 +1,6 @@
 package de.nqueensfaf;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -65,7 +66,7 @@ public abstract class Solver {
 	/**
 	 * Thread that executes the solvers run() function if {@link #solveAsync()} is called
 	 */
-	private Thread t = new Thread(() -> solve());
+	private Thread t;
 	
 	// abstract methods
 	/**
@@ -75,15 +76,18 @@ public abstract class Solver {
 	/**
 	 * Saves the current progress of the {@link Solver} in a file so that it can be continued at some time later.
 	 * @param filename name of the file the progress should be written in (existent or non existent)
+	 * @throws IOException
 	 */
-	public abstract void save(String filename);
+	public abstract void save(String filepath) throws IOException;
 	/**
 	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
 	 * @param filename name of the file the progress was written in
+	 * @throws IOException
+	 * @throws ClassNotFoundException 
 	 */
-	public abstract void restore(String filename);
+	public abstract void restore(String filepath) throws IOException, ClassNotFoundException;
 	/**
-	 * Resets the {@link Solver}; therefore, applies default values to all Solver-state and progress related variables.
+	 * Resets the {@link Solver}; therefore, applies default values to all Solver state and progress related variables.
 	 */
 	public abstract void reset();
 	/**
@@ -109,10 +113,17 @@ public abstract class Solver {
 	 */
 	public final void solve() {
 		if(N == 0) {
+			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
 			throw new IllegalStateException("Board size was not set");
 		}
 		if(!isIdle()) {
+			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
 			throw new IllegalStateException("Solver is already started");
+		}
+		// check if Solver is already done
+		if(getProgress() == 1.0f) {
+			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
+			throw new IllegalStateException("Solver is already done, nothing to do here");
 		}
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
@@ -142,6 +153,7 @@ public abstract class Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Solver is already started");
 		}
+		t = new Thread(() -> solve());
 		t.start();
 		while(isIdle()) {
 			try {
@@ -150,6 +162,7 @@ public abstract class Solver {
 				e.printStackTrace();
 			}
 		}
+		t = null;
 	}
 	/**
 	 * Waits for the asynchronously running {@link Solver} to finish.
@@ -157,8 +170,8 @@ public abstract class Solver {
 	 * @see #solveAsync()
 	 */
 	public final void waitFor() throws InterruptedException {
-		if(!t.isAlive()) {
-			throw new IllegalStateException("Solver is not running");
+		if(t == null) {
+			return;
 		}
 		t.join();
 	}
