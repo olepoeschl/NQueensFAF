@@ -2,7 +2,7 @@ package de.nqueensfaf;
 
 /**
  * <p>
- * Provides all constants used by this library.
+ * Provides constants and default values used by this library.
  * </p>
  * 
  * @author olepo
@@ -29,12 +29,11 @@ public final class NQueensFAF {
 	static final int TERMINATING = 4;
 	
 	/**
-	 * Default value for the {@link Solver#timeUpdateDelay} in milliseconds.
+	 * Default value for {@link Solver#timeUpdateDelay} in milliseconds.
 	 */
 	static final int DEFAULT_TIME_UPDATE_DELAY = 128;
 	/**
-	 * Default value for the {@link Solver#progressUpdateDelay} in milliseconds.
+	 * Default value for {@link Solver#progressUpdateDelay} in milliseconds.
 	 */
 	static final int DEFAULT_PROGRESS_UPDATE_DELAY = 128;
-	
 }
