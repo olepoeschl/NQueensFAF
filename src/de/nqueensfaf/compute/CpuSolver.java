@@ -23,7 +23,7 @@ public class CpuSolver extends Solver {
 	private HashSet<Integer> 
 		startConstellations = new HashSet<Integer>();
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
-	private int total, done;
+	private int startConstCount, solvedConstellations;
 	private long timePassed = 0;
 	private long solutions;
 	private boolean restored = false;
@@ -39,7 +39,7 @@ public class CpuSolver extends Solver {
 		start = System.currentTimeMillis();
 		if(!restored) {
 			genConstellations();
-			total = startConstellations.size();
+			startConstCount = startConstellations.size();
 		}
 
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
@@ -96,8 +96,8 @@ public class CpuSolver extends Solver {
 		} else {
 			timePassed = this.timePassed + end - start;
 		}
-		RestorationInformation resInfo = new RestorationInformation(N, startConstellations, timePassed, solutions, total);
-		System.out.println("saving: solutions: " + resInfo.solutions + "; total: " + resInfo.total);
+		RestorationInformation resInfo = new RestorationInformation(N, startConstellations, timePassed, solutions, startConstCount);
+		System.out.println("saving: solutions: " + resInfo.solutions + "; startConstCount: " + resInfo.startConstCount);
 		
 		FileOutputStream fos = new FileOutputStream(filepath);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -109,6 +109,9 @@ public class CpuSolver extends Solver {
 
 	@Override
 	public void restore(String filepath) throws IOException, ClassNotFoundException {
+		if(!isIdle()) {
+			throw new IllegalStateException("Cannot restore while the Solver is running");
+		}
 		RestorationInformation resInfo;
 		FileInputStream fis = new FileInputStream(filepath);
 		ObjectInputStream ois = new ObjectInputStream(fis);
@@ -121,8 +124,8 @@ public class CpuSolver extends Solver {
 		startConstellations = resInfo.startConstellations;
 		timePassed = resInfo.timePassed;
 		solutions = resInfo.solutions;
-		total = resInfo.total;
-		done = total - startConstellations.size();
+		startConstCount = resInfo.startConstCount;
+		solvedConstellations = startConstCount - startConstellations.size();
 		restored = true;
 	}
 	
@@ -134,7 +137,7 @@ public class CpuSolver extends Solver {
 		startConstellations.clear();
 		solutions = 0;
 		threads.clear();
-		total = 0;
+		startConstCount = 0;
 		restored = false;
 		System.gc();
 	}
@@ -146,11 +149,11 @@ public class CpuSolver extends Solver {
 
 	@Override
 	public float getProgress() {
-		float done = this.done;
+		float done = solvedConstellations;
 		for(CpuSolverThread t : threads) {
 			done += t.getDone();
 		}
-		return done / total;
+		return done / startConstCount;
 	}
 
 	@Override
@@ -236,13 +239,13 @@ public class CpuSolver extends Solver {
 	}
 	
 	// for saving and restoring
-	private record RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int total) implements Serializable {
-		RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int total) {
+	private record RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int startConstCount) implements Serializable {
+		RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int startConstCount) {
 			this.N = N;
 			this.startConstellations = startConstellations;
 			this.timePassed = timePassed;
 			this.solutions = solutions;
-			this.total = total;
+			this.startConstCount = startConstCount;
 		}
 	}
 	
