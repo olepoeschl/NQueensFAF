@@ -21,6 +21,7 @@ import org.lwjgl.opencl.CL10;
 import org.lwjgl.opencl.CLCommandQueue;
 import org.lwjgl.opencl.CLContext;
 import org.lwjgl.opencl.CLDevice;
+import org.lwjgl.opencl.CLEvent;
 import org.lwjgl.opencl.CLKernel;
 import org.lwjgl.opencl.CLMem;
 import org.lwjgl.opencl.CLPlatform;
@@ -32,12 +33,8 @@ import de.nqueensfaf.Solver;
 public class GpuSolver extends Solver {
 
 	static {
-		loadLWJGLNative();
-		try {
-			CL.create();
-		} catch (LWJGLException e) {
-			e.printStackTrace();
-		}
+		// enables the easy use of lwjgl when the application is packed in a jar archive
+		prepareLWJGLNative();
 	}
 
 	// OpenCL stuff
@@ -54,18 +51,31 @@ public class GpuSolver extends Solver {
 	private final int WORKGROUP_SIZE = 64;
 	private int globalWorkSize;
 
-	// other stuff
+	// calculation related stuff
 	private GpuConstellationsGenerator generator;
+	private int startConstCount;
 	private int[] symArr;
 	private long solutions;
-	private long duration;
-
+	private long duration, start, end;
+	private float progress;
+	
+	// control flow variables
+	private boolean gpuDone = false;
+	
 	// inherited functions
 	@Override
 	protected void run() {
-		init();
+		// if init fails, do not proceed
+		try {
+			init();
+		} catch (LWJGLException e) {
+			e.printStackTrace();
+			return;
+		}
 		transferDataToDevice();
 		explosionBoost9000();
+		readResults();
+		terminate();
 	}
 
 	@Override
@@ -80,40 +90,55 @@ public class GpuSolver extends Solver {
 
 	@Override
 	public void reset() {
-
+		progress = 0;
+		solutions = 0;
+		duration = 0;
+		gpuDone = false;
 	}
 
 	@Override
 	public long getDuration() {
-		return 0;
+		if(start != 0 && end == 0)
+			duration = System.currentTimeMillis() - start;
+		else if(end != 0)
+			duration = end - start;
+		return duration;
 	}
 
 	@Override
 	public float getProgress() {
-		if(!isRunning()) {
-			throw new IllegalStateException("Unable to read from GPU when Solver is not running");
+		if(gpuDone) {
+			return progress;
 		}
-		int calcConstCount = 0;
+		int solvedConstellations = 0;
 		// calculate current solvecounter
 		CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
-		for(int i = 0; i < generator.getStartConstCount(); i++) {
-			calcConstCount += progressBuf.get(i);
+		for(int i = 0; i < startConstCount; i++) {
+			solvedConstellations += progressBuf.get(i);
 		}
-		return ((float) calcConstCount) / generator.getStartConstCount();
+		progress = ((float) solvedConstellations) / startConstCount;
+		return progress;
 	}
 
 	@Override
 	public long getSolutions() {
+		if(gpuDone) {
+			return solutions;
+		}
 		long solutions = 0;
 		CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
-		for(int i = 0; i < generator.getStartConstCount(); i++) {
+		for(int i = 0; i < startConstCount; i++) {
 			solutions += resBuf.get(i) * symArr[i];
 		}
+		this.solutions = solutions;
 		return solutions;
 	}
 
 	// own functions
-	private void init() {
+	private void init() throws LWJGLException {
+		// load OpenCL native library
+		CL.create();
+		
 		// intbuffer for containing error information if needed
 		errBuf = BufferUtils.createIntBuffer(1);
 
@@ -138,10 +163,11 @@ public class GpuSolver extends Solver {
 	private void transferDataToDevice() {
 		computeUnits = device.getInfoInt(CL10.CL_DEVICE_MAX_COMPUTE_UNITS);
 		generator.genConstellations(N);
-		globalWorkSize = generator.getStartConstCount();
+		startConstCount = generator.getStartConstCount();
+		globalWorkSize = startConstCount;
 		// if needed, round globalWorkSize up to the next matchin number
 		if(globalWorkSize % (WORKGROUP_SIZE * computeUnits) != 0) {
-			globalWorkSize = generator.getStartConstCount() - (generator.getStartConstCount() % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
+			globalWorkSize = startConstCount - (startConstCount % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
 		}
 
 		int[] ldArr = new int[globalWorkSize];
@@ -152,7 +178,7 @@ public class GpuSolver extends Solver {
 		int[] klArr = new int[globalWorkSize];
 		int[] startArr = new int[globalWorkSize];
 		symArr = new int[globalWorkSize];
-		for(int i = 0; i < generator.getStartConstCount(); i++) {
+		for(int i = 0; i < startConstCount; i++) {
 			ldArr[i] = generator.ldList.removeFirst();
 			rdArr[i] = generator.rdList.removeFirst();
 			colArr[i] = generator.colList.removeFirst();
@@ -163,7 +189,7 @@ public class GpuSolver extends Solver {
 			symArr[i] = generator.symList.removeFirst();
 		}
 		// fill the newly created task slots in globalWorkSize using empty tasks (-> kernels.c)
-		for(int i = generator.getStartConstCount(); i < globalWorkSize; i++) {
+		for(int i = startConstCount; i < globalWorkSize; i++) {
 			ldArr[i] = 0xFFFFFFFF;
 			rdArr[i] = 0xFFFFFFFF;
 			colArr[i] = 0xFFFFFFFF;
@@ -291,10 +317,56 @@ public class GpuSolver extends Solver {
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);		// buffer for event that is used for measuring the execution time
 		CL10.clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf);
 		CL10.clFlush(xqueue);
+
+		// set pseudo starttime
+		start = System.currentTimeMillis();
+		
+		// wait for the gpu computation to finish
+		CL10.clFinish(xqueue);
+
+		// get exact time values using CLEvent
+		final CLEvent event = xqueue.getCLEvent(xEventBuf.get(0));
+		start = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_START) / 1000000;
+		end = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_END) / 1000000;
+		
+		// indicator for getProgress() and getSolutions() to not read from gpu memory any more, but just return the variable
+		gpuDone = true;
+	}
+	
+	private void readResults() {
+		// read result and progress memory buffers
+		CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
+		CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
+		solutions = 0;
+		int solvedConstellations = 0;
+		for(int i = 0; i < startConstCount; i++) {
+			solutions += resBuf.get(i) *  symArr[i];
+			solvedConstellations += progressBuf.get(i);
+		}
+		progress = ((float) solvedConstellations) / startConstCount;
+	}
+	
+	private void terminate() {
+		// release all CL-objects
+		CL10.clReleaseKernel(kernel);
+		CL10.clReleaseProgram(program);
+		CL10.clReleaseMemObject(ldMem);
+		CL10.clReleaseMemObject(rdMem);
+		CL10.clReleaseMemObject(colMem);
+		CL10.clReleaseMemObject(LDMem);
+		CL10.clReleaseMemObject(RDMem);
+		CL10.clReleaseMemObject(klMem);
+		CL10.clReleaseMemObject(startMem);
+		CL10.clReleaseMemObject(resMem);
+		CL10.clReleaseMemObject(progressMem);
+		CL10.clReleaseCommandQueue(xqueue);
+		CL10.clReleaseContext(context);
+		// unload OpenCL native library
+		CL.destroy();
 	}
 	
 	// detect operating system and use corresponding native library file if available
-	private static void loadLWJGLNative() {
+	private static void prepareLWJGLNative() {
 		Path temp_libdir = null;
 		String filenameIn = null;
 		String filenameOut = null;
@@ -327,9 +399,8 @@ public class GpuSolver extends Solver {
 			// unknown os
 			System.err.println("No native executables available for this operating system (" + os + ").");
 		}
-
 		try {
-			// create temporary directory to stor the native files inside
+			// create temporary directory to store the native files inside
 			temp_libdir = Files.createTempDirectory("NQueensFaf");
 
 			// copy the native file from within the jar to the temporary directory
@@ -346,7 +417,6 @@ public class GpuSolver extends Solver {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 		System.setProperty("org.lwjgl.librarypath", temp_libdir.toAbsolutePath().toString());
 	}
 
