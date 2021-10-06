@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 
-public class GpuConstellationsGenerator {
+class GpuConstellationsGenerator {
 
 	private int N, L, mask, LD, RD, counter, k;
 	private int kbit, lbit; 	// belegt de diagoanle auf der später k bzw. l dame stehen soll

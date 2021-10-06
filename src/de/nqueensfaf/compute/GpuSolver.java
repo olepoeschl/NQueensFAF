@@ -65,6 +65,9 @@ public class GpuSolver extends Solver {
 	// inherited functions
 	@Override
 	protected void run() {
+		if(start != 0) {
+			throw new IllegalStateException("You first have to call reset() when calling solve() multiple times on the same object");
+		}
 		// if init fails, do not proceed
 		try {
 			init();
@@ -420,7 +423,7 @@ public class GpuSolver extends Solver {
 		System.setProperty("org.lwjgl.librarypath", temp_libdir.toAbsolutePath().toString());
 	}
 
-	public ArrayList<String> getAvailableDevices() {
+	public String[] getAvailableDevices() {
 		if(devices != null) {
 			devices.clear();
 		}
@@ -435,7 +438,11 @@ public class GpuSolver extends Solver {
 		} catch(NullPointerException e) {
 			throw e;
 		}
-		return deviceNames;
+		String[] arr = new String[deviceNames.size()];
+		for(int i = 0; i < arr.length; i++) {
+			arr[i] = deviceNames.get(i);
+		}
+		return arr;
 	}
 
 	public void setDevice(int idx) {
@@ -481,7 +488,7 @@ public class GpuSolver extends Solver {
 	public static void main(String[] args) {
 		GpuSolver s = new GpuSolver();
 		s.setN(17);
-		ArrayList<String> deviceNames = s.getAvailableDevices();
+		String[] deviceNames = s.getAvailableDevices();
 		for(String deviceName : deviceNames) {
 			System.out.println(deviceName);
 		}
