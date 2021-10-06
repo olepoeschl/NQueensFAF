@@ -33,7 +33,7 @@ import de.nqueensfaf.Solver;
 public class GpuSolver extends Solver {
 
 	static {
-		// enables the easy use of lwjgl when the application is packed in a jar archive
+		// enables the easy use of lwjgl out of an archive
 		prepareLWJGLNative();
 	}
 
