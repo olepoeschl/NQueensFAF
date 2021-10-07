@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
@@ -39,6 +40,17 @@ public class GpuSolver extends Solver {
 	static {
 		// enables the easy use of lwjgl out of the jar-archive. The customer only need the lwjgl.jar. (LWJGL 2.9.3)
 		prepareLWJGLNative();
+		// initialize OpenCL
+		try {
+			CL.create();
+		} catch (LWJGLException e) {
+			e.printStackTrace();
+		}
+		// add shutdown hook that destroys OpenCL when the program is exited
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			CL.destroy();
+			deleteTempDir();
+		}));
 	}
 
 	// OpenCL stuff
@@ -67,11 +79,19 @@ public class GpuSolver extends Solver {
 	// control flow variables
 	private boolean gpuDone = false;
 	
+	public GpuSolver() {
+		// fill the devices list with the available devices
+		getAvailableDevices();
+	}
+	
 	// inherited functions
 	@Override
 	protected void run() {
 		if(start != 0) {
 			throw new IllegalStateException("You first have to call reset() when calling solve() multiple times on the same object");
+		}
+		if(device == null) {
+			throw new IllegalStateException("You have to choose a device by calling setDevice() before starting the Solver. See all available devices using getAvailableDevices()");
 		}
 		// if init fails, do not proceed
 		try {
@@ -89,7 +109,7 @@ public class GpuSolver extends Solver {
 	@Override
 	public void save(String filepath) throws IOException {
 		// if Solver was not even started yet, throw exception
-		if(start == 0) {
+		if(start == 0 || getProgress() >= 1f) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		long solutions = savedSolutions;
@@ -102,6 +122,7 @@ public class GpuSolver extends Solver {
 				klList = new ArrayList<Integer>(),
 				startList = new ArrayList<Integer>(),
 				symList = new ArrayList<Integer>();
+		System.out.println("----- waiting for mutex -----");
 		synchronized(resMem) {
 			synchronized(progressMem) {
 				CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
@@ -122,7 +143,8 @@ public class GpuSolver extends Solver {
 				}
 			}
 		}
-		RestorationInformation resInfo = new RestorationInformation(getDuration(), solutions, startConstCount, ldList, rdList, colList, LDList, RDList, klList, startList, symList);
+		System.out.println("----- saving -----");
+		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldList, rdList, colList, LDList, RDList, klList, startList, symList);
 
 		FileOutputStream fos = new FileOutputStream(filepath);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -145,6 +167,7 @@ public class GpuSolver extends Solver {
 		fis.close();
 
 		reset();
+		N = resInfo.N;
 		savedDuration = resInfo.duration;
 		savedSolutions = resInfo.solutions;
 		startConstCount = resInfo.startConstCount;
@@ -165,7 +188,7 @@ public class GpuSolver extends Solver {
 		klArr = new int[globalWorkSize];
 		startArr = new int[globalWorkSize];
 		symArr = new int[globalWorkSize];
-		for(int i = 0; i < startConstCount; i++) {
+		for(int i = 0; i < resInfo.ldList.size(); i++) {
 			ldArr[i] = resInfo.ldList.get(i);
 			rdArr[i] = resInfo.rdList.get(i);
 			colArr[i] = resInfo.colList.get(i);
@@ -193,7 +216,9 @@ public class GpuSolver extends Solver {
 
 	@Override
 	public long getDuration() {
-		if(start != 0 && end == 0)
+		if(start == 0 && end == 0 && savedDuration != 0)
+			duration = savedDuration;
+		else if(start != 0 && end == 0)
 			duration = savedDuration + System.currentTimeMillis() - start;
 		else if(end != 0)
 			duration = savedDuration + end - start;
@@ -202,11 +227,14 @@ public class GpuSolver extends Solver {
 
 	@Override
 	public float getProgress() {
-		if(gpuDone) {
+		if(startConstCount == 0)
+			return 0;
+		if(gpuDone)
 			return progress;
-		}
+		if(getDuration() == 0 || progressMem == null)
+			return ((float) savedSolvedConstellations) / startConstCount;		// either has a value, is still 0 or is 0 because of reset
+		
 		int solvedConstellations = savedSolvedConstellations;
-		// calculate current solvecounter
 		synchronized(progressMem) {
 			CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
 			for(int i = 0; i < startConstCount; i++) {
@@ -219,9 +247,11 @@ public class GpuSolver extends Solver {
 
 	@Override
 	public long getSolutions() {
-		if(gpuDone) {
-			return solutions;
-		}
+		if(gpuDone)
+			return savedSolutions + solutions;
+		if(getDuration() == 0 || resMem == null)
+			return savedSolutions;		// either has a value, is still 0 or is 0 because of reset
+		
 		long solutions = 0;
 		synchronized(resMem) {
 			CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
@@ -235,9 +265,6 @@ public class GpuSolver extends Solver {
 
 	// own functions
 	private void init() throws LWJGLException {
-		// load OpenCL native library
-		CL.create();
-		
 		// intbuffer for containing error information if needed
 		errBuf = BufferUtils.createIntBuffer(1);
 
@@ -251,7 +278,7 @@ public class GpuSolver extends Solver {
 		memqueue = CL10.clCreateCommandQueue(context, device, CL10.CL_QUEUE_PROFILING_ENABLE, errBuf);
 		Util.checkCLError(errBuf.get(0));
 
-		program = CL10.clCreateProgramWithSource(context, getKernelSourceAsString("res/kernels.c"), null);
+		program = CL10.clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
 		String options = "-D N="+getN() + " -D BLOCK_SIZE="+WORKGROUP_SIZE + " -cl-mad-enable";
 		int error = CL10.clBuildProgram(program, device, options, null);
 		Util.checkCLError(error);
@@ -293,14 +320,14 @@ public class GpuSolver extends Solver {
 		}
 		// fill the newly created task slots in globalWorkSize using empty tasks (-> kernels.c)
 		for(int i = startConstCount; i < globalWorkSize; i++) {
-			ldArr[i] = 0xFFFFFFFF;
+			ldArr[i] = (1<<32) - 1;
 			rdArr[i] = 0xFFFFFFFF;
 			colArr[i] = 0xFFFFFFFF;
 			LDArr[i] = 0xFFFFFFFF;
 			RDArr[i] = 0xFFFFFFFF;
 			klArr[i] = 0xFFFFFFFF;
-			startArr[i] = 0xFFFFFFFF;
-			symArr[i] = 0xFFFFFFFF;
+			startArr[i] = 69;
+			symArr[i] = 0;
 		}
 
 		// OpenCL-Memory Objects to be passed to the kernel
@@ -375,26 +402,26 @@ public class GpuSolver extends Solver {
 		CL10.clEnqueueUnmapMemObject(memqueue, startMem, paramPtr, null, null);
 
 		// result memory
-		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, startConstCount*4, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
+		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, startConstCount*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
+		for(int i = 0; i < startConstCount; i++) {
 			resWritePtr.putInt(i*4, 0);
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-		resBuf = BufferUtils.createIntBuffer(globalWorkSize);
+		resBuf = BufferUtils.createIntBuffer(startConstCount);
 
 		// progress indicator memory
-		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, startConstCount*4, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
+		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, startConstCount*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
+		for(int i = 0; i < startConstCount; i++) {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
+		progressBuf = BufferUtils.createIntBuffer(startConstCount);
 	}
 
 	private void explosionBoost9000() {
@@ -429,8 +456,8 @@ public class GpuSolver extends Solver {
 
 		// get exact time values using CLEvent
 		final CLEvent event = xqueue.getCLEvent(xEventBuf.get(0));
-		start = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_START) / 1000000;
-		end = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_END) / 1000000;
+		start = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_START) / 1_000_000;
+		end = event.getProfilingInfoLong(CL10.CL_PROFILING_COMMAND_END) / 1_000_000;
 		
 		// indicator for getProgress() and getSolutions() to not read from gpu memory any more, but just return the variable
 		gpuDone = true;
@@ -468,13 +495,11 @@ public class GpuSolver extends Solver {
 		CL10.clReleaseMemObject(progressMem);
 		CL10.clReleaseCommandQueue(xqueue);
 		CL10.clReleaseContext(context);
-		// unload OpenCL native library
-		CL.destroy();
 	}
 	
 	// detect operating system and use corresponding native library file if available
 	private static void prepareLWJGLNative() {
-		Path temp_libdir = null;
+		Path tempDir = null;
 		String filenameIn = null;
 		String filenameOut = null;
 
@@ -508,13 +533,13 @@ public class GpuSolver extends Solver {
 		}
 		try {
 			// create temporary directory to store the native files inside
-			temp_libdir = Files.createTempDirectory("NQueensFaf");
+			tempDir = Files.createTempDirectory("NQueensFaf");
 
 			// copy the native file from within the jar to the temporary directory
 			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/natives/" + filenameIn);
 			byte[] buffer = new byte[1024];
 			int read = -1;
-			File file = new File(temp_libdir + "/" + filenameOut);
+			File file = new File(tempDir + "/" + filenameOut);
 			FileOutputStream fos = new FileOutputStream(file);
 			while((read = in.read(buffer)) != -1) {
 				fos.write(buffer, 0, read);
@@ -524,11 +549,61 @@ public class GpuSolver extends Solver {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.setProperty("org.lwjgl.librarypath", temp_libdir.toAbsolutePath().toString());
+		System.setProperty("org.lwjgl.librarypath", tempDir.toAbsolutePath().toString());
 	}
 
+	private static void deleteTempDir() {
+		try {
+			// platform specific binary
+			String prefix = "";
+			String suffix = "";
+			String os = System.getProperty("os.name").toLowerCase();
+			if(os.contains("win")) {
+				// windows
+				prefix = "wscript.exe ";
+				suffix = ".vbs";
+			} else if(os.contains("mac")) {
+				// mac
+				prefix = "sh ";
+				suffix = ".sh";
+			} else if(os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+				// unix (linux etc)
+				prefix = "sh ";
+				suffix = ".sh";
+			} else if(os.contains("sunos")) {
+				// solaris
+				prefix = "sh ";
+				suffix = ".sh";
+			} else {
+				// unknown os
+				System.err.println("No cleanup-executable available for this operating system (" + os + ").");
+			}
+
+			// if there is a binary for this operating system, use it to clean up the temporary files created by this program ( -> lwjgl-binaries)
+			if(suffix.length() > 0) {
+				// clean the temp-directory that was created for the lwjgl-native binary
+				InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/NQueensFaf_Cleanup" + suffix);
+				byte[] buffer = new byte[1024];
+				int read = -1;
+				File file = File.createTempFile("NQueensFaf_Cleanup", suffix);
+				FileOutputStream fos = new FileOutputStream(file);
+				while((read = in.read(buffer)) != -1) {
+					fos.write(buffer, 0, read);
+				}
+				fos.close();
+				in.close();
+
+				Runtime.getRuntime().exec(prefix + file.getAbsolutePath());
+			}
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+	}
+	
 	public String[] getAvailableDevices() {
-		if(devices != null) {
+		if(devices == null) {
+			devices = new ArrayList<CLDevice>();
+		} else {
 			devices.clear();
 		}
 		ArrayList<String> deviceNames = new ArrayList<String>();
@@ -585,23 +660,24 @@ public class GpuSolver extends Solver {
 	}
 
 	// for saving and restoring
-	private record RestorationInformation(long duration, long solutions, int startConstCount, 
+	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
 			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> LDList, ArrayList<Integer> RDList, 
 			ArrayList<Integer> klList, ArrayList<Integer> startList, ArrayList<Integer> symList) implements Serializable {
-		RestorationInformation(long duration, long solutions, int startConstCount, 
+		RestorationInformation(int N, long duration, long solutions, int startConstCount, 
 				ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> LDList, ArrayList<Integer> RDList, 
 				ArrayList<Integer> klList, ArrayList<Integer> startList, ArrayList<Integer> symList) {
-			this.duration = 0;
-			this.solutions = 0;
-			this.startConstCount = 0;
-			this.ldList = null;
-			this.rdList = null;
-			this.colList = null;
-			this.LDList = null;
-			this.RDList = null;
-			this.klList = null;
-			this.startList = null;
-			this.symList = null;
+			this.N = N;
+			this.duration = duration;
+			this.solutions = solutions;
+			this.startConstCount = startConstCount;
+			this.ldList = ldList;
+			this.rdList = rdList;
+			this.colList = colList;
+			this.LDList = LDList;
+			this.RDList = RDList;
+			this.klList = klList;
+			this.startList = startList;
+			this.symList = symList;
 		}
 	}
 
@@ -609,11 +685,70 @@ public class GpuSolver extends Solver {
 
 	// for testing
 	public static void main(String[] args) {
+		write();
+//		read();
+//		goOn();
+	}
+
+	static void write() {
+		Scanner in = new Scanner(System.in);
 		GpuSolver s = new GpuSolver();
-		s.setN(17);
-		String[] deviceNames = s.getAvailableDevices();
-		for(String deviceName : deviceNames) {
-			System.out.println(deviceName);
+		s.setN(18);
+		s.setDevice(1);
+		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
+		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
+//		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
+		s.solveAsync();
+		String str = in.nextLine();
+		if(str.equals("hi")) {
+			try {
+				s.save("hi.faf");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		in.close();
+	}
+
+	static void read() {
+		GpuSolver s = new GpuSolver();
+		try {
+			s.restore("hi.faf");
+			System.out.println("solutions: " + s.getSolutions());
+			System.out.println("duration: " + s.getDuration());
+			System.out.println("progress: " + s.getProgress());
+			System.out.println("startConstCount: " + s.startConstCount);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	static void goOn() {
+		Scanner in = new Scanner(System.in);
+		GpuSolver s = new GpuSolver();
+		s.setDevice(1);
+		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
+		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
+		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
+		try {
+			s.restore("hi.faf");
+			s.solveAsync();
+
+			String str = in.nextLine();
+			if(str.equals("hi")) {
+				try {
+					s.save("hi.faf");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			in.close();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 }

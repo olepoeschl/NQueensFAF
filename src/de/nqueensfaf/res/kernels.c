@@ -28,6 +28,10 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 	// start index
 	const short start = start_arr[g_id];
+	if(start == 69) {
+		progress[g_id] = -1;
+		return;
+	}
 	
 	// to memorize diagonals leaving the board at a certain row
 	uint ld_mem = 0;															
