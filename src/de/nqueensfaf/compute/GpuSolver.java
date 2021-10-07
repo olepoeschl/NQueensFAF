@@ -237,7 +237,7 @@ public class GpuSolver extends Solver {
 		int solvedConstellations = savedSolvedConstellations;
 		synchronized(progressMem) {
 			CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
-			for(int i = 0; i < startConstCount; i++) {
+			for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
 				solvedConstellations += progressBuf.get(i);
 			}
 			progress = ((float) solvedConstellations) / startConstCount;
@@ -255,7 +255,7 @@ public class GpuSolver extends Solver {
 		long solutions = 0;
 		synchronized(resMem) {
 			CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
-			for(int i = 0; i < startConstCount; i++) {
+			for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
 				solutions += resBuf.get(i) * symArr[i];
 			}
 			this.solutions = solutions;
@@ -319,7 +319,7 @@ public class GpuSolver extends Solver {
 			}
 		}
 		// fill the newly created task slots in globalWorkSize using empty tasks (-> kernels.c)
-		for(int i = startConstCount; i < globalWorkSize; i++) {
+		for(int i = startConstCount - savedSolvedConstellations; i < globalWorkSize; i++) {
 			ldArr[i] = (1<<32) - 1;
 			rdArr[i] = 0xFFFFFFFF;
 			colArr[i] = 0xFFFFFFFF;
@@ -471,7 +471,7 @@ public class GpuSolver extends Solver {
 				CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;
-				for(int i = 0; i < startConstCount; i++) {
+				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
 					solutions += resBuf.get(i) *  symArr[i];
 					solvedConstellations += progressBuf.get(i);
 				}
