@@ -127,7 +127,7 @@ public class GpuSolver extends Solver {
 			synchronized(progressMem) {
 				CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
 				CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
-				for(int i = 0; i < startConstCount; i++) {
+				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
 					if(progressBuf.get(i) == 1) {
 						solutions += resBuf.get(i) * symArr[i];
 					} else if(progressBuf.get(i) == 0) {
