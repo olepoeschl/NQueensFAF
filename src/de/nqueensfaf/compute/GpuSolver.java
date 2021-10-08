@@ -282,7 +282,7 @@ public class GpuSolver extends Solver {
 	@Override
 	public long getSolutions() {
 		if(gpuDone)
-			return savedSolutions + solutions;
+			return solutions;
 		if(getDuration() == 0 || resMem == null)
 			return savedSolutions;		// either has a value, is still 0 or is 0 because of reset
 		
@@ -802,10 +802,10 @@ public class GpuSolver extends Solver {
 
 	// for testing
 	public static void main(String[] args) {
-		NQueensFAF.setIgnoreOpenCLCheck(true);
-		write();
+//		NQueensFAF.setIgnoreOpenCLCheck(true);
+//		write();
 //		read();
-//		goOn();
+		goOn();
 	}
 
 	static void write() {
