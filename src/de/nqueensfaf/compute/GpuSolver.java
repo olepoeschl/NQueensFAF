@@ -38,8 +38,8 @@ import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver {
 
-	private static boolean openclable = true;
 	private static Path tempDir;
+	private static boolean openclable = true;
 	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not
 	static {
 		int checked = checkOpenCL();
@@ -51,6 +51,7 @@ public class GpuSolver extends Solver {
 			openclable = true;
 			break;
 		case -1:
+			// checking for OpenCL-capable devices was not possible
 			if(NQueensFAF.getIgnoreOpenCLCheck()) {
 				openclable = true;
 				break;
