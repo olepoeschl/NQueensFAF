@@ -277,6 +277,7 @@ public class GpuSolver extends Solver {
 			}
 			progress = ((float) solvedConstellations) / startConstCount;
 		}
+		
 		return progress;
 	}
 
@@ -438,25 +439,32 @@ public class GpuSolver extends Solver {
 
 		// result memory
 		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
-		Util.checkCLError(errBuf.get(0));
-		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
-		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
-			resWritePtr.putInt(i*4, 0);
+		synchronized(resMem) {
+			Util.checkCLError(errBuf.get(0));
+			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
+			Util.checkCLError(errBuf.get(0));
+			for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
+				resWritePtr.putInt(i*4, 0);
+			}
+			CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
+			resBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
 		}
-		CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-		resBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
 
 		// progress indicator memory
 		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
-		Util.checkCLError(errBuf.get(0));
-		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
-		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
-			progressWritePtr.putInt(i*4, 0);
+		synchronized(progressMem) {
+			Util.checkCLError(errBuf.get(0));
+			ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
+			Util.checkCLError(errBuf.get(0));
+			for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
+				progressWritePtr.putInt(i*4, 0);
+			}
+			CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
+			progressBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
 		}
-		CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-		progressBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
+		
+		// wait for all memory operations to finish
+		CL10.clFinish(memqueue);
 	}
 
 	private void explosionBoost9000() {
@@ -483,6 +491,9 @@ public class GpuSolver extends Solver {
 		CL10.clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf);
 		CL10.clFlush(xqueue);
 
+		System.out.println("............. kernel enqueued .............");
+		System.out.println(".......... globalWorkSize: " + globalWorkSize + " ..........");
+		
 		// set pseudo starttime
 		start = System.currentTimeMillis();
 		
@@ -744,7 +755,7 @@ public class GpuSolver extends Solver {
 			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
 		if(idx < 0 || idx >= devices.size()) {
-			throw new IllegalArgumentException("Invalid index value: " + idx);
+			throw new IllegalArgumentException("Invalid index value: " + idx + " (size:" + (devices.size()-1) + ")");
 		}
 		device = devices.get(idx);
 		platform = device.getPlatform();
@@ -804,15 +815,15 @@ public class GpuSolver extends Solver {
 	// for testing
 	public static void main(String[] args) {
 //		NQueensFAF.setIgnoreOpenCLCheck(true);
-//		write();
+		write();
 //		read();
-		goOn();
+//		goOn();
 	}
 
 	static void write() {
 		Scanner in = new Scanner(System.in);
 		GpuSolver s = new GpuSolver();
-		s.setN(18);
+		s.setN(16);
 		s.setDevice(1);
 		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
 		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
