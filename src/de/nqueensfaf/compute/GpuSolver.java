@@ -174,11 +174,11 @@ public class GpuSolver extends Solver {
 		savedSolvedConstellations = startConstCount - resInfo.ldList.size();
 		
 		// fill the constellation arrays
-		globalWorkSize = startConstCount;
+		globalWorkSize = resInfo.ldList.size();
 		// if needed, round globalWorkSize up to the next matching number
 		computeUnits = device.getInfoInt(CL10.CL_DEVICE_MAX_COMPUTE_UNITS);
 		if(globalWorkSize % (WORKGROUP_SIZE * computeUnits) != 0) {
-			globalWorkSize = startConstCount - (startConstCount % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
+			globalWorkSize = resInfo.ldList.size() - (resInfo.ldList.size() % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
 		}
 		ldArr = new int[globalWorkSize];
 		rdArr = new int[globalWorkSize];
@@ -402,26 +402,26 @@ public class GpuSolver extends Solver {
 		CL10.clEnqueueUnmapMemObject(memqueue, startMem, paramPtr, null, null);
 
 		// result memory
-		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, startConstCount*4, errBuf);
+		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, startConstCount*4, null, null, errBuf);
+		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < startConstCount; i++) {
+		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
 			resWritePtr.putInt(i*4, 0);
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-		resBuf = BufferUtils.createIntBuffer(startConstCount);
+		resBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
 
 		// progress indicator memory
-		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, startConstCount*4, errBuf);
+		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, startConstCount*4, null, null, errBuf);
+		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
-		for(int i = 0; i < startConstCount; i++) {
+		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-		progressBuf = BufferUtils.createIntBuffer(startConstCount);
+		progressBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
 	}
 
 	private void explosionBoost9000() {
