@@ -33,24 +33,55 @@ import org.lwjgl.opencl.CLPlatform;
 import org.lwjgl.opencl.CLProgram;
 import org.lwjgl.opencl.Util;
 
+import de.nqueensfaf.NQueensFAF;
 import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver {
 
+	private static boolean openclable = true;
+	private static Path tempDir;
+	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not
 	static {
-		// enables the easy use of lwjgl out of the jar-archive. The customer only need the lwjgl.jar. (LWJGL 2.9.3)
-		prepareLWJGLNative();
-		// initialize OpenCL
-		try {
-			CL.create();
-		} catch (LWJGLException e) {
-			e.printStackTrace();
+		int checked = checkOpenCL();
+		switch(checked) {
+		case 0:
+			openclable = false;
+			break;
+		case 1:
+			openclable = true;
+			break;
+		case -1:
+			if(NQueensFAF.getIgnoreOpenCLCheck()) {
+				openclable = true;
+				break;
+			}
+			System.err.println("Unable to check for OpenCL-capable devices.");
+			System.err.println("To get rid of this warning, install 'clinfo' (better option) or use NQueensFAF.setIgnoreOpenCLCheck(true) (will crash the JVM if no OpenCL-capable device is found).");
+			openclable = false;
+			break;
 		}
-		// add shutdown hook that destroys OpenCL when the program is exited
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			CL.destroy();
-			deleteTempDir();
-		}));
+		if(!openclable) {
+			System.err.println("No OpenCL-capable device was found. GpuSolver is not available.");
+		} else {
+			// enables the easy use of lwjgl out of the jar-archive. The customer only need the lwjgl.jar. (LWJGL 2.9.3)
+			loadLWJGLNative();
+			// initialize OpenCL
+			try {
+				CL.create();
+			} catch (LWJGLException e) {
+				e.printStackTrace();
+			}
+			// add shutdown hook that destroys OpenCL when the program is exited
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				CL.destroy();
+			}));
+		}
+		if(tempDir != null) {
+			// add shutdown hook to delete the created temporary directory
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				deleteTempDir();
+			}));
+		}
 	}
 
 	// OpenCL stuff
@@ -80,8 +111,8 @@ public class GpuSolver extends Solver {
 	private boolean gpuDone = false;
 	
 	public GpuSolver() {
-		// fill the devices list with the available devices
-		getAvailableDevices();
+		if(openclable)
+			getAvailableDevices();		// fill the devices list with all available devices
 	}
 	
 	// inherited functions
@@ -89,6 +120,9 @@ public class GpuSolver extends Solver {
 	protected void run() {
 		if(start != 0) {
 			throw new IllegalStateException("You first have to call reset() when calling solve() multiple times on the same object");
+		}
+		if(!openclable) {
+			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
 		if(device == null) {
 			throw new IllegalStateException("You have to choose a device by calling setDevice() before starting the Solver. See all available devices using getAvailableDevices()");
@@ -498,8 +532,91 @@ public class GpuSolver extends Solver {
 	}
 	
 	// detect operating system and use corresponding native library file if available
-	private static void prepareLWJGLNative() {
-		Path tempDir = null;
+	private static String getOS() {
+		String os = System.getProperty("os.name").toLowerCase();
+		if(os.contains("win")) {
+			// windows
+			return "win";
+		} else if(os.contains("mac")) {
+			// mac
+			return "mac";
+		} else if(os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+			// unix (linux etc)
+			return "unix";
+		} else if(os.contains("sunos")) {
+			// solaris
+			return "solaris";
+		} else {
+			// unknown os
+			return os;
+		}
+	}
+	
+	private static int checkOpenCL() {
+		switch(getOS()) {
+		case "win":
+			Process clinfo;
+			try {
+				clinfo = Runtime.getRuntime().exec("clinfo");
+				BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
+				String line;
+				while((line = in.readLine()) != null) {
+					if(line.contains(" 0")) {
+						return 0;
+					} else {
+						return 1;
+					}
+				}
+			} catch (IOException e) {
+				// clinfo is not installed. Good that we have it in our archive!
+				File clinfoFile = unpackClinfo();
+				if(clinfoFile == null) {
+					return -1;
+				}
+				try {
+					clinfo = Runtime.getRuntime().exec(clinfoFile.getAbsolutePath());
+					BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
+					String line;
+					while((line = in.readLine()) != null) {
+						if(line.contains(" 0")) {
+							return 0;
+						} else {
+							return 1;
+						}
+					}
+				} catch (IOException e1) {
+					return -1;
+				}
+			}
+			return -1;
+		default:
+			return -1;
+		}
+	}
+	
+	private static File unpackClinfo() {
+		// create temporary directory to store the clinfo file inside
+		try {
+			tempDir = Files.createTempDirectory("NQueensFaf");
+			// copy the clinfo file from within the jar to the temporary directory
+			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
+			byte[] buffer = new byte[1024];
+			int read = -1;
+			File file = new File(tempDir + "/clinfo.exe");
+			FileOutputStream fos = new FileOutputStream(file);
+			while((read = in.read(buffer)) != -1) {
+				fos.write(buffer, 0, read);
+			}
+			fos.close();
+			in.close();
+			return file;
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			return null;
+		}
+	}
+	
+	private static void loadLWJGLNative() {
 		String filenameIn = null;
 		String filenameOut = null;
 
@@ -510,33 +627,33 @@ public class GpuSolver extends Solver {
 		else
 			arch = "";
 		// determine operating system
-		String os = System.getProperty("os.name").toLowerCase();
-		if(os.contains("win")) {
-			// windows
+		switch(getOS()) {
+		case "win":
 			filenameIn = "lwjgl" + arch + ".dll";
 			filenameOut = filenameIn;
-		} else if(os.contains("mac")) {
-			// mac
+			break;
+		case "mac":
 			filenameIn = "liblwjgl_mac.dylib";
 			filenameOut = "liblwjgl.dylib";
-		} else if(os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-			// unix (linux etc)
+			break;
+		case "unix":
 			filenameIn = "liblwjgl" + arch + "_linux.so";
 			filenameOut = "liblwjgl" + arch + ".so";
-		} else if(os.contains("sunos")) {
-			// solaris
+			break;
+		case "solaris":
 			filenameIn = "liblwjgl" + arch + "_solaris.so";
 			filenameOut = "liblwjgl" + arch + ".so";
-		} else {
-			// unknown os
-			System.err.println("No native executables available for this operating system (" + os + ").");
+			break;
+		default:
+			System.err.println("No native executables available for this operating system (" + getOS() + ").");
+			return;
 		}
 		try {
-			// create temporary directory to store the native files inside
-			tempDir = Files.createTempDirectory("NQueensFaf");
-
-			// copy the native file from within the jar to the temporary directory
-			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/natives/" + filenameIn);
+			// create temporary directory to store the lwjgl binary file inside, if it does not exist yet
+			if(tempDir == null)
+				tempDir = Files.createTempDirectory("NQueensFaf");
+			// copy the lwjgl binary file from within the jar to the temporary directory
+			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/lwjgl/" + filenameIn);
 			byte[] buffer = new byte[1024];
 			int read = -1;
 			File file = new File(tempDir + "/" + filenameOut);
@@ -557,26 +674,20 @@ public class GpuSolver extends Solver {
 			// platform specific binary
 			String prefix = "";
 			String suffix = "";
-			String os = System.getProperty("os.name").toLowerCase();
-			if(os.contains("win")) {
-				// windows
+			switch(getOS()) {
+			case "win":
 				prefix = "wscript.exe ";
 				suffix = ".vbs";
-			} else if(os.contains("mac")) {
-				// mac
+				break;
+			case "mac":
+			case "unix":
+			case "solaris":
 				prefix = "sh ";
 				suffix = ".sh";
-			} else if(os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-				// unix (linux etc)
-				prefix = "sh ";
-				suffix = ".sh";
-			} else if(os.contains("sunos")) {
-				// solaris
-				prefix = "sh ";
-				suffix = ".sh";
-			} else {
-				// unknown os
-				System.err.println("No cleanup-executable available for this operating system (" + os + ").");
+				break;
+			default:
+				System.err.println("No cleanup-executable available for this operating system (" + getOS() + ").");
+				return;
 			}
 
 			// if there is a binary for this operating system, use it to clean up the temporary files created by this program ( -> lwjgl-binaries)
@@ -601,6 +712,9 @@ public class GpuSolver extends Solver {
 	}
 	
 	public String[] getAvailableDevices() {
+		if(!openclable) {
+			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
+		}
 		if(devices == null) {
 			devices = new ArrayList<CLDevice>();
 		} else {
@@ -625,6 +739,9 @@ public class GpuSolver extends Solver {
 	}
 
 	public void setDevice(int idx) {
+		if(!openclable) {
+			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
+		}
 		if(idx < 0 || idx >= devices.size()) {
 			throw new IllegalArgumentException("Invalid index value: " + idx);
 		}
@@ -685,6 +802,7 @@ public class GpuSolver extends Solver {
 
 	// for testing
 	public static void main(String[] args) {
+		NQueensFAF.setIgnoreOpenCLCheck(true);
 		write();
 //		read();
 //		goOn();
