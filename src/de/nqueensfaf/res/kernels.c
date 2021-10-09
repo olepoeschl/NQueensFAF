@@ -56,7 +56,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 	// local (faster) array containing positions of the queens of each row 
 	// for all boards of the workgroup
-	local uint bits[N][BLOCK_SIZE];													// is '1', where a queen will be set; one integer for each line 
+	local uint bits[N][BLOCK_SIZE];									// is '1', where a queen will be set; one integer for each line 
 	bits[start][l_id] = temp;							 			// initialize bit as rightmost free space ('0' in notfree)
 	
 	// other variables											

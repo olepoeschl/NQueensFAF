@@ -78,7 +78,7 @@ public abstract class Solver {
 	 * @param filename name of the file the progress should be written in (existent or non existent)
 	 * @throws IOException
 	 */
-	public abstract void save(String filepath) throws IOException;
+	public abstract void store(String filepath) throws IOException;
 	/**
 	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
 	 * @param filename name of the file the progress was written in

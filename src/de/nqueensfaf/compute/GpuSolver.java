@@ -142,7 +142,7 @@ public class GpuSolver extends Solver {
 	}
 
 	@Override
-	public void save(String filepath) throws IOException {
+	public void store(String filepath) throws IOException {
 		// if Solver was not even started yet, throw exception
 		if(start == 0 || getProgress() >= 1f) {
 			throw new IllegalStateException("Nothing to be saved");
@@ -823,8 +823,9 @@ public class GpuSolver extends Solver {
 	static void write() {
 		Scanner in = new Scanner(System.in);
 		GpuSolver s = new GpuSolver();
-		s.setN(16);
-		s.setDevice(1);
+		s.setN(17);
+		s.setProgressUpdateDelay(1000);
+		s.setDevice(0);
 		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
 		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
 //		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
@@ -832,7 +833,7 @@ public class GpuSolver extends Solver {
 		String str = in.nextLine();
 		if(str.equals("hi")) {
 			try {
-				s.save("hi.faf");
+				s.store("hi.faf");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -842,6 +843,7 @@ public class GpuSolver extends Solver {
 
 	static void read() {
 		GpuSolver s = new GpuSolver();
+		s.setDevice(0);
 		try {
 			s.restore("hi.faf");
 			System.out.println("solutions: " + s.getSolutions());
@@ -858,7 +860,7 @@ public class GpuSolver extends Solver {
 	static void goOn() {
 		Scanner in = new Scanner(System.in);
 		GpuSolver s = new GpuSolver();
-		s.setDevice(1);
+		s.setDevice(0);
 		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
 		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
 		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
@@ -869,7 +871,7 @@ public class GpuSolver extends Solver {
 			String str = in.nextLine();
 			if(str.equals("hi")) {
 				try {
-					s.save("hi.faf");
+					s.store("hi.faf");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

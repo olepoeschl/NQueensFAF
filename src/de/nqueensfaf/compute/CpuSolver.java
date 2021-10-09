@@ -76,7 +76,7 @@ public class CpuSolver extends Solver {
 	}
 	
 	@Override
-	public void save(String filepath) throws IOException {
+	public void store(String filepath) throws IOException {
 		// if Solver was not even started yet, throw exception
 		if(start == 0) {
 			throw new IllegalStateException("Nothing to be saved");
@@ -254,8 +254,8 @@ public class CpuSolver extends Solver {
 	
 	// for testing
 	public static void main(String[] args) {
-//		write();
-		read();
+		write();
+//		read();
 //		goOn();
 	}
 	
@@ -263,20 +263,20 @@ public class CpuSolver extends Solver {
 		Scanner in = new Scanner(System.in);
 		CpuSolver s = new CpuSolver();
 		s.setN(17);
-		s.setThreadcount(4);
-//		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
+		s.setThreadcount(1);
+		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
 		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions));
 		for(int i = 0; i < 4; i++) {
 			s.solveAsync();
 			String str = in.nextLine();
 			if(str.equals("hi")) {
 				try {
-					s.save("hi.faf");
+					s.store("hi.faf");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-			s.threads.clear();
+			s.reset();
 		}
 		in.close();
 	}
@@ -304,7 +304,7 @@ public class CpuSolver extends Solver {
 			s.solveAsync();
 			
 			in.nextLine();
-			s.save("hi.faf");
+			s.store("hi.faf");
 			s.cancel();
 			in.close();
 		} catch (ClassNotFoundException e) {
