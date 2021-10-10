@@ -755,7 +755,7 @@ public class GpuSolver extends Solver {
 			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
 		if(idx < 0 || idx >= devices.size()) {
-			throw new IllegalArgumentException("Invalid index value: " + idx + " (size:" + (devices.size()-1) + ")");
+			throw new IllegalArgumentException("Invalid index value: " + idx + " (size:" + devices.size() + ")");
 		}
 		device = devices.get(idx);
 		platform = device.getPlatform();
