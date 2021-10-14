@@ -304,11 +304,8 @@ public class GpuSolver extends Solver {
 		// intbuffer for containing error information if needed
 		errBuf = BufferUtils.createIntBuffer(1);
 
-		try {
-			context = CLContext.create(platform, platform.getDevices(CL10.CL_DEVICE_TYPE_ALL), errBuf);
-		} catch (LWJGLException e) {
-			e.printStackTrace();
-		}
+		context = CLContext.create(platform, platform.getDevices(CL10.CL_DEVICE_TYPE_ALL), errBuf);
+		
 		xqueue = CL10.clCreateCommandQueue(context, device, CL10.CL_QUEUE_PROFILING_ENABLE, errBuf);
 		Util.checkCLError(errBuf.get(0));
 		memqueue = CL10.clCreateCommandQueue(context, device, CL10.CL_QUEUE_PROFILING_ENABLE, errBuf);
