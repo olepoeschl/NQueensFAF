@@ -3,7 +3,9 @@ A Java library for easily implementing own solvers (algorithms) for the N Queens
 <br>Initially created for [NQueensFAF](https://github.com/olepoeschl/NQueensFAF). For more information about the built in Solvers, have a look at [NQueensFAF](https://github.com/olepoeschl/NQueensFAF).
 
 # Getting Started
-As stated below, the NQueensFAF library depends on LWJGL 2, so make sure you include it in your project setup. NQueensFAF library comes with the native dynamic library files of LWJGL 2 and automatically extracts the right file dependent on your operating system, so all you need is the lwjgl.jar from LWJGL 2. It also tries to automatically clear the extracted file at the end of the Java program, but that may sometimes not work when the JVM crashes or similar things happen.
+The library uses Java 16.
+As stated below, this project depends on LWJGL 2, so make sure you include it in your project setup. NQueensFAF library comes with the native dynamic library files of [LWJGL 2](http://legacy.lwjgl.org/) and automatically extracts the right file dependent on your operating system, so all you need is the lwjgl.jar from LWJGL 2. It also tries to automatically clear the extracted file at the end of the Java program, but that may sometimes not work when the JVM crashes or similar things happen.
+Download the jar of NQueensFAF library [here].
 <br>Okay that's it for getting started.
 
 # Usage
@@ -27,4 +29,4 @@ Using the GpuSolver or your own Solver works just analogue.
 
 
 # Dependencies
-  The library uses <a href="http://legacy.lwjgl.org/"> LWJGL 2 </a> to enable the use of OpenCL for the GPU solver.
+  The library uses [LWJGL 2](http://legacy.lwjgl.org/) to enable the use of OpenCL for the GPU solver.
