@@ -9,4 +9,4 @@ Initially created for <a href="https://github.com/olepoeschl/NQueensFAF"> NQueen
 ...
 
 # Dependencies
-  The library uses <a href="http://legacy.lwjgl.org/"> LWJGL </a> to enable the use of OpenCL for the GPU solver.
+  The library uses <a href="http://legacy.lwjgl.org/"> LWJGL 2 </a> to enable the use of OpenCL for the GPU solver.
