@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
@@ -110,6 +109,7 @@ public class GpuSolver extends Solver {
 	
 	// control flow variables
 	private boolean gpuDone = false;
+	private boolean restored = false;
 	
 	public GpuSolver() {
 		if(openclable)
@@ -139,6 +139,7 @@ public class GpuSolver extends Solver {
 		explosionBoost9000();
 		readResults();
 		terminate();
+		restored = false;
 	}
 
 	@Override
@@ -157,7 +158,6 @@ public class GpuSolver extends Solver {
 				klList = new ArrayList<Integer>(),
 				startList = new ArrayList<Integer>(),
 				symList = new ArrayList<Integer>();
-		System.out.println("----- waiting for mutex -----");
 		synchronized(resMem) {
 			synchronized(progressMem) {
 				CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
@@ -178,7 +178,6 @@ public class GpuSolver extends Solver {
 				}
 			}
 		}
-		System.out.println("----- saving -----");
 		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldList, rdList, colList, LDList, RDList, klList, startList, symList);
 
 		FileOutputStream fos = new FileOutputStream(filepath);
@@ -190,7 +189,7 @@ public class GpuSolver extends Solver {
 	}
 
 	@Override
-	public void restore(String filepath) throws IOException, ClassNotFoundException {
+	public void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
@@ -207,6 +206,7 @@ public class GpuSolver extends Solver {
 		savedSolutions = resInfo.solutions;
 		startConstCount = resInfo.startConstCount;
 		savedSolvedConstellations = startConstCount - resInfo.ldList.size();
+		progress = (float) savedSolvedConstellations / startConstCount;
 		
 		// fill the constellation arrays
 		globalWorkSize = resInfo.ldList.size();
@@ -233,8 +233,14 @@ public class GpuSolver extends Solver {
 			startArr[i] = resInfo.startList.get(i);
 			symArr[i] = resInfo.symList.get(i);
 		}
+		restored = true;
 	}
 
+	@Override
+	public boolean isRestored() {
+		return restored;
+	}
+	
 	@Override
 	public void reset() {
 		progress = 0;
@@ -246,12 +252,13 @@ public class GpuSolver extends Solver {
 		start = 0;
 		end = 0;
 		gpuDone = false;
+		restored = false;
 		System.gc();
 	}
 
 	@Override
 	public long getDuration() {
-		if(start == 0 && end == 0 && savedDuration != 0)
+		if(restored && isIdle())
 			duration = savedDuration;
 		else if(start != 0 && end == 0)
 			duration = savedDuration + System.currentTimeMillis() - start;
@@ -264,7 +271,7 @@ public class GpuSolver extends Solver {
 	public float getProgress() {
 		if(startConstCount == 0)
 			return 0;
-		if(gpuDone)
+		if(gpuDone || (restored && isIdle()) || start == 0)
 			return progress;
 		if(getDuration() == 0 || progressMem == null)
 			return ((float) savedSolvedConstellations) / startConstCount;		// either has a value, is still 0 or is 0 because of reset
@@ -285,7 +292,7 @@ public class GpuSolver extends Solver {
 	public long getSolutions() {
 		if(gpuDone)
 			return solutions;
-		if(getDuration() == 0 || resMem == null)
+		if(resMem == null || start == 0)
 			return savedSolutions;		// either has a value, is still 0 or is 0 because of reset
 		
 		long solutions = 0;
@@ -487,9 +494,6 @@ public class GpuSolver extends Solver {
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);		// buffer for event that is used for measuring the execution time
 		CL10.clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf);
 		CL10.clFlush(xqueue);
-
-		System.out.println("............. kernel enqueued .............");
-		System.out.println(".......... globalWorkSize: " + globalWorkSize + " ..........");
 		
 		// set pseudo starttime
 		start = System.currentTimeMillis();
@@ -804,80 +808,6 @@ public class GpuSolver extends Solver {
 			this.klList = klList;
 			this.startList = startList;
 			this.symList = symList;
-		}
-	}
-
-
-
-	// for testing
-	public static void main(String[] args) {
-//		NQueensFAF.setIgnoreOpenCLCheck(true);
-		write();
-//		read();
-//		goOn();
-	}
-
-	static void write() {
-		Scanner in = new Scanner(System.in);
-		GpuSolver s = new GpuSolver();
-		s.setN(17);
-		s.setProgressUpdateDelay(1000);
-		s.setDevice(0);
-		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
-		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
-//		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
-		s.solveAsync();
-		String str = in.nextLine();
-		if(str.equals("hi")) {
-			try {
-				s.store("hi.faf");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		in.close();
-	}
-
-	static void read() {
-		GpuSolver s = new GpuSolver();
-		s.setDevice(0);
-		try {
-			s.restore("hi.faf");
-			System.out.println("solutions: " + s.getSolutions());
-			System.out.println("duration: " + s.getDuration());
-			System.out.println("progress: " + s.getProgress());
-			System.out.println("startConstCount: " + s.startConstCount);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	static void goOn() {
-		Scanner in = new Scanner(System.in);
-		GpuSolver s = new GpuSolver();
-		s.setDevice(0);
-		s.addTerminationCallback(() -> System.out.println("DONE! duration: " + s.getDuration()));
-		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions + "; progress: " + progress));
-		s.setOnTimeUpdateCallback((duration) -> System.out.println("duration: " + duration));
-		try {
-			s.restore("hi.faf");
-			s.solveAsync();
-
-			String str = in.nextLine();
-			if(str.equals("hi")) {
-				try {
-					s.store("hi.faf");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			in.close();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 }

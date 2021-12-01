@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +72,7 @@ public class CpuSolver extends Solver {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
+		restored = false;
 	}
 	
 	@Override
@@ -97,7 +97,6 @@ public class CpuSolver extends Solver {
 			timePassed = this.timePassed + end - start;
 		}
 		RestorationInformation resInfo = new RestorationInformation(N, startConstellations, timePassed, solutions, startConstCount);
-		System.out.println("saving: solutions: " + resInfo.solutions + "; startConstCount: " + resInfo.startConstCount);
 		
 		FileOutputStream fos = new FileOutputStream(filepath);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -108,7 +107,7 @@ public class CpuSolver extends Solver {
 	}
 
 	@Override
-	public void restore(String filepath) throws IOException, ClassNotFoundException {
+	public void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
@@ -130,11 +129,17 @@ public class CpuSolver extends Solver {
 	}
 	
 	@Override
+	public boolean isRestored() {
+		return restored;
+	}
+	
+	@Override
 	public void reset() {
 		start = 0;
 		end = 0;
 		timePassed = 0;
 		startConstellations.clear();
+		solvedConstellations = 0;
 		solutions = 0;
 		threads.clear();
 		startConstCount = 0;
@@ -149,6 +154,8 @@ public class CpuSolver extends Solver {
 
 	@Override
 	public float getProgress() {
+		if(restored && isIdle())
+			return (float) solvedConstellations / startConstCount;
 		float done = solvedConstellations;
 		for(CpuSolverThread t : threads) {
 			done += t.getDone();
@@ -246,71 +253,6 @@ public class CpuSolver extends Solver {
 			this.timePassed = timePassed;
 			this.solutions = solutions;
 			this.startConstCount = startConstCount;
-		}
-	}
-	
-	
-	
-	
-	// for testing
-	public static void main(String[] args) {
-		write();
-//		read();
-//		goOn();
-	}
-	
-	static void write() {
-		Scanner in = new Scanner(System.in);
-		CpuSolver s = new CpuSolver();
-		s.setN(17);
-		s.setThreadcount(1);
-		s.addTerminationCallback(() -> System.out.println("duration: " + s.getDuration()));
-		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions));
-		for(int i = 0; i < 4; i++) {
-			s.solveAsync();
-			String str = in.nextLine();
-			if(str.equals("hi")) {
-				try {
-					s.store("hi.faf");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			s.reset();
-		}
-		in.close();
-	}
-	
-	static void read() {
-		CpuSolver s = new CpuSolver();
-		try {
-			s.restore("hi.faf");
-			System.out.println("solutions: " + s.getSolutions());
-			System.out.println("duration: " + s.getDuration());
-			System.out.println("progress: " + s.getProgress());
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	static void goOn() {
-		Scanner in = new Scanner(System.in);
-		CpuSolver s = new CpuSolver();
-		s.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("solutions: " + solutions));
-		try {
-			s.restore("hi.faf");
-			s.solveAsync();
-			
-			in.nextLine();
-			s.store("hi.faf");
-			s.cancel();
-			in.close();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 }

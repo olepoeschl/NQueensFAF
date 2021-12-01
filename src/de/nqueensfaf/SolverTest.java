@@ -150,5 +150,10 @@ class SolverTest {
 		public long getSolutions() {
 			return done*10;
 		}
+
+		@Override
+		public boolean isRestored() {
+			return false;
+		}
 	}
 }

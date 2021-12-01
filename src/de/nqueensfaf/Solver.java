@@ -67,7 +67,10 @@ public abstract class Solver {
 	 * Thread that executes the solvers run() function if {@link #solveAsync()} is called
 	 */
 	private Thread t;
-	
+	/**
+	 * For controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
+	 */
+	private boolean preparationChecked = false;
 	// abstract methods
 	/**
 	 * Solves the N-Queens Problem.
@@ -85,7 +88,12 @@ public abstract class Solver {
 	 * @throws IOException
 	 * @throws ClassNotFoundException 
 	 */
-	public abstract void restore(String filepath) throws IOException, ClassNotFoundException;
+	public abstract void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+	/**
+	 * States if the Solver has been restored and therefore contains restored values.
+	 * @return true if restore() was called and the Solver was not started or resetted since, otherwise false
+	 */
+	public abstract boolean isRestored();
 	/**
 	 * Resets the {@link Solver}; therefore, applies default values to all Solver state and progress related variables.
 	 */
@@ -108,23 +116,13 @@ public abstract class Solver {
 	
 	/**
 	 * Calls all initialization callbacks, then starts the {@link Solver}'s run()-method, then calls all termination callbacks.
-	 * @throws {@link IllegalStateException} if N equals 0 or the {@link Solver} is already running
+	 * @throws InterruptedException if the time limit is exceeded while waiting for the Solverthread to shutdown after terminating (time limit is the bigger one of progressUpdateDelay and timeUpdateDelay)
+	 * @see #checkForPrepation()
 	 * @see #run()
 	 */
 	public final void solve() {
-		if(N == 0) {
-			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
-			throw new IllegalStateException("Board size was not set");
-		}
-		if(!isIdle()) {
-			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
-			throw new IllegalStateException("Solver is already started");
-		}
-		// check if Solver is already done
-		if(getProgress() == 1.0f) {
-			state = NQueensFAF.TERMINATING;	// for solveAsync() to break the loop
-			throw new IllegalStateException("Solver is already done, nothing to do here");
-		}
+		if(!preparationChecked)
+			checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
@@ -137,11 +135,10 @@ public abstract class Solver {
 		terminationCaller();
 		ucExecutor.shutdown();
 		try {
-			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay : progressUpdateDelay, TimeUnit.MILLISECONDS);
+			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay+1000 : progressUpdateDelay+1000, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
 		state = NQueensFAF.IDLE;
 	}
 	/**
@@ -150,19 +147,12 @@ public abstract class Solver {
 	 * @see #solve()
 	 */
 	public final void solveAsync() {
+		checkForPreparation();
 		if(!isIdle()) {
 			throw new IllegalStateException("Solver is already started");
 		}
 		t = new Thread(() -> solve());
 		t.start();
-		while(isIdle()) {
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		t = null;
 	}
 	/**
 	 * Waits for the asynchronously running {@link Solver} to finish.
@@ -174,6 +164,24 @@ public abstract class Solver {
 			return;
 		}
 		t.join();
+	}
+	/**
+	 * Checks if all prepartions are done correctly.
+	 * * @throws {@link IllegalStateException} if N equals 0, the {@link Solver} is already running or if getProgress() >= 100
+	 */
+	private void checkForPreparation() {
+		if(N == 0) {
+			state = NQueensFAF.IDLE;
+			throw new IllegalStateException("Board size was not set");
+		}
+		if(!isIdle()) {
+			state = NQueensFAF.IDLE;
+			throw new IllegalStateException("Solver is already started");
+		}
+		if(getProgress() == 1.0f) {
+			state = NQueensFAF.IDLE;
+			throw new IllegalStateException("Solver is already done, nothing to do here");
+		}
 	}
 	
 	/**
