@@ -125,6 +125,17 @@ public class GpuSolver extends Solver {
 		if(!openclable) {
 			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
+		if(N <= 6) {	// if N is very small, use the simple Solver from the parent class
+			// prepare simulating progress = 100
+			progress = 1f;
+			gpuDone = true;
+			start = System.currentTimeMillis();
+			solutions = solveSmallBoard();
+			end = System.currentTimeMillis();
+			// simulate progress = 100
+			startConstCount = 1;
+			return;
+		}
 		if(device == null) {
 			throw new IllegalStateException("You have to choose a device by calling setDevice() before starting the Solver. See all available devices using getAvailableDevices()");
 		}
@@ -243,6 +254,7 @@ public class GpuSolver extends Solver {
 	
 	@Override
 	public void reset() {
+		startConstCount = 0;
 		progress = 0;
 		savedSolvedConstellations = 0;
 		solutions = 0;

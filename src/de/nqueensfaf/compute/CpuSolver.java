@@ -17,15 +17,17 @@ import de.nqueensfaf.Solver;
 
 public class CpuSolver extends Solver {
 
+	private final int smallestN = 6;
 	private int threadcount = 1;
 	private long start, end;
 	private HashSet<Integer> 
 		startConstellations = new HashSet<Integer>();
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
 	private int startConstCount, solvedConstellations;
-	private long timePassed = 0;
+	private long timePassed = 0, pauseStart = 0;
 	private long solutions;
 	private boolean restored = false;
+	private ArrayList<Runnable> pausing = new ArrayList<Runnable>();
 	
 	// inherited functions
 	@Override
@@ -36,11 +38,19 @@ public class CpuSolver extends Solver {
 		}
 		
 		start = System.currentTimeMillis();
+		if(N <= smallestN) {	// if N is very small, use the simple Solver from the parent class
+			solutions = solveSmallBoard();
+			end = System.currentTimeMillis();
+			// simulate progress = 100
+			startConstCount = 1;
+			solvedConstellations = 1;
+			return;
+		}
 		if(!restored) {
 			genConstellations();
 			startConstCount = startConstellations.size();
 		}
-
+		
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
 		ArrayList<ArrayDeque<Integer>> threadConstellations = new ArrayList<ArrayDeque<Integer>>(threadcount);
 		for(int i = 0; i < threadcount; i++) {
@@ -54,7 +64,7 @@ public class CpuSolver extends Solver {
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for(i = 0; i < threadcount; i++) {
-			CpuSolverThread cpuSolverThread = new CpuSolverThread(N, threadConstellations.get(i));
+			CpuSolverThread cpuSolverThread = new CpuSolverThread(N, threadConstellations.get(i), this);
 			threads.add(cpuSolverThread);
 			executor.submit(cpuSolverThread);
 		}
@@ -90,12 +100,7 @@ public class CpuSolver extends Solver {
 		for(CpuSolverThread t : threads) {
 			solutions += t.getSolutions();
 		}
-		long timePassed;
-		if(isRunning()) {
-			timePassed = this.timePassed + System.currentTimeMillis() - start;
-		} else {
-			timePassed = this.timePassed + end - start;
-		}
+		long timePassed = getDuration();
 		RestorationInformation resInfo = new RestorationInformation(N, startConstellations, timePassed, solutions, startConstCount);
 		
 		FileOutputStream fos = new FileOutputStream(filepath);
@@ -138,6 +143,7 @@ public class CpuSolver extends Solver {
 		start = 0;
 		end = 0;
 		timePassed = 0;
+		pauseStart = 0;
 		startConstellations.clear();
 		solvedConstellations = 0;
 		solutions = 0;
@@ -149,7 +155,19 @@ public class CpuSolver extends Solver {
 
 	@Override
 	public long getDuration() {
-		return isRunning() ? timePassed + System.currentTimeMillis() - start : timePassed + end - start;
+		if(isRunning()) {
+			if(isPaused()) {
+				return timePassed;
+			} else {
+				return timePassed + System.currentTimeMillis() - start;
+			}
+		} else {
+			if(isPaused()) {
+				return timePassed;
+			} else {
+				return timePassed + end - start;
+			}
+		}
 	}
 
 	@Override
@@ -227,9 +245,80 @@ public class CpuSolver extends Solver {
 		return (i<<24) + (j<<16) + (k<<8) + l;
 	}
 
-	public void cancel() {
+	// for user interaction
+	public void pause() {
+		if(!isRunning()) {
+			throw new IllegalStateException("unable to pause a CpuSolver when it is not running");
+		}
+		if(isPaused()) {
+			throw new IllegalStateException("unable to pause a CpuSolver when it is already paused");
+		}
 		for(CpuSolverThread t : threads) {
-			t.cancel();
+			t.pauseThread();
+		}
+	}
+	
+	public void cancel() {
+		if(!isRunning()) {
+			throw new IllegalStateException("unable to cancel a CpuSolver when it is not running");
+		}
+		for(CpuSolverThread t : threads) {
+			t.cancelThread();
+		}
+	}
+	
+	public void resume() {
+		if(!isRunning()) {
+			throw new IllegalStateException("unable to resume a CpuSolver when it is not running");
+		}
+		boolean paused = isPaused();
+		for(CpuSolverThread t : threads) {
+			t.resumeThread();
+		}
+		if(paused) {
+			start = System.currentTimeMillis();
+			pauseStart = 0;
+		}
+	}
+	
+	public boolean isPaused() {
+		if(threads.size() <= 0) {
+			return false;
+		}
+		for(CpuSolverThread t : threads) {
+			if(!t.isPaused())
+				return false;
+		}
+		return true;
+	}
+	
+	public boolean wasCanceled() {
+		if(isRunning() || N <= smallestN) {
+			return false;
+		}
+		for(CpuSolverThread t : threads) {
+			if(!t.wasCanceled())
+				return false;
+		}
+		return true;
+	}
+	
+	public void addOnPauseCallback(Runnable r) {
+		if(r == null) {
+			throw new IllegalArgumentException("pausing callback must not be null");
+		}
+		pausing.add(r);
+	}
+	
+	// is called from the SolverThreads to measure correct time of the start of the pause 
+	synchronized void onPauseStart() {
+		if(isPaused() && pauseStart == 0) {
+			long now = System.currentTimeMillis();
+			timePassed += now - start;
+			pauseStart = now;
+			for(Runnable r : pausing) {
+				r.run();
+			}
 		}
 	}
 	

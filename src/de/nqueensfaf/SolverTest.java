@@ -1,12 +1,13 @@
 package de.nqueensfaf;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import de.nqueensfaf.compute.CpuSolver;
+import de.nqueensfaf.compute.GpuSolver;
 
 class SolverTest {
 
@@ -28,6 +29,29 @@ class SolverTest {
 	void tearDown() throws Exception {
 	}
 
+	// Manual test
+	@Test
+	void testCpuSolver() {
+		CpuSolver s = new CpuSolver();
+		s.setN(6);
+		s.addTerminationCallback(() -> {
+			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms");
+		});
+		s.solve();
+	}
+
+	// Manual test
+	@Test
+	void testGpuSolver() {
+		GpuSolver s = new GpuSolver();
+		s.setN(6);
+		s.addTerminationCallback(() -> {
+			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms");
+		});
+		s.solve();
+	}
+	
+	/*
 	// Manual test
 	@Test
 	void test() {
@@ -98,9 +122,6 @@ class SolverTest {
 			e.printStackTrace();
 		}
 		
-		// waitFor
-		assertThrows(IllegalStateException.class, () -> solver.waitFor());
-		
 		// initialization, termination
 		assertThrows(IllegalArgumentException.class, () -> solver.addInitializationCallback(null));
 		assertThrows(IllegalArgumentException.class, () -> solver.addTerminationCallback(null));
@@ -156,4 +177,5 @@ class SolverTest {
 			return false;
 		}
 	}
+	*/
 }

@@ -13,10 +13,12 @@ class CpuSolverThread extends Thread {
 	// list of uncalculated starting positions, their indices
 	private ArrayDeque<Integer> startConstellations;
 	
-	// for cancelling the run
-	private boolean running = false, cancel = false;
+	// for pausing or cancelling the run
+	private boolean cancel = false, running = false;
+	private int pause = 0;
+	private CpuSolver caller;
 
-	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations) {
+	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations, CpuSolver caller) {
 		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
@@ -25,6 +27,7 @@ class CpuSolverThread extends Thread {
 		L3 = 1 << N3;
 		L4 = 1 << N4;
 		this.startConstellations = startConstellations;
+		this.caller = caller;
 	}
 
 	// Recursive functions for Placing the Queens
@@ -826,6 +829,20 @@ class CpuSolverThread extends Thread {
 			// update the current startconstellation-index
 			done++;
 			
+			// check for pausing
+			if(pause == 1) {
+				pause = 2;
+				caller.onPauseStart();
+				while(pause == 2) {
+					if(cancel)
+						break;
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 			// check for cancelling
 			if(cancel) {
 				break;
@@ -834,15 +851,26 @@ class CpuSolverThread extends Thread {
 		running = false;
 	}
 
-	public void cancel() {
+	// for user interaction
+	void pauseThread() {
+		pause = 1;
+	}
+	
+	void cancelThread() {
 		cancel = true;
-		while(running) {
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+	}
+	
+	void resumeThread() {
+		pause = 0;
+		cancel = false;
+	}
+	
+	boolean isPaused() {
+		return pause == 2;
+	}
+	
+	boolean wasCanceled() {
+		return !running && cancel;
 	}
 	
 	// getters and setters

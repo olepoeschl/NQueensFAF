@@ -57,20 +57,26 @@ public abstract class Solver {
 	 * @see #solve()
 	 */
 	private ArrayList<Runnable> termination = new ArrayList<Runnable>();
-	
 	/**
 	 * current state of the {@link Solver}
 	 * @see NQueensFAF
 	 */
 	private int state = NQueensFAF.IDLE;
 	/**
-	 * Thread that executes the solvers run() function if {@link #solveAsync()} is called
+	 * thread that executes the solvers run() function if {@link #solveAsync()} is called
 	 */
 	private Thread t;
 	/**
-	 * For controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
+	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
+	/**
+	 * number of solutions - only used by the method that solves the problem for small N's.
+	 * @see #solveSmallBoard()
+	 * @see #nq(int, int, int, int, int, int)
+	 */
+	int solutionsSmallN = 0;
+	
 	// abstract methods
 	/**
 	 * Solves the N-Queens Problem.
@@ -126,9 +132,9 @@ public abstract class Solver {
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
-		startUpdateCallerThreads();
 		
 		state = NQueensFAF.RUNNING;
+		startUpdateCallerThreads();
 		run();
 		
 		state = NQueensFAF.TERMINATING;
@@ -193,7 +199,6 @@ public abstract class Solver {
 	private void startUpdateCallerThreads() {
 		if(onTimeUpdateCallback != null) {
 			ucExecutor.submit(() -> {
-				while(!isRunning());
 				long tmpTime = 0;
 				while(isRunning()) {
 					if(getDuration() != tmpTime) {
@@ -213,7 +218,6 @@ public abstract class Solver {
 		}
 		if(onProgressUpdateCallback != null) {
 			ucExecutor.submit(() -> {
-				while(!isRunning());
 				float tmpProgress = 0;
 				long tmpSolutions = 0;
 				while(isRunning()) {
@@ -235,6 +239,48 @@ public abstract class Solver {
 		}
 	}
 
+	/**
+	 * Can be used for solving the problem for small N's (board sizes).
+	 * @return the number of solutions
+	 */
+	protected int solveSmallBoard() {
+		solutionsSmallN = 0;
+		int mask = (1 << getN()) - 1;
+		nq(0, 0, 0, 0, mask, mask);
+		return solutionsSmallN;
+	}
+	/**
+	 * Solves the N-Queens-problem in a very simple and easy way.
+	 * Only for small N's, bigger N's would take much longer with this method.
+	 * @param ld soon to read about in an extern documentation paper
+	 * @param rd soon to read about in an extern documentation paper
+	 * @param col soon to read about in an extern documentation paper
+	 * @param row soon to read about in an extern documentation paper
+	 * @param free soon to read about in an extern documentation paper
+	 * @param mask soon to read about in an extern documentation paper
+	 * @param solutions soon to read about in an extern documentation paper
+	 */
+	private void nq(int ld, int rd, int col, int row, int free, int mask) {
+		if(row == getN()-1) {
+			solutionsSmallN++;
+			return;
+		}
+
+		int bit;
+		int nextfree;
+
+		while(free > 0) {
+			bit = free & (-free);
+			free -= bit;
+			nextfree = ~((ld|bit)<<1 | (rd|bit)>>1 | col|bit) & mask;
+
+			if(nextfree > 0)
+				nq((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree, mask);
+		}
+	}
+
+		
+	
 	/**
 	 * Adds a callback that will be executed on start of the {@link Solver}.
 	 * The callbacks will be called in reversed insertion order.
@@ -273,8 +319,8 @@ public abstract class Solver {
 	 * Calls all initialization callbacks in reversed insertion order.
 	 */
 	private void initializationCaller() {
-		for(int i = initialization.size()-1; i >= 0; i--) {
-			initialization.get(i).run();
+		for(Runnable r : initialization) {
+			r.run();
 		}
 	}
 	
@@ -282,8 +328,8 @@ public abstract class Solver {
 	 * Calls all termination callbacks in reversed insertion order.
 	 */
 	private void terminationCaller() {
-		for(int i = termination.size()-1; i >= 0; i--) {
-			termination.get(i).run();
+		for(Runnable r : termination) {
+			r.run();
 		}
 	}
 	
@@ -307,7 +353,7 @@ public abstract class Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot set board size while solving");
 		}
-		if(n < 0 || n > 31) {
+		if(n <= 0 || n > 31) {
 			throw new IllegalArgumentException("Board size must be a number between 0 and 32 (not inclusive)");
 		}
 		N = n;
