@@ -3,7 +3,7 @@ A Java library for easily implementing custom solvers (algorithms) for the N Que
 <br>Initially created for [NQueensFAF](https://github.com/olepoeschl/NQueensFAF). For more information about the built in Solvers, have a look at [NQueensFAF](https://github.com/olepoeschl/NQueensFAF).
 
 ### Download
-Download the latest .jar of NQueensFAF library [here](https://github.com/olepoeschl/NQueensFAF-Library/releases/download/v1.1/NQueensFAF.library.jar) (see latest release).
+Download the latest .jar of NQueensFAF library [here](https://github.com/olepoeschl/NQueensFAF-Library/releases/download/v1.2/NQueensFAF.library.jar) (see latest release).
 
 # Getting Started
 The library uses Java 16.
