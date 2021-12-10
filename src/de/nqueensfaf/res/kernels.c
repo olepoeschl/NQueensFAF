@@ -18,7 +18,8 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	const short l = kl_arr[g_id] & 255;
 	
 	// LD and RD - occupancy of board-entering diagonals due to the queens from the start constellation
-	const uint jdiag = LD_arr[g_id] & RD_arr[g_id];
+	const uint ldiag = LD_arr[g_id];
+	const uint rdiag = RD_arr[g_id];
 	
 	// wir shiften das ja in der zeile immer (im solver), also muss es hier einfach in der 0-ten zeile die diagonale der dame belegen EASY
 	const uint L = 1 << (N-1);
@@ -45,7 +46,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	rd |= (1 << l) >> row;
 	
 	// init klguard
-	uint notfree = ld | rd | col_mask | (jdiag >> N-1-row) | (jdiag << (N-1-row));
+	uint notfree = ld | rd | col_mask | (ldiag >> N-1-row) | (rdiag << (N-1-row));
 	if(row == k)
 		notfree = ~L;
 	else if (row == l)
@@ -67,7 +68,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	while(row >= start){
 		direction = (temp != 0);
 		row += (direction) ? 1 : -1;
-		if(direction) {																	// if bit is on board
+		if(direction) {																// if bit is on board
 			ld_mem = ld_mem << 1 | ld >> 31;
 			rd_mem = rd_mem >> 1 | rd << 31;
 			ld = (ld | temp) << 1;													// shift diagonals to next line
@@ -85,7 +86,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = (ldiag >> N-1-row) | (rdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 		
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
@@ -116,7 +117,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = (ldiag >> N-1-row) | (rdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);

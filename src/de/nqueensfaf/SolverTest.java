@@ -44,7 +44,8 @@ class SolverTest {
 	@Test
 	void testGpuSolver() {
 		GpuSolver s = new GpuSolver();
-		s.setN(6);
+		s.setDevice(0);
+		s.setN(20);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms");
 		});
