@@ -43,15 +43,15 @@ class SolverTest {
 	// Manual test
 	@Test
 	void testGpuSolver() {
-		try {
-			// for making sure the profiler (VisualVM) is ready
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
+//		try {
+//			// for making sure the profiler (VisualVM) is ready
+//			Thread.sleep(5000);
+//		} catch (InterruptedException e1) {
+//			e1.printStackTrace();
+//		}
 		GpuSolver s = new GpuSolver();
 		s.setDevice(0);
-		s.setN(27);
+		s.setN(18);
 		new Thread(() -> {
 			while(true) {
 				if(s.getGlobalWorkSize() == 0) {

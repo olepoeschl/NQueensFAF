@@ -1,11 +1,11 @@
 //	//	//	//	//	//	//	//	//
 //	  Explosion Boost 9000		//
 //	//	//	//	//	//	//	//	//
-__kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_arr, global int *LD_arr, global int *RD_arr, global int *kl_arr, global int *start_arr, global uint *result, global int *progress) {
+__kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_arr, global int *start_jkl_arr, global uint *result, global int *progress) {
 	
 // gpu intern indice
-	const int g_id = get_global_id(0);												// global thread id
-	const short l_id = get_local_id(0);												// local thread id within workgroup
+	int g_id = get_global_id(0);												// global thread id
+	short l_id = get_local_id(0);												// local thread id within workgroup
 	
 // variables	
 	// for the board
@@ -13,26 +13,24 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	uint rd = rd_arr[g_id];															// right diagonal
 	uint col_mask = ~((1 << N) - 1) | 1;											// column and mask
 	
-	// k and l - row indice where a queen is already set and we have to go to the next row
-	const short k = kl_arr[g_id] >> 8;
-	const short l = kl_arr[g_id] & 255;
-	
-	// LD and RD - occupancy of board-entering diagonals due to the queens from the start constellation
-	const uint ldiag = LD_arr[g_id];
-	const uint rdiag = RD_arr[g_id];
-	
 	// wir shiften das ja in der zeile immer (im solver), also muss es hier einfach in der 0-ten zeile die diagonale der dame belegen EASY
-	const uint L = 1 << (N-1);
-	
-	// init col_mask
-	col_mask |= col_mask_arr[g_id] | L | 1;
+	uint L = 1 << (N-1);
 	
 	// start index
-	const short start = start_arr[g_id];
+	short start = start_jkl_arr[g_id] >> 15;
 	if(start == 69) {
 		progress[g_id] = -1;
 		return;
 	}
+	// LD and RD - occupancy of board-entering diagonals due to the queens from the start constellation
+	uint jdiag = L >> ((start_jkl_arr[g_id] >> 10) & 31);
+	
+	// k and l - row indice where a queen is already set and we have to go to the next row
+	short k = (start_jkl_arr[g_id] >> 5) & 31;
+	short l = start_jkl_arr[g_id] & 31;
+	
+	// init col_mask
+	col_mask |= col_mask_arr[g_id] | L | 1;
 	
 	// to memorize diagonals leaving the board at a certain row
 	uint ld_mem = 0;															
@@ -46,7 +44,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	rd |= (1 << l) >> row;
 	
 	// init klguard
-	uint notfree = ld | rd | col_mask | (ldiag >> N-1-row) | (rdiag << (N-1-row));
+	uint notfree = ld | rd | col_mask | (jdiag >> N-1-row) | (jdiag << (N-1-row));
 	if(row == k)
 		notfree = ~L;
 	else if (row == l)
@@ -86,7 +84,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (ldiag >> N-1-row) | (rdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 		
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
@@ -117,7 +115,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (ldiag >> N-1-row) | (rdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);

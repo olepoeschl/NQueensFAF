@@ -8,25 +8,23 @@ import java.util.HashSet;
 
 class GpuConstellationsGenerator {
 
-	private int N, L, mask, LD, RD, counter, k;
+	private int N, L, mask, LD, RD, counter;
 	private int kbit, lbit; 	// belegt de diagoanle auf der später k bzw. l dame stehen soll
 	private int[] bits;
 	private int[][] klcounter;
 	private HashSet<Integer> startConstellations;
-	ArrayDeque<Integer> ldList, rdList, colList, LDList, RDList, klList, symList, startList;
+	ArrayDeque<Integer> ldList, rdList, colList, jklList, symList, startList;
 
 	// calculate occupancy of starting row
 	void genConstellations(int N) {
 		ldList = new ArrayDeque<Integer>();
 		rdList = new ArrayDeque<Integer>();
 		colList = new ArrayDeque<Integer>();
-		LDList = new ArrayDeque<Integer>();
-		RDList = new ArrayDeque<Integer>();
-		klList = new ArrayDeque<Integer>();
+		jklList = new ArrayDeque<Integer>();
 		symList = new ArrayDeque<Integer>();
 		startList = new ArrayDeque<Integer>();
 
-		int ld, rd, col, kl;
+		int ld, rd, col, jkl;
 		L = (1 << (N-1));
 		mask = (L << 1) - 1;
 		bits = new int[N];
@@ -56,17 +54,12 @@ class GpuConstellationsGenerator {
 				kbit = (1 << (N-0-1));
 				lbit = (1 << l);
 				sq5(ld, rd, col, 0, l, 1, 3);
-				kl = (k << 8) | l;
-
-				LD = (L >>> j);
-				RD = (L >>> j);
+				jkl = (j << 10) | (0 << 5) | l;
 
 				for(int a = 0; a < counter; a++) {
-					LDList.add(LD);
-					RDList.add(RD);
-					klList.add(kl);
+					jklList.add(jkl);
 					symList.add(8);
-					klcounter[k][l]++;
+					klcounter[0][l]++;
 				}
 			}
 		}
@@ -101,15 +94,10 @@ class GpuConstellationsGenerator {
 
 							counter = 0;
 							sq5(ld, rd, col, k, l, 1, 4);
-							kl = (k << 8) | l;
-
-							RD = (L >>> j);
-							LD = (L >>> j);
+							jkl = (j << 10) | (k << 5) | l;
 
 							for(int a = 0; a < counter; a++) {
-								LDList.add(LD);
-								RDList.add(RD);
-								klList.add(kl);
+								jklList.add(jkl);
 								symList.add(symmetry(toijkl(i, j , k, l)));
 								klcounter[k][l]++;
 							}
@@ -160,15 +148,13 @@ class GpuConstellationsGenerator {
 
 	// sort constellations so that as many workgroups as possible have solutions with less divergent branches
 	void sortConstellations() {
-		record BoardProperties(int ld, int rd, int col, int start, int kl, int LD, int RD, int sym) {
-			BoardProperties(int ld, int rd, int col, int start, int kl, int LD, int RD, int sym) {
+		record BoardProperties(int ld, int rd, int col, int start, int jkl, int sym) {
+			BoardProperties(int ld, int rd, int col, int start, int jkl, int sym) {
 				this.ld = ld;
 				this.rd = rd;
 				this.col = col;
 				this.start = start;
-				this.kl = kl;
-				this.LD = LD;
-				this.RD = RD;
+				this.jkl = jkl;
 				this.sym = sym;
 			}
 		}
@@ -176,7 +162,7 @@ class GpuConstellationsGenerator {
 		int len = ldList.size();
 		ArrayList<BoardProperties> list = new ArrayList<BoardProperties>(len);
 		for(int i = 0; i < len; i++) {
-			list.add(new BoardProperties(ldList.removeFirst(), rdList.removeFirst(), colList.removeFirst(), startList.removeFirst(), klList.removeFirst(), LDList.removeFirst(), RDList.removeFirst(), symList.removeFirst()));
+			list.add(new BoardProperties(ldList.removeFirst(), rdList.removeFirst(), colList.removeFirst(), startList.removeFirst(), jklList.removeFirst(), symList.removeFirst()));
 		}
 		Collections.sort(list, new Comparator<BoardProperties>() {
 			@Override
@@ -186,9 +172,11 @@ class GpuConstellationsGenerator {
 				} else if(o1.start < o2.start) {
 					return -1;
 				} else {
-					if((o1.kl >> 8) > (o2.kl >> 8)) {
+					int k1 = (o1.jkl >> 5) & 0b00011111;
+					int k2 = (o2.jkl >> 5) & 0b00011111;
+					if(k1 > k2) {
 						return 1;
-					} else if((o1.kl >> 8) < (o2.kl >> 8)) {
+					} else if(k1 < k2) {
 						return -1;
 					}
 					return 0;
@@ -200,9 +188,7 @@ class GpuConstellationsGenerator {
 			rdList.add(list.get(i).rd);
 			colList.add(list.get(i).col);
 			startList.add(list.get(i).start);
-			klList.add(list.get(i).kl);
-			LDList.add(list.get(i).LD);
-			RDList.add(list.get(i).RD);
+			jklList.add(list.get(i).jkl);
 			symList.add(list.get(i).sym);
 		}
 	}
