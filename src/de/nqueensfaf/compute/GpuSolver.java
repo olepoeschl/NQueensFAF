@@ -332,7 +332,7 @@ public class GpuSolver extends Solver {
 		Util.checkCLError(errBuf.get(0));
 
 		program = CL10.clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
-		String options = "-D N="+getN() + " -D BLOCK_SIZE="+WORKGROUP_SIZE + " -cl-mad-enable";
+		String options = "-D N="+N + " -D BLOCK_SIZE="+WORKGROUP_SIZE + " -cl-mad-enable";
 		int error = CL10.clBuildProgram(program, device, options, null);
 		Util.checkCLError(error);
 
