@@ -254,6 +254,7 @@ public class GpuSolver extends Solver {
 	
 	@Override
 	public void reset() {
+		globalWorkSize = 0;
 		startConstCount = 0;
 		progress = 0;
 		savedSolvedConstellations = 0;
@@ -801,6 +802,11 @@ public class GpuSolver extends Solver {
 		return resultString;
 	}
 
+	// returns the total number of enqueued work-items 
+	public int getGlobalWorkSize() {
+		return globalWorkSize;
+	}
+	
 	// for saving and restoring
 	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
 			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> LDList, ArrayList<Integer> RDList, 
