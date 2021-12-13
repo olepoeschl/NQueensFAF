@@ -1,6 +1,5 @@
 package de.nqueensfaf.compute;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,17 +12,18 @@ class GpuConstellationsGenerator {
 	private int[] bits;
 	private int[][] klcounter;
 	private HashSet<Integer> startConstellations;
+	private ArrayList<Integer> jklList, startList;
+	ArrayList<Integer> ldList, rdList, colList, startjklList, symList;
 	int startConstCount;
-	ArrayDeque<Integer> ldList, rdList, colList, jklList, symList, startList;
 
 	// calculate occupancy of starting row
 	void genConstellations(int N) {
-		ldList = new ArrayDeque<Integer>();
-		rdList = new ArrayDeque<Integer>();
-		colList = new ArrayDeque<Integer>();
-		jklList = new ArrayDeque<Integer>();
-		symList = new ArrayDeque<Integer>();
-		startList = new ArrayDeque<Integer>();
+		ldList = new ArrayList<Integer>();
+		rdList = new ArrayList<Integer>();
+		colList = new ArrayList<Integer>();
+		jklList = new ArrayList<Integer>();
+		symList = new ArrayList<Integer>();
+		startList = new ArrayList<Integer>();
 
 		int ld, rd, col, jkl;
 		L = (1 << (N-1));
@@ -109,6 +109,13 @@ class GpuConstellationsGenerator {
 		}
 		startConstCount = ldList.size();
 		sortConstellations();
+		startjklList = new ArrayList<Integer>(startConstCount);
+		for(int i = 0; i < startConstCount; i++) {
+			startjklList.add((startList.get(i) << 15) | jklList.get(i));
+		}
+		// for the trash
+		jklList = null;
+		startList = null;
 	}
 
 	// presolver
@@ -164,7 +171,7 @@ class GpuConstellationsGenerator {
 		int len = ldList.size();
 		ArrayList<BoardProperties> list = new ArrayList<BoardProperties>(len);
 		for(int i = 0; i < len; i++) {
-			list.add(new BoardProperties(ldList.removeFirst(), rdList.removeFirst(), colList.removeFirst(), startList.removeFirst(), jklList.removeFirst(), symList.removeFirst()));
+			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startList.get(i), jklList.get(i), symList.get(i)));
 		}
 		Collections.sort(list, new Comparator<BoardProperties>() {
 			@Override

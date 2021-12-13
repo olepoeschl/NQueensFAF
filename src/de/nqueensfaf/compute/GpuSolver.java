@@ -101,7 +101,7 @@ public class GpuSolver extends Solver {
 	// calculation related stuff
 	private GpuConstellationsGenerator generator;
 	private int startConstCount;
-	private int[] ldArr, rdArr, colArr, symArr, startjklArr;
+	private ArrayList<Integer> ldList, rdList, colList, symList, startjklList;
 	private long solutions, savedSolutions;
 	private long duration, start, end, savedDuration;
 	private float progress;
@@ -172,13 +172,13 @@ public class GpuSolver extends Solver {
 				CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
 				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
 					if(progressBuf.get(i) == 1) {
-						solutions += resBuf.get(i) * symArr[i];
+						solutions += resBuf.get(i) * symList.get(i);
 					} else if(progressBuf.get(i) == 0) {
-						ldList.add(ldArr[i]);
-						rdList.add(rdArr[i]);
-						colList.add(colArr[i]);
-						startjklList.add(startjklArr[i]);
-						symList.add(symArr[i]);
+						ldList.add(ldList.get(i));
+						rdList.add(rdList.get(i));
+						colList.add(colList.get(i));
+						startjklList.add(startjklList.get(i));
+						symList.add(symList.get(i));
 					}
 				}
 			}
@@ -220,17 +220,17 @@ public class GpuSolver extends Solver {
 		if(globalWorkSize % (WORKGROUP_SIZE * computeUnits) != 0) {
 			globalWorkSize = resInfo.ldList.size() - (resInfo.ldList.size() % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
 		}
-		ldArr = new int[globalWorkSize];
-		rdArr = new int[globalWorkSize];
-		colArr = new int[globalWorkSize];
-		startjklArr = new int[globalWorkSize];
-		symArr = new int[globalWorkSize];
+		ldList = new ArrayList<Integer>();
+		rdList = new ArrayList<Integer>();
+		colList = new ArrayList<Integer>();
+		startjklList = new ArrayList<Integer>();
+		symList = new ArrayList<Integer>();
 		for(int i = 0; i < resInfo.ldList.size(); i++) {
-			ldArr[i] = resInfo.ldList.get(i);
-			rdArr[i] = resInfo.rdList.get(i);
-			colArr[i] = resInfo.colList.get(i);
-			startjklArr[i] = resInfo.startjklList.get(i);
-			symArr[i] = resInfo.symList.get(i);
+			ldList.add(resInfo.ldList.get(i));
+			rdList.add(resInfo.rdList.get(i));
+			colList.add(resInfo.colList.get(i));
+			startjklList.add(resInfo.startjklList.get(i));
+			symList.add(resInfo.symList.get(i));
 		}
 		restored = true;
 	}
@@ -300,7 +300,7 @@ public class GpuSolver extends Solver {
 		synchronized(resMem) {
 			CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
 			for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
-				solutions += resBuf.get(i) * symArr[i];
+				solutions += resBuf.get(i) * symList.get(i);
 			}
 			this.solutions = solutions;
 		}
@@ -340,26 +340,19 @@ public class GpuSolver extends Solver {
 				globalWorkSize = startConstCount - (startConstCount % (WORKGROUP_SIZE * computeUnits)) + (WORKGROUP_SIZE * computeUnits);
 			}
 			
-			ldArr = new int[globalWorkSize];
-			rdArr = new int[globalWorkSize];
-			colArr = new int[globalWorkSize];
-			startjklArr = new int[globalWorkSize];
-			symArr = new int[globalWorkSize];
-			for(int i = 0; i < startConstCount; i++) {
-				ldArr[i] = generator.ldList.removeFirst();
-				rdArr[i] = generator.rdList.removeFirst();
-				colArr[i] = generator.colList.removeFirst();
-				startjklArr[i] = (generator.startList.removeFirst() << 15) | generator.jklList.removeFirst();
-				symArr[i] = generator.symList.removeFirst();
-			}
+			ldList = generator.ldList;
+			rdList = generator.rdList;
+			colList = generator.colList;
+			startjklList = generator.startjklList;
+			symList = generator.symList;
 		}
 		// fill the newly created task slots in globalWorkSize using empty tasks (-> kernels.c)
 		for(int i = startConstCount - savedSolvedConstellations; i < globalWorkSize; i++) {
-			ldArr[i] = (1<<32) - 1;
-			rdArr[i] = 0xFFFFFFFF;
-			colArr[i] = 0xFFFFFFFF;
-			startjklArr[i] = 69 << 15;
-			symArr[i] = 0;
+			ldList.add((1<<N) - 1);
+			rdList.add((1<<N) - 1);
+			colList.add((1<<N) - 1);
+			startjklList.add(69 << 15);
+			symList.add(0);
 		}
 
 		// OpenCL-Memory Objects to be passed to the kernel
@@ -369,7 +362,7 @@ public class GpuSolver extends Solver {
 		ByteBuffer paramPtr = CL10.clEnqueueMapBuffer(memqueue, ldMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, ldArr[i]);
+			paramPtr.putInt(i*4, ldList.get(i));
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
 		
@@ -379,7 +372,7 @@ public class GpuSolver extends Solver {
 		paramPtr = CL10.clEnqueueMapBuffer(memqueue, rdMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, rdArr[i]);
+			paramPtr.putInt(i*4, rdList.get(i));
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
 		
@@ -389,7 +382,7 @@ public class GpuSolver extends Solver {
 		paramPtr = CL10.clEnqueueMapBuffer(memqueue, colMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, colArr[i]);
+			paramPtr.putInt(i*4, colList.get(i));
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
 		
@@ -399,7 +392,7 @@ public class GpuSolver extends Solver {
 		paramPtr = CL10.clEnqueueMapBuffer(memqueue, startjklMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 		Util.checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, startjklArr[i]);
+			paramPtr.putInt(i*4, startjklList.get(i));
 		}
 		CL10.clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
 
@@ -480,7 +473,7 @@ public class GpuSolver extends Solver {
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;
 				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
-					solutions += resBuf.get(i) *  symArr[i];
+					solutions += resBuf.get(i) *  symList.get(i);
 					solvedConstellations += progressBuf.get(i);
 				}
 				progress = ((float) solvedConstellations) / startConstCount;
