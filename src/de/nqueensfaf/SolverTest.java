@@ -51,7 +51,7 @@ class SolverTest {
 //		}
 		GpuSolver s = new GpuSolver();
 		s.setDevice(0);
-		s.setN(18);
+		s.setN(15);
 		new Thread(() -> {
 			while(true) {
 				if(s.getGlobalWorkSize() == 0) {

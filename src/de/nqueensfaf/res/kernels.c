@@ -23,12 +23,18 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		return;
 	}
 	// LD and RD - occupancy of board-entering diagonals due to the queens from the start constellation
-	uint jdiag = L >> ((start_jkl_arr[g_id] >> 10) & 31);
+	// uint jdiag = L >> ((start_jkl_arr[g_id] >> 10) & 31);
 	
 	// k and l - row indice where a queen is already set and we have to go to the next row
 	short k = (start_jkl_arr[g_id] >> 5) & 31;
 	short l = start_jkl_arr[g_id] & 31;
-	
+	short j = (start_jkl_arr[g_id] >> 10) & 31;
+	uint rdiag = (L >> j) | (1 << k);
+	uint ldiag = (L >> j) | (L >> l);
+	local uint jklqueens[N];
+	for(int a = N-1;a > 0; a--){
+		jklqueens[a] = (rdiag << (N-1-a)) | (ldiag >> (N-1-a));
+	}
 	// init col_mask
 	col_mask |= col_mask_arr[g_id] | L | 1;
 	
@@ -44,7 +50,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	rd |= (1 << l) >> row;
 	
 	// init klguard
-	uint notfree = ld | rd | col_mask | (jdiag >> N-1-row) | (jdiag << (N-1-row));
+	uint notfree = ld | rd | col_mask | jklqueens[row];
 	if(row == k)
 		notfree = ~L;
 	else if (row == l)
@@ -84,7 +90,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = jklqueens[row] | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 		
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
@@ -115,7 +121,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		diff = (direction) ? 1 : temp;
 		col_mask |= temp;
-		notfree = (jdiag >> N-1-row) | (jdiag << (N-1-row)) | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = jklqueens[row] | ld | rd | col_mask;							// calculate occupancy of next row
 		col_mask = (direction) ? col_mask : col_mask & ~temp;
 
 		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
