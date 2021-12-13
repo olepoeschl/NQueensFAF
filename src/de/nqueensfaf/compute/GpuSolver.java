@@ -378,29 +378,29 @@ public class GpuSolver extends Solver {
 		CL10.clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
 
 		// result memory
-		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
+		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		synchronized(resMem) {
 			Util.checkCLError(errBuf.get(0));
-			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
+			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 			Util.checkCLError(errBuf.get(0));
-			for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
+			for(int i = 0; i < globalWorkSize; i++) {
 				resWritePtr.putInt(i*4, 0);
 			}
 			CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-			resBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
+			resBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		}
 
 		// progress indicator memory
-		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, (startConstCount-savedSolvedConstellations)*4, errBuf);
+		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		synchronized(progressMem) {
 			Util.checkCLError(errBuf.get(0));
-			ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, (startConstCount-savedSolvedConstellations)*4, null, null, errBuf);
+			ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
 			Util.checkCLError(errBuf.get(0));
-			for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
+			for(int i = 0; i < globalWorkSize; i++) {
 				progressWritePtr.putInt(i*4, 0);
 			}
 			CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-			progressBuf = BufferUtils.createIntBuffer(startConstCount-savedSolvedConstellations);
+			progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		}
 		
 		CL10.clFlush(memqueue);
@@ -441,13 +441,14 @@ public class GpuSolver extends Solver {
 			}
 			sortingLists.add(sameStartjklList);
 		}
+		// now put the lists all together in bpList, thereby filling groups to fit the workgroup size
 		for(var list : sortingLists) {
 			// if the current list size is not divisible by WORKGROUP_SIZE, fill it with pseudo constellations
-			int size = list.size();
-			if(size % WORKGROUP_SIZE != 0) {
-				size = size - (size % WORKGROUP_SIZE) + WORKGROUP_SIZE;
+			int newSize = list.size();
+			if(newSize % WORKGROUP_SIZE != 0) {
+				newSize = newSize - (newSize % WORKGROUP_SIZE) + WORKGROUP_SIZE;
 			}
-			int diff = size - list.size();
+			int diff = newSize - list.size();
 			for(int i = 0; i < diff; i++) {
 				list.add(new BoardProperties((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, 69 << 15, 0));
 			}
@@ -455,13 +456,14 @@ public class GpuSolver extends Solver {
 				bpList.add(bp);
 			}
 		}
+		
 //		for(BoardProperties bp : bpList) {
-//			if(bp.startjkl == 69 << 15)
-//				System.out.println("---------" + bp.startjkl + "-------- filler");
-//			else
-//				System.out.println(bp.startjkl);
+//			if(bp.startjkl == 69 << 15) {
+//				System.out.println("ld: " + bp.ld + ", rd: " + bp.rd + ", col: " + bp.col + ", sym: " + bp.sym + "-------- filler");
+//			} else {
+//				System.out.println("ld: " + bp.ld + ", rd: " + bp.rd + ", col: " + bp.col + ", sym: " + bp.sym);
+//			}
 //		}
-//		System.out.println("bp's: " + bpList.size());
 //		System.exit(0);
 		
 		ldList.clear();
@@ -476,7 +478,6 @@ public class GpuSolver extends Solver {
 			startjklList.add(bp.startjkl);
 			symList.add(bp.sym);
 		}
-		
 		globalWorkSize = ldList.size();
 	}
 	
@@ -527,7 +528,7 @@ public class GpuSolver extends Solver {
 				CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;
-				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
+				for(int i = 0; i < globalWorkSize; i++) {
 					solutions += resBuf.get(i) *  symList.get(i);
 					solvedConstellations += progressBuf.get(i);
 				}
