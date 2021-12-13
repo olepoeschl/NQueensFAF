@@ -160,29 +160,29 @@ public class GpuSolver extends Solver {
 		}
 		long solutions = savedSolutions;
 		ArrayList<Integer> 
-				ldList = new ArrayList<Integer>(),
-				rdList = new ArrayList<Integer>(),
-				colList = new ArrayList<Integer>(),
-				startjklList = new ArrayList<Integer>(),
-				symList = new ArrayList<Integer>();
+				ldListTmp = new ArrayList<Integer>(),
+				rdListTmp = new ArrayList<Integer>(),
+				colListTmp = new ArrayList<Integer>(),
+				startjklListTmp = new ArrayList<Integer>(),
+				symListTmp = new ArrayList<Integer>();
 		synchronized(resMem) {
 			synchronized(progressMem) {
 				CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
 				CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
-				for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
+				for(int i = 0; i < globalWorkSize; i++) {
 					if(progressBuf.get(i) == 1) {
 						solutions += resBuf.get(i) * symList.get(i);
-					} else if(progressBuf.get(i) == 0) {
-						ldList.add(ldList.get(i));
-						rdList.add(rdList.get(i));
-						colList.add(colList.get(i));
-						startjklList.add(startjklList.get(i));
-						symList.add(symList.get(i));
+					} else if(progressBuf.get(i) == 0 && startjklList.get(i) != (69 << 15)) {
+						ldListTmp.add(ldList.get(i));
+						rdListTmp.add(rdList.get(i));
+						colListTmp.add(colList.get(i));
+						startjklListTmp.add(startjklList.get(i));
+						symListTmp.add(symList.get(i));
 					}
 				}
 			}
 		}
-		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldList, rdList, colList, startjklList, symList);
+		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldListTmp, rdListTmp, colListTmp, startjklListTmp, symListTmp);
 
 		FileOutputStream fos = new FileOutputStream(filepath);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -224,7 +224,6 @@ public class GpuSolver extends Solver {
 			startjklList.add(resInfo.startjklList.get(i));
 			symList.add(resInfo.symList.get(i));
 		}
-		startConstCount = ldList.size();
 		restored = true;
 	}
 
@@ -273,8 +272,10 @@ public class GpuSolver extends Solver {
 		int solvedConstellations = savedSolvedConstellations;
 		synchronized(progressMem) {
 			CL10.clEnqueueReadBuffer(memqueue, progressMem, CL10.CL_TRUE, 0, progressBuf, null, null);
-			for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
-				solvedConstellations += progressBuf.get(i);
+			for(int i = 0; i < globalWorkSize; i++) {
+				if(progressBuf.get(i) == 1) {
+					solvedConstellations++;
+				}
 			}
 			progress = ((float) solvedConstellations) / startConstCount;
 		}
@@ -292,7 +293,7 @@ public class GpuSolver extends Solver {
 		long solutions = 0;
 		synchronized(resMem) {
 			CL10.clEnqueueReadBuffer(memqueue, resMem, CL10.CL_TRUE, 0, resBuf, null, null);
-			for(int i = 0; i < startConstCount - savedSolvedConstellations; i++) {
+			for(int i = 0; i < globalWorkSize; i++) {
 				solutions += resBuf.get(i) * symList.get(i);
 			}
 			this.solutions = solutions;
@@ -417,7 +418,7 @@ public class GpuSolver extends Solver {
 			}
 		}
 		ArrayList<BoardProperties> bpList = new ArrayList<BoardProperties>();
-		for(int i = 0; i < startConstCount; i++) {
+		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
 			bpList.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i), symList.get(i)));
 		}
 		
@@ -528,8 +529,10 @@ public class GpuSolver extends Solver {
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;
 				for(int i = 0; i < globalWorkSize; i++) {
-					solutions += resBuf.get(i) *  symList.get(i);
-					solvedConstellations += progressBuf.get(i);
+					if(progressBuf.get(i) == 1) {
+						solutions += resBuf.get(i) *  symList.get(i);
+						solvedConstellations++;
+					}
 				}
 				progress = ((float) solvedConstellations) / startConstCount;
 			}
