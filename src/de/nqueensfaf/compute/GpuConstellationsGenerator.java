@@ -107,8 +107,8 @@ class GpuConstellationsGenerator {
 				}
 			}
 		}
-		startConstCount = ldList.size();
 		sortConstellations();
+		startConstCount = ldList.size();
 		startjklList = new ArrayList<Integer>(startConstCount);
 		for(int i = 0; i < startConstCount; i++) {
 			startjklList.add((startList.get(i) << 15) | jklList.get(i));
@@ -200,6 +200,12 @@ class GpuConstellationsGenerator {
 				}
 			}
 		});
+		ldList.clear();
+		rdList.clear();
+		colList.clear();
+		startList.clear();
+		jklList.clear();
+		symList.clear();
 		for(int i = 0; i < len; i++) {
 			ldList.add(list.get(i).ld);
 			rdList.add(list.get(i).rd);
