@@ -164,10 +164,7 @@ public class GpuSolver extends Solver {
 				ldList = new ArrayList<Integer>(),
 				rdList = new ArrayList<Integer>(),
 				colList = new ArrayList<Integer>(),
-				LDList = new ArrayList<Integer>(),
-				RDList = new ArrayList<Integer>(),
-				klList = new ArrayList<Integer>(),
-				startList = new ArrayList<Integer>(),
+				startjklList = new ArrayList<Integer>(),
 				symList = new ArrayList<Integer>();
 		synchronized(resMem) {
 			synchronized(progressMem) {
@@ -180,12 +177,13 @@ public class GpuSolver extends Solver {
 						ldList.add(ldArr[i]);
 						rdList.add(rdArr[i]);
 						colList.add(colArr[i]);
+						startjklList.add(startjklArr[i]);
 						symList.add(symArr[i]);
 					}
 				}
 			}
 		}
-		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldList, rdList, colList, LDList, RDList, klList, startList, symList);
+		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldList, rdList, colList, startjklList, symList);
 
 		FileOutputStream fos = new FileOutputStream(filepath);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -225,11 +223,13 @@ public class GpuSolver extends Solver {
 		ldArr = new int[globalWorkSize];
 		rdArr = new int[globalWorkSize];
 		colArr = new int[globalWorkSize];
+		startjklArr = new int[globalWorkSize];
 		symArr = new int[globalWorkSize];
 		for(int i = 0; i < resInfo.ldList.size(); i++) {
 			ldArr[i] = resInfo.ldList.get(i);
 			rdArr[i] = resInfo.rdList.get(i);
 			colArr[i] = resInfo.colList.get(i);
+			startjklArr[i] = resInfo.startjklList.get(i);
 			symArr[i] = resInfo.symList.get(i);
 		}
 		restored = true;
@@ -331,7 +331,7 @@ public class GpuSolver extends Solver {
 		if(savedDuration == 0) {		// if duration is 0, then restore() was not called
 			generator = new GpuConstellationsGenerator();
 			generator.genConstellations(N);
-			startConstCount = generator.getStartConstCount();
+			startConstCount = generator.startConstCount;
 			
 			globalWorkSize = startConstCount;
 			// if needed, round globalWorkSize up to the next matching number
@@ -754,11 +754,9 @@ public class GpuSolver extends Solver {
 	
 	// for saving and restoring
 	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> LDList, ArrayList<Integer> RDList, 
-			ArrayList<Integer> klList, ArrayList<Integer> startList, ArrayList<Integer> symList) implements Serializable {
+			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
 		RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-				ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> LDList, ArrayList<Integer> RDList, 
-				ArrayList<Integer> klList, ArrayList<Integer> startList, ArrayList<Integer> symList) {
+				ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
 			this.N = N;
 			this.duration = duration;
 			this.solutions = solutions;
@@ -766,10 +764,7 @@ public class GpuSolver extends Solver {
 			this.ldList = ldList;
 			this.rdList = rdList;
 			this.colList = colList;
-			this.LDList = LDList;
-			this.RDList = RDList;
-			this.klList = klList;
-			this.startList = startList;
+			this.startjklList = startjklList;
 			this.symList = symList;
 		}
 	}

@@ -13,6 +13,7 @@ class GpuConstellationsGenerator {
 	private int[] bits;
 	private int[][] klcounter;
 	private HashSet<Integer> startConstellations;
+	int startConstCount;
 	ArrayDeque<Integer> ldList, rdList, colList, jklList, symList, startList;
 
 	// calculate occupancy of starting row
@@ -106,6 +107,7 @@ class GpuConstellationsGenerator {
 				}
 			}
 		}
+		startConstCount = ldList.size();
 		sortConstellations();
 	}
 
@@ -167,19 +169,27 @@ class GpuConstellationsGenerator {
 		Collections.sort(list, new Comparator<BoardProperties>() {
 			@Override
 			public int compare(BoardProperties o1, BoardProperties o2) {
-				if(o1.start > o2.start) {
+				int j1 = o1.jkl >> 10, j2 = o2.jkl >> 10;
+				int k1 = (o1.jkl >> 5) & 0b00011111, k2 = (o2.jkl >> 5) & 0b00011111;
+				int l1 = o1.jkl & 0b00011111, l2 = o2.jkl & 0b00011111;
+				if(j1 > j2) {
 					return 1;
-				} else if(o1.start < o2.start) {
+				} else if(j1 < j2) {
 					return -1;
 				} else {
-					int k1 = (o1.jkl >> 5) & 0b00011111;
-					int k2 = (o2.jkl >> 5) & 0b00011111;
 					if(k1 > k2) {
 						return 1;
 					} else if(k1 < k2) {
 						return -1;
+					} else {
+						if(l1 > l2) {
+							return 1;
+						} else if(l1 < l2) {
+							return -1;
+						} else {
+							return 0;
+						}
 					}
-					return 0;
 				}
 			}
 		});
@@ -190,6 +200,8 @@ class GpuConstellationsGenerator {
 			startList.add(list.get(i).start);
 			jklList.add(list.get(i).jkl);
 			symList.add(list.get(i).sym);
+//			//---
+//			System.out.println(list.get(i).jkl);
 		}
 	}
 
@@ -245,10 +257,5 @@ class GpuConstellationsGenerator {
 		if(((geti(ijkl) << 24) + (getj(ijkl) << 16) + (getk(ijkl) << 8) + getl(ijkl)) == (((N-1-getk(ijkl))<<24) + ((N-1-getl(ijkl))<<16) + (getj(ijkl)<<8) + geti(ijkl)))
 			return true;
 		return false;
-	}
-	
-	// getters
-	int getStartConstCount() {
-		return ldList.size();
 	}
 }
