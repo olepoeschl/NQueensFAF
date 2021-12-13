@@ -94,7 +94,6 @@ public class GpuSolver extends Solver {
 	private CLProgram program;
 	private CLKernel kernel;
 	private CLMem ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
-	private int computeUnits;
 	private final int WORKGROUP_SIZE = 64;
 	private int globalWorkSize;
 
@@ -573,22 +572,23 @@ public class GpuSolver extends Solver {
 	}
 	
 	private static int checkOpenCL() {
-		switch(getOS()) {
-		case "win":
-			Process clinfo;
-			try {
-				clinfo = Runtime.getRuntime().exec("clinfo");
-				BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
-				String line;
-				while((line = in.readLine()) != null) {
-					if(line.contains(" 0")) {
-						return 0;
-					} else {
-						return 1;
-					}
+		Process clinfo;
+		try {
+			clinfo = Runtime.getRuntime().exec("clinfo");
+			BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
+			String line;
+			if((line = in.readLine()) != null) {
+				if(line.contains(" 0") || line.contains("no usable platforms")) {
+					return 0;
+				} else {
+					return 1;
 				}
-			} catch (IOException e) {
-				// clinfo is not installed. Good that we have it in our archive!
+			}
+		} catch (IOException e) {
+			// clinfo is not installed.
+			switch(getOS()) {
+			case "win":
+				// Good that we have the windows version in our archive!
 				File clinfoFile = unpackClinfo();
 				if(clinfoFile == null) {
 					return -1;
@@ -597,8 +597,8 @@ public class GpuSolver extends Solver {
 					clinfo = Runtime.getRuntime().exec(clinfoFile.getAbsolutePath());
 					BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
 					String line;
-					while((line = in.readLine()) != null) {
-						if(line.contains(" 0")) {
+					if((line = in.readLine()) != null) {
+						if(line.contains(" 0") || line.contains("no usable platforms")) {
 							return 0;
 						} else {
 							return 1;
@@ -607,11 +607,14 @@ public class GpuSolver extends Solver {
 				} catch (IOException e1) {
 					return -1;
 				}
+				break;
+			case "mac", "unix", "solaris":
+				break;
+			default:
+				break;
 			}
-			return -1;
-		default:
-			return -1;
 		}
+		return -1;
 	}
 	
 	private static File unpackClinfo() {
