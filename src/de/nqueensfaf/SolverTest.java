@@ -51,7 +51,8 @@ class SolverTest {
 //		}
 		GpuSolver s = new GpuSolver();
 		s.setDevice(0);
-		s.setN(15);
+		s.setUpdatesEnabled(false);
+		s.setN(19);
 		new Thread(() -> {
 			while(true) {
 				if(s.getGlobalWorkSize() == 0) {
@@ -66,6 +67,9 @@ class SolverTest {
 				break;
 			}
 		}).start();
+		s.setOnProgressUpdateCallback((progress, solutions) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions);
+		});
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms");
 		});

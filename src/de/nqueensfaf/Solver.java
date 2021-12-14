@@ -21,7 +21,7 @@ import de.nqueensfaf.util.OnTimeUpdateCallback;
  * @author olepo
  */
 public abstract class Solver {
-	
+
 	/**
 	 * board size
 	 */
@@ -67,6 +67,10 @@ public abstract class Solver {
 	 */
 	private Thread t;
 	/**
+	 * if true, makes the Solver not calling the onProgressUpdate and onTimeUpdate callbacks
+	 */
+	private boolean updatesEnabled = false;
+	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
@@ -76,7 +80,7 @@ public abstract class Solver {
 	 * @see #nq(int, int, int, int, int, int)
 	 */
 	int solutionsSmallN = 0;
-	
+
 	// abstract methods
 	/**
 	 * Solves the N-Queens Problem.
@@ -119,7 +123,7 @@ public abstract class Solver {
 	 * @return current count of found solutions
 	 */
 	public abstract long getSolutions();
-	
+
 	/**
 	 * Calls all initialization callbacks, then starts the {@link Solver}'s run()-method, then calls all termination callbacks.
 	 * @throws InterruptedException if the time limit is exceeded while waiting for the Solverthread to shutdown after terminating (time limit is the bigger one of progressUpdateDelay and timeUpdateDelay)
@@ -132,11 +136,12 @@ public abstract class Solver {
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
-		
+
 		state = NQueensFAF.RUNNING;
-		startUpdateCallerThreads();
+		if(updatesEnabled)
+			startUpdateCallerThreads();
 		run();
-		
+
 		state = NQueensFAF.TERMINATING;
 		terminationCaller();
 		ucExecutor.shutdown();
@@ -189,7 +194,7 @@ public abstract class Solver {
 			throw new IllegalStateException("Solver is already done, nothing to do here");
 		}
 	}
-	
+
 	/**
 	 * Starts the threads that continously update the {@link Solver}'s duration and progress using the related delay.
 	 * The threads run until the {@link Solver} is finished.
@@ -279,8 +284,16 @@ public abstract class Solver {
 		}
 	}
 
-		
-	
+	/**
+	 * Enables or disables progress and time updates.
+	 * @param updatesEnabled if true, enables updates (default value); if false, disables updates.
+	 * @return the {@link Solver}
+	 */
+	public final Solver setUpdatesEnabled(boolean updatesEnabled) {
+		this.updatesEnabled = updatesEnabled;
+		return this;
+	}
+
 	/**
 	 * Adds a callback that will be executed on start of the {@link Solver}.
 	 * The callbacks will be called in reversed insertion order.
@@ -314,7 +327,7 @@ public abstract class Solver {
 		termination.add(r);
 		return this;
 	}
-	
+
 	/**
 	 * Calls all initialization callbacks in reversed insertion order.
 	 */
@@ -323,7 +336,7 @@ public abstract class Solver {
 			r.run();
 		}
 	}
-	
+
 	/**
 	 * Calls all termination callbacks in reversed insertion order.
 	 */
@@ -332,7 +345,7 @@ public abstract class Solver {
 			r.run();
 		}
 	}
-	
+
 	// Getters and Setters
 	/**
 	 * Gets {@link #N}.
@@ -359,7 +372,7 @@ public abstract class Solver {
 		N = n;
 		return this;
 	}
-	
+
 	/**
 	 * Gets {@link #onTimeUpdateCallback}.
 	 * @return {@link #onTimeUpdateCallback}
@@ -403,7 +416,7 @@ public abstract class Solver {
 		}
 		return this;
 	}
-	
+
 	/**
 	 * Gets {@link #timeUpdateDelay}.
 	 * @return {@link #timeUpdateDelay}
