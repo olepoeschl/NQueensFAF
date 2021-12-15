@@ -69,7 +69,7 @@ public abstract class Solver {
 	/**
 	 * if true, makes the Solver not calling the onProgressUpdate and onTimeUpdate callbacks
 	 */
-	private boolean updatesEnabled = false;
+	private boolean updatesEnabled = true;
 	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
