@@ -71,6 +71,27 @@ public abstract class Solver {
 	 */
 	private boolean updatesEnabled = true;
 	/**
+	 * thread for the {@link #autoSave} function
+	 * @see 
+	 */
+	private Thread autoSaverThread;
+	/**
+	 * if true, the Solver automatically calls store() using {@link #autoSaveFilename} if a specific progress percentage step is completed
+	 * @see #autoSavePercentageStep
+	 */
+	private boolean autoSaveEnabled = false;
+	/**
+	 * after the progress increases by this or more percentage, store() is automatically called.
+	 * only used when {@link #autoSave} is true
+	 */
+	private int autoSavePercentageStep = 10;
+	/**
+	 * the filename (format) used for the autosave feature.
+	 * only used when {@link #autoSave} is true
+	 * @see #autoSavePercentageStep
+	 */
+	private String autoSaveFilename = "N{N}.nqf";
+	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
@@ -140,6 +161,8 @@ public abstract class Solver {
 		state = NQueensFAF.RUNNING;
 		if(updatesEnabled)
 			startUpdateCallerThreads();
+		if(autoSaveEnabled)
+			startAutoSaverThread();
 		run();
 
 		state = NQueensFAF.TERMINATING;
@@ -245,6 +268,38 @@ public abstract class Solver {
 	}
 
 	/**
+	 * Starts the thread that continously checks if the progress has increased by {@link #autoSavePercentageStep} or more,
+	 * and if yes, calls store() using {@link #autoSaveFilename} the current Solver.
+	 * Only used when {@link #autoSave} is true
+	 * @see #autoSaverThread
+	 */
+	private void startAutoSaverThread() {
+		autoSaverThread = new Thread(() -> {
+			String filename = autoSaveFilename;
+			if(filename.contains("{N}")) {
+				filename.replace("{N}", "" + N);
+			}
+			float tmpProgress = 0;
+			while(isRunning()) {
+				if(getProgress()*100 >= tmpProgress + autoSavePercentageStep) {
+					try {
+						store(filename);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					tmpProgress = getProgress();
+				}
+				try {
+					Thread.sleep(300);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		autoSaverThread.start();
+	}
+	
+	/**
 	 * Can be used for solving the problem for small N's (board sizes).
 	 * @return the number of solutions
 	 */
@@ -282,16 +337,6 @@ public abstract class Solver {
 			if(nextfree > 0)
 				nq((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree, mask);
 		}
-	}
-
-	/**
-	 * Enables or disables progress and time updates.
-	 * @param updatesEnabled if true, enables updates (default value); if false, disables updates.
-	 * @return the {@link Solver}
-	 */
-	public final Solver setUpdatesEnabled(boolean updatesEnabled) {
-		this.updatesEnabled = updatesEnabled;
-		return this;
 	}
 
 	/**
@@ -458,6 +503,81 @@ public abstract class Solver {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
 		}
 		this.progressUpdateDelay = progressUpdateDelay;
+		return this;
+	}
+
+	/**
+	 * Gets {@link #updatesEnabled}.
+	 * @return {@link #updatesEnabled}
+	 */
+	public final boolean areUpdatesEnabled() {
+		return updatesEnabled;
+	}
+	/**
+	 * Enables or disables progress and time updates.
+	 * Chainable.
+	 * @param updatesEnabled if true, enables updates (default value); if false, disables updates.
+	 * @return the {@link Solver}
+	 */
+	public final Solver setUpdatesEnabled(boolean updatesEnabled) {
+		this.updatesEnabled = updatesEnabled;
+		return this;
+	}
+
+	/**
+	 * Gets {@link #autoSaveEnabled}.
+	 * @return {@link #autoSaveEnabled}
+	 */
+	public final boolean isAutoSaveEnabled() {
+		return autoSaveEnabled;
+	}
+	/**
+	 * Enables or disables the auto save function.
+	 * Chainable.
+	 * @param autoSaveEnabled if true, enables automatic saving of the current Solver; if false, disables automatic saving (default value).
+	 * @return the {@link Solver}
+	 */
+	public final Solver setAutoSaveEnabled(boolean autoSaveEnabled) {
+		this.autoSaveEnabled = autoSaveEnabled;
+		return this;
+	}
+	
+	/**
+	 * Gets {@link #autoSavePercentageStep}.
+	 * @return {@link #autoSavePercentageStep}
+	 */
+	public final int getAutoSavePercentageStep() {
+		return autoSavePercentageStep;
+	}
+	/**
+	 * Sets {@link #autoSavePercentageStep}.
+	 * Chainable.
+	 * @param autoSavePercentageStep
+	 * @return the {@link Solver}
+	 */
+	public final Solver setAutoSavePercentageStep(int autoSavePercentageStep) {
+		if(autoSavePercentageStep <= 0 || autoSavePercentageStep >= 100) {
+			throw new IllegalArgumentException("progressUpdateDelay must be a number between 0 and 100");
+		}
+		this.autoSavePercentageStep = autoSavePercentageStep;
+		return this;
+	}
+	
+	/**
+	 * Gets {@link #autoSaveFilename}.
+	 * @return {@link #autoSaveFilename}
+	 */
+	public final String getAutoSaveFilename() {
+		return autoSaveFilename;
+	}
+	/**
+	 * Sets {@link #autoSaveFilename}.
+	 * Chainable.
+	 * @param autoSaveFilename
+	 * @return the {@link Solver}
+	 */
+	public final Solver setAutoSaveFilename(String autoSaveFilename) {
+		this.autoSaveFilename = autoSaveFilename;
 		return this;
 	}
 
