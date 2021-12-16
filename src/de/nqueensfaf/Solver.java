@@ -1,5 +1,6 @@
 package de.nqueensfaf;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -75,6 +76,11 @@ public abstract class Solver {
 	 * @see 
 	 */
 	private Thread autoSaverThread;
+	/**
+	 * if true, the Solver automatically deletes a file created by the auto save function using
+	 * only used when {@link #autoSave} is true
+	 */
+	private boolean autoDeleteEnabled = false;
 	/**
 	 * if true, the Solver automatically calls store() using {@link #autoSaveFilename} if a specific progress percentage step is completed
 	 * @see #autoSavePercentageStep
@@ -276,8 +282,9 @@ public abstract class Solver {
 	private void startAutoSaverThread() {
 		autoSaverThread = new Thread(() -> {
 			String filename = autoSaveFilename;
-			if(filename.contains("{N}")) {
-				filename.replace("{N}", "" + N);
+			filename = filename.replaceAll("#N#", ""+ N);
+			if(!filename.endsWith(".faf")) {
+				filename += ".faf";
 			}
 			float tmpProgress = 0;
 			while(isRunning()) {
@@ -294,6 +301,11 @@ public abstract class Solver {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+			}
+			if(autoDeleteEnabled) {
+				try {
+					new File(filename).delete();
+				} catch(SecurityException e) {}
 			}
 		});
 		autoSaverThread.start();
@@ -545,6 +557,24 @@ public abstract class Solver {
 	 */
 	public final Solver setAutoSaveEnabled(boolean autoSaveEnabled) {
 		this.autoSaveEnabled = autoSaveEnabled;
+		return this;
+	}
+
+	/**
+	 * Gets {@link #autoDeleteEnabled}.
+	 * @return {@link #autoDeleteEnabled}
+	 */
+	public final boolean isAutoDeleteEnabled() {
+		return autoDeleteEnabled;
+	}
+	/**
+	 * Enables or disables the auto delete function.
+	 * Chainable.
+	 * @param autoDeleteEnabled if true, enables automatic deleting of the files created by the auto save function
+	 * @return the {@link Solver}
+	 */
+	public final Solver setAutoDeleteEnabled(boolean autoDeleteEnabled) {
+		this.autoDeleteEnabled = autoDeleteEnabled;
 		return this;
 	}
 	
