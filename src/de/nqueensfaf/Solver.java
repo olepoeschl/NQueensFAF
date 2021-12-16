@@ -70,7 +70,7 @@ public abstract class Solver {
 	/**
 	 * if true, makes the Solver not calling the onProgressUpdate and onTimeUpdate callbacks
 	 */
-	private boolean updatesEnabled = true;
+	private boolean progressUpdatesEnabled = true;
 	/**
 	 * thread for the {@link #autoSave} function
 	 * @see 
@@ -165,7 +165,7 @@ public abstract class Solver {
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 		state = NQueensFAF.RUNNING;
-		if(updatesEnabled)
+		if(progressUpdatesEnabled)
 			startUpdateCallerThreads();
 		if(autoSaveEnabled)
 			startAutoSaverThread();
@@ -525,20 +525,20 @@ public abstract class Solver {
 	}
 
 	/**
-	 * Gets {@link #updatesEnabled}.
-	 * @return {@link #updatesEnabled}
+	 * Gets {@link #progressUpdatesEnabled}.
+	 * @return {@link #progressUpdatesEnabled}
 	 */
-	public final boolean areUpdatesEnabled() {
-		return updatesEnabled;
+	public final boolean areProgressUpdatesEnabled() {
+		return progressUpdatesEnabled;
 	}
 	/**
-	 * Enables or disables progress and time updates.
+	 * Enables or disables progress updates.
 	 * Chainable.
-	 * @param updatesEnabled if true, enables updates (default value); if false, disables updates.
+	 * @param progressUpdatesEnabled if true, enables updates (default value); if false, disables updates.
 	 * @return the {@link Solver}
 	 */
-	public final Solver setUpdatesEnabled(boolean updatesEnabled) {
-		this.updatesEnabled = updatesEnabled;
+	public final Solver setProgressUpdatesEnabled(boolean progressUpdatesEnabled) {
+		this.progressUpdatesEnabled = progressUpdatesEnabled;
 		return this;
 	}
 
