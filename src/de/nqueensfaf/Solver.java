@@ -118,14 +118,14 @@ public abstract class Solver {
 	 * @param filename name of the file the progress should be written in (existent or non existent)
 	 * @throws IOException
 	 */
-	public abstract void store(String filepath) throws IOException;
+	protected abstract void store_(String filepath) throws IOException;
 	/**
 	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
 	 * @param filename name of the file the progress was written in
 	 * @throws IOException
 	 * @throws ClassNotFoundException 
 	 */
-	public abstract void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+	protected abstract void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
 	/**
 	 * States if the Solver has been restored and therefore contains restored values.
 	 * @return true if restore() was called and the Solver was not started or resetted since, otherwise false
@@ -350,6 +350,43 @@ public abstract class Solver {
 		}
 	}
 
+	/**
+	 * Replaces all invalid characters of a String that is supposed to be a filename.
+	 * @param filename name of the file the Solver should store its progress state in
+	 * @return the given filename but without invalid characters reagrding filenames
+	 */
+	private String getValidFilename(String filename) throws IllegalArgumentException {
+		String newFilename = filename.replace("^\\.+", "").replaceAll("[\\\\/:*?\"<>|]", "");
+		if(newFilename.length() == 0) {
+			throw new IllegalArgumentException("Invalid filename: '" + filename + "'");
+		}
+		return newFilename;
+	}
+	
+	/**
+	 * Wraps store_().
+	 * @param filename name of the file the Solver's progress state should be stored in
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public void store(String filename) throws IOException, IllegalArgumentException {
+		filename = getValidFilename(filename);
+		store_(filename);
+	}
+
+	/**
+	 * Wraps restore_().
+	 * @param filename name of the file the Solver's progress state should be stored in
+	 * @throws IOException 
+	 * @throws ClassCastException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalArgumentException
+	 */
+	public void restore(String filename) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+		filename = getValidFilename(filename);
+		restore_(filename);
+	}
+	
 	/**
 	 * Adds a callback that will be executed on start of the {@link Solver}.
 	 * The callbacks will be called in reversed insertion order.
