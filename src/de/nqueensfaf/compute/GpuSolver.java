@@ -94,7 +94,7 @@ public class GpuSolver extends Solver {
 	private CLProgram program;
 	private CLKernel kernel;
 	private CLMem ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
-	private final int WORKGROUP_SIZE = 64;
+	private int WORKGROUP_SIZE = 64;
 	private int globalWorkSize;
 
 	// calculation related stuff
@@ -802,12 +802,31 @@ public class GpuSolver extends Solver {
 		return resultString;
 	}
 
+	// getters and setters
+	
 	// returns the total number of enqueued work-items 
 	public int getGlobalWorkSize() {
 		return globalWorkSize;
 	}
 	
-	// for saving and restoring
+	// gets WORKGROUP_SIZE
+	public int getWorkgroupSize() {
+		return WORKGROUP_SIZE;
+	}
+	
+	// sets WORKGROUP_SIZE
+	public void setWorkgroupSize(int s) {
+		if(device == null) {
+			throw new IllegalStateException("Choose a device first");
+		}
+		int maxWorkgroupSize = device.getInfoInt(CL10.CL_DEVICE_MAX_WORK_GROUP_SIZE);
+		if(s <= 0 || s >= maxWorkgroupSize) {
+			throw new IllegalArgumentException("WorkgroupSize must be between 0 and " + maxWorkgroupSize + " (=max for this device)");
+		}
+		WORKGROUP_SIZE = s;
+	}
+	
+	// record class for saving and restoring
 	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
 			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
 		RestorationInformation(int N, long duration, long solutions, int startConstCount, 
