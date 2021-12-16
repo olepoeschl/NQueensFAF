@@ -479,6 +479,9 @@ public abstract class Solver {
 	public final Solver setTimeUpdateDelay(long timeUpdateDelay) {
 		if(timeUpdateDelay < 0) {
 			throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
+		} else if(timeUpdateDelay== 0) {
+			this.timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY;
+			return this;
 		}
 		this.timeUpdateDelay = timeUpdateDelay;
 		return this;
@@ -501,6 +504,9 @@ public abstract class Solver {
 	public final Solver setProgressUpdateDelay(long progressUpdateDelay) {
 		if(progressUpdateDelay < 0) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
+		} else if(progressUpdateDelay== 0) {
+			this.progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+			return this;
 		}
 		this.progressUpdateDelay = progressUpdateDelay;
 		return this;
