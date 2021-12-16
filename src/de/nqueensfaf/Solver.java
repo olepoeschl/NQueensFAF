@@ -165,8 +165,7 @@ public abstract class Solver {
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 		state = NQueensFAF.RUNNING;
-		if(progressUpdatesEnabled)
-			startUpdateCallerThreads();
+		startUpdateCallerThreads();
 		if(autoSaveEnabled)
 			startAutoSaverThread();
 		run();
@@ -250,7 +249,7 @@ public abstract class Solver {
 				onTimeUpdateCallback.onTimeUpdate(getDuration());
 			});
 		}
-		if(onProgressUpdateCallback != null) {
+		if(progressUpdatesEnabled && onProgressUpdateCallback != null) {
 			ucExecutor.submit(() -> {
 				float tmpProgress = 0;
 				long tmpSolutions = 0;
