@@ -452,9 +452,7 @@ public class GpuSolver extends Solver {
 			for(int i = 0; i < diff; i++) {
 				list.add(new BoardProperties((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, 69 << 15, 0));
 			}
-			for(BoardProperties bp : list) {
-				bpList.add(bp);
-			}
+			bpList.addAll(list);
 		}
 		
 //		for(BoardProperties bp : bpList) {
