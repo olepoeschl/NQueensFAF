@@ -5,7 +5,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 // gpu intern indice
 	int g_id = get_global_id(0);												// global thread id
-	short l_id = get_local_id(0);												// local thread id within workgroup
+	int l_id = get_local_id(0);												// local thread id within workgroup
 	
 // variables	
 	// for the board
@@ -17,7 +17,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	uint L = 1 << (N-1);
 	
 	// start index
-	short start = start_jkl_arr[g_id] >> 15;
+	int start = start_jkl_arr[g_id] >> 15;
 	if(start == 69) {
 		progress[g_id] = -1;
 		return;
@@ -26,9 +26,9 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	// uint jdiag = L >> ((start_jkl_arr[g_id] >> 10) & 31);
 	
 	// k and l - row indice where a queen is already set and we have to go to the next row
-	short k = (start_jkl_arr[g_id] >> 5) & 31;
-	short l = start_jkl_arr[g_id] & 31;
-	short j = (start_jkl_arr[g_id] >> 10) & 31;
+	int k = (start_jkl_arr[g_id] >> 5) & 31;
+	int l = start_jkl_arr[g_id] & 31;
+	int j = (start_jkl_arr[g_id] >> 10) & 31;
 	uint rdiag = (L >> j) | (1 << k);
 	uint ldiag = (L >> j) | (L >> l);
 	local uint jklqueens[N];
@@ -69,64 +69,41 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	int direction = 1;
 	
 	// iterative loop representing the recursive setqueen-function
-	while(row >= start){
-		direction = (temp != 0);
-		row += (direction) ? 1 : -1;
-		if(direction) {																// if bit is on board
+	while(row >= start) {
+		if(temp) {																	// if bit is on board
+			col_mask |= temp;															// new col
 			ld_mem = ld_mem << 1 | ld >> 31;
 			rd_mem = rd_mem >> 1 | rd << 31;
 			ld = (ld | temp) << 1;													// shift diagonals to next line
-			rd = (rd | temp) >> 1;
+			rd = (rd | temp) >> 1;													
+				
+			row++;
+			diff = direction = 1;
 		}
 		else {
+			row--;																	// one row back
 			temp = bits[l_id][row];													// this saves 2 reads from local array
 			temp *= (row != k && row != l);
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~temp;								// shift diagonals one row up
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~temp;								// if there was a diagonal leaving the board in the line before, occupy it again
 			ld_mem >>= 1;															// shift those as well
 			rd_mem <<= 1;
+			
+			direction = 0;
+			diff = temp;
 		}
 		solvecounter += (row == N-1);
 		
-		diff = (direction) ? 1 : temp;
-		col_mask |= temp;
 		notfree = jklqueens[row] | ld | rd | col_mask;							// calculate occupancy of next row
-		col_mask = (direction) ? col_mask : col_mask & ~temp;
+		if(!direction)
+			col_mask &= ~temp;
 		
-		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
-		temp = (row == k && direction) ? L : temp;
-
-		bits[l_id][row] = temp;
-		
-		// unroll 1 iteration
-		if(row < start)
-			break;
-		direction = (temp != 0);
-		row += (direction) ? 1 : -1;
-		if(direction) {																	// if bit is on board
-			ld_mem = ld_mem << 1 | ld >> 31;
-			rd_mem = rd_mem >> 1 | rd << 31;
-			ld = (ld | temp) << 1;													// shift diagonals to next line
-			rd = (rd | temp) >> 1;
-		}
-		else {
-			temp = bits[l_id][row];													// this saves 2 reads from local array
-			temp *= (row != k && row != l);
-			ld = ((ld >> 1) | (ld_mem << 31)) & ~temp;								// shift diagonals one row up
-			rd = ((rd << 1) | (rd_mem >> 31)) & ~temp;								// if there was a diagonal leaving the board in the line before, occupy it again
-			ld_mem >>= 1;															// shift those as well
-			rd_mem <<= 1;
-		}
-		solvecounter += (row == N-1);
-		
-		diff = (direction) ? 1 : temp;
-		col_mask |= temp;
-		notfree = jklqueens[row] | ld | rd | col_mask;							// calculate occupancy of next row
-		col_mask = (direction) ? col_mask : col_mask & ~temp;
-
-		temp = (row == k || row == l) ? direction : ((notfree + diff) & ~notfree);
-		temp = (row == k && direction) ? L : temp;
-
+		temp = (notfree + diff) & ~notfree;
+		if(row == k)
+			temp = L * direction;
+		if(row == l)
+			temp = direction;
+			
 		bits[l_id][row] = temp;
 	}
 	result[g_id] = solvecounter;
