@@ -65,7 +65,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	bits[l_id][start] = temp;							 			// initialize bit as rightmost free space ('0' in notfree)
 	
 	// other variables											
-	uint diff = 1;
+	uint old_queen = 1;
 	int direction = 1;
 	
 	// iterative loop representing the recursive setqueen-function
@@ -78,7 +78,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 			rd = (rd | temp) >> 1;													
 				
 			row++;
-			diff = direction = 1;
+			old_queen = direction = 1;
 		}
 		else {
 			row--;																	// one row back
@@ -90,7 +90,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 			rd_mem <<= 1;
 			
 			direction = 0;
-			diff = temp;
+			old_queen = temp;
 		}
 		solvecounter += (row == N-1);
 		
@@ -98,7 +98,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		if(!direction)
 			col_mask &= ~temp;
 		
-		temp = (notfree + diff) & ~notfree;
+		temp = (notfree + old_queen) & ~notfree;
 		if(row == k)
 			temp = L * direction;
 		if(row == l)
