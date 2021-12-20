@@ -67,13 +67,13 @@ class GpuConstellationsGenerator {
 
 		// calculate starting constellations for no Queens in corners
 		// look above for if missing explanation
-		for(int k = 1; k < halfN; k++) {						// go through first col
-			for(int l = k+1; l < N-1; l++) {					// go through last col
-				for(int i = k+1; i < N-1; i++) {				// go through first row
+		for(int j = 1; j < halfN; j++) {						// go through first col
+			for(int l = j+1; l < N-1; l++) {					// go through last col
+				for(int i = j+1; i < N-1; i++) {				// go through first row
 					if(i == N-1-l)								// skip if occupied
 						continue;
-					for(int j = N-k-2; j > 0; j--) {			// go through last row
-						if(j==i || l == j)
+					for(int k = N-j-2; k > 0; k--) {			// go through last row
+						if(k==i || l == k)
 							continue;
 
 						if(!checkRotations(i, j, k, l)) {		// if no rotation-symmetric starting constellation already found
