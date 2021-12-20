@@ -324,7 +324,7 @@ public class GpuSolver extends Solver {
 	private void transferDataToDevice() {
 		if(savedDuration == 0) {		// if duration is 0, then restore() was not called
 			generator = new GpuConstellationsGenerator();
-			generator.genConstellations(N);
+			generator.genConstellations(N, WORKGROUP_SIZE);
 			
 			ldList = generator.ldList;
 			rdList = generator.rdList;
@@ -334,7 +334,7 @@ public class GpuSolver extends Solver {
 
 			startConstCount = generator.startConstCount;
 		}
-		sortIntoWorkgroups();
+		globalWorkSize = startConstCount;
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
@@ -404,79 +404,6 @@ public class GpuSolver extends Solver {
 		}
 		
 		CL10.clFlush(memqueue);
-	}
-
-	private void sortIntoWorkgroups() {
-		// binding all properties together
-		record BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
-			BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
-				this.ld = ld;
-				this.rd = rd;
-				this.col = col;
-				this.startjkl = startjkl;
-				this.sym = sym;
-			}
-		}
-		ArrayList<BoardProperties> bpList = new ArrayList<BoardProperties>();
-		for(int i = 0; i < startConstCount-savedSolvedConstellations; i++) {
-			bpList.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i), symList.get(i)));
-		}
-		
-		// sort by startjkl, putting constellations with equal startjkl's into the same workgroup
-		var sortingLists = new ArrayList<ArrayList<BoardProperties>>();
-		while(bpList.size() > 0) {
-			var sameStartjklList = new ArrayList<BoardProperties>();
-			int startjklWant = bpList.get(0).startjkl;
-			// search in startjklList for all values equal to startjklWant
-			// and add them to the current 'sameStartjklList'
-			outer: while(true) {
-				for(int x = 0; x < bpList.size(); x++) {
-					if(bpList.get(x).startjkl == startjklWant) {
-						sameStartjklList.add(bpList.get(x));
-						bpList.remove(x);
-						continue outer;
-					}
-				}
-				break;
-			}
-			sortingLists.add(sameStartjklList);
-		}
-		// now put the lists all together in bpList, thereby filling groups to fit the workgroup size
-		for(var list : sortingLists) {
-			// if the current list size is not divisible by WORKGROUP_SIZE, fill it with pseudo constellations
-			int newSize = list.size();
-			if(newSize % WORKGROUP_SIZE != 0) {
-				newSize = newSize - (newSize % WORKGROUP_SIZE) + WORKGROUP_SIZE;
-			}
-			int diff = newSize - list.size();
-			for(int i = 0; i < diff; i++) {
-				list.add(new BoardProperties((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, 69 << 15, 0));
-			}
-			bpList.addAll(list);
-		}
-		
-//		for(BoardProperties bp : bpList) {
-//			if(bp.startjkl == 69 << 15) {
-//				System.out.println("ld: " + bp.ld + ", rd: " + bp.rd + ", col: " + bp.col + ", sym: " + bp.sym + "-------- filler");
-//			} else {
-//				System.out.println("ld: " + bp.ld + ", rd: " + bp.rd + ", col: " + bp.col + ", sym: " + bp.sym);
-//			}
-//		}
-//		System.exit(0);
-		
-		ldList.clear();
-		rdList.clear();
-		colList.clear();
-		startjklList.clear();
-		symList.clear();
-		for(var bp : bpList) {
-			ldList.add(bp.ld);
-			rdList.add(bp.rd);
-			colList.add(bp.col);
-			startjklList.add(bp.startjkl);
-			symList.add(bp.sym);
-		}
-		globalWorkSize = ldList.size();
 	}
 	
 	private void explosionBoost9000() {

@@ -17,7 +17,7 @@ class GpuConstellationsGenerator {
 	int startConstCount;
 
 	// calculate occupancy of starting row
-	void genConstellations(int N) {
+	void genConstellations(int N, int WORKGROUP_SIZE) {
 		ldList = new ArrayList<Integer>();
 		rdList = new ArrayList<Integer>();
 		colList = new ArrayList<Integer>();
@@ -63,6 +63,9 @@ class GpuConstellationsGenerator {
 					klcounter[0][l]++;
 				}
 			}
+			while(ldList.size() % WORKGROUP_SIZE != 0) {
+				addTrashConstellation(j);
+			}
 		}
 
 		// calculate starting constellations for no Queens in corners
@@ -106,6 +109,9 @@ class GpuConstellationsGenerator {
 					}
 				}
 			}
+			while(ldList.size() % WORKGROUP_SIZE != 0) {
+				addTrashConstellation(j);
+			}
 		}
 		sortConstellations();
 		startConstCount = ldList.size();
@@ -120,6 +126,10 @@ class GpuConstellationsGenerator {
 
 	// presolver
 	private void sq5(int ld, int rd, int col, int k, int l, int row, int queens) {
+		if(row == k || row == l) {
+			sq5(ld<<1, rd>>>1, col, k, l, row+1, queens);
+			return;
+		}
 		if(queens == 5) {
 			ld &= ~(kbit << row);
 			rd &= ~(lbit >>> row);
@@ -137,10 +147,6 @@ class GpuConstellationsGenerator {
 			colList.add(col);
 			startList.add(row);
 			counter++;
-			return;
-		}
-		if(row == k || row == l) {
-			sq5(ld<<1, rd>>>1, col, k, l, row+1, queens);
 			return;
 		}
 		else {
@@ -216,6 +222,16 @@ class GpuConstellationsGenerator {
 //			//---
 //			System.out.println(list.get(i).jkl);
 		}
+	}
+	
+	// create trash constellation
+	private void addTrashConstellation(int j) {
+		ldList.add((1 << N) - 1);
+		rdList.add((1 << N) - 1);
+		colList.add((1 << N) - 1);
+		startList.add(69);
+		jklList.add(j << 10);
+		symList.add(0);
 	}
 
 	// helper functions

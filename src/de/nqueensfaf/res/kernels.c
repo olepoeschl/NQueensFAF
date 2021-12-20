@@ -29,11 +29,9 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	int k = (start_jkl_arr[g_id] >> 5) & 31;
 	int l = start_jkl_arr[g_id] & 31;
 	int j = (start_jkl_arr[g_id] >> 10) & 31;
-	uint rdiag = (L >> j) | (1 << k);
-	uint ldiag = (L >> j) | (L >> l);
-	local uint jklqueens[N];
+	local uint jqueen[N];
 	for(int a = N-1;a > 0; a--){
-		jklqueens[a] = (rdiag << (N-1-a)) | (ldiag >> (N-1-a));
+		jqueen[a] = (1 << (2*N-2-a-j)) | (L >> (N-1-a+j));
 	}
 	// init col_mask
 	col_mask |= col_mask_arr[g_id] | L | 1;
@@ -50,7 +48,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	rd |= (1 << l) >> row;
 	
 	// init klguard
-	uint notfree = ld | rd | col_mask | jklqueens[row];
+	uint notfree = ld | rd | col_mask | jqueen[row];
 	if(row == k)
 		notfree = ~L;
 	else if (row == l)
@@ -94,7 +92,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		}
 		solvecounter += (row == N-1);
 		
-		notfree = jklqueens[row] | ld | rd | col_mask;							// calculate occupancy of next row
+		notfree = jqueen[row] | ld | rd | col_mask;							// calculate occupancy of next row
 		if(!direction)
 			col_mask &= ~temp;
 		
