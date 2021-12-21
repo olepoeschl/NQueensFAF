@@ -296,7 +296,7 @@ public abstract class Solver {
 					tmpProgress = getProgress();
 				}
 				try {
-					Thread.sleep(300);
+					Thread.sleep(progressUpdateDelay);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
