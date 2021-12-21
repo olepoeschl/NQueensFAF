@@ -286,14 +286,19 @@ public abstract class Solver {
 				filename += ".faf";
 			}
 			float tmpProgress = 0;
+			float progress = 0;
 			while(isRunning()) {
-				if(getProgress()*100 >= tmpProgress + autoSavePercentageStep) {
+				progress = getProgress() * 100;
+				if(progress >= 100)
+					break;
+				else if(progress >= tmpProgress + autoSavePercentageStep) {
 					try {
 						store(filename, false);
+						System.out.println("stored at " + (getProgress()*100) + "%");
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					tmpProgress = getProgress();
+					tmpProgress = progress;
 				}
 				try {
 					Thread.sleep(progressUpdateDelay);
