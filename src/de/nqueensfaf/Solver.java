@@ -294,7 +294,6 @@ public abstract class Solver {
 				else if(progress >= tmpProgress + autoSavePercentageStep) {
 					try {
 						store(filename, false);
-						System.out.println("stored at " + (getProgress()*100) + "%");
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
