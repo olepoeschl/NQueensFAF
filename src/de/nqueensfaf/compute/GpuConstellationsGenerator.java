@@ -235,6 +235,15 @@ class GpuConstellationsGenerator {
 		jklList.add(j << 10);
 		symList.add(0);
 	}
+	
+	public void addTrashConstellation(int j, ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, 
+			ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
+		ldList.add((1 << N) - 1);
+		rdList.add((1 << N) - 1);
+		colList.add((1 << N) - 1);
+		startjklList.add((69 << 15) | (j << 10));
+		symList.add(0);
+	}
 
 	// helper functions
 	// true, if starting constellation rotated by any angle has already been found

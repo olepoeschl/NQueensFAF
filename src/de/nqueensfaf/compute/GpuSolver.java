@@ -172,7 +172,7 @@ public class GpuSolver extends Solver {
 				for(int i = 0; i < globalWorkSize; i++) {
 					if(progressBuf.get(i) == 1) {
 						solutions += resBuf.get(i) * symList.get(i);
-					} else if(progressBuf.get(i) == 0 && startjklList.get(i) != (69 << 15)) {
+					} else if(progressBuf.get(i) == 0 && startjklList.get(i) >> 15 != 69) {
 						ldListTmp.add(ldList.get(i));
 						rdListTmp.add(rdList.get(i));
 						colListTmp.add(colList.get(i));
@@ -217,12 +217,24 @@ public class GpuSolver extends Solver {
 		colList = new ArrayList<Integer>();
 		startjklList = new ArrayList<Integer>();
 		symList = new ArrayList<Integer>();
+		
+		generator = new GpuConstellationsGenerator();
+		int currentJ = (resInfo.startjklList.get(0) >> 10) & 31;
 		for(int i = 0; i < resInfo.ldList.size(); i++) {
+			if(((resInfo.startjklList.get(i) >> 10) & 31) != currentJ) {	// check if new j is found
+				while(ldList.size() % WORKGROUP_SIZE != 0) {
+					generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
+					currentJ = (resInfo.startjklList.get(i) >> 10) & 31;
+				}
+			}
 			ldList.add(resInfo.ldList.get(i));
 			rdList.add(resInfo.rdList.get(i));
 			colList.add(resInfo.colList.get(i));
 			startjklList.add(resInfo.startjklList.get(i));
 			symList.add(resInfo.symList.get(i));
+		}
+		while(ldList.size() % WORKGROUP_SIZE != 0) {
+			generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
 		}
 		restored = true;
 	}
