@@ -65,6 +65,7 @@ class GpuConstellationsGenerator {
 			}
 			while(ldList.size() % WORKGROUP_SIZE != 0) {
 				addTrashConstellation(j);
+				startConstCount--;
 			}
 		}
 
@@ -111,12 +112,13 @@ class GpuConstellationsGenerator {
 			}
 			while(ldList.size() % WORKGROUP_SIZE != 0) {
 				addTrashConstellation(j);
+				startConstCount--;
 			}
 		}
+		startConstCount += ldList.size();
 		sortConstellations();
-		startConstCount = ldList.size();
-		startjklList = new ArrayList<Integer>(startConstCount);
-		for(int i = 0; i < startConstCount; i++) {
+		startjklList = new ArrayList<Integer>(ldList.size());
+		for(int i = 0; i < ldList.size(); i++) {
 			startjklList.add((startList.get(i) << 15) | jklList.get(i));
 		}
 		// for the trash

@@ -334,7 +334,7 @@ public class GpuSolver extends Solver {
 
 			startConstCount = generator.startConstCount;
 		}
-		globalWorkSize = startConstCount;
+		globalWorkSize = ldList.size();
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
