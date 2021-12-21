@@ -29,9 +29,10 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	int k = (start_jkl_arr[g_id] >> 5) & 31;
 	int l = start_jkl_arr[g_id] & 31;
 	int j = (start_jkl_arr[g_id] >> 10) & 31;
+	uint jdiag = (L >> j);
 	local uint jqueen[N];
 	for(int a = N-1;a > 0; a--){
-		jqueen[a] = (1 << (2*N-2-a-j)) | (L >> (N-1-a+j));
+		jqueen[a] = (jdiag >> N-1-a) | (jdiag << (N-1-a));
 	}
 	// init col_mask
 	col_mask |= col_mask_arr[g_id] | L | 1;
