@@ -1,9 +1,8 @@
 //	//	//	//	//	//	//	//	//
 //	  Explosion Boost 9000		//
 //	//	//	//	//	//	//	//	//
+__kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_arr, global int *start_jkl_arr, global long *result, global int *progress) {
 
-__kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_arr, global int *start_jkl_arr, global uint *result, global int *progress) {
-	
 // gpu intern indice
 	int g_id = get_global_id(0);							// global thread id
 	int l_id = get_local_id(0);								// local thread id within workgroup

@@ -12,6 +12,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -85,7 +86,8 @@ public class GpuSolver extends Solver {
 	}
 
 	// OpenCL stuff
-	private IntBuffer errBuf, resBuf, progressBuf;
+	private IntBuffer errBuf, progressBuf;
+	private LongBuffer resBuf;
 	private CLContext context;
 	private CLPlatform platform;
 	private List<CLDevice> devices;
@@ -390,16 +392,16 @@ public class GpuSolver extends Solver {
 		CL10.clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
 
 		// result memory
-		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
 		synchronized(resMem) {
 			Util.checkCLError(errBuf.get(0));
-			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
+			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf);
 			Util.checkCLError(errBuf.get(0));
 			for(int i = 0; i < globalWorkSize; i++) {
-				resWritePtr.putInt(i*4, 0);
+				resWritePtr.putLong(i*8, 0);
 			}
 			CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-			resBuf = BufferUtils.createIntBuffer(globalWorkSize);
+			resBuf = BufferUtils.createLongBuffer(globalWorkSize);
 		}
 
 		// progress indicator memory
