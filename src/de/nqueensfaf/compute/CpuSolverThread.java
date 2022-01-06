@@ -1,6 +1,7 @@
 package de.nqueensfaf.compute;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 class CpuSolverThread extends Thread {
 
@@ -18,7 +19,8 @@ class CpuSolverThread extends Thread {
 	private int pause = 0;
 	private CpuSolver caller;
 
-	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations, CpuSolver caller) {
+	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations, CpuSolver caller, 
+			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startQueensIjklList) {
 		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
@@ -648,7 +650,7 @@ class CpuSolverThread extends Thread {
 		
 		for(int idx = 0; idx < listsize; idx++) {
 			// apply jasmin and get i, j, k, l
-			ijkl = jasmin(startConstellations.getFirst());
+			ijkl = startConstellations.getFirst();
 			i = geti(ijkl); j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
 
 			// big case distinction depending on distance d from queen j to right corner
@@ -904,10 +906,7 @@ class CpuSolverThread extends Thread {
 		else
 			return 8;					// none of the above?
 	}
-	// i, j, k, l to ijkl and functions to get specific entry
-	private int toijkl(int i, int j, int k, int l) {
-		return (i<<24) + (j<<16) + (k<<8) + l;
-	}
+	
 	private int geti(int ijkl) {
 		return ijkl >> 24;
 	}
@@ -919,40 +918,6 @@ class CpuSolverThread extends Thread {
 	}
 	private int getl(int ijkl) {
 		return ijkl & 255;
-	}
-	// rotate and mirror board, so that the queen closest to a corner is on the right side of the last row
-	private int jasmin(int ijkl) {
-		int min = Math.min(getj(ijkl), N-1 - getj(ijkl)), arg = 0;
-
-		if(Math.min(geti(ijkl), N-1 - geti(ijkl)) < min) {
-			arg = 2;
-			min = Math.min(geti(ijkl), N-1 - geti(ijkl));
-		}
-		if(Math.min(getk(ijkl), N-1 - getk(ijkl)) < min) {
-			arg = 3;
-			min = Math.min(getk(ijkl), N-1 - getk(ijkl));
-		}
-		if(Math.min(getl(ijkl), N-1 - getl(ijkl)) < min) {
-			arg = 1;
-			min = Math.min(getl(ijkl), N-1 - getl(ijkl));
-		}
-
-		for(int i = 0; i < arg; i++) {
-			ijkl = rot90(ijkl);
-		}
-
-		if(getj(ijkl) < N-1 - getj(ijkl))
-			ijkl = mirvert(ijkl);
-
-		return ijkl;
-	}
-	// mirror left-right
-	private int mirvert(int ijkl) {
-		return toijkl(N-1-geti(ijkl), N-1-getj(ijkl), getl(ijkl), getk(ijkl));
-	}
-	// rotate 90 degrees clockwise
-	private int rot90(int ijkl) {
-		return ((N-1-getk(ijkl))<<24) + ((N-1-getl(ijkl))<<16) + (getj(ijkl)<<8) + geti(ijkl);
 	}
 }
 

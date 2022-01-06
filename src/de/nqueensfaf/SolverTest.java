@@ -33,7 +33,8 @@ class SolverTest {
 //	@Test
 //	void testCpuSolver() {
 //		CpuSolver s = new CpuSolver();
-//		s.setN(6);
+//		s.setN(17);
+//		s.setThreadcount(4);
 //		s.addTerminationCallback(() -> {
 //			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms");
 //		});
@@ -52,7 +53,7 @@ class SolverTest {
 		GpuSolver s = new GpuSolver();
 		s.setDevice(0);
 		s.setProgressUpdatesEnabled(false);
-		s.setN(17);
+		s.setN(18);
 		new Thread(() -> {
 			while(true) {
 				if(s.getGlobalWorkSize() == 0) {
