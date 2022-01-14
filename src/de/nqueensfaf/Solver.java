@@ -285,8 +285,8 @@ public abstract class Solver {
 			if(!filename.endsWith(".faf")) {
 				filename += ".faf";
 			}
-			float tmpProgress = 0;
-			float progress = 0;
+			float progress = getProgress() * 100;
+			int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
 			while(isRunning()) {
 				progress = getProgress() * 100;
 				if(progress >= 100)
@@ -297,7 +297,7 @@ public abstract class Solver {
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					tmpProgress = progress;
+					tmpProgress = (int) progress;
 				}
 				try {
 					Thread.sleep(progressUpdateDelay);
