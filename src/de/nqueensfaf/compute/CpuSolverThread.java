@@ -12,15 +12,16 @@ class CpuSolverThread extends Thread {
 	private int mark1, mark2, mark3;
  
 	// list of uncalculated starting positions, their indices
-	private ArrayDeque<Integer> startConstellations;
+	private ArrayDeque<Integer> startConstellations, ldList, rdList, colList, startQueensIjklList;
 	
 	// for pausing or cancelling the run
 	private boolean cancel = false, running = false;
 	private int pause = 0;
 	private CpuSolver caller;
 
-	CpuSolverThread(int N, ArrayDeque<Integer> startConstellations, CpuSolver caller, 
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startQueensIjklList) {
+	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> startConstellations, ArrayDeque<Integer> ldList, 
+			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startQueensIjklList) {
+		this.caller = caller;
 		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
@@ -29,7 +30,10 @@ class CpuSolverThread extends Thread {
 		L3 = 1 << N3;
 		L4 = 1 << N4;
 		this.startConstellations = startConstellations;
-		this.caller = caller;
+		this.ldList = ldList;
+		this.rdList = rdList;
+		this.colList = colList;
+		this.startQueensIjklList = startQueensIjklList;
 	}
 
 	// Recursive functions for Placing the Queens

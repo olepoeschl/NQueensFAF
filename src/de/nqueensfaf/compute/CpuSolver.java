@@ -19,7 +19,7 @@ public class CpuSolver extends Solver {
 
 	private final int smallestN = 6;
 	private int threadcount = 1;
-	private int kbit, lbit, preQueens = 4, L, mask, LD, RD, counter;
+	private int kbit, lbit, preQueens = 5, L, mask, LD, RD, counter;
 	private long start, end;
 	private HashSet<Integer> startConstellations = new HashSet<Integer>();
 	private ArrayList<Integer> ldList = new ArrayList<Integer>(), rdList = new ArrayList<Integer>(), colList = new ArrayList<Integer>(); 
@@ -53,20 +53,51 @@ public class CpuSolver extends Solver {
 			startConstCount = startConstellations.size();
 		}
 
+		System.out.println(startConstellations.size() == ldList.size());
+		
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
-		ArrayList<ArrayDeque<Integer>> threadConstellations = new ArrayList<ArrayDeque<Integer>>(threadcount);
-		for(int i = 0; i < threadcount; i++) {
-			threadConstellations.add(new ArrayDeque<Integer>());
+		ArrayList<ArrayList<ArrayDeque<Integer>>> threadConstellations = new ArrayList<ArrayList<ArrayDeque<Integer>>>();
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// startConstellations, just keeping for backwards compatibility
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// ld
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// rd
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// col
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// startQueensIjkl
+		for(var list : threadConstellations) {
+			for(int i = 0; i < threadcount; i++) {
+				list.add(new ArrayDeque<Integer>());
+			}
 		}
+		// startConstellations
 		int i = 0;
 		for(int constellation : startConstellations) {
-			threadConstellations.get((i++) % threadcount).addFirst(constellation);
+			threadConstellations.get(0).get((i++) % threadcount).addFirst(constellation);
+		}
+		// ld
+		i = 0;
+		for(int ld : ldList) {
+			threadConstellations.get(1).get((i++) % threadcount).addFirst(ld);
+		}
+		// rd
+		i = 0;
+		for(int rd : rdList) {
+			threadConstellations.get(2).get((i++) % threadcount).addFirst(rd);
+		}
+		// col
+		i = 0;
+		for(int col : colList) {
+			threadConstellations.get(3).get((i++) % threadcount).addFirst(col);
+		}
+		// startQueensIjkl
+		i = 0;
+		for(int startQueensIjkl : startQueensIjklList) {
+			threadConstellations.get(4).get((i++) % threadcount).addFirst(startQueensIjkl);
 		}
 
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for(i = 0; i < threadcount; i++) {
-			CpuSolverThread cpuSolverThread = new CpuSolverThread(N, threadConstellations.get(i), this, ldList, rdList, colList, startQueensIjklList);
+			CpuSolverThread cpuSolverThread = new CpuSolverThread(this, N, threadConstellations.get(0).get(i), threadConstellations.get(1).get(i), 
+					threadConstellations.get(2).get(i), threadConstellations.get(3).get(i), threadConstellations.get(4).get(i));
 			threads.add(cpuSolverThread);
 			executor.submit(cpuSolverThread);
 		}
@@ -147,6 +178,10 @@ public class CpuSolver extends Solver {
 		timePassed = 0;
 		pauseStart = 0;
 		startConstellations.clear();
+		ldList.clear();
+		rdList.clear();
+		colList.clear();
+		startQueensIjklList.clear();
 		solvedConstellations = 0;
 		solutions = 0;
 		threads.clear();
@@ -256,6 +291,7 @@ public class CpuSolver extends Solver {
 			setPreQueens(ld, rd, col, k, l, 1, 4);
 			currentSize = startQueensIjklList.size();
 			// jkl and sym and start are the same for all subconstellations 
+			System.out.println(counter);
 			for(int a = 0; a < counter; a++) {
 				startQueensIjklList.set(currentSize-a-1, startQueensIjklList.get(currentSize-a-1) | (preQueens << 20) | toijkl(i, j, k, l));
 			}
