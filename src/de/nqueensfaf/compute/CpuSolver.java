@@ -17,7 +17,7 @@ import de.nqueensfaf.Solver;
 
 public class CpuSolver extends Solver {
 
-	private final int smallestN = 6;
+	private static final int smallestN = 6;
 	private int threadcount = 1;
 	private int kbit, lbit, preQueens = 5, L, mask, LD, RD, counter;
 	private long start, end;
@@ -52,8 +52,6 @@ public class CpuSolver extends Solver {
 			genConstellations();
 			startConstCount = startConstellations.size();
 		}
-
-		System.out.println(startConstellations.size() == ldList.size());
 		
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
 		ArrayList<ArrayList<ArrayDeque<Integer>>> threadConstellations = new ArrayList<ArrayList<ArrayDeque<Integer>>>();
@@ -187,7 +185,6 @@ public class CpuSolver extends Solver {
 		threads.clear();
 		startConstCount = 0;
 		restored = false;
-		System.gc();
 	}
 
 	@Override
@@ -291,7 +288,6 @@ public class CpuSolver extends Solver {
 			setPreQueens(ld, rd, col, k, l, 1, 4);
 			currentSize = startQueensIjklList.size();
 			// jkl and sym and start are the same for all subconstellations 
-			System.out.println(counter);
 			for(int a = 0; a < counter; a++) {
 				startQueensIjklList.set(currentSize-a-1, startQueensIjklList.get(currentSize-a-1) | (preQueens << 20) | toijkl(i, j, k, l));
 			}

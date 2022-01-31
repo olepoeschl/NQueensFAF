@@ -260,7 +260,6 @@ public class GpuSolver extends Solver {
 		end = 0;
 		gpuDone = false;
 		restored = false;
-		System.gc();
 	}
 
 	@Override
@@ -393,29 +392,25 @@ public class GpuSolver extends Solver {
 
 		// result memory
 		resMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
-		synchronized(resMem) {
-			Util.checkCLError(errBuf.get(0));
-			ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf);
-			Util.checkCLError(errBuf.get(0));
-			for(int i = 0; i < globalWorkSize; i++) {
-				resWritePtr.putLong(i*8, 0);
-			}
-			CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-			resBuf = BufferUtils.createLongBuffer(globalWorkSize);
+		Util.checkCLError(errBuf.get(0));
+		ByteBuffer resWritePtr = CL10.clEnqueueMapBuffer(memqueue, resMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf);
+		Util.checkCLError(errBuf.get(0));
+		for(int i = 0; i < globalWorkSize; i++) {
+			resWritePtr.putLong(i*8, 0);
 		}
+		CL10.clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
+		resBuf = BufferUtils.createLongBuffer(globalWorkSize);
 
 		// progress indicator memory
 		progressMem = CL10.clCreateBuffer(context, CL10.CL_MEM_READ_ONLY | CL10.CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-		synchronized(progressMem) {
-			Util.checkCLError(errBuf.get(0));
-			ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
-			Util.checkCLError(errBuf.get(0));
-			for(int i = 0; i < globalWorkSize; i++) {
-				progressWritePtr.putInt(i*4, 0);
-			}
-			CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-			progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
+		Util.checkCLError(errBuf.get(0));
+		ByteBuffer progressWritePtr = CL10.clEnqueueMapBuffer(memqueue, progressMem, CL10.CL_TRUE, CL10.CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf);
+		Util.checkCLError(errBuf.get(0));
+		for(int i = 0; i < globalWorkSize; i++) {
+			progressWritePtr.putInt(i*4, 0);
 		}
+		CL10.clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
+		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
 		CL10.clFlush(memqueue);
 	}
@@ -715,11 +710,11 @@ public class GpuSolver extends Solver {
 	}
 
 	private String getKernelSourceAsString(String filepath) {
-		BufferedReader br = null;
 		String resultString = null;
-		try {
+		try (
 			InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
-			br = new BufferedReader(new InputStreamReader(clSourceFile));
+			BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));
+		){
 			String line = null;
 			StringBuilder result = new StringBuilder();
 			while((line = br.readLine()) != null) {
@@ -731,12 +726,6 @@ public class GpuSolver extends Solver {
 			e.printStackTrace();
 		} catch(IOException e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				br.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
 		}
 		return resultString;
 	}
