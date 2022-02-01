@@ -51,7 +51,7 @@ class SolverTest {
 //			e1.printStackTrace();
 //		}
 		GpuSolver s = new GpuSolver();
-		s.setDevice(0);
+		s.setDevice(1);
 		s.setProgressUpdatesEnabled(false);
 		s.setN(18);
 		new Thread(() -> {

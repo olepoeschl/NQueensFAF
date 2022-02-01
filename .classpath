@@ -7,6 +7,23 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
-	<classpathentry kind="lib" path="deps/lwjgl2.9.3/lwjgl.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl.jar" sourcepath="deps/lwjgl/lwjgl-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/NQueensFAF%20Library/deps/lwjgl/lwjgl-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-linux.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-linux-arm32.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-linux-arm64.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-macos.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-macos-arm64.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-windows.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-windows-arm64.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-natives-windows-x86.jar"/>
+	<classpathentry kind="lib" path="deps/lwjgl/lwjgl-opencl.jar" sourcepath="deps/lwjgl/lwjgl-opencl-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/NQueensFAF%20Library/deps/lwjgl/lwjgl-opencl-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
