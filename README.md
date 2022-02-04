@@ -9,6 +9,9 @@ See the "Releases" section.
 The library uses Java 17.
 <br>As stated below, this project depends on [LWJGL 3](http://www.lwjgl.org/), so make sure you include it in your project setup as well as its native jars.
 
+# Documentation
+Javadocs can be accessed [here](https://olepoeschl.github.io/NQueensFAF-Library/).
+
 # Usage
 ## Implementing an own Solver
 The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with code.
