@@ -11,7 +11,7 @@ The library uses Java 17.
 
 # Documentation
 Only the core package `de.nqueensfaf` is documented.
-You can access the javadocs [here](https://olepoeschl.github.io/NQueensFAF-Library/).
+<br>You can access the javadocs [here](https://olepoeschl.github.io/NQueensFAF-Library/).
 
 # Usage
 ## Implementing an own Solver
