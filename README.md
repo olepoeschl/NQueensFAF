@@ -31,4 +31,4 @@ Using the GpuSolver or your own Solver works just analogue.
 
 
 # Dependencies
-  The library uses [LWJGL 2](http://legacy.lwjgl.org/) to enable the use of OpenCL for the GPU solver.
+  The library uses [LWJGL 3](http://www.lwjgl.org/) to enable the use of OpenCL for the GPU solver.
