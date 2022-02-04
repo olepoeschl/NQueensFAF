@@ -80,6 +80,8 @@ public class GpuSolver extends Solver {
 	private List<Long> devices;
 	private long device;
 	private long xqueue, memqueue;
+	private long clEvent;
+	private CLEventCallback eventCB;
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
@@ -371,6 +373,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, ldList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// rd
 		rdMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -381,6 +384,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, rdList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// col
 		colMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -391,6 +395,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, colList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// startjkl
 		startjklMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -401,6 +406,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, startjklList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 
 		// result memory
 		resMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
@@ -411,6 +417,7 @@ public class GpuSolver extends Solver {
 			resWritePtr.putLong(i*8, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
 
 		// progress indicator memory
@@ -422,6 +429,7 @@ public class GpuSolver extends Solver {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
+		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
 		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
 		clFlush(memqueue);
@@ -472,11 +480,10 @@ public class GpuSolver extends Solver {
 		// set pseudo starttime
 		start = System.currentTimeMillis();
 		
-
 		// get exact time values using CLEvent
 		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-		long e = xEventBuf.get(0);
-        int errcode = clSetEventCallback(e, CL_COMPLETE, CLEventCallback.create((event, event_command_exec_status, user_data) -> {
+		clEvent = xEventBuf.get(0);
+        int errcode = clSetEventCallback(clEvent, CL_COMPLETE, eventCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
     		int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
     		checkCLError(err);
     		err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
@@ -515,15 +522,20 @@ public class GpuSolver extends Solver {
 	
 	private void terminate() {
 		// release all CL-objects
+		clReleaseEvent(clEvent);
+		//eventCB.free();
+		clReleaseCommandQueue(xqueue);
+		clReleaseCommandQueue(memqueue);
 		clReleaseKernel(kernel);
 		clReleaseProgram(program);
+		
 		clReleaseMemObject(ldMem);
 		clReleaseMemObject(rdMem);
 		clReleaseMemObject(colMem);
 		clReleaseMemObject(startjklMem);
 		clReleaseMemObject(resMem);
 		clReleaseMemObject(progressMem);
-		clReleaseCommandQueue(xqueue);
+		
 		int errcode = clReleaseContext(context);
         checkCLError(errcode);
 		contextCB.free();
