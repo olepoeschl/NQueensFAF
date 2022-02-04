@@ -15,7 +15,7 @@ The abstract class Solver provides a good structure for your own N Queens Solver
 But the Solver class also comes with many nice utilities like setting / adding callbacks for certain events and a method for running your Solver asynchronous.
 <br>Have a look into the Javadocs and just try it out.
 
-## Using a Solver
+## Using the CpuSolver
 To use for example the built in CpuSolver, do it like in the following code snippet:
 ```
 CpuSolver cpuSolver = new CpuSolver();
@@ -23,10 +23,20 @@ cpuSolver.setN(16);
 cpuSolver.setThreadcount(2);
 cpuSolver.setTimeUpdateDelay(50).setProgressUpdateDelay(50);
 cpuSolver.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("Progress: " + progress + " (" + solutions + " solutions)"));
-cpuSolver.addTerminationCallback(() -> System.out.println("Solver done after " + cpuSolver.getDuration() + " ms!"));
+cpuSolver.addTerminationCallback(() -> System.out.println("CPU finished after " + cpuSolver.getDuration() + " ms!"));
 cpuSolver.solve();
 ```
-Using the GpuSolver or your own Solver works just analogue.
+## Using the GpuSolver
+To use for example the built in CpuSolver, do it like in the following code snippet:
+```
+GpuSolver gpuSolver = new GpuSolver();
+gpuSolver.setN(19);
+gpuSolver.setDevice(0);
+gpuSolver.setTimeUpdateDelay(69).setProgressUpdateDelay(420);
+gpuSolver.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("Progress: " + progress + " (" + solutions + " solutions)"));
+gpuSolver.addTerminationCallback(() -> System.out.println("GPU finished after " + gpuSolver.getDuration() + " ms!"));
+gpuSolver.solve();
+```
 
 
 # Dependencies
