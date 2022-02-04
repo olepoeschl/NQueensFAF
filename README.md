@@ -10,7 +10,8 @@ The library uses Java 17.
 <br>As stated below, this project depends on [LWJGL 3](http://www.lwjgl.org/), so make sure you include it in your project setup as well as its native jars.
 
 # Documentation
-Javadocs can be accessed [here](https://olepoeschl.github.io/NQueensFAF-Library/).
+Only the core package `de.nqueensfaf` is documented.
+You can access the javadocs [here](https://olepoeschl.github.io/NQueensFAF-Library/).
 
 # Usage
 ## Implementing an own Solver
