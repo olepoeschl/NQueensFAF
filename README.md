@@ -6,9 +6,8 @@ A Java library for easily implementing custom solvers (algorithms) for the N Que
 Download the latest .jar of NQueensFAF library [here](https://github.com/olepoeschl/NQueensFAF-Library/releases/download/v1.2/NQueensFAF.library.jar) (see latest release).
 
 # Getting Started
-The library uses Java 16.
-<br>As stated below, this project depends on [LWJGL 2](http://legacy.lwjgl.org/), so make sure you include it in your project setup. NQueensFAF library comes with the native dynamic library files of LWJGL2  and automatically extracts the correct file depending on your operating system, so all you need is the lwjgl.jar from LWJGL 2. It also tries to automatically clear the extracted file at the end of the Java program, but that may sometimes not work when the JVM crashes or similar things happen. That's done using a self deleting script, some anti virus programs may detect it as a virus. It's not. You can [have a look into the scripts](https://github.com/olepoeschl/NQueensFAF-Library/tree/master/src/de/nqueensfaf/res) yourself, they are very short.
-<br>Okay that's it for getting started.
+The library uses Java 17.
+<br>As stated below, this project depends on [LWJGL 3](http://www.lwjgl.org/), so make sure you include it in your project setup as well as its native jars.
 
 # Usage
 ## Implementing an own Solver
