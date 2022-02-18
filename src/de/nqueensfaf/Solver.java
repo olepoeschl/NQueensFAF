@@ -42,7 +42,8 @@ public abstract class Solver {
 	/**
 	 * delay between progress updates
 	 */
-	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+//	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+	protected long progressUpdateDelay = 128;
 	/**
 	 * executor of the update callbacks (uc)
 	 * @see #startUpdateCallerThreads()
