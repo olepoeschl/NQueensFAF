@@ -172,13 +172,14 @@ public abstract class Solver {
 		run();
 
 		state = NQueensFAF.TERMINATING;
-		terminationCaller();
 		ucExecutor.shutdown();
 		try {
 			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay+1000 : progressUpdateDelay+1000, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		terminationCaller();
+		
 		state = NQueensFAF.IDLE;
 	}
 	/**
