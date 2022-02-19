@@ -111,22 +111,35 @@ public class SymSolver extends Solver{
 			return System.currentTimeMillis() - start;
 	}
 
+	/**
+	 * not supported 
+	 */
 	@Override
 	public float getProgress() {
-		throw new IllegalStateException("Not supported.");
+		return 0;
 	}
+	/**
+	 * not supported 
+	 */
 	@Override
 	public long getSolutions() {
-		throw new IllegalStateException("Not supported.");
+		return 0;
 	}
+	/**
+	 * not supported 
+	 */
 	@Override
 	protected void store_(String filepath) throws IOException {
-		throw new IllegalStateException("Not supported.");
 	}
+	/**
+	 * not supported 
+	 */
 	@Override
 	protected void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
-		throw new IllegalStateException("Not supported.");
 	}
+	/**
+	 * not supported 
+	 */
 	@Override
 	public boolean isRestored() {
 		return false;
