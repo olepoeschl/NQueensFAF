@@ -212,7 +212,6 @@ public class CpuSolver extends Solver {
 		for(CpuSolverThread t : threads) {
 			done += t.getDone();
 		}
-		System.out.println(done / startConstCount);
 		return done / startConstCount;
 	}
 

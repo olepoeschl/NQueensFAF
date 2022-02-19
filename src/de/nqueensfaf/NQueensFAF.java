@@ -31,7 +31,7 @@ public final class NQueensFAF {
 	/**
 	 * Default value for {@link Solver#timeUpdateDelay} in milliseconds.
 	 */
-	static final int DEFAULT_TIME_UPDATE_DELAY = 100;
+	static final int DEFAULT_TIME_UPDATE_DELAY = 128;
 	/**
 	 * Default value for {@link Solver#progressUpdateDelay} in milliseconds.
 	 */
