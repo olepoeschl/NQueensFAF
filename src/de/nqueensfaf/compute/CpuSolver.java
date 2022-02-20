@@ -208,6 +208,8 @@ public class CpuSolver extends Solver {
 	public float getProgress() {
 		if(restored && isIdle())
 			return (float) solvedConstellations / startConstCount;
+		if(startConstCount == 0)
+			return 0;
 		float done = solvedConstellations;
 		for(CpuSolverThread t : threads) {
 			done += t.getDone();
