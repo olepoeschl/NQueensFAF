@@ -747,6 +747,11 @@ public class GpuSolver extends Solver {
 		WORKGROUP_SIZE = s;
 	}
 
+	// gets PRE_QUEENS
+	public int getNumberOfPresetQueens() {
+		return PRE_QUEENS;
+	}
+	
 	// sets PRE_QUEENS
 	public void setNumberOfPresetQueens(int pq) {
 		if(pq < 4 || pq > 10) {
