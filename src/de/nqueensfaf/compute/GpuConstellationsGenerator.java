@@ -7,15 +7,15 @@ import java.util.HashSet;
 
 class GpuConstellationsGenerator {
 
-	private int N, preQueens = 5, L, mask, LD, RD, counter;
+	private int N, preQueens, L, mask, LD, RD, counter;
 	private int kbit, lbit; 					
 	private HashSet<Integer> startConstellations;
 	private ArrayList<Integer> jklList, startList;
 	ArrayList<Integer> ldList, rdList, colList, startjklList, symList;
 	int startConstCount;
-
+	
 	// generate starting constellations 
-	void genConstellations(int N, int WORKGROUP_SIZE) {
+	void genConstellations(int N, int WORKGROUP_SIZE, int preQueens) {
 		// the name says it all
 		ldList = new ArrayList<Integer>();
 		rdList = new ArrayList<Integer>();
@@ -37,6 +37,9 @@ class GpuConstellationsGenerator {
 		this.N = N;
 		final int halfN = (N + 1) / 2;
 		startConstellations = new HashSet<Integer>();
+		
+		// set number of preset queens
+		this.preQueens = preQueens;
 
 		// calculating start constellations with the first Queen on square (0,0) (corner) 
 		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				

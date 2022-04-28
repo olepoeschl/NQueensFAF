@@ -86,6 +86,7 @@ public class GpuSolver extends Solver {
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
 	private int WORKGROUP_SIZE = 64;
+	private int PRE_QUEENS = 5;
 	private int globalWorkSize;
 
 	// calculation related stuff
@@ -351,7 +352,7 @@ public class GpuSolver extends Solver {
 	private void transferDataToDevice(MemoryStack stack) {
 		if(savedDuration == 0) {		// if duration is 0, then restore() was not called
 			generator = new GpuConstellationsGenerator();
-			generator.genConstellations(N, WORKGROUP_SIZE);
+			generator.genConstellations(N, WORKGROUP_SIZE, PRE_QUEENS);
 			
 			ldList = generator.ldList;
 			rdList = generator.rdList;
@@ -733,7 +734,7 @@ public class GpuSolver extends Solver {
 	public int getWorkgroupSize() {
 		return WORKGROUP_SIZE;
 	}
-	
+
 	// sets WORKGROUP_SIZE
 	public void setWorkgroupSize(int s) {
 		if(device == 0) {
@@ -744,6 +745,14 @@ public class GpuSolver extends Solver {
 			throw new IllegalArgumentException("WorkgroupSize must be between 0 and " + maxWorkgroupSize + " (=max for this device)");
 		}
 		WORKGROUP_SIZE = s;
+	}
+
+	// sets PRE_QUEENS
+	public void setNumberOfPresetQueens(int pq) {
+		if(pq < 4 || pq > 10) {
+			throw new IllegalArgumentException("Number of preset queens must be between 4 and 10");
+		}
+		PRE_QUEENS = pq;
 	}
 	
 	// record class for saving and restoring
