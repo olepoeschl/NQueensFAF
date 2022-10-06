@@ -348,15 +348,15 @@ public class CpuSolver extends Solver {
 	// true, if starting constellation rotated by any angle has already been found
 	private boolean checkRotations(int i, int j, int k, int l) {
 		// rot90
-		if(startConstellations.contains(((N-1-k)<<24) + ((N-1-l)<<16) + (j<<8) + i)) 
+		if(startConstellations.contains(((N-1-k)<<15) + ((N-1-l)<<10) + (j<<5) + i)) 
 			return true;
 
 		// rot180
-		if(startConstellations.contains(((N-1-j)<<24) + ((N-1-i)<<16) + ((N-1-l)<<8) + N-1-k)) 
+		if(startConstellations.contains(((N-1-j)<<15) + ((N-1-i)<<10) + ((N-1-l)<<5) + N-1-k)) 
 			return true;
 
 		// rot270
-		if(startConstellations.contains((l<<24) + (k<<16) + ((N-1-i)<<8) + N-1-j)) 
+		if(startConstellations.contains((l<<15) + (k<<10) + ((N-1-i)<<5) + N-1-j)) 
 			return true;
 
 		return false;
@@ -364,19 +364,19 @@ public class CpuSolver extends Solver {
 
 	// i, j, k, l to ijkl and functions to get specific entry
 	private int toijkl(int i, int j, int k, int l) {
-		return (i<<24) + (j<<16) + (k<<8) + l;
+		return (i<<15) + (j<<10) + (k<<5) + l;
 	}
 	private int geti(int ijkl) {
-		return ijkl >> 24;
+		return ijkl >> 15;
 	}
 	private int getj(int ijkl) {
-		return (ijkl >> 16) & 255;
+		return (ijkl >> 10) & 31;
 	}
 	private int getk(int ijkl) {
-		return (ijkl >> 8) & 255;
+		return (ijkl >> 5) & 31;
 	}
 	private int getl(int ijkl) {
-		return ijkl & 255;
+		return ijkl & 31;
 	}
 	// rotate and mirror board, so that the queen closest to a corner is on the right side of the last row
 	private int jasmin(int ijkl) {
@@ -410,7 +410,7 @@ public class CpuSolver extends Solver {
 	}
 	// rotate 90 degrees clockwise
 	private int rot90(int ijkl) {
-		return ((N-1-getk(ijkl))<<24) + ((N-1-getl(ijkl))<<16) + (getj(ijkl)<<8) + geti(ijkl);
+		return ((N-1-getk(ijkl))<<15) + ((N-1-getl(ijkl))<<10) + (getj(ijkl)<<5) + geti(ijkl);
 	}
 
 	// for user interaction

@@ -647,11 +647,19 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 		
+		long[][][][] oldcounter = new long[N][N][N][N];
+		long[][][][] newcounter = new long[N][N][N][N];
+		
+		
+		// ========================================================================================================================================================================================== 
+		// OLD SOLVER 
+		// ========================================================================================================================================================================================== 
+		
 		final int listsize = startConstellations.size();
 		int i, j, k, l, ijkl, ld, rd, col;
 		final int N = this.N, L = this.L;
 		final int smallmask = (1 << (N-2)) - 1;
-		
+	
 		for(int idx = 0; idx < listsize; idx++) {
 			// apply jasmin and get i, j, k, l
 			ijkl = startConstellations.getFirst();
@@ -825,6 +833,7 @@ class CpuSolverThread extends Thread {
 
 			// sum up solutions
 			solvecounter += tempcounter * symmetry(ijkl);
+			oldcounter[i][j][k][l] = tempcounter;
 
 			// get occupancy of the board for each starting constellation and the hops and max from board Properties
 			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
@@ -853,6 +862,65 @@ class CpuSolverThread extends Thread {
 			if(cancel) {
 				break;
 			}
+			
+		}
+			
+			
+		// ==========================================================================================================================================================================================
+		// NEW SOLVER 
+		// ========================================================================================================================================================================================== 
+			
+		final int newlistsize = startQueensIjklList.size();
+		int startQueensIjkl, start, queens;
+		
+		for(int idx = 0; idx < newlistsize; idx++) {
+			
+			startQueensIjkl = startQueensIjklList.getFirst();
+			start = startQueensIjkl >> 25;
+			queens = (startQueensIjkl >> 20) & 31;
+			ijkl = startQueensIjkl & ((1 << 20) - 1);
+			i = geti(ijkl); j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
+			
+			
+			
+			// sum up solutions
+			solvecounter += tempcounter * symmetry(ijkl);
+			newcounter[i][j][k][l] = tempcounter; 
+			if (!(newcounter[i][j][k][l] == oldcounter[i][j][k][l])) {
+				System.out.println("i: " + i + "  j: " + j + "  k: " + k + "  l: " + l);
+				System.out.println("old: " + oldcounter[i][j][k][l]);
+				System.out.println("new: " + newcounter[i][j][k][l]);
+			}
+
+			// get occupancy of the board for each starting constellation and the hops and max from board Properties 
+			newcounter[i][j][k][l] = tempcounter * symmetry(ijkl);
+			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
+
+			// for saving and loading progress remove the finished starting constellation
+			startQueensIjklList.removeFirst();
+			
+			// update the current startconstellation-index
+			done++;
+			
+			// check for pausing
+			if(pause == 1) {
+				pause = 2;
+				caller.onPauseStart();
+				while(pause == 2) {
+					if(cancel)
+						break;
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			// check for cancelling
+			if(cancel) {
+				break;
+			}
+			
 		}
 		running = false;
 	}
@@ -896,7 +964,7 @@ class CpuSolverThread extends Thread {
 	// for symmetry stuff and working with ijkl
 	// true, if starting constellation is symmetric for rot90
 	private boolean symmetry90(int ijkl) {
-		if(((geti(ijkl) << 24) + (getj(ijkl) << 16) + (getk(ijkl) << 8) + getl(ijkl)) == (((N-1-getk(ijkl))<<24) + ((N-1-getl(ijkl))<<16) + (getj(ijkl)<<8) + geti(ijkl)))
+		if(((geti(ijkl) << 15) + (getj(ijkl) << 10) + (getk(ijkl) << 5) + getl(ijkl)) == (((N-1-getk(ijkl))<<15) + ((N-1-getl(ijkl))<<10) + (getj(ijkl)<<5) + geti(ijkl)))
 			return true;
 		return false;
 	}
@@ -912,16 +980,15 @@ class CpuSolverThread extends Thread {
 	}
 	
 	private int geti(int ijkl) {
-		return ijkl >> 24;
+		return ijkl >> 15;
 	}
 	private int getj(int ijkl) {
-		return (ijkl >> 16) & 255;
+		return (ijkl >> 10) & 31;
 	}
 	private int getk(int ijkl) {
-		return (ijkl >> 8) & 255;
+		return (ijkl >> 5) & 31;
 	}
 	private int getl(int ijkl) {
-		return ijkl & 255;
+		return ijkl & 31;
 	}
 }
-
