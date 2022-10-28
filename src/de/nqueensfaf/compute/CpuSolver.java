@@ -19,7 +19,7 @@ public class CpuSolver extends Solver {
 
 	private static final int smallestN = 6;
 	private int threadcount = 1;
-	private int kbit, lbit, preQueens = 5, L, mask, LD, RD, counter;
+	private int kbit, lbit, preQueens = 4, L, mask, LD, RD, counter;
 	private long start, end;
 	private HashSet<Integer> startConstellations = new HashSet<Integer>();
 	private ArrayList<Integer> ldList = new ArrayList<Integer>(), rdList = new ArrayList<Integer>(), colList = new ArrayList<Integer>(); 
@@ -273,21 +273,16 @@ public class CpuSolver extends Solver {
 			// occupy the board corresponding to the queens on the borders of the board 
 			ld = (L >>> (i-1)) | (1 << (N-k));
 			rd = (L >>> (i+1)) | (1 << (l-1));
-			col = 1 | L | (L >>> j) | (L >>> i);
+			col = 1 | L | (L >>> i) | (L >>> j);
 			// occupy diagonals of the queens j k l in the last row 
 			// later we are going to shift them upwards the board 
 			LD = (L >>> j) | (L >>> l);
 			RD = (L >>> j) | (1 << k);
-			// this is the queen in row k and l 
-			// their diagonals have to be occupied later 
-			// we can not do this right now, because in row k, the queen k has to be actually set 
-			kbit = (1 << (N-k-1));
-			lbit = (1 << l);
 
 			// counts all subconstellations 
 			counter = 0;
 			// generate all subconstellations 
-			setPreQueens(ld, rd, col, k, l, 1, 4);
+			setPreQueens(ld, rd, col, k, l, 1, j==N-1 ? 3 : 4);
 			currentSize = startQueensIjklList.size();
 			// jkl and sym and start are the same for all subconstellations 
 			for(int a = 0; a < counter; a++) {
@@ -307,22 +302,10 @@ public class CpuSolver extends Solver {
 		// add queens until we have preQueens queens 
 		// this should be variable for the distributed version and different N 
 		if(queens == preQueens) {
-			// occupy diagonals from queen k and l, that will end in the left or right border 
-			// the following 2 lines are probably TRASH
-			ld &= ~(kbit << row);
-			rd &= ~(lbit >>> row);
-			// make left and right col free 
-			col &= ~(1 | L);
-			// if k already came, then occupy it on the board 
-			if(k < row) {
-				rd |= (L >> (row-k));
-				col |= L;
-			}
-			// same for l 
-			if(l < row) {
-				ld |= (1 << (row-l));
-				col |= 1;
-			}
+			// occupy diagonals from queens k,l,j 
+			// maybe this is outside of the board, but we take care of this in CpuSolverThread 
+			rd |= RD << (N-1-row);
+			ld |= LD >>> (N-1-row);
 			// add the subconstellations to the list 
 			ldList.add(ld);
 			rdList.add(rd);
@@ -333,7 +316,7 @@ public class CpuSolver extends Solver {
 		}
 		// if not done or row k or l, just place queens and occupy the board and go further 
 		else {
-			int free = ~(ld | rd | col | (LD >>> (N-1-row)) | (RD << (N-1-row))) & mask;
+			int free = (~(ld | rd | col | (LD >>> (N-1-row)) | (RD << (N-1-row)))) & mask;
 			int bit;
 
 			while(free > 0) {
