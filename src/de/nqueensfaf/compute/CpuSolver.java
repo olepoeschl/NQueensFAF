@@ -17,13 +17,22 @@ import de.nqueensfaf.Solver;
 
 public class CpuSolver extends Solver {
 
+	// for very small N it is overkill to use this method 
+	// thus we use a straightforward recursive implementation of Jeff Somers Bit method for such N 
+	// smallestN marks the border, when to use this simpler solver 
 	private static final int smallestN = 6;
+	// how many threads in parallel 
 	private int threadcount = 1;
-	private int kbit, lbit, preQueens = 4, L, mask, LD, RD, counter;
+	// we fill up the board, until <preQueens> queens are set 
+	private int preQueens = 4, L, mask, LD, RD, counter;
+	// for time measurement 
 	private long start, end;
+	// for generating the start constellations
+	// a start constellation contains the starting row, the occupancies of ld and rd and col, and the values of i, j, k, l 
 	private HashSet<Integer> startConstellations = new HashSet<Integer>();
 	private ArrayList<Integer> ldList = new ArrayList<Integer>(), rdList = new ArrayList<Integer>(), colList = new ArrayList<Integer>(); 
-	private ArrayList<Integer> startQueensIjklList = new ArrayList<Integer>();
+	private ArrayList<Integer> startIjklList = new ArrayList<Integer>();
+	// for the threads and their respective time measurement etc. 
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
 	private int startConstCount, solvedConstellations;
 	private long timePassed = 0, pauseStart = 0;
@@ -59,7 +68,7 @@ public class CpuSolver extends Solver {
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// ld
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// rd
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// col
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// startQueensIjkl
+		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// startIjkl
 		for(var list : threadConstellations) {
 			for(int i = 0; i < threadcount; i++) {
 				list.add(new ArrayDeque<Integer>());
@@ -85,10 +94,10 @@ public class CpuSolver extends Solver {
 		for(int col : colList) {
 			threadConstellations.get(3).get((i++) % threadcount).addFirst(col);
 		}
-		// startQueensIjkl
+		// startIjkl
 		i = 0;
-		for(int startQueensIjkl : startQueensIjklList) {
-			threadConstellations.get(4).get((i++) % threadcount).addFirst(startQueensIjkl);
+		for(int startIjkl : startIjklList) {
+			threadConstellations.get(4).get((i++) % threadcount).addFirst(startIjkl);
 		}
 
 		// start the threads and wait until they are all finished
@@ -179,7 +188,7 @@ public class CpuSolver extends Solver {
 		ldList.clear();
 		rdList.clear();
 		colList.clear();
-		startQueensIjklList.clear();
+		startIjklList.clear();
 		solvedConstellations = 0;
 		solutions = 0;
 		threads.clear();
@@ -230,21 +239,16 @@ public class CpuSolver extends Solver {
 	private void genConstellations() {
 		startConstellations.clear();
 
+		long temp1 = System.currentTimeMillis();
+		
 		// halfN half of N rounded up
 		final int halfN = (N + 1) / 2;
 		L = 1 << (N -1);
 		mask = (1 << N) - 1;
-
-		// calculating start constellations with the first Queen on square (0,0)
-		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
-			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
-				startConstellations.add(toijkl(0, j, 0, l));
-			}
-		}
-
+		
 		// calculate starting constellations for no Queens in corners
-		for(int k = 1; k < halfN; k++) {						// go through first col
-			for(int l = k+1; l < N-1; l++) {					// go through last col
+		for(int k = 1; k < halfN; k++) {						// go through first col 
+			for(int l = k+1; l < N-1; l++) {					// go through last col 
 				for(int i = k+1; i < N-1; i++) {				// go through first row
 					if(i == N-1-l)								// skip if occupied
 						continue;
@@ -259,6 +263,14 @@ public class CpuSolver extends Solver {
 				}
 			}
 		}
+
+		// calculating start constellations with the first Queen on square (0,0)
+		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
+			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
+				startConstellations.add(toijkl(0, j, 0, l));
+			}
+		}
+		
 		HashSet<Integer> startConstellationsJasmin = new HashSet<Integer>();
 		// rotate and mirror all start constellations, such that the queen in the last row is as close to the right border as possible 
 		for(int startConstellation : startConstellations) {
@@ -271,6 +283,7 @@ public class CpuSolver extends Solver {
 			i = geti(sc); j = getj(sc); k = getk(sc); l = getl(sc);
 			// fill up the board with preQueens queens and generate corresponding variables ld, rd, col, start_queens_ijkl for each constellation 
 			// occupy the board corresponding to the queens on the borders of the board 
+			// we are starting in the first row that can be free, namely row 1 
 			ld = (L >>> (i-1)) | (1 << (N-k));
 			rd = (L >>> (i+1)) | (1 << (l-1));
 			col = 1 | L | (L >>> i) | (L >>> j);
@@ -283,12 +296,13 @@ public class CpuSolver extends Solver {
 			counter = 0;
 			// generate all subconstellations 
 			setPreQueens(ld, rd, col, k, l, 1, j==N-1 ? 3 : 4);
-			currentSize = startQueensIjklList.size();
+			currentSize = startIjklList.size();
 			// jkl and sym and start are the same for all subconstellations 
 			for(int a = 0; a < counter; a++) {
-				startQueensIjklList.set(currentSize-a-1, startQueensIjklList.get(currentSize-a-1) | (preQueens << 20) | toijkl(i, j, k, l));
+				startIjklList.set(currentSize-a-1, startIjklList.get(currentSize-a-1) | toijkl(i, j, k, l));
 			}
 		}
+		System.out.println(System.currentTimeMillis() - temp1);
 	}
 
 
@@ -310,7 +324,7 @@ public class CpuSolver extends Solver {
 			ldList.add(ld);
 			rdList.add(rd);
 			colList.add(col);
-			startQueensIjklList.add(row << 25);
+			startIjklList.add(row << 20);
 			counter++;
 			return;
 		}

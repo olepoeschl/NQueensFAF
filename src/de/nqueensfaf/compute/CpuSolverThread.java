@@ -11,7 +11,7 @@ class CpuSolverThread extends Thread {
 	private int mark1, mark2, endmark, jmark;
  
 	// list of uncalculated starting positions, their indices
-	private ArrayDeque<Integer> startConstellations, ldList, rdList, colList, startQueensIjklList;
+	private ArrayDeque<Integer> startConstellations, ldList, rdList, colList, startIjklList;
 	
 	// for pausing or cancelling the run
 	private boolean cancel = false, running = false;
@@ -19,7 +19,7 @@ class CpuSolverThread extends Thread {
 	private CpuSolver caller;
 
 	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> startConstellations, ArrayDeque<Integer> ldList, 
-			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startQueensIjklList) {
+			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {
 		this.caller = caller;
 		this.N = N;
 		N3 = N - 3;
@@ -30,7 +30,7 @@ class CpuSolverThread extends Thread {
 		this.ldList = ldList;
 		this.rdList = rdList;
 		this.colList = colList;
-		this.startQueensIjklList = startQueensIjklList;
+		this.startIjklList = startIjklList;
 	}
 
 	// Recursive functions for Placing the Queens
@@ -322,6 +322,7 @@ class CpuSolverThread extends Thread {
 		int nextfree;
 
 		if(row == jmark) {
+			// TRASH?
 			free &= (~1);
 			ld |= 1;
 			while(free > 0) {
@@ -644,23 +645,27 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 	
-		int i, j, k, l, ijkl, ld, rd, col, startQueensIjkl, start, free; 
+		int i, j, k, l, ijkl, ld, rd, col, startIjkl, start, free; 
 		final int N = this.N; 
-		final int smallmask = (1 << (N-2)) - 1, listsize = startQueensIjklList.size();
+		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
 		
 		for(int idx = 0; idx < listsize; idx++) {
 			
-			startQueensIjkl = startQueensIjklList.getFirst();
-			start = startQueensIjkl >> 25;
-			ijkl = startQueensIjkl & ((1 << 20) - 1);
+			startIjkl = startIjklList.getFirst();
+			start = startIjkl >> 20;
+			ijkl = startIjkl & ((1 << 20) - 1);
 			i = geti(ijkl); j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
 			ld = ldList.getFirst() >>> 1;
 			rd = rdList.getFirst() >>> 1;
 			col = (colList.getFirst() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
 			
-			// if the queen j is more than 2 columns away from the corner 
-			if(j < N - 3) {
+			// if queen j is more than 2 columns away from the corner and the rd from queen j can not be set yet 
+			if(j<N-10) {
+				
+			}
+			// if the queen j is more than 2 columns away from the corner but the rd from the j-queen can be set right at start 
+			else if(j < N - 3) {
 				jmark = j + 1; 
 				endmark = N - 2;
 				// k < l 
@@ -709,7 +714,7 @@ class CpuSolverThread extends Thread {
 						}
 						// if l already came and only k is yet to come 
 						else {
-							SQBlBjrB(ld, rd, col, start, free); 
+							SQBkBjrB(ld, rd, col, start, free); 
 						}
 					}
 					// if both l and k already came before start 
@@ -870,7 +875,7 @@ class CpuSolverThread extends Thread {
 				}
 			}
 			// if the queen j is placed in the corner 
-			else if(j == N-1) {
+			else{
 				endmark = N - 2;
 				if(start > k) {
 					SQd0B(ld, rd, col, start, free);
@@ -892,7 +897,7 @@ class CpuSolverThread extends Thread {
 			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
 
 			// for saving and loading progress remove the finished starting constellation
-			startQueensIjklList.removeFirst();
+			startIjklList.removeFirst();
 			ldList.removeFirst();
 			rdList.removeFirst();
 			colList.removeFirst();
