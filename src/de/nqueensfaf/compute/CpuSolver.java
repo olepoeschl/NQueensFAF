@@ -59,7 +59,7 @@ public class CpuSolver extends Solver {
 		}
 		if(!restored) {
 			genConstellations();
-			startConstCount = startConstellations.size();
+			startConstCount = startIjklList.size();
 		}
 		
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
@@ -99,7 +99,7 @@ public class CpuSolver extends Solver {
 		for(int startIjkl : startIjklList) {
 			threadConstellations.get(4).get((i++) % threadcount).addFirst(startIjkl);
 		}
-
+		
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for(i = 0; i < threadcount; i++) {
@@ -238,8 +238,6 @@ public class CpuSolver extends Solver {
 	// own functions
 	private void genConstellations() {
 		startConstellations.clear();
-
-		long temp1 = System.currentTimeMillis();
 		
 		// halfN half of N rounded up
 		final int halfN = (N + 1) / 2;
@@ -302,7 +300,6 @@ public class CpuSolver extends Solver {
 				startIjklList.set(currentSize-a-1, startIjklList.get(currentSize-a-1) | toijkl(i, j, k, l));
 			}
 		}
-		System.out.println(System.currentTimeMillis() - temp1);
 	}
 
 

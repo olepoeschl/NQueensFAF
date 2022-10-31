@@ -33,8 +33,8 @@ class SolverTest {
 	@Test
 	void testCpuSolver() {
 		CpuSolver s = new CpuSolver();
-		s.setN(18);
-		s.setThreadcount(8);
+		s.setN(16);
+		s.setThreadcount(1);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms"); 
 		});
