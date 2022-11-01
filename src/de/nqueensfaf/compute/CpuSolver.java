@@ -262,7 +262,7 @@ public class CpuSolver extends Solver {
 			}
 		}
 
-		// calculating start constellations with the first Queen on square (0,0)
+		// calculating start constellations with the first Queen on the corner square (0,0) 
 		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
 			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
 				startConstellations.add(toijkl(0, j, 0, l));

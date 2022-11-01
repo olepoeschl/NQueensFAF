@@ -8,6 +8,10 @@ class CpuSolverThread extends Thread {
 	private long tempcounter = 0, solvecounter = 0;			// tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
 	private int done = 0;						// #(done start constellations)
 
+	// mark1 and mark2 mark the lines k-1 and l-1 (not necessarily in this order), 
+	// because in from this line we will directly shift everything to the next free row 
+	// endmark marks the row of the last free row 
+	// jmark marks the row j+1, where the diagonal jr from j has to be set 
 	private int mark1, mark2, endmark, jmark;
  
 	// list of uncalculated starting positions, their indices
@@ -34,8 +38,34 @@ class CpuSolverThread extends Thread {
 	}
 
 	// Recursive functions for Placing the Queens
-
-	// for N-1-j = 0
+	
+	// IMPORTANT: since the left and right col are occupied by the startConstalletaion, we only deal with the bits in between, 
+	//     hence N-2 bits for a board of size N
+	// the functions recursively call themselves and travel through the board row-wise 
+	// the occupancy of each row is represented with integers in binary representation (1 occupied, 0 free) 
+	// there are different recursive functions for different arrangements of the queens i,j,k,l on the border 
+	// in order to reduce the amount of different cases we rotate and mirror the board in such a way, 
+	//     that the queen j in the last row is as close to the right corner as possible 
+	// this is done by the function jasmin (j as min) 
+	// we call this distance to the corner d and distinguish between d=0,d=1,d=2,d <small enough> and d <big> 
+	// for d <small enough> the diagonal jl from queen j going upwards to the left can already be set
+	//     in the first row of the start constellation 
+	// for d <big> we have to explicitly set occupy this diagonal in some row before we can continue 
+	
+	// NOTATION: 
+	// SQ stands for SetQueens and is the prefix of any of the following solver functions 
+	// B stand for block and describes a block of free rows, where nothing special has to be done 
+	// Blocks B are separated by the rows k and l for d<=2 
+	//     and additionally by row jr for d <small enough> and additionally by row jl for d <big>
+	// jl is always first and jr is always last, k and l are in between in no fixed order 
+	// (the last fact is a consequence of jasmin) 
+	
+	// in the last function of every case, respectively, we check check in both next rows, if there are free spaces in the row 
+	
+	// of course, when traveling over row k or l or both or jl or jr, we have to shift ld and rd by 2 or 3 rows at once 
+	// after skipping these rows we have to occupy the corresponding diagonals 
+	
+	// for d = 0
 	private void SQd0B(int ld, int rd, int col, int row, int free) {
 		if(row == endmark) {
 			tempcounter++;
@@ -87,7 +117,7 @@ class CpuSolverThread extends Thread {
 		}
 	}
 
-	// for N-1-j = 1
+	// for d = 1
 	private void SQd1BklB(int ld, int rd, int col, int row, int free) {
 		int bit;
 		int nextfree;
@@ -267,8 +297,181 @@ class CpuSolverThread extends Thread {
 				SQd1BkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
 		}
 	}
+	
+	// for d = 2
+		private void SQd2BlkB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
 
-	// all following SQ functions for N-1-j > 2
+			if(row == mark1) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<3) | ((rd|bit)>>3) | (col|bit) | L3 | 2);
+					if(nextfree > 0)
+						SQd2B(((ld|bit)<<3) | 2, ((rd|bit)>>3) | L3, col|bit, row+3, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BlkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2BklB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
+
+			if(row == mark1) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<3) | ((rd|bit)>>3) | (col|bit) | L4 | 1);
+					if(nextfree > 0)
+						SQd2B(((ld|bit)<<3) | 1, ((rd|bit)>>3) | L4, col|bit, row+3, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BklB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2BlBkB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
+
+			if(row == mark1) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | 1);
+					if(nextfree > 0)
+						SQd2BkB(((ld|bit)<<2) | 1, (rd|bit)>>2, col|bit, row+2, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BlBkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2BkBlB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
+
+			if(row == mark1) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | (1 << (N3)));
+					if(nextfree > 0)
+						SQd2BlB(((ld|bit)<<2), ((rd|bit)>>2) | (1 << (N3)), col|bit, row+2, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BkBlB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2BlB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
+
+			if(row == mark2) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | 1);
+					if(nextfree > 0)
+						SQd2B(((ld|bit)<<2) | 1, (rd|bit)>>2, col|bit, row+2, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BlB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2BkB(int ld, int rd, int col, int row, int free) {
+			int bit;
+			int nextfree;
+
+			if(row == mark2) {
+				while(free > 0) {
+					bit = free & (-free);
+					free -= bit;
+					nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | L3);
+					if(nextfree > 0)
+						SQd2B(((ld|bit)<<2), ((rd|bit)>>2) | L3, col|bit, row+2, nextfree);
+				}
+				return;
+			}
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+				if(nextfree > 0)
+					SQd2BkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+			}
+		}
+
+		private void SQd2B(int ld, int rd, int col, int row, int free) {
+			if(row == endmark) {
+				if((free & (~1)) > 0) 
+					tempcounter++;
+				return;
+			}
+
+			int bit;
+			int nextfree;
+
+			while(free > 0) {
+				bit = free & (-free);
+				free -= bit;
+				
+				int next_ld = ((ld|bit)<<1);
+				int next_rd = ((rd|bit)>>1);
+				int next_col = (col|bit);
+				nextfree = ~(next_ld | next_rd | next_col);
+				if(nextfree > 0)
+					if(row < endmark-1) {
+						if(~((next_ld<<1) | (next_rd>>1) | (next_col)) > 0)
+							SQd2B(next_ld, next_rd, next_col, row+1, nextfree);
+					} else {
+						SQd2B(next_ld, next_rd, next_col, row+1, nextfree);
+					}
+			}
+		}
+
+	// for d>2 but d <small enough> 
 	private void SQBkBlBjrB(int ld, int rd, int col, int row, int free) {
 		int bit;
 		int nextfree;
@@ -466,179 +669,8 @@ class CpuSolverThread extends Thread {
 				SQBlkBjrB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
 		}
 	}
-
-	// for N-1-j = 2
-	private void SQd2BlkB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark1) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<3) | ((rd|bit)>>3) | (col|bit) | L3 | 2);
-				if(nextfree > 0)
-					SQd2B(((ld|bit)<<3) | 2, ((rd|bit)>>3) | L3, col|bit, row+3, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BlkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2BklB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark1) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<3) | ((rd|bit)>>3) | (col|bit) | L4 | 1);
-				if(nextfree > 0)
-					SQd2B(((ld|bit)<<3) | 1, ((rd|bit)>>3) | L4, col|bit, row+3, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BklB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2BlBkB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark1) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | 1);
-				if(nextfree > 0)
-					SQd2BkB(((ld|bit)<<2) | 1, (rd|bit)>>2, col|bit, row+2, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BlBkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2BkBlB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark1) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | (1 << (N3)));
-				if(nextfree > 0)
-					SQd2BlB(((ld|bit)<<2), ((rd|bit)>>2) | (1 << (N3)), col|bit, row+2, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BkBlB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2BlB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark2) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | 1);
-				if(nextfree > 0)
-					SQd2B(((ld|bit)<<2) | 1, (rd|bit)>>2, col|bit, row+2, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BlB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2BkB(int ld, int rd, int col, int row, int free) {
-		int bit;
-		int nextfree;
-
-		if(row == mark2) {
-			while(free > 0) {
-				bit = free & (-free);
-				free -= bit;
-				nextfree = ~(((ld|bit)<<2) | ((rd|bit)>>2) | (col|bit) | L3);
-				if(nextfree > 0)
-					SQd2B(((ld|bit)<<2), ((rd|bit)>>2) | L3, col|bit, row+2, nextfree);
-			}
-			return;
-		}
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
-			if(nextfree > 0)
-				SQd2BkB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
-		}
-	}
-
-	private void SQd2B(int ld, int rd, int col, int row, int free) {
-		if(row == endmark) {
-			if((free & (~1)) > 0) 
-				tempcounter++;
-			return;
-		}
-
-		int bit;
-		int nextfree;
-
-		while(free > 0) {
-			bit = free & (-free);
-			free -= bit;
-			
-			int next_ld = ((ld|bit)<<1);
-			int next_rd = ((rd|bit)>>1);
-			int next_col = (col|bit);
-			nextfree = ~(next_ld | next_rd | next_col);
-			if(nextfree > 0)
-				if(row < endmark-1) {
-					if(~((next_ld<<1) | (next_rd>>1) | (next_col)) > 0)
-						SQd2B(next_ld, next_rd, next_col, row+1, nextfree);
-				} else {
-					SQd2B(next_ld, next_rd, next_col, row+1, nextfree);
-				}
-		}
-	}
+	
+	// for d <big> 
 
 	
 	@Override
@@ -655,10 +687,14 @@ class CpuSolverThread extends Thread {
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
 			i = geti(ijkl); j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
+			
+			// shift all one to the right because the right column does not matter (always occupied by queen l) 
 			ld = ldList.getFirst() >>> 1;
 			rd = rdList.getFirst() >>> 1;
 			col = (colList.getFirst() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
+			
+			// big case distinction for deciding which soling algorithm to use 
 			
 			// if queen j is more than 2 columns away from the corner and the rd from queen j can not be set yet 
 			if(j<N-10) {
