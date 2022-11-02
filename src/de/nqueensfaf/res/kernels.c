@@ -80,17 +80,17 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 // iterative loop representing the recursive setqueen-function
 // this is the actual solver 
-	while(row-start >= 0) {									// while we havent tried everything 
-		direction = (temp !=0);								// forward (setting a queen) -> direction = 1 
-															// else (removing a queen) 	 -> direction = 0 
-															
-		if(direction) {											// if there were free places for a queen in the previous loop 
-			row++;											// increase row counter 
+	while(row >= start) {									// while we havent tried everything 
+		if(temp) {											// if there were free places for a queen in the previous loop 
 			col_mask |= temp;								// place the queen in  the column 
 			ld_mem = ld_mem << 1 | ld >> 31;				// remember the diagonals, that leave the board
 			rd_mem = rd_mem >> 1 | rd << 31;
 			ld = (ld | temp) << 1;							// place the queen in the diagonals and shift them 
 			rd = (rd | temp) >> 1;													
+				
+			row++;											// increase row counter 
+			old_queen = direction = 1;						// we are going forward -> direction = 1
+															// oldqueen is 1, if we go forward 
 		}
 		else {												// if we couldnt place a queen 
 			row--;											// one row back
@@ -100,24 +100,24 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~temp;		// shift diagonals one back and insert the diagonals, 
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~temp;		// that left the board in this line 
 			ld_mem >>= 1;									// shift those back as well
-			rd_mem <<= 1; 
+			rd_mem <<= 1;
+			
+			direction = 0;									// direction is zero, if we are removing a queen 
+			old_queen = temp;								// the old queen is the one, that we just removed 
+															// for row k or l, it is 0 
 		}
 		
-		old_queen = direction + temp * (1-direction);		// the old queen is the one, that we just removed 
-															// oldqueen is 1, if we go forward 
-															// for row k or l, it is 0 
-		if(row == N-1)
-			solvecounter++;									// increase the solvecounter, if we are in the last row 
+		solvecounter += (row == N-1);						// increase the solvecounter, if we are in the last row 
 		
 		notfree = jqueen[row] | ld | rd | col_mask;			// calculate the occupancy of the next row
-		if(direction == 0)									// if we removed a queen, then free up the corresponding slot in col_mask
+		if(!direction)										// if we removed a queen, then free up the corresponding slot in col_mask
 			col_mask &= ~temp;								// we do this after calculating notfree, to not place the same queen again				
 		// 
 		temp = (notfree + old_queen) & ~notfree;			// this is the free slot for a queen (searching from the right border) in the current row 
-		if(row == k)
-			temp = direction * L;							// in row k the queen is at the left border (L)						
-		else if(row == l)									// it is zero, if we are going backwards (to go one row further back) 
-			temp = direction;									// same goes for row l 
+		if(row == k)										// in row k the queen is at the left border (L)
+			temp = L * direction;							// it is zero, if we are going backwards (to go one row further back) 
+		if(row == l)										// same goes for row l 
+			temp = direction;
 			
 		bits[l_id][row] = temp;								// remember the queen 
 	}

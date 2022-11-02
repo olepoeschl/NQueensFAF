@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 
 class CpuSolverThread extends Thread {
 
-	private final int N, N3, N4, L3, L4;			// boardsize
+	private final int N, N3, N4, L, L3, L4;			// boardsize
 	private long tempcounter = 0, solvecounter = 0;			// tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
 	private int done = 0;						// #(done start constellations)
 
@@ -28,6 +28,7 @@ class CpuSolverThread extends Thread {
 		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
+		L = 1 << (N-1);
 		L3 = 1 << N3;
 		L4 = 1 << N4;
 		this.startConstellations = startConstellations;
@@ -525,7 +526,6 @@ class CpuSolverThread extends Thread {
 		int nextfree;
 
 		if(row == jmark) {
-			// TRASH?
 			free &= (~1);
 			ld |= 1;
 			while(free > 0) {
@@ -671,7 +671,85 @@ class CpuSolverThread extends Thread {
 	}
 	
 	// for d <big> 
+	private void SQBjlBkBlBjrB(int ld, int rd, int col, int row, int free) {
+		if(row == N-1-jmark) {
+			rd |= L;
+			free &= ~L;
+			SQBkBlBjrB(ld, rd, col, row, free);
+			return; 
+		}
+		
+		int bit;
+		int nextfree;
 
+		while(free > 0) {
+			bit = free & (-free);
+			free -= bit;
+			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+			if(nextfree > 0)
+				SQBjlBkBlBjrB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+		}
+	}
+
+	private void SQBjlBlBkBjrB(int ld, int rd, int col, int row, int free) {
+		if(row == N-1-jmark) {
+			rd |= L;
+			free &= ~L;
+			SQBlBkBjrB(ld, rd, col, row, free);
+			return; 
+		}
+		
+		int bit;
+		int nextfree;
+
+		while(free > 0) {
+			bit = free & (-free);
+			free -= bit;
+			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+			if(nextfree > 0)
+				SQBjlBlBkBjrB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+		}
+	}
+
+	private void SQBjlBklBjrB(int ld, int rd, int col, int row, int free) {
+		if(row == N-1-jmark) {
+			rd |= L;
+			free &= ~L;
+			SQBklBjrB(ld, rd, col, row, free);
+			return; 
+		}
+		
+		int bit;
+		int nextfree;
+
+		while(free > 0) {
+			bit = free & (-free);
+			free -= bit;
+			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+			if(nextfree > 0)
+				SQBjlBklBjrB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+		}
+	}
+
+	private void SQBjlBlkBjrB(int ld, int rd, int col, int row, int free) {
+		if(row == N-1-jmark) {
+			rd |= L;
+			free &= ~L;
+			SQBlkBjrB(ld, rd, col, row, free);
+			return; 
+		}
+		
+		int bit;
+		int nextfree;
+
+		while(free > 0) {
+			bit = free & (-free);
+			free -= bit;
+			nextfree = ~(((ld|bit)<<1) | ((rd|bit)>>1) | (col|bit));
+			if(nextfree > 0)
+				SQBjlBlkBjrB((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree);
+		}
+	}
 	
 	@Override
 	public void run() {
@@ -696,66 +774,95 @@ class CpuSolverThread extends Thread {
 			
 			// big case distinction for deciding which soling algorithm to use 
 			
-			// if queen j is more than 2 columns away from the corner and the rd from queen j can not be set yet 
-			if(j<N-10) {
-				
-			}
-			// if the queen j is more than 2 columns away from the corner but the rd from the j-queen can be set right at start 
-			else if(j < N - 3) {
+			// if queen j is more than 2 columns away from the corner 
+			if(j < N - 3) {
 				jmark = j + 1; 
 				endmark = N - 2;
-				// k < l 
-				if(k < l) {
-					mark1 = k - 1; 
-					mark2 = l - 1; 
-					// if at least l is yet to come 
-					if(start < l) {
-						// if also k is yet to come 
-						if(start < k) {
-							// if there are free rows between k and l 
-							if(l != k + 1) {
-								SQBkBlBjrB(ld, rd, col, start, free);
+				// if the queen j is more than 2 columns away from the corner but the rd from the j-queen can be set right at start 
+				if(j < 2*N - 34 - start) {
+					// k < l 
+					if(k < l) {
+						mark1 = k - 1; 
+						mark2 = l - 1; 
+						// if at least l is yet to come 
+						if(start < l) {
+							// if also k is yet to come 
+							if(start < k) {
+								// if there are free rows between k and l 
+								if(l != k + 1) {
+									SQBkBlBjrB(ld, rd, col, start, free);
+								}
+								// if there are no free rows between k and l 
+								else { 
+									SQBklBjrB(ld, rd, col, start, free); 
+								}
 							}
-							// if there are no free rows between k and l 
-							else { 
-								SQBklBjrB(ld, rd, col, start, free); 
+							// if k already came before start and only l is left 
+							else {
+								SQBlBjrB(ld, rd, col, start, free); 
 							}
 						}
-						// if k already came before start and only l is left 
+						// if both k and l already came before start 
 						else {
-							SQBlBjrB(ld, rd, col, start, free); 
+							SQBjrB(ld, rd, col, start, free); 
 						}
 					}
-					// if both k and l already came before start 
+					// l < k 
 					else {
-						SQBjrB(ld, rd, col, start, free); 
+						mark1 = l - 1; 
+						mark2 = k - 1; 
+						// if at least k is yet to come 
+						if(start < k) {
+							// if also l is yet to come 
+							if(start < l) {
+								// if there is at least one free row between l and k 
+								if(k != l + 1) {
+									SQBlBkBjrB(ld, rd, col, start, free); 
+								}
+								// if there is no free row between l and k 
+								else {
+									SQBlkBjrB(ld, rd, col, start, free); 
+								}
+							}
+							// if l already came and only k is yet to come 
+							else {
+								SQBkBjrB(ld, rd, col, start, free); 
+							}
+						}
+						// if both l and k already came before start 
+						else {
+							SQBjrB(ld, rd, col, start, free); 
+						}
 					}
 				}
-				// l < k 
+				// if we have to set some queens first in order to reach the row N-1-jmark where the rd from queen j
+				// can be set 
 				else {
-					mark1 = l - 1; 
-					mark2 = k - 1; 
-					// if at least k is yet to come 
-					if(start < k) {
-						// if also l is yet to come 
-						if(start < l) {
-							// if there is at least one free row between l and k 
-							if(k != l + 1) {
-								SQBlBkBjrB(ld, rd, col, start, free); 
-							}
-							// if there is no free row between l and k 
-							else {
-								SQBlkBjrB(ld, rd, col, start, free); 
-							}
+					// k < l 
+					if(k < l) {
+						mark1 = k - 1;
+						mark2 = l - 1; 
+						// there is at least one free row between rows k and l 
+						if(l != k+1) {
+							SQBjlBkBlBjrB(ld, rd, col, start, free);
 						}
-						// if l already came and only k is yet to come 
+						// if l comes right after k 
 						else {
-							SQBkBjrB(ld, rd, col, start, free); 
+							SQBjlBklBjrB(ld, rd, col, start, free); 
 						}
 					}
-					// if both l and k already came before start 
+					// l < k 
 					else {
-						SQBjrB(ld, rd, col, start, free); 
+						mark1 = l - 1; 
+						mark2 = k - 1; 
+						// there is at least on efree row between rows l and k 
+						if(k != l+1) {
+							SQBjlBlBkBjrB(ld, rd, col, start, free); 
+						}
+						// if k comes right after l 
+						else {
+							SQBjlBlkBjrB(ld, rd, col, start, free); 
+						}
 					}
 				}
 			}
