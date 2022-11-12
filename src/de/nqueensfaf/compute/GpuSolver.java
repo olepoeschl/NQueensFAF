@@ -86,7 +86,7 @@ public class GpuSolver extends Solver {
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
 	private int WORKGROUP_SIZE = 64;
-	private int PRE_QUEENS = 5;
+	private int PRE_QUEENS = 6;
 	private int globalWorkSize;
 
 	// calculation related stuff

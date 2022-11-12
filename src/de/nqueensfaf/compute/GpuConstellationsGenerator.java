@@ -114,7 +114,7 @@ class GpuConstellationsGenerator {
 							// counts all subconstellations 
 							counter = 0;
 							// generate all subconstellations 
-							setPreQueens(ld, rd, col, k, l, 1, 4);
+							setPreQueens(ld, rd, col, k, l, 1, (k==0) ? 3 : 4);
 							// jam j and k and l into one integer 
 							jkl = (j << 10) | (k << 5) | l;
 							// jkl and sym and start are the same for all subconstellations 

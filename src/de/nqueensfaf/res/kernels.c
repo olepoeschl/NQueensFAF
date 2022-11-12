@@ -10,8 +10,8 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 // variables	
 
 	// for the board
-	uint ld = ld_arr[g_id];									// left diagonal
-	uint rd = rd_arr[g_id];									// right diagonal
+	ulong ld = ld_arr[g_id];									// left diagonal
+	ulong rd = rd_arr[g_id];									// right diagonal
 	uint col_mask = ~((1 << N) - 1) | 1;					// column and mas
 	uint L = 1 << (N-1);									// queen at left border
 	
@@ -44,11 +44,6 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	// left and right column are occupied by queen k (1) and l (L) 
 	col_mask |= col_mask_arr[g_id] | L | 1;
 	
-	// to memorize diagonals leaving the board at a certain row 
-	// else we would run into problems, when going back in rows 
-	uint ld_mem = 0;															
-	uint rd_mem = 0;
-	
 	// initialize current row and solvecounter as 0
 	int row = start;
 	uint solvecounter = 0;
@@ -59,15 +54,13 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 	// notfree is 1, if queen can not be placed 
 	uint notfree = ld | rd | col_mask | jqueen[row];
-	// in rows k and l, there is already a queen, so make those squares free again 
-	if(row == k)
-		notfree = ~L;
-	else if (row == l)
-		notfree = ~1U;
+	
+	rd <<= 32; 
 	
 	// temp variable for reducing reads from local array 
 	// temp is the current queen in the current row 
-	uint temp = (notfree + 1) & ~notfree;		
+	uint temp = (notfree + 1) & ~notfree;	
+	ulong templ = temp; 	
 	
 	// each row of bits contains the queens of the board of one workitem 
 	// local arrays are faster 
@@ -83,10 +76,9 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	while(row >= start) {									// while we havent tried everything 
 		if(temp) {											// if there were free places for a queen in the previous loop 
 			col_mask |= temp;								// place the queen in  the column 
-			ld_mem = ld_mem << 1 | ld >> 31;				// remember the diagonals, that leave the board
-			rd_mem = rd_mem >> 1 | rd << 31;
-			ld = (ld | temp) << 1;							// place the queen in the diagonals and shift them 
-			rd = (rd | temp) >> 1;													
+			templ = temp; 
+			ld = (ld | templ) << 1;							// place the queen in the diagonals and shift them 
+			rd = (rd | (templ<<32)) >> 1;													
 				
 			row++;											// increase row counter 
 			old_queen = direction = 1;						// we are going forward -> direction = 1
@@ -97,10 +89,9 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 			temp = bits[l_id][row];							// this saves 2 reads from local array
 			temp *= (row != k && row != l);					// we are going to remove the queen temp from the board 
 															// in row k and l we are not allowed to do this 
-			ld = ((ld >> 1) | (ld_mem << 31)) & ~temp;		// shift diagonals one back and insert the diagonals, 
-			rd = ((rd << 1) | (rd_mem >> 31)) & ~temp;		// that left the board in this line 
-			ld_mem >>= 1;									// shift those back as well
-			rd_mem <<= 1;
+			templ = temp; 
+			ld = (ld >> 1) & ~templ;						// shift diagonals one back and insert the diagonals, 
+			rd = (rd << 1) & ~(templ<<32);					// that left the board in this line 
 			
 			direction = 0;									// direction is zero, if we are removing a queen 
 			old_queen = temp;								// the old queen is the one, that we just removed 
@@ -109,7 +100,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 		
 		solvecounter += (row == N-1);						// increase the solvecounter, if we are in the last row 
 		
-		notfree = jqueen[row] | ld | rd | col_mask;			// calculate the occupancy of the next row
+		notfree = jqueen[row] | ld | (rd>>32) | col_mask;			// calculate the occupancy of the next row
 		if(!direction)										// if we removed a queen, then free up the corresponding slot in col_mask
 			col_mask &= ~temp;								// we do this after calculating notfree, to not place the same queen again				
 		// 
