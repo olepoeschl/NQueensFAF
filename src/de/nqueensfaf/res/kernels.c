@@ -73,9 +73,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 	
 // iterative loop representing the recursive setqueen-function
 // this is the actual solver 
-	while(row >= start) {									// while we havent tried everything 
-		if(g_id == 420)
-			printf("\n %i %i %i %i %i %u", row,j,k,l,start, col_mask);
+	while(row >= start) {									// while we havent tried everything
 		if(~notfree) {											// if there were free places for a queen in the previous loop 
 			if(direction)
 				old_queen = 1;
@@ -117,6 +115,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_mask_a
 			old_queen = temp;								// the old queen is the one, that we just removed 
 															// for row k or l, it is 0 
 			notfree = jqueen[row] | ld | (rd>>32) | col_mask;			// calculate the occupancy of the next row
+			notfree |= (temp-1);
 			
 			if(row == k || row == l)
 				notfree = ~0; 
