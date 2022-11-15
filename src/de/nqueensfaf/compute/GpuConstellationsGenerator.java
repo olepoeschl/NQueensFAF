@@ -76,6 +76,7 @@ class GpuConstellationsGenerator {
 				for(int a = 0; a < counter; a++) {
 					jklList.add(jkl);
 					symList.add(8);
+					jklcounter[j][0][l]++;
 				}
 			}
 		}
