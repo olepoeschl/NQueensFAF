@@ -168,14 +168,18 @@ class GpuConstellationsGenerator {
 		jklList = null;
 		startList = null;
 		
-//		for(int a=0;a<N;a++) {
-//			for(int b=0;b<N;b++) {
-//				for(int c=0;c<N;c++) {
-//					if(jklcounter[a][b][c] > 0)
-//						System.out.println(jklcounter[a][b][c]);
-//				}
-//			}
-//		}
+		int total = 0;
+		
+		for(int a=0;a<N;a++) {
+			for(int b=0;b<N;b++) {
+				for(int c=0;c<N;c++) {
+					if(jklcounter[a][b][c] > 0)
+						System.out.println(jklcounter[a][b][c]);
+					total += jklcounter[a][b][c];
+				}
+			}
+		}
+		System.out.println("\n " + total);
 	}
 
 	// generate subconstellations for each starting constellation with 3 or 4 queens 
