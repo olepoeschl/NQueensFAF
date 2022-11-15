@@ -39,6 +39,7 @@ class GpuConstellationsGenerator {
 		this.N = N;
 		final int halfN = (N + 1) / 2;
 		startConstellations = new HashSet<Integer>();
+		startConstCount = 0;
 		
 		// set number of preset queens
 		this.preQueens = preQueens;
@@ -76,12 +77,6 @@ class GpuConstellationsGenerator {
 					jklList.add(jkl);
 					symList.add(8);
 				}
-			}
-			// j has to be the same value for all workitems within the same workgroup 
-			// thus add trash constellations with same j, until workgroup is full 
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(j);
-				startConstCount--;
 			}
 		}
 
@@ -129,22 +124,47 @@ class GpuConstellationsGenerator {
 					}
 				}
 			}
-			// fill up the workgroup 
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(j);
-				startConstCount--;
-			}
 		}
 		// number of constellations (workitems) for the gpu 
-		startConstCount += ldList.size();
+		startConstCount = ldList.size();
+		
 		// sort them by j and k and l (little bit faster) 
 		// we could also directly generate constellations in fitting order 
 		sortConstellations();
+		
+		// fill up with trash constellations 
+		// so that the number of constellations with the same j is always dividable by the WORKGROUP_SIZE
+		var jklListTemp = new ArrayList<Integer>();
+		for(int jkl_ : jklList) {
+			jklListTemp.add(jkl_);
+		}
+		int currentJ = (jklListTemp.get(0) >> 10) & 0b11111;
+		int j;
+		int jcounter = 0;
+		for(int jkl_ : jklListTemp) {
+			j = (jkl_ >> 10) & 0b11111;
+			if(j != currentJ) {
+				while(jcounter % WORKGROUP_SIZE != 0) {
+					addTrashConstellation(currentJ);
+					jcounter++;
+				}
+				currentJ = j;
+			}
+			jcounter++;
+		}
+		while(jcounter % WORKGROUP_SIZE != 0) {
+			addTrashConstellation(currentJ);
+			jcounter++;
+		}
+		// sort again
+		sortConstellations();
+
+		// merge startList and jklList
 		startjklList = new ArrayList<Integer>(ldList.size());
 		for(int i = 0; i < ldList.size(); i++) {
 			startjklList.add((startList.get(i) << 15) | jklList.get(i));
 		}
-		// for the trash
+		// for the garbage collector
 		jklList = null;
 		startList = null;
 		
