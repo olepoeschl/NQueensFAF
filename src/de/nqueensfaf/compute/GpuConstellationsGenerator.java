@@ -75,11 +75,11 @@ class GpuConstellationsGenerator {
 					symList.add(8);
 				}
 			}
+			// j has to be the same value for all workitems within the same workgroup 
+			// thus add trash constellations with same j, until workgroup is full 
 		}
-		// j has to be the same value for all workitems within the same workgroup 
-		// thus add trash constellations with same j, until workgroup is full 
 		while(ldList.size() % WORKGROUP_SIZE != 0) {
-			addTrashConstellation(N-1,0,0);
+			addTrashConstellation(N-1, 0, 0);
 			startConstCount--;
 		}
 
@@ -132,6 +132,21 @@ class GpuConstellationsGenerator {
 				startConstCount--;
 			}
 		}
+		
+//		int jkl2=0, temp, j2, k2, l2;
+//		for(int i = 0; i < 4096; i++) {
+//			if(i % 64 == 0) {
+//				jkl2 = jklList.get(i);
+//			}
+//			if(jklList.get(i) != jkl2) {
+//				temp = jklList.get(i);
+//				j2 = temp >> 10;
+//				k2 = (temp >> 5) & 31;
+//				l2 = temp & 31;
+//				System.out.println("\n"+j2+" "+k2+" "+l2);
+//			}
+//		}
+		
 		// number of constellations (workitems) for the gpu 
 		startConstCount += ldList.size();
 		// sort them by j and k and l (little bit faster) 
