@@ -62,7 +62,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 	int direction = 1;
 	
 // iterative loop representing the recursive setqueen-function 
-// this is the actual solver (via backtracking with Jeff Somers Bit method
+// this is the actual solver (via backtracking with Jeff Somers Bit method) 
 // the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
 	while(row >= start) {									// while we havent tried everything 
 		if(free) {											// if there are free slots in the current row 
