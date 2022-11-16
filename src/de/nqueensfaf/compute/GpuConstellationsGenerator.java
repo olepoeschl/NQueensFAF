@@ -42,45 +42,45 @@ class GpuConstellationsGenerator {
 		this.preQueens = preQueens;
 
 		// calculating start constellations with the first Queen on square (0,0) (corner) 
-		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
-			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
+		for(int k = 1; k < N-2; k++) {						// j is idx of Queen in last row				
+			for(int i = k+1; i < N-1; i++) {				// l is idx of Queen in last col
 				// always add the constellation, we can not accidently get symmetric ones 
-				startConstellations.add(toijkl(0, j, 0, l));
+				startConstellations.add(toijkl(i, N-1, k, N-1));
 				
 				// empty ld
-				ld = 0;
+				ld = (L >>> (k-1)) | (L >>> (i-1));
 				// rd occupied from queen at top left corner (main diagonal) or l-queen at right border 
-				rd = (L >>> 1) | (1 << (l-1));
+				rd = (L >>> (i+1)) | (L >>> 1);
 				// col occupied a t the borders and from queen j in last row 
-				col = 1 | L | (L >>> j);
+				col = 1 | L | (L >>> i);
 				// diagonals, that are occupied in the last row by the queen j or l 
 				// we are going to shift them upwards the board later 
-				LD = (L >>> j) | (L >>> l);
-				RD = (L >>> j) | 1;
+				LD = 1;
+				RD = 1 | (1 << k);
 				
 				// counter of subconstellations, that arise from setting extra queens 
 				counter = 0;
 				// this is the queen in row k (0) and l 
 				// their diagonals have to be occupied later 
 				// we can not do this right now, because in row k, the queen k has to be actually set 
-				kbit = (1 << (N-0-1));
-				lbit = (1 << l);
+				kbit = (L >>> k);
+				lbit = 1;
 				// generate all subconstellations with 5 queens 
-				setPreQueens(ld, rd, col, 0, l, 1, 3);
+				setPreQueens(ld, rd, col, k, N-1, 1, 3);
 				// jam j and k and l together into one integer 
-				jkl = (j << 10) | (0 << 5) | l;
+				jkl = ((N-1) << 10) | (k << 5) | (N-1);
 				// jkl and sym are the same for all subconstellations 
 				for(int a = 0; a < counter; a++) {
 					jklList.add(jkl);
 					symList.add(8);
 				}
 			}
-			// j has to be the same value for all workitems within the same workgroup 
-			// thus add trash constellations with same j, until workgroup is full 
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(j);
-				startConstCount--;
-			}
+		}
+		// j has to be the same value for all workitems within the same workgroup 
+		// thus add trash constellations with same j, until workgroup is full 
+		while(ldList.size() % WORKGROUP_SIZE != 0) {
+			addTrashConstellation(N-1,0,0);
+			startConstCount--;
 		}
 
 		// calculate starting constellations for no Queens in corners
@@ -128,7 +128,7 @@ class GpuConstellationsGenerator {
 			}
 			// fill up the workgroup 
 			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(j);
+				addTrashConstellation(j, 0, 0);
 				startConstCount--;
 			}
 		}
@@ -136,7 +136,7 @@ class GpuConstellationsGenerator {
 		startConstCount += ldList.size();
 		// sort them by j and k and l (little bit faster) 
 		// we could also directly generate constellations in fitting order 
-		sortConstellations();
+//		sortConstellations();
 		startjklList = new ArrayList<Integer>(ldList.size());
 		for(int i = 0; i < ldList.size(); i++) {
 			startjklList.add((startList.get(i) << 15) | jklList.get(i));
@@ -258,12 +258,12 @@ class GpuConstellationsGenerator {
 	}
 	
 	// create trash constellation to fill up workgroups 
-	private void addTrashConstellation(int j) {
+	private void addTrashConstellation(int j, int k, int l) {
 		ldList.add((1 << N) - 1);
 		rdList.add((1 << N) - 1);
 		colList.add((1 << N) - 1);
 		startList.add(69);
-		jklList.add(j << 10);
+		jklList.add((j << 10) | (k << 5) | l);
 		symList.add(0);
 	}
 	

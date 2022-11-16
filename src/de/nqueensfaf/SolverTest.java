@@ -53,8 +53,7 @@ class SolverTest {
 		GpuSolver s = new GpuSolver();
 		s.setDevice(0);
 		s.setProgressUpdatesEnabled(true);
-		s.setProgressUpdateDelay(1000); 
-		s.setN(17);
+		s.setN(19);
 		new Thread(() -> {
 			while(true) {
 				if(s.getGlobalWorkSize() == 0) {
