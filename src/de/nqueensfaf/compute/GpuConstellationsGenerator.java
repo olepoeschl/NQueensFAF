@@ -26,8 +26,6 @@ class GpuConstellationsGenerator {
 		symList = new ArrayList<Integer>();
 		// starting (first empty) row 
 		startList = new ArrayList<Integer>();
-		
-		int[][][] jklcounter = new int[N][N][N];
 
 		int ld, rd, col, jkl;
 		// queen at left border 
@@ -123,7 +121,6 @@ class GpuConstellationsGenerator {
 							for(int a = 0; a < counter; a++) {
 								jklList.add(jkl);
 								symList.add(symmetry(toijkl(i, j , k, l)));
-								jklcounter[j][k][l]++;
 							}
 						}
 					}
@@ -147,15 +144,6 @@ class GpuConstellationsGenerator {
 		// for the trash
 		jklList = null;
 		startList = null;
-		
-//		for(int a=0;a<N;a++) {
-//			for(int b=0;b<N;b++) {
-//				for(int c=0;c<N;c++) {
-//					if(jklcounter[a][b][c] > 0)
-//						System.out.println(jklcounter[a][b][c]);
-//				}
-//			}
-//		}
 	}
 
 	// generate subconstellations for each starting constellation with 3 or 4 queens 
