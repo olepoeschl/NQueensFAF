@@ -32,21 +32,18 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 	
 	// jkl_queens occupies the diagonals, that go from bottom row to upper right and upper left 
 	local uint jkl_queens[N];
-	// the diagonals from queen j and k with respect to the last row
-	uint rdiag = (L >> j) | (L >> (N-1-k));
-	// the diagonals from queen j and l with respect to the last row
-	uint ldiag = (L >> j) | (L >> l);
+	// the diagonals from queen j and l with respect to the top row
+	uint ldiagbot = (L >> j) | (L >> l);
+	// the diagonals from queen j and k with respect to the bootom row
+	uint rdiagbot = (L >> j) | (L >> (N-1-k));
+	// ld from queen l with respect to the top row 
+	uint ldiagtop = L >> k;								
+	// ld from queen k with respect to the top row 
+	uint rdiagtop = 1 << l;									
+	
 	for(int a = N-1;a > 0; a--){					// we also occupy the left and right border 
-		jkl_queens[a] = (ldiag >> (N-1-a)) | (rdiag << (N-1-a)) | L | 1;
+		jkl_queens[a] = (a==k)*(~L) + (a==l)*(~1) + (a!=k&&a!=l)*((ldiagbot >> (N-1-a)) | (rdiagbot << (N-1-a)) | (ldiagtop << a) | (rdiagtop >> a) | L | 1);
 	}
-	ldiag = L >> k;									// ld from queen l with respect to the first row 
-	rdiag = 1 << l;									// ld from queen k with respect to the first row 
-	for(int a = 0;a < N; a++){
-		jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
-	}
-	jkl_queens[k] = ~L;
-	jkl_queens[l] = ~1; 
-	barrier(CLK_LOCAL_MEM_FENCE);
 
 	// initialize current row as start and solutions as 0
 	int row = start;
