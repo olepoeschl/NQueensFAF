@@ -31,27 +31,28 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 	uint L = 1 << (N-1);	
 	
 	// jkl_queens occupies the diagoals, that go from bottom row to upper right and upper left 
-	local uint jkl_queens[BLOCK_SIZE][N];
+	local uint jkl_queens[N];
 	// the diagonals from queen j and k with respect to the last row
 	uint rdiag = (L >> j) | (L >> (N-1-k));
 	// the diagonals from queen j and l with respect to the last row
 	uint ldiag = (L >> j) | (L >> l);
 	for(int a = N-1;a > 0; a--){							// we also occupy the left and right border 
-		jkl_queens[l_id][a] = (ldiag >> N-1-a) | (rdiag << (N-1-a)) | L | 1;
+		jkl_queens[a] = (ldiag >> N-1-a) | (rdiag << (N-1-a)) | L | 1;
 	}
 	ldiag = L >> k;											// ld from queen l with respect to the first row 
 	rdiag = 1 << l;											// ld from queen k with respect to the first row 
 	for(int a = 0;a < N; a++){
-		jkl_queens[l_id][a] |= (ldiag << a) | (rdiag >> a);
+		jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
 	}
-	jkl_queens[l_id][k] = ~L;
-	jkl_queens[l_id][l] = ~1; 
+	jkl_queens[k] = ~L;
+	jkl_queens[l] = ~1; 
+	barrier(CLK_LOCAL_MEM_FENCE);
 
 	// initialize current row as start and solvecounter as 0
 	int row = start;
 	uint solvecounter = 0;	
 	// calculate the first queen that will be set in the first row 
-	uint free = ~(ld | rd | col | jkl_queens[l_id][row]);	// free is 1 if a queen can be set at the queens location 
+	uint free = ~(ld | rd | col | jkl_queens[row]);	// free is 1 if a queen can be set at the queens location 
 	// bit is the queen that will be set in the current row 
 	uint queen = -free & free;	
 	// each row of queens contains the queens of the board of one workitem 
@@ -86,7 +87,7 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
-		free = ~(jkl_queens[l_id][row] | ld | rd | col);	// calculate the occupancy of the next row
+		free = ~(jkl_queens[row] | ld | rd | col);	// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);						// aoccupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;										// free up the column AFTER calculating notfree in order to not place the same queen again		
 

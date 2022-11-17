@@ -26,6 +26,8 @@ class GpuConstellationsGenerator {
 		symList = new ArrayList<Integer>();
 		// starting (first empty) row 
 		startList = new ArrayList<Integer>();
+		
+		int[][][] jklcounter = new int[N][N][N];
 
 		int ld, rd, col, jkl;
 		// queen at left border 
@@ -73,25 +75,26 @@ class GpuConstellationsGenerator {
 				for(int a = 0; a < counter; a++) {
 					jklList.add(jkl);
 					symList.add(8);
+					jklcounter[N-1][k][N-1]++;
 				}
 			}
 			// j has to be the same value for all workitems within the same workgroup 
 			// thus add trash constellations with same j, until workgroup is full 
-		}
-		while(ldList.size() % WORKGROUP_SIZE != 0) {
-			addTrashConstellation(N-1, 0, 0);
-			startConstCount--;
+			while(ldList.size() % WORKGROUP_SIZE != 0) {
+				addTrashConstellation(N-1, k, N-1);
+				startConstCount--;
+			}
 		}
 
 		// calculate starting constellations for no Queens in corners
 		// have a look in the loop above for missing explanations 
 		for(int j = 1; j < halfN; j++) {						// go through last row
 			for(int l = j+1; l < N-1; l++) {					// go through last col
-				for(int i = j+1; i < N-1; i++) {				// go through first row
-					if(i == N-1-l)								// skip if occupied
+				for(int k = N-j-2; k > 0; k--) {			// go through first col 
+					if(k == l)						// skip if occupied 
 						continue;
-					for(int k = N-j-2; k > 0; k--) {			// go through first col 
-						if(k==i || l == k)						// skip if occupied 
+					for(int i = j+1; i < N-1; i++) {				// go through first row
+						if(i == N-1-l || i == k)								// skip if occupied
 							continue;
 						// check, if we already found a symmetric constellation 
 						if(!checkRotations(i, j, k, l)) {	
@@ -121,18 +124,20 @@ class GpuConstellationsGenerator {
 							for(int a = 0; a < counter; a++) {
 								jklList.add(jkl);
 								symList.add(symmetry(toijkl(i, j , k, l)));
+								jklcounter[j][k][l]++;
 							}
 						}
 					}
+					// fill up the workgroup 
+					while(ldList.size() % WORKGROUP_SIZE != 0) {
+						addTrashConstellation(j, k, l);
+						startConstCount--;
+					}
 				}
-			}
-			// fill up the workgroup 
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(j, 0, 0);
-				startConstCount--;
 			}
 		}
 		
+		// test if jl is always the same within the same block 
 //		int jkl2=0, temp, j2, k2, l2;
 //		for(int i = 0; i < 4096; i++) {
 //			if(i % 64 == 0) {
@@ -146,6 +151,19 @@ class GpuConstellationsGenerator {
 //				System.out.println("\n"+j2+" "+k2+" "+l2);
 //			}
 //		}
+		
+		// get the total number of actual start constallations (without pseudos) 
+//		int total = 0;
+//		for(int a=0;a<N;a++) {
+//			for(int b=0;b<N;b++) {
+//				for(int c=0;c<N;c++) {
+//					if(jklcounter[a][b][c] > 0)
+//						System.out.println(jklcounter[a][b][c]);
+//					total += jklcounter[a][b][c];
+//				}
+//			}
+//		}
+//		System.out.println("\n " + total);
 		
 		// number of constellations (workitems) for the gpu 
 		startConstCount += ldList.size();
