@@ -346,7 +346,12 @@ public class GpuSolver extends Solver {
 		int error = clBuildProgram(program, devicesBuf, options, null, 0);
 		checkCLError(error);
 		
-		kernel = clCreateKernel(program, "run", errBuf);
+		// determine which kernel to use
+		if(getDeviceInfoStringUTF8(device, CL_DEVICE_VENDOR).toLowerCase().contains("intel")) {
+			kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
+		} else {
+			kernel = clCreateKernel(program, "nqfaf_default", errBuf);
+		}
 	}
 
 	private void transferDataToDevice(MemoryStack stack) {

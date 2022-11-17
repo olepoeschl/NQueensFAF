@@ -1,15 +1,11 @@
-
-//	//	//	//	//	//	//	//	//
-//	  Explosion Boost 9000		//
-//	//	//	//	//	//	//	//	//
-
-__kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
-
-// gpu intern indice
+// Explosion Boost 9000
+// Used for all GPU's except Intel GPU's.
+kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
+	// gpu intern indice
 	int g_id = get_global_id(0);					// global thread id 
 	int l_id = get_local_id(0);						// local thread id within workgroup
 	
-// variables												
+	// variables												
 	// start_jkl_arr contains [11 queens free][5 queens for start][5 queens for j][5 queens for k][5 queens for l] 
 	int start = start_jkl_arr[g_id] >> 15;		
 	if(start == 69) {								// if we have a pseudo constellation we do nothing 
@@ -62,9 +58,9 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 	// going forward or backward? 										
 	int direction = 1;
 	
-// iterative loop representing the recursive setqueen-function 
-// this is the actual solver (via backtracking with Jeff Somers Bit method) 
-// the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
+	// iterative loop representing the recursive setqueen-function 
+	// this is the actual solver (via backtracking with Jeff Somers Bit method) 
+	// the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
 	while(row >= start) {							// while we havent tried everything 
 		if(free) {										// if there are free slots in the current row 
 			direction = 1;									// we are going forwards 
@@ -95,4 +91,80 @@ __kernel void run(global int *ld_arr, global int *rd_arr, global int *col_arr, g
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
 	progress[g_id] = 1;								// progress 1 if done, 0 if not 
+}
+
+// Same as default kernel, but jkl_queens is initialized using only 1 loop instead of 2.
+// It's a bit slower, but the barrier, that caused problems on Intel GPU's, is not needed.
+kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
+	int g_id = get_global_id(0);
+	int l_id = get_local_id(0);
+	
+	int start = start_jkl_arr[g_id] >> 15;		
+	if(start == 69) {
+		progress[g_id] = -1;
+		return;
+	}
+	int j = (start_jkl_arr[g_id] >> 10) & 31;
+	int k = (start_jkl_arr[g_id] >> 5) & 31;
+	int l = start_jkl_arr[g_id] & 31;
+	
+	uint ld = ld_arr[g_id];
+	uint rd = rd_arr[g_id];
+	uint col = ~((1 << N) - 1) | col_arr[g_id];
+	
+	uint ld_mem = 0;
+	uint rd_mem = 0;
+	
+	uint L = 1 << (N-1);	
+	
+	// the part that is different form the default kernel
+	local uint jkl_queens[N];
+	uint ldiagbot = (L >> j) | (L >> l);
+	uint rdiagbot = (L >> j) | (L >> (N-1-k));
+	uint ldiagtop = L >> k;								
+	uint rdiagtop = 1 << l;
+	for(int a = N-1;a > 0; a--){
+		jkl_queens[a] = (a==k)*(~L) + (a==l)*(~1) + (a!=k&&a!=l)*((ldiagbot >> (N-1-a)) | (rdiagbot << (N-1-a)) | (ldiagtop << a) | (rdiagtop >> a) | L | 1);
+	}
+	// -----
+	
+	int row = start;
+	uint solutions = 0;
+	uint free = ~(ld | rd | col | jkl_queens[row]);
+	uint queen = -free & free;
+	local uint queens[BLOCK_SIZE][N];
+	queens[l_id][start] = queen;
+	
+	int direction = 1;
+	
+	while(row >= start) {	
+		if(free) {
+			direction = 1;
+			queen = -free & free;
+			queens[l_id][row] = queen;	
+			row++;
+
+			ld_mem = ld_mem << 1 | ld >> 31;
+			rd_mem = rd_mem >> 1 | rd << 31;
+			ld = (ld | queen) << 1;							
+			rd = (rd | queen) >> 1;	
+		}
+		else {
+			direction = 0;
+			row--;
+			queen = queens[l_id][row];
+																									
+			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;
+			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
+			ld_mem >>= 1;
+			rd_mem <<= 1;						
+		}
+		free = ~(jkl_queens[row] | ld | rd | col);
+		free &= ~(queen + direction-1);
+		col ^= queen;
+
+		solutions += (row == N-1);
+	}
+	result[g_id] = solutions;
+	progress[g_id] = 1;
 }
