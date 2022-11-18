@@ -746,7 +746,7 @@ public class GpuSolver extends Solver {
 			throw new IllegalStateException("Choose a device first");
 		}
 		long maxWorkgroupSize = getDeviceInfoPointer(device, CL_DEVICE_MAX_WORK_GROUP_SIZE);
-		if(s <= 0 || s >= maxWorkgroupSize) {
+		if(s <= 0 || s > maxWorkgroupSize) {
 			throw new IllegalArgumentException("WorkgroupSize must be between 0 and " + maxWorkgroupSize + " (=max for this device)");
 		}
 		WORKGROUP_SIZE = s;
