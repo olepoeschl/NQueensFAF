@@ -755,7 +755,7 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 	
-		int i, j, k, l, ijkl, ld, rd, col, startIjkl, start, free; 
+		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free; 
 		final int N = this.N; 
 		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
 		
@@ -764,7 +764,7 @@ class CpuSolverThread extends Thread {
 			startIjkl = startIjklList.getFirst();
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
-			i = geti(ijkl); j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
+			j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
 			
 			// shift all one to the right because the right column does not matter (always occupied by queen l) 
 			ld = ldList.getFirst() >>> 1;
