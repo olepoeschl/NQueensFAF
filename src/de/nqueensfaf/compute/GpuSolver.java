@@ -81,10 +81,10 @@ public class GpuSolver extends Solver {
 	private long device;
 	private long xqueue, memqueue;
 	private long clEvent;
-	private CLEventCallback eventCB;
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
+	private final Object resLock = new Object(), progressLock = new Object();
 	private int WORKGROUP_SIZE = 64;
 	private int PRE_QUEENS = 6;
 	private int globalWorkSize;
@@ -158,8 +158,8 @@ public class GpuSolver extends Solver {
 				colListTmp = new ArrayList<Integer>(),
 				startjklListTmp = new ArrayList<Integer>(),
 				symListTmp = new ArrayList<Integer>();
-		synchronized(resMem) {
-			synchronized(progressMem) {
+		synchronized(resLock) {
+			synchronized(progressLock) {
 				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				for(int i = 0; i < globalWorkSize; i++) {
@@ -274,7 +274,7 @@ public class GpuSolver extends Solver {
 			return ((float) savedSolvedConstellations) / startConstCount;		// either has a value, is still 0 or is 0 because of reset
 		
 		int solvedConstellations = savedSolvedConstellations;
-		synchronized(progressMem) {
+		synchronized(progressLock) {
 			clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 			for(int i = 0; i < globalWorkSize; i++) {
 				if(progressBuf.get(i) == 1) {
@@ -295,7 +295,7 @@ public class GpuSolver extends Solver {
 			return savedSolutions;		// either has a value, is still 0 or is 0 because of reset
 		
 		long solutions = 0;
-		synchronized(resMem) {
+		synchronized(resLock) {
 			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 			for(int i = 0; i < globalWorkSize; i++) {
 				solutions += resBuf.getLong(i*8) * symList.get(i);
@@ -489,7 +489,7 @@ public class GpuSolver extends Solver {
 		// get exact time values using CLEvent
 		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
 		clEvent = xEventBuf.get(0);
-        int errcode = clSetEventCallback(clEvent, CL_COMPLETE, eventCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
+        int errcode = clSetEventCallback(clEvent, CL_COMPLETE, CLEventCallback.create((event, event_command_exec_status, user_data) -> {
     		int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
     		checkCLError(err);
     		err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
@@ -509,8 +509,8 @@ public class GpuSolver extends Solver {
 	
 	private void readResults(MemoryStack stack) {
 		// read result and progress memory buffers
-		synchronized(resMem) {
-			synchronized(progressMem) {
+		synchronized(resLock) {
+			synchronized(progressLock) {
 				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				solutions = savedSolutions;
@@ -571,7 +571,7 @@ public class GpuSolver extends Solver {
 	private static int checkOpenCL() {
 		Process clinfo;
 		try {
-			clinfo = Runtime.getRuntime().exec("clinfo");
+			clinfo = Runtime.getRuntime().exec(new String[]{"clinfo"});
 			BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
 			String line;
 			if((line = in.readLine()) != null) {
@@ -591,7 +591,7 @@ public class GpuSolver extends Solver {
 					return -1;
 				}
 				try {
-					clinfo = Runtime.getRuntime().exec(clinfoFile.getAbsolutePath());
+					clinfo = Runtime.getRuntime().exec(new String[]{clinfoFile.getAbsolutePath()});
 					BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
 					String line;
 					if((line = in.readLine()) != null) {
