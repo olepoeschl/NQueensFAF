@@ -261,8 +261,6 @@ public class GpuSolver extends Solver {
 			duration = savedDuration + System.currentTimeMillis() - start;
 		else if(end != 0)
 			duration = savedDuration + end - start;
-		else if(start == 0 && end == 0)
-			duration = 0;
 		return duration;
 	}
 
