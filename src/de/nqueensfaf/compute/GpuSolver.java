@@ -160,7 +160,7 @@ public class GpuSolver extends Solver {
 				symListTmp = new ArrayList<Integer>();
 		synchronized(resLock) {
 			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
+				clEnqueueReadBuffer(memqueue, resMem, false, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				for(int i = 0; i < globalWorkSize; i++) {
 					if(progressBuf.get(i) == 1) {
@@ -212,13 +212,13 @@ public class GpuSolver extends Solver {
 		symList = new ArrayList<Integer>();
 		
 		generator = new GpuConstellationsGenerator();
-		int currentJ = (resInfo.startjklList.get(0) >> 10) & 31;
+		int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
 		for(int i = 0; i < resInfo.ldList.size(); i++) {
-			if(((resInfo.startjklList.get(i) >> 10) & 31) != currentJ) {	// check if new j is found
+			if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
 				while(ldList.size() % WORKGROUP_SIZE != 0) {
-					generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
-					currentJ = (resInfo.startjklList.get(i) >> 10) & 31;
+					generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
 				}
+				currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
 			}
 			ldList.add(resInfo.ldList.get(i));
 			rdList.add(resInfo.rdList.get(i));
@@ -227,7 +227,7 @@ public class GpuSolver extends Solver {
 			symList.add(resInfo.symList.get(i));
 		}
 		while(ldList.size() % WORKGROUP_SIZE != 0) {
-			generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
+			generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
 		}
 		restored = true;
 	}
@@ -511,7 +511,7 @@ public class GpuSolver extends Solver {
 		// read result and progress memory buffers
 		synchronized(resLock) {
 			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
+				clEnqueueReadBuffer(memqueue, resMem, false, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;

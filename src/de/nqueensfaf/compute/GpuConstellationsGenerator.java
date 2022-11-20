@@ -300,12 +300,12 @@ class GpuConstellationsGenerator {
 		symList.add(0);
 	}
 	
-	public void addTrashConstellation(int j, ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, 
+	public void addTrashConstellation(int jkl, ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, 
 			ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
 		ldList.add((1 << N) - 1);
 		rdList.add((1 << N) - 1);
 		colList.add((1 << N) - 1);
-		startjklList.add((69 << 15) | (j << 10));
+		startjklList.add((69 << 15) | jkl);
 		symList.add(0);
 	}
 
