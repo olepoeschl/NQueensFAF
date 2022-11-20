@@ -57,6 +57,7 @@ public class CpuSolver extends Solver {
 			solvedConstellations = 1;
 			return;
 		}
+		
 		if(!restored) {
 			genConstellations();
 			startConstCount = startIjklList.size();
@@ -64,7 +65,6 @@ public class CpuSolver extends Solver {
 		
 		// split starting constellations in [cpu] many lists (splitting the work for the threads)
 		ArrayList<ArrayList<ArrayDeque<Integer>>> threadConstellations = new ArrayList<ArrayList<ArrayDeque<Integer>>>();
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// startConstellations, just keeping for backwards compatibility
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// ld
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// rd
 		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount));	// col
@@ -74,37 +74,32 @@ public class CpuSolver extends Solver {
 				list.add(new ArrayDeque<Integer>());
 			}
 		}
-		// startConstellations
-		int i = 0;
-		for(int constellation : startConstellations) {
-			threadConstellations.get(0).get((i++) % threadcount).addFirst(constellation);
-		}
 		// ld
-		i = 0;
+		int i = 0;
 		for(int ld : ldList) {
-			threadConstellations.get(1).get((i++) % threadcount).addFirst(ld);
+			threadConstellations.get(0).get((i++) % threadcount).addFirst(ld);
 		}
 		// rd
 		i = 0;
 		for(int rd : rdList) {
-			threadConstellations.get(2).get((i++) % threadcount).addFirst(rd);
+			threadConstellations.get(1).get((i++) % threadcount).addFirst(rd);
 		}
 		// col
 		i = 0;
 		for(int col : colList) {
-			threadConstellations.get(3).get((i++) % threadcount).addFirst(col);
+			threadConstellations.get(2).get((i++) % threadcount).addFirst(col);
 		}
 		// startIjkl
 		i = 0;
 		for(int startIjkl : startIjklList) {
-			threadConstellations.get(4).get((i++) % threadcount).addFirst(startIjkl);
+			threadConstellations.get(3).get((i++) % threadcount).addFirst(startIjkl);
 		}
 		
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for(i = 0; i < threadcount; i++) {
-			CpuSolverThread cpuSolverThread = new CpuSolverThread(this, N, threadConstellations.get(0).get(i), threadConstellations.get(1).get(i), 
-					threadConstellations.get(2).get(i), threadConstellations.get(3).get(i), threadConstellations.get(4).get(i));
+			CpuSolverThread cpuSolverThread = new CpuSolverThread(this, N, threadConstellations.get(0).get(i), 
+					threadConstellations.get(1).get(i), threadConstellations.get(2).get(i), threadConstellations.get(3).get(i));
 			threads.add(cpuSolverThread);
 			executor.submit(cpuSolverThread);
 		}
@@ -237,34 +232,33 @@ public class CpuSolver extends Solver {
 
 	// own functions
 	private void genConstellations() {
-		startConstellations.clear();
-		
 		// halfN half of N rounded up
 		final int halfN = (N + 1) / 2;
 		L = 1 << (N -1);
 		mask = (1 << N) - 1;
-		
+
 		// calculate starting constellations for no Queens in corners
-		for(int k = 1; k < halfN; k++) {						// go through first col 
-			for(int l = k+1; l < N-1; l++) {					// go through last col 
-				for(int i = k+1; i < N-1; i++) {				// go through first row
-					if(i == N-1-l)								// skip if occupied
+		for (int k = 1; k < halfN; k++) { // go through first col
+			for (int l = k + 1; l < N - 1; l++) { // go through last col
+				for (int i = k + 1; i < N - 1; i++) { // go through first row
+					if (i == N - 1 - l) // skip if occupied
 						continue;
-					for(int j = N-k-2; j > 0; j--) {			// go through last row
-						if(j==i || l == j)
+					for (int j = N - k - 2; j > 0; j--) { // go through last row
+						if (j == i || l == j)
 							continue;
 
-						if(!checkRotations(i, j, k, l)) {		// if no rotation-symmetric starting constellation already found
+						if (!checkRotations(i, j, k, l)) { // if no rotation-symmetric starting constellation already
+															// found
 							startConstellations.add(toijkl(i, j, k, l));
 						}
 					}
 				}
 			}
 		}
-
-		// calculating start constellations with the first Queen on the corner square (0,0) 
-		for(int j = 1; j < N-2; j++) {						// j is idx of Queen in last row				
-			for(int l = j+1; l < N-1; l++) {				// l is idx of Queen in last col
+		// calculating start constellations with the first Queen on the corner square
+		// (0,0)
+		for (int j = 1; j < N - 2; j++) { // j is idx of Queen in last row
+			for (int l = j + 1; l < N - 1; l++) { // l is idx of Queen in last col
 				startConstellations.add(toijkl(0, j, 0, l));
 			}
 		}

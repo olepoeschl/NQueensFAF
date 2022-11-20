@@ -15,14 +15,14 @@ class CpuSolverThread extends Thread {
 	private int mark1, mark2, endmark, jmark;
  
 	// list of uncalculated starting positions, their indices
-	private ArrayDeque<Integer> startConstellations, ldList, rdList, colList, startIjklList;
+	private ArrayDeque<Integer> ldList, rdList, colList, startIjklList;
 	
 	// for pausing or cancelling the run
 	private boolean cancel = false, running = false;
 	private int pause = 0;
 	private CpuSolver caller;
 
-	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> startConstellations, ArrayDeque<Integer> ldList, 
+	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> ldList, 
 			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {
 		this.caller = caller;
 		this.N = N;
@@ -31,7 +31,6 @@ class CpuSolverThread extends Thread {
 		L = 1 << (N-1);
 		L3 = 1 << N3;
 		L4 = 1 << N4;
-		this.startConstellations = startConstellations;
 		this.ldList = ldList;
 		this.rdList = rdList;
 		this.colList = colList;
@@ -1103,7 +1102,7 @@ class CpuSolverThread extends Thread {
 	}
 	
 	ArrayDeque<Integer> getRemainingConstellations() {
-		return startConstellations;
+		return null;
 	}
 	
 	// helper functions for doing the math
