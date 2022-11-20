@@ -167,9 +167,7 @@ class GpuConstellationsGenerator {
 		
 		// number of constellations (workitems) for the gpu 
 		startConstCount += ldList.size();
-		// sort them by j and k and l (little bit faster) 
-		// we could also directly generate constellations in fitting order 
-//		sortConstellations();
+		
 		startjklList = new ArrayList<Integer>(ldList.size());
 		for(int i = 0; i < ldList.size(); i++) {
 			startjklList.add((startList.get(i) << 15) | jklList.get(i));
@@ -228,14 +226,13 @@ class GpuConstellationsGenerator {
 
 	// sort constellations so that as many workgroups as possible have solutions with less divergent branches
 	// this can also be done by directly generating the constellations in a different order 
-	void sortConstellations() {
-		record BoardProperties(int ld, int rd, int col, int start, int jkl, int sym) {
-			BoardProperties(int ld, int rd, int col, int start, int jkl, int sym) {
+	void sortConstellations(ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
+		record BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
+			BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
 				this.ld = ld;
 				this.rd = rd;
 				this.col = col;
-				this.start = start;
-				this.jkl = jkl;
+				this.startjkl = startjkl;
 				this.sym = sym;
 			}
 		}
@@ -243,49 +240,33 @@ class GpuConstellationsGenerator {
 		int len = ldList.size();
 		ArrayList<BoardProperties> list = new ArrayList<BoardProperties>(len);
 		for(int i = 0; i < len; i++) {
-			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startList.get(i), jklList.get(i), symList.get(i)));
+			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i), symList.get(i)));
 		}
 		Collections.sort(list, new Comparator<BoardProperties>() {
 			@Override
 			public int compare(BoardProperties o1, BoardProperties o2) {
-				int j1 = o1.jkl >> 10, j2 = o2.jkl >> 10;
-				int k1 = (o1.jkl >> 5) & 0b00011111, k2 = (o2.jkl >> 5) & 0b00011111;
-				int l1 = o1.jkl & 0b00011111, l2 = o2.jkl & 0b00011111;
-				if(j1 > j2) {
+				int o1jkl = o1.startjkl & ((1 << 15)-1);
+				int o2jkl = o2.startjkl & ((1 << 15)-1);
+				if(o1jkl > o2jkl)
 					return 1;
-				} else if(j1 < j2) {
+				else if(o1jkl < o2jkl)
 					return -1;
-				} else {
-					if(k1 > k2) {
-						return 1;
-					} else if(k1 < k2) {
-						return -1;
-					} else {
-						if(l1 > l2) {
-							return 1;
-						} else if(l1 < l2) {
-							return -1;
-						} else {
-							return 0;
-						}
-					}
-				}
+				else
+					return 0;
 			}
 		});
 		// clear the unsorted lists 
 		ldList.clear();
 		rdList.clear();
 		colList.clear();
-		startList.clear();
-		jklList.clear();
+		startjklList.clear();
 		symList.clear();
 		// make the sorted list (same elements in new sorted order) 
 		for(int i = 0; i < len; i++) {
 			ldList.add(list.get(i).ld);
 			rdList.add(list.get(i).rd);
 			colList.add(list.get(i).col);
-			startList.add(list.get(i).start);
-			jklList.add(list.get(i).jkl);
+			startjklList.add(list.get(i).startjkl);
 			symList.add(list.get(i).sym);
 		}
 	}

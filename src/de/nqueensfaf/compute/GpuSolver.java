@@ -160,7 +160,7 @@ public class GpuSolver extends Solver {
 				symListTmp = new ArrayList<Integer>();
 		synchronized(resLock) {
 			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, false, 0, resBuf, null, null);
+				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				for(int i = 0; i < globalWorkSize; i++) {
 					if(progressBuf.get(i) == 1) {
@@ -212,6 +212,7 @@ public class GpuSolver extends Solver {
 		symList = new ArrayList<Integer>();
 		
 		generator = new GpuConstellationsGenerator();
+		generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
 		int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
 		for(int i = 0; i < resInfo.ldList.size(); i++) {
 			if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
@@ -511,7 +512,7 @@ public class GpuSolver extends Solver {
 		// read result and progress memory buffers
 		synchronized(resLock) {
 			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, false, 0, resBuf, null, null);
+				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
 				solutions = savedSolutions;
 				int solvedConstellations = savedSolvedConstellations;
