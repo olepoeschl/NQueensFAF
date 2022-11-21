@@ -26,8 +26,6 @@ class GpuConstellationsGenerator {
 		symList = new ArrayList<Integer>();
 		// starting (first empty) row 
 		startList = new ArrayList<Integer>();
-		
-		int[][][] jklcounter = new int[N][N][N];
 
 		int ld, rd, col, jkl;
 		// queen at left border 
@@ -49,24 +47,30 @@ class GpuConstellationsGenerator {
 				// always add the constellation, we can not accidently get symmetric ones 
 				startConstellations.add(toijkl(i, N-1, k, N-1));
 				
-				// empty ld
+				// occupation of ld, rd according to row 1 
+				// queens i and k
 				ld = (L >>> (k-1)) | (L >>> (i-1));
-				// rd occupied from queen at top left corner (main diagonal) or l-queen at right border 
+				// queens i and l
 				rd = (L >>> (i+1)) | (L >>> 1);
-				// col occupied a t the borders and from queen j in last row 
+				// left border from k, right border from l, also bits i and j from the corresponding queens
 				col = 1 | L | (L >>> i);
+				
 				// diagonals, that are occupied in the last row by the queen j or l 
 				// we are going to shift them upwards the board later 
+				// from queen j and l (same, since queen is in the corner) 
 				LD = 1;
+				// from queen k and l 
 				RD = 1 | (1 << k);
 				
-				// counter of subconstellations, that arise from setting extra queens 
-				counter = 0;
-				// this is the queen in row k (0) and l 
+				// bits from queens k and l with respect to row 0 
 				// their diagonals have to be occupied later 
 				// we can not do this right now, because in row k, the queen k has to be actually set 
 				kbit = (L >>> k);
 				lbit = 1;
+				
+				// counter of subconstellations, that arise from setting extra queens 
+				counter = 0;
+				
 				// generate all subconstellations with 5 queens 
 				setPreQueens(ld, rd, col, k, N-1, 1, 3);
 				// jam j and k and l together into one integer 
@@ -75,7 +79,6 @@ class GpuConstellationsGenerator {
 				for(int a = 0; a < counter; a++) {
 					jklList.add(jkl);
 					symList.add(8);
-					jklcounter[N-1][k][N-1]++;
 				}
 			}
 			// j has to be the same value for all workitems within the same workgroup 
@@ -111,7 +114,7 @@ class GpuConstellationsGenerator {
 							// this is the queen in row k and l 
 							// their diagonals have to be occupied later 
 							// we can not do this right now, because in row k, the queen k has to be actually set 
-							kbit = (1 << (N-k-1));
+							kbit = (L >> k);
 							lbit = (1 << l);
 							
 							// counts all subconstellations 
@@ -124,7 +127,6 @@ class GpuConstellationsGenerator {
 							for(int a = 0; a < counter; a++) {
 								jklList.add(jkl);
 								symList.add(symmetry(toijkl(i, j , k, l)));
-								jklcounter[j][k][l]++;
 							}
 						}
 					}
@@ -136,34 +138,6 @@ class GpuConstellationsGenerator {
 				}
 			}
 		}
-		
-		// test if jl is always the same within the same block 
-//		int jkl2=0, temp, j2, k2, l2;
-//		for(int i = 0; i < 4096; i++) {
-//			if(i % 64 == 0) {
-//				jkl2 = jklList.get(i);
-//			}
-//			if(jklList.get(i) != jkl2) {
-//				temp = jklList.get(i);
-//				j2 = temp >> 10;
-//				k2 = (temp >> 5) & 31;
-//				l2 = temp & 31;
-//				System.out.println("\n"+j2+" "+k2+" "+l2);
-//			}
-//		}
-		
-		// get the total number of actual start constallations (without pseudos) 
-//		int total = 0;
-//		for(int a=0;a<N;a++) {
-//			for(int b=0;b<N;b++) {
-//				for(int c=0;c<N;c++) {
-//					if(jklcounter[a][b][c] > 0)
-//						System.out.println(jklcounter[a][b][c]);
-//					total += jklcounter[a][b][c];
-//				}
-//			}
-//		}
-//		System.out.println("\n " + total);
 		
 		// number of constellations (workitems) for the gpu 
 		startConstCount += ldList.size();
@@ -185,24 +159,13 @@ class GpuConstellationsGenerator {
 			return;
 		}
 		// add queens until we have preQueens queens 
-		// this should be variable for the distributed version and different N 
 		if(queens == preQueens) {
-			// occupy diagonals from queen k and l, that will end in the left or right border 
-			// the following 2 lines may be TRASH 
+			// remove the diagonal occupancy from queens k and l from the board 
+			// they will be artificially occupied in the kernel by a local array 
+			// this is why we sort the start constellations by jkl 
 			ld &= ~(kbit << row);
 			rd &= ~(lbit >>> row);
-			// make left and right col free 
-			col &= ~(1 | L);
-			// if k already came, then occupy it on the board 
-//			if(k < row) {
-//				rd |= (L >> (row-k));
-//				col |= L;
-//			}
-//			// same for l 
-//			if(l < row) {
-//				ld |= (1 << (row-l));
-//				col |= 1;
-//			}
+			
 			// ad the subconstellations to the list 
 			ldList.add(ld);
 			rdList.add(rd);
@@ -218,7 +181,7 @@ class GpuConstellationsGenerator {
 
 			while(free > 0) {
 				bit = free & (-free);
-				free -= bit;
+				free -= bit; 
 				setPreQueens((ld|bit) << 1, (rd|bit) >>> 1, col|bit, k, l, row+1, queens+1);
 			}
 		}

@@ -42,7 +42,7 @@ class SolverTest {
 	@Test
 	void testGpuSolver() {
 		de.nqueensfaf.compute.GpuSolver s = new de.nqueensfaf.compute.GpuSolver();
-		s.setDevice(0);
+		s.setDevice(1);
 		s.setProgressUpdatesEnabled(true);
 		s.setN(18);
 		new Thread(() -> {

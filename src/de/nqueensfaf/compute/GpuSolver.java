@@ -41,7 +41,7 @@ public class GpuSolver extends Solver {
 
 	private static Path tempDir;
 	private static boolean openclable = true;
-	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not
+	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not 
 	static {
 		int checked = checkOpenCL();
 		switch(checked) {

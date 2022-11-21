@@ -305,12 +305,7 @@ public class CpuSolver extends Solver {
 			return;
 		}
 		// add queens until we have preQueens queens 
-		// this should be variable for the distributed version and different N 
 		if(queens == preQueens) {
-			// occupy diagonals from queens k,l,j 
-			// maybe this is outside of the board, but we take care of this in CpuSolverThread 
-			rd |= RD << (N-1-row);
-			ld |= LD >>> (N-1-row);
 			// add the subconstellations to the list 
 			ldList.add(ld);
 			rdList.add(rd);
@@ -331,7 +326,7 @@ public class CpuSolver extends Solver {
 			}
 		}
 	}
-
+ 
 
 	// true, if starting constellation rotated by any angle has already been found
 	private boolean checkRotations(int i, int j, int k, int l) {

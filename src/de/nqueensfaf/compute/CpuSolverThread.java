@@ -754,7 +754,7 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 	
-		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free; 
+		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD, RD;
 		final int N = this.N; 
 		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
 		
@@ -764,14 +764,22 @@ class CpuSolverThread extends Thread {
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
 			j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
+			// occupation of ld from j and l and rd from k and l with respect to row N-1
+			LD = (L >>> j) | (L >>> l);
+			RD = (L >>> j) | (1 << k);
 			
 			// shift all one to the right because the right column does not matter (always occupied by queen l) 
-			ld = ldList.getFirst() >>> 1;
-			rd = rdList.getFirst() >>> 1;
+			ld = (ldList.getFirst() >>> 1);
+			rd = (rdList.getFirst() >>> 1); 
+			// occupy the diagonals from queens jkl on the bottom board 
+			// eventually this is outside of the board, but we take care of this in the following case distinction 
+			ld |= LD >>> (N-start);
+			rd |= RD << (N-2-start);
+			// also occupy col and then calculate free 
 			col = (colList.getFirst() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
 			
-			// big case distinction for deciding which soling algorithm to use 
+		// big case distinction for deciding which soling algorithm to use 
 			
 			// if queen j is more than 2 columns away from the corner 
 			if(j < N - 3) {
