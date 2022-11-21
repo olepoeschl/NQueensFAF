@@ -35,14 +35,16 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	}
 	ldiag = L >> k;									// ld from queen l with respect to the first row 
 	rdiag = 1 << l;									// ld from queen k with respect to the first row 
-	//ld &= ~((L >> k) << start);
-	//rd &= ~((1 << l) >> start);
 	for(int a = 0;a < N; a++){
 		jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
 	}
 	jkl_queens[k] = ~L;
 	jkl_queens[l] = ~1; 
 	barrier(CLK_LOCAL_MEM_FENCE);					// avoid corrupt memory behavior 
+	
+	ld &= ~(ldiag << start);						// remove queen k from ld 
+	if(l != N-1)									// only remove queen k from rd, if no queen in corner (N-1,N-1)
+		rd &= ~(rdiag >> start);					// otherwise we continue in row N-1 and find too many solutions 
 
 	// initialize current row as start and solutions as 0
 	int row = start;
@@ -127,6 +129,10 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		jkl_queens[a] = (a==k)*(~L) + (a==l)*(~1) + (a!=k&&a!=l)*((ldiagbot >> (N-1-a)) | (rdiagbot << (N-1-a)) | (ldiagtop << a) | (rdiagtop >> a) | L | 1);
 	}
 	// -----
+	
+	ld &= ~(ldiagtop << start);						
+	if(l != N-1)									
+		rd &= ~(rdiagtop >> start);				
 	
 	int row = start;
 	uint solutions = 0;

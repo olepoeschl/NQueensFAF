@@ -7,8 +7,7 @@ import java.util.HashSet;
 
 class GpuConstellationsGenerator {
 
-	private int N, preQueens, L, mask, LD, RD, counter;
-	private int kbit, lbit; 					
+	private int N, preQueens, L, mask, LD, RD, counter;					
 	private HashSet<Integer> startConstellations;
 	private ArrayList<Integer> jklList, startList;
 	ArrayList<Integer> ldList, rdList, colList, startjklList, symList;
@@ -41,7 +40,7 @@ class GpuConstellationsGenerator {
 		// set number of preset queens
 		this.preQueens = preQueens;
 
-		// calculating start constellations with the first Queen on square (0,0) (corner) 
+		// calculating start constellations with one Queen on the corner square (N-1,N-1)
 		for(int k = 1; k < N-2; k++) {						// j is idx of Queen in last row				
 			for(int i = k+1; i < N-1; i++) {				// l is idx of Queen in last col
 				// always add the constellation, we can not accidently get symmetric ones 
@@ -62,17 +61,11 @@ class GpuConstellationsGenerator {
 				// from queen k and l 
 				RD = 1 | (1 << k);
 				
-				// bits from queens k and l with respect to row 0 
-				// their diagonals have to be occupied later 
-				// we can not do this right now, because in row k, the queen k has to be actually set 
-				kbit = (L >>> k);
-				lbit = 1;
-				
 				// counter of subconstellations, that arise from setting extra queens 
 				counter = 0;
 				
 				// generate all subconstellations with 5 queens 
-				setPreQueens(ld, rd, col, k, N-1, 1, 3);
+				setPreQueens(ld, rd, col, k, 0, 1, 3);
 				// jam j and k and l together into one integer 
 				jkl = ((N-1) << 10) | (k << 5) | (N-1);
 				// jkl and sym are the same for all subconstellations 
@@ -111,11 +104,6 @@ class GpuConstellationsGenerator {
 							// later we are going to shift them upwards the board 
 							LD = (L >>> j) | (L >>> l);
 							RD = (L >>> j) | (1 << k);
-							// this is the queen in row k and l 
-							// their diagonals have to be occupied later 
-							// we can not do this right now, because in row k, the queen k has to be actually set 
-							kbit = (L >> k);
-							lbit = (1 << l);
 							
 							// counts all subconstellations 
 							counter = 0;
@@ -159,13 +147,7 @@ class GpuConstellationsGenerator {
 			return;
 		}
 		// add queens until we have preQueens queens 
-		if(queens == preQueens) {
-			// remove the diagonal occupancy from queens k and l from the board 
-			// they will be artificially occupied in the kernel by a local array 
-			// this is why we sort the start constellations by jkl 
-			ld &= ~(kbit << row);
-			rd &= ~(lbit >>> row);
-			
+		if(queens == preQueens) {		
 			// ad the subconstellations to the list 
 			ldList.add(ld);
 			rdList.add(rd);
