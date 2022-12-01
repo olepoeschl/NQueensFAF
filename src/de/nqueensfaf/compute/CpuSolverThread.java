@@ -754,7 +754,7 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 	
-		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD, RD;
+		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD;
 		final int N = this.N; 
 		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
 		
@@ -764,17 +764,20 @@ class CpuSolverThread extends Thread {
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
 			j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
-			// occupation of ld from j and l and rd from k and l with respect to row N-1
-			LD = (L >>> j) | (L >>> l);
-			RD = (L >>> j) | (1 << k);
 			
-			// shift all one to the right because the right column does not matter (always occupied by queen l) 
-			ld = (ldList.getFirst() >>> 1);
-			rd = (rdList.getFirst() >>> 1); 
-			// occupy the diagonals from queens jkl on the bottom board 
-			// eventually this is outside of the board, but we take care of this in the following case distinction 
+			// IMPORTANT NOTE: we shift ld and rd one to the right, because the right 
+			// column does not matter (always occupied by queen l)
+			// add occupation of ld from queens j and l from the bottom row upwards 
+			LD = (L >>> j) | (L >>> l);
+			ld = ldList.getFirst() >>> 1;
 			ld |= LD >>> (N-start);
-			rd |= RD << (N-2-start);
+			// add occupation of rd from queens j and k from the bottom row upwards 
+			rd = rdList.getFirst() >>> 1;
+			if(start > k)
+				rd |= (L >>> (start-k+1)); 
+			if(j >= 2*N-33-start)	// only add the rd from queen j if it does not 
+				rd |= (L >>> j) << (N-2-start);		// occupy the sign bit! 
+			
 			// also occupy col and then calculate free 
 			col = (colList.getFirst() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
@@ -1037,8 +1040,6 @@ class CpuSolverThread extends Thread {
 					SQd0BkB(ld, rd, col, start, free);
 				}
 			}
-			
-			
 			
 			// sum up solutions
 			solvecounter += tempcounter * symmetry(ijkl);
