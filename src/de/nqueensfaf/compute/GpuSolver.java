@@ -159,19 +159,16 @@ public class GpuSolver extends Solver {
 				startjklListTmp = new ArrayList<Integer>(),
 				symListTmp = new ArrayList<Integer>();
 		synchronized(resLock) {
-			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
-				for(int i = 0; i < globalWorkSize; i++) {
-					if(progressBuf.get(i) == 1) {
-						solutions += resBuf.getLong(i*8) * symList.get(i);
-					} else if(progressBuf.get(i) == 0 && startjklList.get(i) >> 15 != 69) {
-						ldListTmp.add(ldList.get(i));
-						rdListTmp.add(rdList.get(i));
-						colListTmp.add(colList.get(i));
-						startjklListTmp.add(startjklList.get(i));
-						symListTmp.add(symList.get(i));
-					}
+			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
+			for(int i = 0; i < globalWorkSize; i++) {
+				if(resBuf.getLong(i*8) > 1) {
+					solutions += resBuf.getLong(i*8) * symList.get(i);
+				} else if(resBuf.getLong(i*8) <= 1 && startjklList.get(i) >> 15 != 69) {
+					ldListTmp.add(ldList.get(i));
+					rdListTmp.add(rdList.get(i));
+					colListTmp.add(colList.get(i));
+					startjklListTmp.add(startjklList.get(i));
+					symListTmp.add(symList.get(i));
 				}
 			}
 		}

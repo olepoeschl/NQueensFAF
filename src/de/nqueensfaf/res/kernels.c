@@ -5,6 +5,8 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	int g_id = get_global_id(0);					// global thread id 
 	int l_id = get_local_id(0);						// local thread id within workgroup
 	
+	result[g_id] = 1;								// -1 indicates that this work item is not done yet
+	
 	// variables		
 	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [11 queens free][5 queens for start][5 queens for j][5 queens for k][5 queens for l] 
@@ -102,6 +104,8 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
 	int g_id = get_global_id(0);
 	int l_id = get_local_id(0);
+	
+	result[g_id] = -1;								// -1 indicates that this work item is not done yet
 	
 	uint L = 1 << (N-1);
 	int start = start_jkl_arr[g_id] >> 15;		
