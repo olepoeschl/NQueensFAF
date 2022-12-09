@@ -380,7 +380,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, ldList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// rd
 		rdMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -391,7 +391,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, rdList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// col
 		colMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -402,7 +402,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, colList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// startjkl
 		startjklMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -413,7 +413,7 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, startjklList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 
 		// result memory
 		resMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
@@ -424,7 +424,7 @@ public class GpuSolver extends Solver {
 			resWritePtr.putLong(i*8, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
 
 		// progress indicator memory
@@ -436,7 +436,7 @@ public class GpuSolver extends Solver {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
 		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
 		clFlush(memqueue);
