@@ -1,6 +1,8 @@
 package de.nqueensfaf.compute;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -144,20 +147,20 @@ public class GpuSolver extends Solver {
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
-	public void store_(String filepath) throws IOException {
+	public synchronized void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
 		if(start == 0 || gpuDone) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		long solutions = savedSolutions;
 		ArrayList<Integer> 
-				ldListTmp = new ArrayList<Integer>(),
-				rdListTmp = new ArrayList<Integer>(),
-				colListTmp = new ArrayList<Integer>(),
-				startjklListTmp = new ArrayList<Integer>(),
-				symListTmp = new ArrayList<Integer>();
+		ldListTmp = new ArrayList<Integer>(),
+		rdListTmp = new ArrayList<Integer>(),
+		colListTmp = new ArrayList<Integer>(),
+		startjklListTmp = new ArrayList<Integer>(),
+		symListTmp = new ArrayList<Integer>();
 		synchronized(resLock) {
 			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
 			for(int i = 0; i < globalWorkSize; i++) {
@@ -174,12 +177,29 @@ public class GpuSolver extends Solver {
 		}
 		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldListTmp, rdListTmp, colListTmp, startjklListTmp, symListTmp);
 
-		FileOutputStream fos = new FileOutputStream(filepath);
-		ObjectOutputStream oos = new ObjectOutputStream(fos);
-		oos.writeObject(resInfo);
-		oos.flush();
-		oos.close();
-		fos.close();
+		try (
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(baos);
+				RandomAccessFile raf = new RandomAccessFile(filepath, "rw");
+				FileOutputStream fos = new FileOutputStream(raf.getFD());
+				BufferedOutputStream bos = new BufferedOutputStream(fos);
+				) {
+			oos.writeObject(resInfo);
+			oos.flush();
+			var resInfoByteArray = baos.toByteArray();
+			int bytes = 0;
+			int bufsize = 1024;
+			for(int i = 0; i < resInfoByteArray.length/bufsize; i++) {
+				bytes = i*bufsize;
+				bos.write(resInfoByteArray, bytes, bufsize);
+				bos.flush();
+				bytes += bufsize;
+			}
+			if(bytes < resInfoByteArray.length) {
+				bos.write(resInfoByteArray, bytes, resInfoByteArray.length-bytes);
+				bos.flush();
+			}
+		}
 	}
 
 	@Override
