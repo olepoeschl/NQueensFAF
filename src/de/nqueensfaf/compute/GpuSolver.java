@@ -149,7 +149,7 @@ public class GpuSolver extends Solver {
 	}
 	
 	@Override
-	public synchronized void store_(String filepath) throws IOException {
+	public void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
 		if(start == 0 || gpuDone) {
 			throw new IllegalStateException("Nothing to be saved");

@@ -99,6 +99,10 @@ public abstract class Solver {
 	 */
 	private String autoSaveFilename = "N{N}.nqf";
 	/**
+	 * set to true when store() is called and set to false again when store() returned.
+	 */
+	private boolean isStoring = false;
+	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
@@ -376,10 +380,12 @@ public abstract class Solver {
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 */
-	public void store(String filepath, boolean bypassValidityCheck) throws IOException, IllegalArgumentException {
+	public synchronized void store(String filepath, boolean bypassValidityCheck) throws IOException, IllegalArgumentException {
+		isStoring = true;
 		if(!bypassValidityCheck)
 			filepath = getValidFilename(filepath);
 		store_(filepath);
+		isStoring = false;
 	}
 
 	/**
@@ -640,6 +646,14 @@ public abstract class Solver {
 		}
 		this.autoSavePercentageStep = autoSavePercentageStep;
 		return this;
+	}
+	
+	/**
+	 * Gets {@link #isStoring}.
+	 * @return {@link #isStoring}
+	 */
+	public final boolean isStoring() {
+		return isStoring;
 	}
 	
 	/**
