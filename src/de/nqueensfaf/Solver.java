@@ -103,6 +103,10 @@ public abstract class Solver {
 	 */
 	private boolean isStoring = false;
 	/**
+	 * if true, Solver stores() one last time and after that not any more.
+	 */
+	private boolean finishStoring = false;
+	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
@@ -163,6 +167,8 @@ public abstract class Solver {
 	 * @see #run()
 	 */
 	public final void solve() {
+		finishStoring = false;	// reset finishStoring to false, otherwise autosave doesn't work
+		
 		if(!preparationChecked)
 			checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
@@ -293,7 +299,7 @@ public abstract class Solver {
 			}
 			float progress = getProgress() * 100;
 			int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
-			while(isRunning()) {
+			while(isRunning() && !finishStoring) {
 				progress = getProgress() * 100;
 				if(progress >= 100)
 					break;
@@ -649,11 +655,19 @@ public abstract class Solver {
 	}
 	
 	/**
-	 * Gets {@link #isStoring}.
+	 * Can be called before exiting the program.
+	 * If the Solver is currently storing, this method blocks until the storing is done.
 	 * @return {@link #isStoring}
 	 */
-	public final boolean isStoring() {
-		return isStoring;
+	public final void finishStoring() {
+		finishStoring = true;
+		while(isStoring) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
 	}
 	
 	/**
