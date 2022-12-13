@@ -301,8 +301,13 @@ public abstract class Solver {
 			int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
 			while(isRunning() && !finishStoring) {
 				progress = getProgress() * 100;
-				if(progress >= 100)
+				if(progress >= 100) {
+					if(autoDeleteEnabled)
+						try {
+							new File(filename).delete();
+						} catch(SecurityException e) {}
 					break;
+				}
 				else if(progress >= tmpProgress + autoSavePercentageStep) {
 					try {
 						store(filename, false);
@@ -316,11 +321,6 @@ public abstract class Solver {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			}
-			if(autoDeleteEnabled) {
-				try {
-					new File(filename).delete();
-				} catch(SecurityException e) {}
 			}
 		});
 		autoSaverThread.start();
