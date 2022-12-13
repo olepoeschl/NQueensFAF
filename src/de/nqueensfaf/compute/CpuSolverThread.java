@@ -16,6 +16,7 @@ class CpuSolverThread extends Thread {
  
 	// list of uncalculated starting positions, their indices
 	private ArrayDeque<Integer> ldList, rdList, colList, startIjklList;
+	private final Object constellationsLock = new Object();
 	
 	// for pausing or cancelling the run
 	private boolean cancel = false, running = false;
@@ -1048,10 +1049,12 @@ class CpuSolverThread extends Thread {
 			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
 
 			// for saving and loading progress remove the finished starting constellation
-			startIjklList.removeFirst();
-			ldList.removeFirst();
-			rdList.removeFirst();
-			colList.removeFirst();
+			synchronized(constellationsLock) {
+				startIjklList.removeFirst();
+				ldList.removeFirst();
+				rdList.removeFirst();
+				colList.removeFirst();
+			}
 			
 			// update the current startconstellation-index
 			done++;
@@ -1110,8 +1113,11 @@ class CpuSolverThread extends Thread {
 		return solvecounter;
 	}
 	
-	ArrayDeque<Integer> getRemainingConstellations() {
-		return null;
+	record RemainingConstellations(ArrayDeque<Integer> ldList, ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {}
+	RemainingConstellations getRemainingConstellations() {
+		synchronized(constellationsLock) {
+			return new RemainingConstellations(ldList.clone(), rdList.clone(), colList.clone(), startIjklList.clone());
+		}
 	}
 	
 	// helper functions for doing the math
