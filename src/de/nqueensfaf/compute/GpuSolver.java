@@ -2,9 +2,9 @@ package de.nqueensfaf.compute;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -207,47 +207,49 @@ public class GpuSolver extends Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
-		RestorationInformation resInfo;
-		FileInputStream fis = new FileInputStream(filepath);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		resInfo = (RestorationInformation) ois.readObject();
-		ois.close();
-		fis.close();
 
-		reset();
-		N = resInfo.N;
-		savedDuration = resInfo.duration;
-		savedSolutions = resInfo.solutions;
-		startConstCount = resInfo.startConstCount;
-		savedSolvedConstellations = startConstCount - resInfo.ldList.size();
-		progress = (float) savedSolvedConstellations / startConstCount;
-		
-		ldList = new ArrayList<Integer>();
-		rdList = new ArrayList<Integer>();
-		colList = new ArrayList<Integer>();
-		startjklList = new ArrayList<Integer>();
-		symList = new ArrayList<Integer>();
-		
-		generator = new GpuConstellationsGenerator();
-		generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
-		int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
-		for(int i = 0; i < resInfo.ldList.size(); i++) {
-			if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
-				while(ldList.size() % WORKGROUP_SIZE != 0) {
-					generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+		byte[] resInfoByteArray = Files.readAllBytes(Path.of(filepath));
+		try (
+				ByteArrayInputStream bais = new ByteArrayInputStream(resInfoByteArray);
+				ObjectInputStream ois = new ObjectInputStream (bais);
+				) {
+			RestorationInformation resInfo = (RestorationInformation) ois.readObject();
+
+			reset();
+			N = resInfo.N;
+			savedDuration = resInfo.duration;
+			savedSolutions = resInfo.solutions;
+			startConstCount = resInfo.startConstCount;
+			savedSolvedConstellations = startConstCount - resInfo.ldList.size();
+			progress = (float) savedSolvedConstellations / startConstCount;
+
+			ldList = new ArrayList<Integer>();
+			rdList = new ArrayList<Integer>();
+			colList = new ArrayList<Integer>();
+			startjklList = new ArrayList<Integer>();
+			symList = new ArrayList<Integer>();
+
+			generator = new GpuConstellationsGenerator();
+			generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
+			int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
+			for(int i = 0; i < resInfo.ldList.size(); i++) {
+				if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
+					while(ldList.size() % WORKGROUP_SIZE != 0) {
+						generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+					}
+					currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
 				}
-				currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
+				ldList.add(resInfo.ldList.get(i));
+				rdList.add(resInfo.rdList.get(i));
+				colList.add(resInfo.colList.get(i));
+				startjklList.add(resInfo.startjklList.get(i));
+				symList.add(resInfo.symList.get(i));
 			}
-			ldList.add(resInfo.ldList.get(i));
-			rdList.add(resInfo.rdList.get(i));
-			colList.add(resInfo.colList.get(i));
-			startjklList.add(resInfo.startjklList.get(i));
-			symList.add(resInfo.symList.get(i));
+			while(ldList.size() % WORKGROUP_SIZE != 0) {
+				generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+			}
+			restored = true;
 		}
-		while(ldList.size() % WORKGROUP_SIZE != 0) {
-			generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
-		}
-		restored = true;
 	}
 
 	@Override
