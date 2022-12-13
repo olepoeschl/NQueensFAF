@@ -786,19 +786,8 @@ public class GpuSolver extends Solver {
 	}
 	
 	// record class for saving and restoring
-	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
-		RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-				ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
-			this.N = N;
-			this.duration = duration;
-			this.solutions = solutions;
-			this.startConstCount = startConstCount;
-			this.ldList = ldList;
-			this.rdList = rdList;
-			this.colList = colList;
-			this.startjklList = startjklList;
-			this.symList = symList;
-		}
+	private record RestorationInformation(int N, long duration, long solutions, int startConstCount,
+			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
+			ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
 	}
 }

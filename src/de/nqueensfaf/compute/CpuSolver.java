@@ -486,13 +486,8 @@ public class CpuSolver extends Solver {
 	}
 
 	// for saving and restoring
-	private record RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int startConstCount) implements Serializable {
-		RestorationInformation(int N, HashSet<Integer> startConstellations, long timePassed, long solutions, int startConstCount) {
-			this.N = N;
-			this.startConstellations = startConstellations;
-			this.timePassed = timePassed;
-			this.solutions = solutions;
-			this.startConstCount = startConstCount;
-		}
+	private record RestorationInformation(int N, long timePassed, long solutions, int startConstCount,
+			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
+			ArrayList<Integer> startIjklList) implements Serializable {
 	}
 }
