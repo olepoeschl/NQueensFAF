@@ -391,7 +391,7 @@ public class GpuSolver extends Solver {
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
-		ldMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -402,7 +402,7 @@ public class GpuSolver extends Solver {
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// rd
-		rdMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -413,7 +413,7 @@ public class GpuSolver extends Solver {
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// col
-		colMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -424,7 +424,7 @@ public class GpuSolver extends Solver {
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// startjkl
-		startjklMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		startjklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, startjklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -435,7 +435,7 @@ public class GpuSolver extends Solver {
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 
 		// result memory
-		resMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
+		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer resWritePtr = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -447,7 +447,7 @@ public class GpuSolver extends Solver {
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
 
 		// progress indicator memory
-		progressMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		progressMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer progressWritePtr = clEnqueueMapBuffer(memqueue, progressMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
