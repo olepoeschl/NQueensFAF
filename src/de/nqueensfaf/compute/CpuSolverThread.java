@@ -15,14 +15,15 @@ class CpuSolverThread extends Thread {
 	private int mark1, mark2, endmark, jmark;
  
 	// list of uncalculated starting positions, their indices
-	private ArrayDeque<Integer> startConstellations, ldList, rdList, colList, startIjklList;
+	private ArrayDeque<Integer> ldList, rdList, colList, startIjklList;
+	private final Object constellationsLock = new Object();
 	
 	// for pausing or cancelling the run
 	private boolean cancel = false, running = false;
 	private int pause = 0;
 	private CpuSolver caller;
 
-	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> startConstellations, ArrayDeque<Integer> ldList, 
+	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> ldList, 
 			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {
 		this.caller = caller;
 		this.N = N;
@@ -31,7 +32,6 @@ class CpuSolverThread extends Thread {
 		L = 1 << (N-1);
 		L3 = 1 << N3;
 		L4 = 1 << N4;
-		this.startConstellations = startConstellations;
 		this.ldList = ldList;
 		this.rdList = rdList;
 		this.colList = colList;
@@ -755,7 +755,7 @@ class CpuSolverThread extends Thread {
 	public void run() {
 		running = true;
 	
-		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free; 
+		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD;
 		final int N = this.N; 
 		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
 		
@@ -766,13 +766,24 @@ class CpuSolverThread extends Thread {
 			ijkl = startIjkl & ((1 << 20) - 1);
 			j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
 			
-			// shift all one to the right because the right column does not matter (always occupied by queen l) 
+			// IMPORTANT NOTE: we shift ld and rd one to the right, because the right 
+			// column does not matter (always occupied by queen l)
+			// add occupation of ld from queens j and l from the bottom row upwards 
+			LD = (L >>> j) | (L >>> l);
 			ld = ldList.getFirst() >>> 1;
+			ld |= LD >>> (N-start);
+			// add occupation of rd from queens j and k from the bottom row upwards 
 			rd = rdList.getFirst() >>> 1;
+			if(start > k)
+				rd |= (L >>> (start-k+1)); 
+			if(j >= 2*N-33-start)	// only add the rd from queen j if it does not 
+				rd |= (L >>> j) << (N-2-start);		// occupy the sign bit! 
+			
+			// also occupy col and then calculate free 
 			col = (colList.getFirst() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
 			
-			// big case distinction for deciding which soling algorithm to use 
+		// big case distinction for deciding which soling algorithm to use 
 			
 			// if queen j is more than 2 columns away from the corner 
 			if(j < N - 3) {
@@ -1031,8 +1042,6 @@ class CpuSolverThread extends Thread {
 				}
 			}
 			
-			
-			
 			// sum up solutions
 			solvecounter += tempcounter * symmetry(ijkl);
 
@@ -1040,10 +1049,12 @@ class CpuSolverThread extends Thread {
 			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
 
 			// for saving and loading progress remove the finished starting constellation
-			startIjklList.removeFirst();
-			ldList.removeFirst();
-			rdList.removeFirst();
-			colList.removeFirst();
+			synchronized(constellationsLock) {
+				startIjklList.removeFirst();
+				ldList.removeFirst();
+				rdList.removeFirst();
+				colList.removeFirst();
+			}
 			
 			// update the current startconstellation-index
 			done++;
@@ -1102,8 +1113,11 @@ class CpuSolverThread extends Thread {
 		return solvecounter;
 	}
 	
-	ArrayDeque<Integer> getRemainingConstellations() {
-		return startConstellations;
+	record RemainingConstellations(ArrayDeque<Integer> ldList, ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {}
+	RemainingConstellations getRemainingConstellations() {
+		synchronized(constellationsLock) {
+			return new RemainingConstellations(ldList.clone(), rdList.clone(), colList.clone(), startIjklList.clone());
+		}
 	}
 	
 	// helper functions for doing the math

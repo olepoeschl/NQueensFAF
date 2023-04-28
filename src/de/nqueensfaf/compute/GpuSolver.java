@@ -1,14 +1,17 @@
 package de.nqueensfaf.compute;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -41,7 +44,7 @@ public class GpuSolver extends Solver {
 
 	private static Path tempDir;
 	private static boolean openclable = true;
-	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not
+	// check if a OpenCL-capable device is available and block GpuSolver and print an error message, if not 
 	static {
 		int checked = checkOpenCL();
 		switch(checked) {
@@ -144,7 +147,7 @@ public class GpuSolver extends Solver {
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
@@ -153,36 +156,50 @@ public class GpuSolver extends Solver {
 		}
 		long solutions = savedSolutions;
 		ArrayList<Integer> 
-				ldListTmp = new ArrayList<Integer>(),
-				rdListTmp = new ArrayList<Integer>(),
-				colListTmp = new ArrayList<Integer>(),
-				startjklListTmp = new ArrayList<Integer>(),
-				symListTmp = new ArrayList<Integer>();
+		ldListTmp = new ArrayList<Integer>(),
+		rdListTmp = new ArrayList<Integer>(),
+		colListTmp = new ArrayList<Integer>(),
+		startjklListTmp = new ArrayList<Integer>(),
+		symListTmp = new ArrayList<Integer>();
 		synchronized(resLock) {
-			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
-				for(int i = 0; i < globalWorkSize; i++) {
-					if(progressBuf.get(i) == 1) {
-						solutions += resBuf.getLong(i*8) * symList.get(i);
-					} else if(progressBuf.get(i) == 0 && startjklList.get(i) >> 15 != 69) {
-						ldListTmp.add(ldList.get(i));
-						rdListTmp.add(rdList.get(i));
-						colListTmp.add(colList.get(i));
-						startjklListTmp.add(startjklList.get(i));
-						symListTmp.add(symList.get(i));
-					}
+			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
+			for(int i = 0; i < globalWorkSize; i++) {
+				if(resBuf.getLong(i*8) > 1) {
+					solutions += resBuf.getLong(i*8) * symList.get(i);
+				} else if(resBuf.getLong(i*8) <= 1 && startjklList.get(i) >> 15 != 69) {
+					ldListTmp.add(ldList.get(i));
+					rdListTmp.add(rdList.get(i));
+					colListTmp.add(colList.get(i));
+					startjklListTmp.add(startjklList.get(i));
+					symListTmp.add(symList.get(i));
 				}
 			}
 		}
 		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldListTmp, rdListTmp, colListTmp, startjklListTmp, symListTmp);
 
-		FileOutputStream fos = new FileOutputStream(filepath);
-		ObjectOutputStream oos = new ObjectOutputStream(fos);
-		oos.writeObject(resInfo);
-		oos.flush();
-		oos.close();
-		fos.close();
+		try (
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(baos);
+				RandomAccessFile raf = new RandomAccessFile(filepath, "rw");
+				FileOutputStream fos = new FileOutputStream(raf.getFD());
+				BufferedOutputStream bos = new BufferedOutputStream(fos);
+				) {
+			oos.writeObject(resInfo);
+			oos.flush();
+			var resInfoByteArray = baos.toByteArray();
+			int bytes = 0;
+			int bufsize = 1024;
+			for(int i = 0; i < resInfoByteArray.length/bufsize; i++) {
+				bytes = i*bufsize;
+				bos.write(resInfoByteArray, bytes, bufsize);
+				bos.flush();
+				bytes += bufsize;
+			}
+			if(bytes < resInfoByteArray.length) {
+				bos.write(resInfoByteArray, bytes, resInfoByteArray.length-bytes);
+				bos.flush();
+			}
+		}
 	}
 
 	@Override
@@ -190,46 +207,49 @@ public class GpuSolver extends Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
-		RestorationInformation resInfo;
-		FileInputStream fis = new FileInputStream(filepath);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		resInfo = (RestorationInformation) ois.readObject();
-		ois.close();
-		fis.close();
 
-		reset();
-		N = resInfo.N;
-		savedDuration = resInfo.duration;
-		savedSolutions = resInfo.solutions;
-		startConstCount = resInfo.startConstCount;
-		savedSolvedConstellations = startConstCount - resInfo.ldList.size();
-		progress = (float) savedSolvedConstellations / startConstCount;
-		
-		ldList = new ArrayList<Integer>();
-		rdList = new ArrayList<Integer>();
-		colList = new ArrayList<Integer>();
-		startjklList = new ArrayList<Integer>();
-		symList = new ArrayList<Integer>();
-		
-		generator = new GpuConstellationsGenerator();
-		int currentJ = (resInfo.startjklList.get(0) >> 10) & 31;
-		for(int i = 0; i < resInfo.ldList.size(); i++) {
-			if(((resInfo.startjklList.get(i) >> 10) & 31) != currentJ) {	// check if new j is found
-				while(ldList.size() % WORKGROUP_SIZE != 0) {
-					generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
-					currentJ = (resInfo.startjklList.get(i) >> 10) & 31;
+		byte[] resInfoByteArray = Files.readAllBytes(Path.of(filepath));
+		try (
+				ByteArrayInputStream bais = new ByteArrayInputStream(resInfoByteArray);
+				ObjectInputStream ois = new ObjectInputStream (bais);
+				) {
+			RestorationInformation resInfo = (RestorationInformation) ois.readObject();
+
+			reset();
+			N = resInfo.N;
+			savedDuration = resInfo.duration;
+			savedSolutions = resInfo.solutions;
+			startConstCount = resInfo.startConstCount;
+			savedSolvedConstellations = startConstCount - resInfo.ldList.size();
+			progress = (float) savedSolvedConstellations / startConstCount;
+
+			ldList = new ArrayList<Integer>();
+			rdList = new ArrayList<Integer>();
+			colList = new ArrayList<Integer>();
+			startjklList = new ArrayList<Integer>();
+			symList = new ArrayList<Integer>();
+
+			generator = new GpuConstellationsGenerator();
+			generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
+			int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
+			for(int i = 0; i < resInfo.ldList.size(); i++) {
+				if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
+					while(ldList.size() % WORKGROUP_SIZE != 0) {
+						generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+					}
+					currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
 				}
+				ldList.add(resInfo.ldList.get(i));
+				rdList.add(resInfo.rdList.get(i));
+				colList.add(resInfo.colList.get(i));
+				startjklList.add(resInfo.startjklList.get(i));
+				symList.add(resInfo.symList.get(i));
 			}
-			ldList.add(resInfo.ldList.get(i));
-			rdList.add(resInfo.rdList.get(i));
-			colList.add(resInfo.colList.get(i));
-			startjklList.add(resInfo.startjklList.get(i));
-			symList.add(resInfo.symList.get(i));
+			while(ldList.size() % WORKGROUP_SIZE != 0) {
+				generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+			}
+			restored = true;
 		}
-		while(ldList.size() % WORKGROUP_SIZE != 0) {
-			generator.addTrashConstellation(currentJ, ldList, rdList, colList, startjklList, symList);
-		}
-		restored = true;
 	}
 
 	@Override
@@ -371,7 +391,7 @@ public class GpuSolver extends Solver {
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
-		ldMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -379,10 +399,10 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, ldList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// rd
-		rdMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -390,10 +410,10 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, rdList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// col
-		colMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -401,10 +421,10 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, colList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// startjkl
-		startjklMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		startjklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, startjklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -412,10 +432,10 @@ public class GpuSolver extends Solver {
 			paramPtr.putInt(i*4, startjklList.get(i));
 		}
 		clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 
 		// result memory
-		resMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
+		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer resWritePtr = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -423,11 +443,11 @@ public class GpuSolver extends Solver {
 			resWritePtr.putLong(i*8, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
 
 		// progress indicator memory
-		progressMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		progressMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
 		ByteBuffer progressWritePtr = clEnqueueMapBuffer(memqueue, progressMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
@@ -435,7 +455,7 @@ public class GpuSolver extends Solver {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
-		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
+//		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
 		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
 		clFlush(memqueue);
@@ -766,19 +786,8 @@ public class GpuSolver extends Solver {
 	}
 	
 	// record class for saving and restoring
-	private record RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
-		RestorationInformation(int N, long duration, long solutions, int startConstCount, 
-				ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
-			this.N = N;
-			this.duration = duration;
-			this.solutions = solutions;
-			this.startConstCount = startConstCount;
-			this.ldList = ldList;
-			this.rdList = rdList;
-			this.colList = colList;
-			this.startjklList = startjklList;
-			this.symList = symList;
-		}
+	private record RestorationInformation(int N, long duration, long solutions, int startConstCount,
+			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
+			ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
 	}
 }

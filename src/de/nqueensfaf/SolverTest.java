@@ -30,8 +30,13 @@ class SolverTest {
 //	@Test
 //	void testCpuSolver() {
 //		de.nqueensfaf.compute.CpuSolver s = new de.nqueensfaf.compute.CpuSolver();
-//		s.setN(16);
-//		s.setThreadcount(1);
+//		s.setN(19);
+//		s.setThreadcount(6);
+//		s.setProgressUpdatesEnabled(true);
+//		s.setProgressUpdateDelay(512);
+//		s.setOnProgressUpdateCallback((progress, solutions) -> {
+//			System.out.println(progress + " " + s.getDuration() + " " + s.getSolutions());
+//		});
 //		s.addTerminationCallback(() -> {
 //			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + " ms"); 
 //		});

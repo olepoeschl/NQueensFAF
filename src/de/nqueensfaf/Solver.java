@@ -99,6 +99,14 @@ public abstract class Solver {
 	 */
 	private String autoSaveFilename = "N{N}.nqf";
 	/**
+	 * set to true when store() is called and set to false again when store() returned.
+	 */
+	private boolean isStoring = false;
+	/**
+	 * if true, Solver stores() one last time and after that not any more.
+	 */
+	private boolean finishStoring = false;
+	/**
 	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
 	 */
 	private boolean preparationChecked = false;
@@ -159,6 +167,8 @@ public abstract class Solver {
 	 * @see #run()
 	 */
 	public final void solve() {
+		finishStoring = false;	// reset finishStoring to false, otherwise autosave doesn't work
+		
 		if(!preparationChecked)
 			checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
@@ -289,7 +299,7 @@ public abstract class Solver {
 			}
 			float progress = getProgress() * 100;
 			int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
-			while(isRunning()) {
+			while(isRunning() && !finishStoring) {
 				progress = getProgress() * 100;
 				if(progress >= 100)
 					break;
@@ -307,10 +317,12 @@ public abstract class Solver {
 					e.printStackTrace();
 				}
 			}
-			if(autoDeleteEnabled) {
-				try {
-					new File(filename).delete();
-				} catch(SecurityException e) {}
+			progress = getProgress() * 100;
+			if(progress >= 100) {
+				if(autoDeleteEnabled)
+					try {
+						new File(filename).delete();
+					} catch(SecurityException e) {}
 			}
 		});
 		autoSaverThread.start();
@@ -376,10 +388,12 @@ public abstract class Solver {
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 */
-	public void store(String filepath, boolean bypassValidityCheck) throws IOException, IllegalArgumentException {
+	public synchronized void store(String filepath, boolean bypassValidityCheck) throws IOException, IllegalArgumentException {
+		isStoring = true;
 		if(!bypassValidityCheck)
 			filepath = getValidFilename(filepath);
 		store_(filepath);
+		isStoring = false;
 	}
 
 	/**
@@ -640,6 +654,22 @@ public abstract class Solver {
 		}
 		this.autoSavePercentageStep = autoSavePercentageStep;
 		return this;
+	}
+	
+	/**
+	 * Can be called before exiting the program.
+	 * If the Solver is currently storing, this method blocks until the storing is done.
+	 * @return {@link #isStoring}
+	 */
+	public final void finishStoring() {
+		finishStoring = true;
+		while(isStoring) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
 	}
 	
 	/**

@@ -5,7 +5,10 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	int g_id = get_global_id(0);					// global thread id 
 	int l_id = get_local_id(0);						// local thread id within workgroup
 	
-	// variables												
+	result[g_id] = 1;								// -1 indicates that this work item is not done yet
+	
+	// variables		
+	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [11 queens free][5 queens for start][5 queens for j][5 queens for k][5 queens for l] 
 	int start = start_jkl_arr[g_id] >> 15;		
 	if(start == 69) {								// if we have a pseudo constellation we do nothing 
@@ -19,21 +22,18 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	// describe the occupancy of the board 
 	uint ld = ld_arr[g_id];							// left diagonals, 1 means occupied
 	uint rd = rd_arr[g_id];							// right diagonals, 1 means occupied 
-	uint col = ~((1 << N) - 1) | col_arr[g_id];		// columns, 1 means occupied 
-	// for memorizing board-leaving diagonals 
-	uint ld_mem = 0;
+	uint col = ~(L-2) ^ col_arr[g_id];				// columns, 1 means occupied 
+	uint ld_mem = 0;								// for memorizing board-leaving diagonals 
 	uint rd_mem = 0;
-	// queen at the left border of the board ( right border is represented by 1) 
-	uint L = 1 << (N-1);	
 	
 	// jkl_queens occupies the diagonals, that go from bottom row to upper right and upper left 
+	// and also the left and right column 
+	// in row k only L is free and in row l only 1 is free 
 	local uint jkl_queens[N];
-	// the diagonals from queen j and k with respect to the last row
-	uint rdiag = (L >> j) | (L >> (N-1-k));
-	// the diagonals from queen j and l with respect to the last row
-	uint ldiag = (L >> j) | (L >> l);
-	for(int a = N-1;a > 0; a--){					// we also occupy the left and right border 
-		jkl_queens[a] = (ldiag >> (N-1-a)) | (rdiag << (N-1-a)) | L | 1;
+	uint rdiag = (L >> j) | (L >> (N-1-k));			// the rd from queen j and k with respect to the last row
+	uint ldiag = (L >> j) | (L >> l);				// the ld from queen j and l with respect to the last row
+	for(int a = 0;a < N; a++){						// we also occupy the left and right border 
+		jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
 	}
 	ldiag = L >> k;									// ld from queen l with respect to the first row 
 	rdiag = 1 << l;									// ld from queen k with respect to the first row 
@@ -42,26 +42,31 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	}
 	jkl_queens[k] = ~L;
 	jkl_queens[l] = ~1; 
-	barrier(CLK_LOCAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);					// avoid corrupt memory behavior 
+	
+	ld &= ~(ldiag << start);						// remove queen k from ld 
+	if(l != N-1)									// only remove queen k from rd, if no queen in corner (N-1,N-1)
+		rd &= ~(rdiag >> start);					// otherwise we continue in row N-1 and find too many solutions 
 
 	// initialize current row as start and solutions as 0
 	int row = start;
 	uint solutions = 0;
+	
 	// calculate the occupancy of the first row
 	uint free = ~(ld | rd | col | jkl_queens[row]);	// free is 1 if a queen can be set at the queens location
-	// the queen that will be set in the current row
-	uint queen = -free & free;
+	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
 	local uint queens[BLOCK_SIZE][N];				// for remembering the queens for all rows for all boards in the work-group 
 	queens[l_id][start] = queen;					// we already calculated the first queen in the start row 
-	// going forward or backward? 										
-	int direction = 1;
+	
+	// going forward (setting a queen) or backward (removing a queen)? 										
+	int direction = 0;
 	
 	// iterative loop representing the recursive setqueen-function 
 	// this is the actual solver (via backtracking with Jeff Somers Bit method) 
 	// the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
-	while(row >= start) {							// while we havent tried everything 
+	while(row >= start) {							// while we haven't tried everything 
 		if(free) {										// if there are free slots in the current row 
 			direction = 1;									// we are going forwards 
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
@@ -84,10 +89,11 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 			rd_mem <<= 1;						
 		}
 		free = ~(jkl_queens[row] | ld | rd | col);		// calculate the occupancy of the next row
-		free &= ~(queen + direction-1);					// aoccupy all bits right from the last queen in order to not place the same queen again 
+		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
 
-		solutions += (row == N-1);						// increase the solutions, if we are in the last row 
+		if(row == N-1)									// increase the solutions, if we are in the last row 
+			solutions++;
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
 	progress[g_id] = 1;								// progress 1 if done, 0 if not 
@@ -99,6 +105,9 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	int g_id = get_global_id(0);
 	int l_id = get_local_id(0);
 	
+	result[g_id] = -1;								// -1 indicates that this work item is not done yet
+	
+	uint L = 1 << (N-1);
 	int start = start_jkl_arr[g_id] >> 15;		
 	if(start == 69) {
 		progress[g_id] = -1;
@@ -110,12 +119,9 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	
 	uint ld = ld_arr[g_id];
 	uint rd = rd_arr[g_id];
-	uint col = ~((1 << N) - 1) | col_arr[g_id];
-	
+	uint col = ~(L-2) ^ col_arr[g_id];
 	uint ld_mem = 0;
 	uint rd_mem = 0;
-	
-	uint L = 1 << (N-1);	
 	
 	// the part that is different form the default kernel
 	local uint jkl_queens[N];
@@ -123,10 +129,14 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	uint rdiagbot = (L >> j) | (L >> (N-1-k));
 	uint ldiagtop = L >> k;								
 	uint rdiagtop = 1 << l;
-	for(int a = N-1;a > 0; a--){
+	for(int a = 0;a < N; a++){
 		jkl_queens[a] = (a==k)*(~L) + (a==l)*(~1) + (a!=k&&a!=l)*((ldiagbot >> (N-1-a)) | (rdiagbot << (N-1-a)) | (ldiagtop << a) | (rdiagtop >> a) | L | 1);
 	}
 	// -----
+	
+	ld &= ~(ldiagtop << start);						
+	if(l != N-1)									
+		rd &= ~(rdiagtop >> start);				
 	
 	int row = start;
 	uint solutions = 0;
@@ -135,7 +145,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	local uint queens[BLOCK_SIZE][N];
 	queens[l_id][start] = queen;
 	
-	int direction = 1;
+	int direction = 0;
 	
 	while(row >= start) {	
 		if(free) {
@@ -163,7 +173,8 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		free &= ~(queen + direction-1);
 		col ^= queen;
 
-		solutions += (row == N-1);
+		if(row == N-1)
+			solutions++;
 	}
 	result[g_id] = solutions;
 	progress[g_id] = 1;
