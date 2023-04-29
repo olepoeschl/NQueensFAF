@@ -1,13 +1,9 @@
-# NQueensFAF library
-A Java library for easily implementing custom solvers (algorithms) for the N Queens problem. Contains a super fast Solver for CPU using pure Java and for GPU using OpenCL. The built in Solvers allow you to save their state for continuing the execution at some time later.
-<br>Initially created for [NQueensFAF](https://github.com/olepoeschl/NQueensFAF). For more information about the built in Solvers, have a look at [NQueensFAF](https://github.com/olepoeschl/NQueensFAF).
+# NQueensFAF
+A Java framework containing an insanely fast Solver for CPU using pure Java and for GPU using OpenCL. Also provides useful utilities for implementing custom n queens problem solving algorithms.
+This proces uses Java 17. <br>
 
 ### Download
 See the "Releases" section.
-
-# Getting Started
-The library uses Java 17.
-<br>As stated below, this project depends on [LWJGL 3](http://www.lwjgl.org/), so make sure you include it in your project setup as well as its native jars.
 
 # Documentation
 Only the core package `de.nqueensfaf` is documented.
@@ -25,7 +21,6 @@ To use for example the built in CpuSolver, do it like in the following code snip
 CpuSolver cpuSolver = new CpuSolver();
 cpuSolver.setN(16);
 cpuSolver.setThreadcount(2);
-cpuSolver.setTimeUpdateDelay(50).setProgressUpdateDelay(50);
 cpuSolver.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("Progress: " + progress + " (" + solutions + " solutions)"));
 cpuSolver.addTerminationCallback(() -> System.out.println("CPU finished after " + cpuSolver.getDuration() + " ms!"));
 cpuSolver.solve();
@@ -36,7 +31,6 @@ To use for example the built in CpuSolver, do it like in the following code snip
 GpuSolver gpuSolver = new GpuSolver();
 gpuSolver.setN(19);
 gpuSolver.setDevice(0);
-gpuSolver.setTimeUpdateDelay(69).setProgressUpdateDelay(420);
 gpuSolver.setOnProgressUpdateCallback((progress, solutions) -> System.out.println("Progress: " + progress + " (" + solutions + " solutions)"));
 gpuSolver.addTerminationCallback(() -> System.out.println("GPU finished after " + gpuSolver.getDuration() + " ms!"));
 gpuSolver.solve();
