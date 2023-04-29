@@ -8,12 +8,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.files.SolverState;
 
 public class CpuSolver extends Solver {
 
@@ -36,7 +37,7 @@ public class CpuSolver extends Solver {
 	// for the threads and their respective time measurement etc.
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
 	private ArrayList<ArrayList<Constellation>> threadConstellations;
-	private long solutions, duration, restoredDuration;
+	private long solutions, duration, storedDuration;
 	private float progress;
 	private boolean restored = false;
 	
@@ -87,7 +88,7 @@ public class CpuSolver extends Solver {
 			if (executor.awaitTermination(365, TimeUnit.DAYS)) {
 				// finished
 				end = System.currentTimeMillis();
-				duration = end - start + restoredDuration;
+				duration = end - start + storedDuration;
 				int solvedConstellations = 0;
 				for(var c : constellations) {
 					if(c.getSolutions() >= 0) {
@@ -110,8 +111,7 @@ public class CpuSolver extends Solver {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
-		out.writeValue(new File(filepath), constellations);
-		// TODO: N? durationTillNow?
+		out.writeValue(new File(filepath), new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
 	}
 
 	@Override
@@ -120,8 +120,10 @@ public class CpuSolver extends Solver {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
 		ObjectMapper mapper = new ObjectMapper();
-		constellations = mapper.readValue(new File(filepath), new TypeReference<ArrayList<Constellation>>(){});
-		// TODO: N? durationTillNow?
+		SolverState state = mapper.readValue(new File(filepath), SolverState.class);
+		setN(state.getN());
+		storedDuration = state.getStoredDuration();
+		constellations = state.getConstellations();
 		restored = true;
 	}
 
@@ -135,7 +137,7 @@ public class CpuSolver extends Solver {
 		start = 0;
 		end = 0;
 		duration = 0;
-		restoredDuration = 0;
+		storedDuration = 0;
 		solutions = 0;
 		progress = 0;
 		ijklList.clear();
@@ -147,7 +149,7 @@ public class CpuSolver extends Solver {
 	@Override
 	public long getDuration() {
 		if(isRunning()) {
-			return System.currentTimeMillis() - start + restoredDuration;
+			return System.currentTimeMillis() - start + storedDuration;
 		}
 		return duration;
 	}
