@@ -150,7 +150,7 @@ class GPUConstellationsGenerator {
 	}
 
 	// create trash constellation to fill up workgroups 
-	private void addTrashConstellation(int ijkl) {
+	void addTrashConstellation(int ijkl) {
 		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
 	}
 	
@@ -183,29 +183,12 @@ class GPUConstellationsGenerator {
 	// with less divergent branches
 	// this can also be done by directly generating the constellations in a
 	// different order
-	void sortConstellations(ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
-			ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
-		record BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
-			BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
-				this.ld = ld;
-				this.rd = rd;
-				this.col = col;
-				this.startjkl = startjkl;
-				this.sym = sym;
-			}
-		}
-
-		int len = ldList.size();
-		ArrayList<BoardProperties> list = new ArrayList<BoardProperties>(len);
-		for (int i = 0; i < len; i++) {
-			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i),
-					symList.get(i)));
-		}
-		Collections.sort(list, new Comparator<BoardProperties>() {
+	void sortConstellations(ArrayList<Constellation> constellations) {
+		Collections.sort(constellations, new Comparator<Constellation>() {
 			@Override
-			public int compare(BoardProperties o1, BoardProperties o2) {
-				int o1jkl = o1.startjkl & ((1 << 15) - 1);
-				int o2jkl = o2.startjkl & ((1 << 15) - 1);
+			public int compare(Constellation o1, Constellation o2) {
+				int o1jkl = o1.getStartijkl() & ((1 << 15) - 1);
+				int o2jkl = o2.getStartijkl() & ((1 << 15) - 1);
 				if (o1jkl > o2jkl)
 					return 1;
 				else if (o1jkl < o2jkl)
@@ -214,20 +197,6 @@ class GPUConstellationsGenerator {
 					return 0;
 			}
 		});
-		// clear the unsorted lists
-		ldList.clear();
-		rdList.clear();
-		colList.clear();
-		startjklList.clear();
-		symList.clear();
-		// make the sorted list (same elements in new sorted order)
-		for (int i = 0; i < len; i++) {
-			ldList.add(list.get(i).ld);
-			rdList.add(list.get(i).rd);
-			colList.add(list.get(i).col);
-			startjklList.add(list.get(i).startjkl);
-			symList.add(list.get(i).sym);
-		}
 	}
 
 	// getters and setters

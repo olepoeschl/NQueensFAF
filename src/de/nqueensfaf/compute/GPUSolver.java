@@ -30,6 +30,10 @@ import org.lwjgl.opencl.CLContextCallback;
 import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+
 import static org.lwjgl.opencl.CL10.*;
 import static org.lwjgl.opencl.CL11.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
@@ -40,6 +44,7 @@ import static de.nqueensfaf.compute.InfoUtil.*;
 import de.nqueensfaf.NQueensFAF;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.files.SolverState;
 
 public class GPUSolver extends Solver {
 
@@ -88,7 +93,6 @@ public class GPUSolver extends Solver {
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startijklMem, resMem, progressMem;
-	private final Object resLock = new Object(), progressLock = new Object();
 	private int globalWorkSize;
 	
 	// configurable values
@@ -97,7 +101,7 @@ public class GPUSolver extends Solver {
 
 	// calculation related stuff
 	private GPUConstellationsGenerator generator;
-	private ArrayList<Constellation> constellations;
+	private ArrayList<Constellation> constellations, remainingConstellations;
 	private long duration, start, end, storedDuration;
 	private long solutions;
 	private float progress;
@@ -155,52 +159,14 @@ public class GPUSolver extends Solver {
 		if(start == 0 || gpuDone) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
-		long solutions = savedSolutions;
-		ArrayList<Integer> 
-		ldListTmp = new ArrayList<Integer>(),
-		rdListTmp = new ArrayList<Integer>(),
-		colListTmp = new ArrayList<Integer>(),
-		startjklListTmp = new ArrayList<Integer>(),
-		symListTmp = new ArrayList<Integer>();
-		synchronized(resLock) {
-			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-			for(int i = 0; i < globalWorkSize; i++) {
-				if(resBuf.getLong(i*8) > 1) {
-					solutions += resBuf.getLong(i*8) * symList.get(i);
-				} else if(resBuf.getLong(i*8) <= 1 && startjklList.get(i) >> 15 != 69) {
-					ldListTmp.add(ldList.get(i));
-					rdListTmp.add(rdList.get(i));
-					colListTmp.add(colList.get(i));
-					startjklListTmp.add(startjklList.get(i));
-					symListTmp.add(symList.get(i));
-				}
-			}
+		ArrayList<Constellation> tmpConstellations = new ArrayList<Constellation>();
+		tmpConstellations.addAll(constellations);
+		for(int i = 0; i < constellations.size(); i++) {
+			if(tmpConstellations.get(i).getStartijkl() >> 20 == 69)
+					tmpConstellations.remove(i);
 		}
-		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldListTmp, rdListTmp, colListTmp, startjklListTmp, symListTmp);
-
-		try (
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(baos);
-				RandomAccessFile raf = new RandomAccessFile(filepath, "rw");
-				FileOutputStream fos = new FileOutputStream(raf.getFD());
-				BufferedOutputStream bos = new BufferedOutputStream(fos);
-				) {
-			oos.writeObject(resInfo);
-			oos.flush();
-			var resInfoByteArray = baos.toByteArray();
-			int bytes = 0;
-			int bufsize = 1024;
-			for(int i = 0; i < resInfoByteArray.length/bufsize; i++) {
-				bytes = i*bufsize;
-				bos.write(resInfoByteArray, bytes, bufsize);
-				bos.flush();
-				bytes += bufsize;
-			}
-			if(bytes < resInfoByteArray.length) {
-				bos.write(resInfoByteArray, bytes, resInfoByteArray.length-bytes);
-				bos.flush();
-			}
-		}
+		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+		out.writeValue(new File(filepath), new SolverState(N, System.currentTimeMillis() - start + storedDuration, tmpConstellations));
 	}
 
 	@Override
@@ -208,49 +174,36 @@ public class GPUSolver extends Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
-
-		byte[] resInfoByteArray = Files.readAllBytes(Path.of(filepath));
-		try (
-				ByteArrayInputStream bais = new ByteArrayInputStream(resInfoByteArray);
-				ObjectInputStream ois = new ObjectInputStream (bais);
-				) {
-			RestorationInformation resInfo = (RestorationInformation) ois.readObject();
-
-			reset();
-			N = resInfo.N;
-			savedDuration = resInfo.duration;
-			savedSolutions = resInfo.solutions;
-			startConstCount = resInfo.startConstCount;
-			savedSolvedConstellations = startConstCount - resInfo.ldList.size();
-			progress = (float) savedSolvedConstellations / startConstCount;
-
-			ldList = new ArrayList<Integer>();
-			rdList = new ArrayList<Integer>();
-			colList = new ArrayList<Integer>();
-			startjklList = new ArrayList<Integer>();
-			symList = new ArrayList<Integer>();
-
-			generator = new GPUConstellationsGenerator();
-			generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
-			int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
-			for(int i = 0; i < resInfo.ldList.size(); i++) {
-				if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
-					while(ldList.size() % WORKGROUP_SIZE != 0) {
-						generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
-					}
-					currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
-				}
-				ldList.add(resInfo.ldList.get(i));
-				rdList.add(resInfo.rdList.get(i));
-				colList.add(resInfo.colList.get(i));
-				startjklList.add(resInfo.startjklList.get(i));
-				symList.add(resInfo.symList.get(i));
-			}
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
-			}
-			restored = true;
+		ObjectMapper mapper = new ObjectMapper();
+		SolverState state = mapper.readValue(new File(filepath), SolverState.class);
+		setN(state.getN());
+		storedDuration = state.getStoredDuration();
+		constellations = state.getConstellations();
+		remainingConstellations = new ArrayList<Constellation>();
+		for(var c : constellations) {
+			remainingConstellations.add(c);
 		}
+		int numberOfRemainingConstellations = remainingConstellations.size();
+		
+		generator = new GPUConstellationsGenerator();
+		generator.sortConstellations(remainingConstellations);
+		
+		
+		int currentIjkl = remainingConstellations.get(0).getStartijkl() & ((1 << 20) - 1);
+		for (int i = 0; i < constellations.size(); i++) {
+			// iterate through constellations, add each remainging constellations and fill up each group of ijkl till its dividable by workgroup-size
+			if ((remainingConstellations.get(i).getStartijkl() & ((1 << 20) - 1)) != currentIjkl) { // check if new ijkl is found
+				while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
+					generator.addTrashConstellation(currentIjkl);
+				}
+				currentIjkl = remainingConstellations.get(i).getStartijkl() & ((1 << 20) - 1);
+			}
+		}
+		while (ldList.size() % WORKGROUP_SIZE != 0) {
+			generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
+		}
+		
+		restored = true;
 	}
 
 	@Override
@@ -339,14 +292,16 @@ public class GPUSolver extends Solver {
 	}
 
 	private void transferDataToDevice(MemoryStack stack) {
-		if(storedDuration == 0) {		// if duration is 0, then restore() was not called
+		if(restored) {
+			// exclude the constellations that are already solved
+			
+		} else {
 			generator = new GPUConstellationsGenerator();
 			generator.genConstellations(N, WORKGROUP_SIZE, PRE_QUEENS);
 			
 			constellations = generator.getConstellations();
+			remainingConstellations = constellations;
 			numberOfValidConstellations = generator.getNumberOfValidConstellations();
-		} else {
-			// exclude the constellations that are already solved
 		}
 
 		// OpenCL-Memory Objects to be passed to the kernel
@@ -355,8 +310,8 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, constellations.get(i).getLd());
+		for(int i = 0; i < remainingConstellations.size(); i++) {
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getLd());
 		}
 		clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
@@ -366,8 +321,8 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, constellations.get(i).getRd());
+		for(int i = 0; i < remainingConstellations.size(); i++) {
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getRd());
 		}
 		clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
@@ -377,8 +332,8 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, constellations.get(i).getCol());
+		for(int i = 0; i < remainingConstellations.size(); i++) {
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getCol());
 		}
 		clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
@@ -388,8 +343,8 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		paramPtr = clEnqueueMapBuffer(memqueue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, constellations.get(i).getStartijkl());
+		for(int i = 0; i < remainingConstellations.size(); i++) {
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getStartijkl());
 		}
 		clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null);
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
@@ -399,7 +354,7 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		ByteBuffer resWritePtr = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
+		for(int i = 0; i < remainingConstellations.size(); i++) {
 			resWritePtr.putLong(i*8, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
@@ -411,7 +366,7 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 		ByteBuffer progressWritePtr = clEnqueueMapBuffer(memqueue, progressMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
+		for(int i = 0; i < remainingConstellations.size(); i++) {
 			progressWritePtr.putInt(i*4, 0);
 		}
 		clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
@@ -488,15 +443,21 @@ public class GPUSolver extends Solver {
 
         		long tmpSolutions = 0;
         		int solvedConstellations = 0;
-        		for (int i = 0; i < globalWorkSize; i++) {
-        			if(constellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        		for (int i = 0; i < remainingConstellations.size(); i++) {
+        			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
         				continue;
-        			long solutionsForConstellation = resBuf.getLong(i) * symmetry(constellations.get(i).getStartijkl() & 0b11111111111111111111);
-        			if(solutionsForConstellation >= 0) {
-        				solutions += solutionsForConstellation;
-        				solvedConstellations++;
+        			long solutionsForConstellation = resBuf.getLong(i) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+        			if(solutionsForConstellation >= 0)
         				// synchronize with the list of constellations on the RAM
-        				constellations.get(i).setSolutions(solutionsForConstellation);
+        				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
+        		}
+        		for(var c : constellations) {
+        			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        				continue;
+        			long solutionsForConstellation = c.getSolutions();
+        			if(solutionsForConstellation >= 0) {
+        				tmpSolutions += solutionsForConstellation;
+        				solvedConstellations++;
         			}
         		}
         		progress = (float) solvedConstellations / numberOfValidConstellations;
@@ -532,15 +493,21 @@ public class GPUSolver extends Solver {
 
 		long tmpSolutions = 0;
 		int solvedConstellations = 0;
-		for (int i = 0; i < globalWorkSize; i++) {
-			if(constellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		for (int i = 0; i < remainingConstellations.size(); i++) {
+			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
-			long solutionsForConstellation = resBuf.getLong(i) * symmetry(constellations.get(i).getStartijkl() & 0b11111111111111111111);
-			if(solutionsForConstellation >= 0) {
-				solutions += solutionsForConstellation;
-				solvedConstellations++;
+			long solutionsForConstellation = resBuf.getLong(i) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+			if(solutionsForConstellation >= 0)
 				// synchronize with the list of constellations on the RAM
-				constellations.get(i).setSolutions(solutionsForConstellation);
+				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
+		}
+		for(var c : constellations) {
+			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+				continue;
+			long solutionsForConstellation = c.getSolutions();
+			if(solutionsForConstellation >= 0) {
+				tmpSolutions += solutionsForConstellation;
+				solvedConstellations++;
 			}
 		}
 		progress = (float) solvedConstellations / numberOfValidConstellations;
