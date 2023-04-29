@@ -2,7 +2,7 @@ package de.nqueensfaf;
 
 import java.io.IOException;
 
-import de.nqueensfaf.compute.CpuSolver;
+import de.nqueensfaf.compute.CPUSolver;
 
 public class Demo {
 	
@@ -13,7 +13,7 @@ public class Demo {
 	}
 	
 	static void store() {
-		CpuSolver s = new CpuSolver();
+		CPUSolver s = new CPUSolver();
 		s.setN(17);
 		s.setThreadcount(3);
 		s.addTerminationCallback(() -> {
@@ -34,7 +34,7 @@ public class Demo {
 	}
 
 	static void restore() {
-		CpuSolver s = new CpuSolver();
+		CPUSolver s = new CPUSolver();
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
@@ -58,7 +58,7 @@ public class Demo {
 	}
 	
 	static void rerestore() {
-		CpuSolver s = new CpuSolver();
+		CPUSolver s = new CPUSolver();
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});

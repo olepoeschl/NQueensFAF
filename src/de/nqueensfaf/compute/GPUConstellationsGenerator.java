@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 
-class GpuConstellationsGenerator {
+class GPUConstellationsGenerator {
 
 	private int N, preQueens, L, mask, LD, RD, counter;					
 	private HashSet<Integer> startConstellations;

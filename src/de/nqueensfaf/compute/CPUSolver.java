@@ -16,7 +16,7 @@ import de.nqueensfaf.Solver;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.SolverState;
 
-public class CpuSolver extends Solver {
+public class CPUSolver extends Solver {
 
 	// for very small N it is overkill to use this method
 	// thus we use a straightforward recursive implementation of Jeff Somers Bit
@@ -35,7 +35,7 @@ public class CpuSolver extends Solver {
 	private HashSet<Integer> ijklList = new HashSet<Integer>();
 	private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
 	// for the threads and their respective time measurement etc.
-	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
+	private ArrayList<CPUSolverThread> threads = new ArrayList<CPUSolverThread>();
 	private ArrayList<ArrayList<Constellation>> threadConstellations;
 	private long solutions, duration, storedDuration;
 	private float progress;
@@ -77,7 +77,7 @@ public class CpuSolver extends Solver {
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for (i = 0; i < threadcount; i++) {
-			CpuSolverThread cpuSolverThread = new CpuSolverThread(N, threadConstellations.get(i));
+			CPUSolverThread cpuSolverThread = new CPUSolverThread(N, threadConstellations.get(i));
 			threads.add(cpuSolverThread);
 			executor.submit(cpuSolverThread);
 		}

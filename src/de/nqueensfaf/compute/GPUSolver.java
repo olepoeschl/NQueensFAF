@@ -40,7 +40,7 @@ import static de.nqueensfaf.compute.InfoUtil.*;
 import de.nqueensfaf.NQueensFAF;
 import de.nqueensfaf.Solver;
 
-public class GpuSolver extends Solver {
+public class GPUSolver extends Solver {
 
 	private static Path tempDir;
 	private static boolean openclable = true;
@@ -93,7 +93,7 @@ public class GpuSolver extends Solver {
 	private int globalWorkSize;
 
 	// calculation related stuff
-	private GpuConstellationsGenerator generator;
+	private GPUConstellationsGenerator generator;
 	private int startConstCount;
 	private ArrayList<Integer> ldList, rdList, colList, symList, startjklList;
 	private long solutions, savedSolutions;
@@ -105,7 +105,7 @@ public class GpuSolver extends Solver {
 	private boolean gpuDone = false;
 	private boolean restored = false;
 	
-	public GpuSolver() {
+	public GPUSolver() {
 		if(openclable)
 			getAvailableDevices();		// fill the devices list with all available devices
 	}
@@ -229,7 +229,7 @@ public class GpuSolver extends Solver {
 			startjklList = new ArrayList<Integer>();
 			symList = new ArrayList<Integer>();
 
-			generator = new GpuConstellationsGenerator();
+			generator = new GPUConstellationsGenerator();
 			generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
 			int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
 			for(int i = 0; i < resInfo.ldList.size(); i++) {
@@ -376,7 +376,7 @@ public class GpuSolver extends Solver {
 
 	private void transferDataToDevice(MemoryStack stack) {
 		if(savedDuration == 0) {		// if duration is 0, then restore() was not called
-			generator = new GpuConstellationsGenerator();
+			generator = new GPUConstellationsGenerator();
 			generator.genConstellations(N, WORKGROUP_SIZE, PRE_QUEENS);
 			
 			ldList = generator.ldList;
@@ -639,7 +639,7 @@ public class GpuSolver extends Solver {
 		try {
 			tempDir = Files.createTempDirectory("NQueensFaf");
 			// copy the clinfo file from within the jar to the temporary directory
-			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
+			InputStream in = GPUSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
 			byte[] buffer = new byte[1024];
 			int read = -1;
 			File file = new File(tempDir + "/clinfo.exe");
@@ -730,7 +730,7 @@ public class GpuSolver extends Solver {
 	private String getKernelSourceAsString(String filepath) {
 		String resultString = null;
 		try (
-			InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
+			InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
 			BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));
 		){
 			String line = null;
