@@ -1,22 +1,17 @@
 package de.nqueensfaf.compute;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.Solver;
 
@@ -36,18 +31,15 @@ public class CpuSolver extends Solver {
 	// for generating the start constellations
 	// a start constellation contains the starting row, the occupancies of ld and rd
 	// and col, and the values of i, j, k, l
-	private HashSet<Integer> startConstellations = new HashSet<Integer>();
-	private ArrayList<Integer> ldList = new ArrayList<Integer>(), rdList = new ArrayList<Integer>(),
-			colList = new ArrayList<Integer>();
-	private ArrayList<Integer> startIjklList = new ArrayList<Integer>();
+	private HashSet<Integer> ijklList = new HashSet<Integer>();
+	private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
 	// for the threads and their respective time measurement etc.
 	private ArrayList<CpuSolverThread> threads = new ArrayList<CpuSolverThread>();
-	private int startConstCount, solvedConstellations;
-	private long timePassed = 0, pauseStart = 0;
-	private long solutions;
+	private ArrayList<ArrayList<Constellation>> threadConstellations;
+	private long solutions, duration, restoredDuration;
+	private float progress;
 	private boolean restored = false;
-	private ArrayList<Runnable> pausing = new ArrayList<Runnable>();
-
+	
 	// inherited functions
 	@Override
 	protected void run() {
@@ -62,55 +54,29 @@ public class CpuSolver extends Solver {
 			solutions = solveSmallBoard();
 			end = System.currentTimeMillis();
 			// simulate progress = 100
-			startConstCount = 1;
-			solvedConstellations = 1;
+			progress = 1;
 			return;
 		}
 
 		if (!restored) {
 			genConstellations();
-			startConstCount = startIjklList.size();
 		}
 
-		// split starting constellations in [cpu] many lists (splitting the work for the
+		// split starting constellations in [threadcount] lists (splitting the work for the
 		// threads)
-		ArrayList<ArrayList<ArrayDeque<Integer>>> threadConstellations = new ArrayList<ArrayList<ArrayDeque<Integer>>>();
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount)); // ld
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount)); // rd
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount)); // col
-		threadConstellations.add(new ArrayList<ArrayDeque<Integer>>(threadcount)); // startIjkl
-		for (var list : threadConstellations) {
-			for (int i = 0; i < threadcount; i++) {
-				list.add(new ArrayDeque<Integer>());
-			}
+		threadConstellations = new ArrayList<ArrayList<Constellation>>();
+		for (int i = 0; i < threadcount; i++) {
+			threadConstellations.add(new ArrayList<Constellation>());
 		}
-		// ld
-		int i = 0;
-		for (int ld : ldList) {
-			threadConstellations.get(0).get((i++) % threadcount).addFirst(ld);
-		}
-		// rd
-		i = 0;
-		for (int rd : rdList) {
-			threadConstellations.get(1).get((i++) % threadcount).addFirst(rd);
-		}
-		// col
-		i = 0;
-		for (int col : colList) {
-			threadConstellations.get(2).get((i++) % threadcount).addFirst(col);
-		}
-		// startIjkl
-		i = 0;
-		for (int startIjkl : startIjklList) {
-			threadConstellations.get(3).get((i++) % threadcount).addFirst(startIjkl);
+		int i = constellations.size()-1;
+		for (Constellation c : constellations) {
+			threadConstellations.get((i--) % threadcount).add(c);
 		}
 
 		// start the threads and wait until they are all finished
 		ExecutorService executor = Executors.newFixedThreadPool(threadcount);
 		for (i = 0; i < threadcount; i++) {
-			CpuSolverThread cpuSolverThread = new CpuSolverThread(this, N, threadConstellations.get(0).get(i),
-					threadConstellations.get(1).get(i), threadConstellations.get(2).get(i),
-					threadConstellations.get(3).get(i));
+			CpuSolverThread cpuSolverThread = new CpuSolverThread(N, threadConstellations.get(i));
 			threads.add(cpuSolverThread);
 			executor.submit(cpuSolverThread);
 		}
@@ -119,11 +85,17 @@ public class CpuSolver extends Solver {
 		executor.shutdown();
 		try {
 			if (executor.awaitTermination(365, TimeUnit.DAYS)) {
+				// finished
 				end = System.currentTimeMillis();
-				// done
-			} else {
-				end = System.currentTimeMillis();
-				// not done
+				duration = end - start + restoredDuration;
+				int solvedConstellations = 0;
+				for(var c : constellations) {
+					if(c.getSolutions() >= 0) {
+						solutions += c.getSolutions();
+						solvedConstellations++;
+					}
+				}
+				progress = (float) solvedConstellations / constellations.size();
 			}
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
@@ -137,46 +109,9 @@ public class CpuSolver extends Solver {
 		if (start == 0) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
-		// get current progress values
-		long solutions = this.solutions;
-		for (CpuSolverThread t : threads) {
-			solutions += t.getSolutions();
-		}
-		long timePassed = getDuration();
-		ArrayList<Integer> ldListTemp = new ArrayList<Integer>(), rdListTemp = new ArrayList<Integer>(),
-				colListTemp = new ArrayList<Integer>(), startIjklListTemp = new ArrayList<Integer>();
-		for (CpuSolverThread t : threads) {
-			var remainingConstellations = t.getRemainingConstellations();
-			ldListTemp.addAll(remainingConstellations.ldList());
-			rdListTemp.addAll(remainingConstellations.rdList());
-			colListTemp.addAll(remainingConstellations.colList());
-			startIjklListTemp.addAll(remainingConstellations.startIjklList());
-		}
-		RestorationInformation resInfo = new RestorationInformation(N, timePassed, solutions, startConstCount, ldListTemp, rdListTemp, colListTemp, startIjklListTemp);
-		
-		try (
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(baos);
-				RandomAccessFile raf = new RandomAccessFile(filepath, "rw");
-				FileOutputStream fos = new FileOutputStream(raf.getFD());
-				BufferedOutputStream bos = new BufferedOutputStream(fos);
-				) {
-			oos.writeObject(resInfo);
-			oos.flush();
-			var resInfoByteArray = baos.toByteArray();
-			int bytes = 0;
-			int bufsize = 1024;
-			for(int i = 0; i < resInfoByteArray.length/bufsize; i++) {
-				bytes = i*bufsize;
-				bos.write(resInfoByteArray, bytes, bufsize);
-				bos.flush();
-				bytes += bufsize;
-			}
-			if(bytes < resInfoByteArray.length) {
-				bos.write(resInfoByteArray, bytes, resInfoByteArray.length-bytes);
-				bos.flush();
-			}
-		}
+		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+		out.writeValue(new File(filepath), constellations);
+		// TODO: N? durationTillNow?
 	}
 
 	@Override
@@ -184,24 +119,10 @@ public class CpuSolver extends Solver {
 		if (!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
-		byte[] resInfoByteArray = Files.readAllBytes(Path.of(filepath));
-		try (
-				ByteArrayInputStream bais = new ByteArrayInputStream(resInfoByteArray);
-				ObjectInputStream ois = new ObjectInputStream (bais);
-				) {
-			RestorationInformation resInfo = (RestorationInformation) ois.readObject();
-			reset();
-			N = resInfo.N;
-			timePassed = resInfo.timePassed;
-			solutions = resInfo.solutions;
-			startConstCount = resInfo.startConstCount;
-			ldList = resInfo.ldList();
-			rdList = resInfo.rdList();
-			colList = resInfo.colList();
-			startIjklList = resInfo.startIjklList();
-			solvedConstellations = startConstCount - ldList.size();
-			restored = true;
-		}
+		ObjectMapper mapper = new ObjectMapper();
+		constellations = mapper.readValue(new File(filepath), new TypeReference<ArrayList<Constellation>>(){});
+		// TODO: N? durationTillNow?
+		restored = true;
 	}
 
 	@Override
@@ -213,55 +134,46 @@ public class CpuSolver extends Solver {
 	public void reset() {
 		start = 0;
 		end = 0;
-		timePassed = 0;
-		pauseStart = 0;
-		startConstellations.clear();
-		ldList.clear();
-		rdList.clear();
-		colList.clear();
-		startIjklList.clear();
-		solvedConstellations = 0;
+		duration = 0;
+		restoredDuration = 0;
 		solutions = 0;
+		progress = 0;
+		ijklList.clear();
+		constellations.clear();
 		threads.clear();
-		startConstCount = 0;
 		restored = false;
 	}
 
 	@Override
 	public long getDuration() {
-		if (isRunning()) {
-			if (isPaused()) {
-				return timePassed;
-			} else {
-				return timePassed + System.currentTimeMillis() - start;
-			}
-		} else {
-			if (isPaused()) {
-				return timePassed;
-			} else {
-				return timePassed + end - start;
-			}
+		if(isRunning()) {
+			return System.currentTimeMillis() - start + restoredDuration;
 		}
+		return duration;
 	}
 
 	@Override
 	public float getProgress() {
-		if (restored && isIdle())
-			return (float) solvedConstellations / startConstCount;
-		if (startConstCount == 0)
-			return 0;
-		float done = solvedConstellations;
-		for (CpuSolverThread t : threads) {
-			done += t.getDone();
+		if(isRunning()) {
+			int solvedConstellations = 0;
+			for(var c : constellations) {
+				if(c.getSolutions() >= 0)
+					solvedConstellations++;
+			}
+			return (float) solvedConstellations / constellations.size();
 		}
-		return done / startConstCount;
+		return progress;
 	}
 
 	@Override
 	public long getSolutions() {
-		long solutions = this.solutions;
-		for (CpuSolverThread t : threads) {
-			solutions += t.getSolutions();
+		if(isRunning()) {
+			long tmpSolutions = 0;
+			for(var c : constellations) {
+				if(c.getSolutions() >= 0)
+					tmpSolutions += c.getSolutions();
+			}
+			return tmpSolutions;
 		}
 		return solutions;
 	}
@@ -285,7 +197,7 @@ public class CpuSolver extends Solver {
 
 						if (!checkRotations(i, j, k, l)) { // if no rotation-symmetric starting constellation already
 															// found
-							startConstellations.add(toijkl(i, j, k, l));
+							ijklList.add(toijkl(i, j, k, l));
 						}
 					}
 				}
@@ -295,20 +207,20 @@ public class CpuSolver extends Solver {
 		// (0,0)
 		for (int j = 1; j < N - 2; j++) { // j is idx of Queen in last row
 			for (int l = j + 1; l < N - 1; l++) { // l is idx of Queen in last col
-				startConstellations.add(toijkl(0, j, 0, l));
+				ijklList.add(toijkl(0, j, 0, l));
 			}
 		}
 
-		HashSet<Integer> startConstellationsJasmin = new HashSet<Integer>();
+		HashSet<Integer> ijklListJasmin = new HashSet<Integer>();
 		// rotate and mirror all start constellations, such that the queen in the last
 		// row is as close to the right border as possible
-		for (int startConstellation : startConstellations) {
-			startConstellationsJasmin.add(jasmin(startConstellation));
+		for (int startConstellation : ijklList) {
+			ijklListJasmin.add(jasmin(startConstellation));
 		}
-		startConstellations = startConstellationsJasmin;
+		ijklList = ijklListJasmin;
 
 		int i, j, k, l, ld, rd, col, currentSize = 0;
-		for (int sc : startConstellations) {
+		for (int sc : ijklList) {
 			i = geti(sc);
 			j = getj(sc);
 			k = getk(sc);
@@ -329,10 +241,10 @@ public class CpuSolver extends Solver {
 			counter = 0;
 			// generate all subconstellations
 			setPreQueens(ld, rd, col, k, l, 1, j == N - 1 ? 3 : 4);
-			currentSize = startIjklList.size();
+			currentSize = constellations.size();
 			// jkl and sym and start are the same for all subconstellations
 			for (int a = 0; a < counter; a++) {
-				startIjklList.set(currentSize - a - 1, startIjklList.get(currentSize - a - 1) | toijkl(i, j, k, l));
+				constellations.get(currentSize - a - 1).setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | toijkl(i, j, k, l));
 			}
 		}
 	}
@@ -347,10 +259,7 @@ public class CpuSolver extends Solver {
 		// add queens until we have preQueens queens
 		if (queens == preQueens) {
 			// add the subconstellations to the list
-			ldList.add(ld);
-			rdList.add(rd);
-			colList.add(col);
-			startIjklList.add(row << 20);
+			constellations.add(new Constellation(ld, rd, col, row<<20, -1));
 			counter++;
 			return;
 		}
@@ -371,15 +280,15 @@ public class CpuSolver extends Solver {
 	// true, if starting constellation rotated by any angle has already been found
 	private boolean checkRotations(int i, int j, int k, int l) {
 		// rot90
-		if (startConstellations.contains(((N - 1 - k) << 15) + ((N - 1 - l) << 10) + (j << 5) + i))
+		if (ijklList.contains(((N - 1 - k) << 15) + ((N - 1 - l) << 10) + (j << 5) + i))
 			return true;
 
 		// rot180
-		if (startConstellations.contains(((N - 1 - j) << 15) + ((N - 1 - i) << 10) + ((N - 1 - l) << 5) + N - 1 - k))
+		if (ijklList.contains(((N - 1 - j) << 15) + ((N - 1 - i) << 10) + ((N - 1 - l) << 5) + N - 1 - k))
 			return true;
 
 		// rot270
-		if (startConstellations.contains((l << 15) + (k << 10) + ((N - 1 - i) << 5) + N - 1 - j))
+		if (ijklList.contains((l << 15) + (k << 10) + ((N - 1 - i) << 5) + N - 1 - j))
 			return true;
 
 		return false;
@@ -444,84 +353,6 @@ public class CpuSolver extends Solver {
 		return ((N - 1 - getk(ijkl)) << 15) + ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl);
 	}
 
-	// for user interaction
-	public void pause() {
-		if (!isRunning()) {
-			throw new IllegalStateException("unable to pause a CpuSolver when it is not running");
-		}
-		if (isPaused()) {
-			throw new IllegalStateException("unable to pause a CpuSolver when it is already paused");
-		}
-		for (CpuSolverThread t : threads) {
-			t.pauseThread();
-		}
-	}
-
-	public void cancel() {
-		if (!isRunning()) {
-			throw new IllegalStateException("unable to cancel a CpuSolver when it is not running");
-		}
-		for (CpuSolverThread t : threads) {
-			t.cancelThread();
-		}
-	}
-
-	public void resume() {
-		if (!isRunning()) {
-			throw new IllegalStateException("unable to resume a CpuSolver when it is not running");
-		}
-		boolean paused = isPaused();
-		for (CpuSolverThread t : threads) {
-			t.resumeThread();
-		}
-		if (paused) {
-			start = System.currentTimeMillis();
-			pauseStart = 0;
-		}
-	}
-
-	public boolean isPaused() {
-		if (threads.size() <= 0) {
-			return false;
-		}
-		for (CpuSolverThread t : threads) {
-			if (!t.isPaused())
-				return false;
-		}
-		return true;
-	}
-
-	public boolean wasCanceled() {
-		if (isRunning() || N <= smallestN) {
-			return false;
-		}
-		for (CpuSolverThread t : threads) {
-			if (!t.wasCanceled())
-				return false;
-		}
-		return true;
-	}
-
-	public void addOnPauseCallback(Runnable r) {
-		if (r == null) {
-			throw new IllegalArgumentException("pausing callback must not be null");
-		}
-		pausing.add(r);
-	}
-
-	// is called from the SolverThreads to measure correct time of the start of the
-	// pause
-	synchronized void onPauseStart() {
-		if (isPaused() && pauseStart == 0) {
-			long now = System.currentTimeMillis();
-			timePassed += now - start;
-			pauseStart = now;
-			for (Runnable r : pausing) {
-				r.run();
-			}
-		}
-	}
-
 	// getters and setters
 	public void setThreadcount(int threadcount) {
 		if (threadcount < 1 || threadcount > Runtime.getRuntime().availableProcessors()) {
@@ -534,11 +365,5 @@ public class CpuSolver extends Solver {
 
 	public int getThreadcount() {
 		return threadcount;
-	}
-
-	// for saving and restoring
-	private record RestorationInformation(int N, long timePassed, long solutions, int startConstCount,
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
-			ArrayList<Integer> startIjklList) implements Serializable {
 	}
 }

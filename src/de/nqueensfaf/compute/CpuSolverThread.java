@@ -1,12 +1,11 @@
 package de.nqueensfaf.compute;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 
 class CpuSolverThread extends Thread {
 
-	private final int N, N3, N4, L, L3, L4;			// boardsize
-	private long tempcounter = 0, solvecounter = 0;			// tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
-	private int done = 0;						// #(done start constellations)
+	private final int N, N3, N4, L, L3, L4;				// boardsize
+	private long tempcounter = 0;					// tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
 
 	// mark1 and mark2 mark the lines k-1 and l-1 (not necessarily in this order), 
 	// because in from this line we will directly shift everything to the next free row 
@@ -15,27 +14,16 @@ class CpuSolverThread extends Thread {
 	private int mark1, mark2, endmark, jmark;
  
 	// list of uncalculated starting positions, their indices
-	private ArrayDeque<Integer> ldList, rdList, colList, startIjklList;
-	private final Object constellationsLock = new Object();
-	
-	// for pausing or cancelling the run
-	private boolean cancel = false, running = false;
-	private int pause = 0;
-	private CpuSolver caller;
+	private ArrayList<Constellation> constellations;
 
-	CpuSolverThread(CpuSolver caller, int N, ArrayDeque<Integer> ldList, 
-			ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {
-		this.caller = caller;
+	CpuSolverThread(int N, ArrayList<Constellation> constellations) {
 		this.N = N;
 		N3 = N - 3;
 		N4 = N - 4;
 		L = 1 << (N-1);
 		L3 = 1 << N3;
 		L4 = 1 << N4;
-		this.ldList = ldList;
-		this.rdList = rdList;
-		this.colList = colList;
-		this.startIjklList = startIjklList;
+		this.constellations = constellations;
 	}
 
 	// Recursive functions for Placing the Queens
@@ -753,15 +741,12 @@ class CpuSolverThread extends Thread {
 	
 	@Override
 	public void run() {
-		running = true;
-	
 		int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD;
 		final int N = this.N; 
-		final int smallmask = (1 << (N-2)) - 1, listsize = startIjklList.size();
+		final int smallmask = (1 << (N-2)) - 1;
 		
-		for(int idx = 0; idx < listsize; idx++) {
-			
-			startIjkl = startIjklList.getFirst();
+		for(Constellation constellation : constellations) {
+			startIjkl = constellation.getStartijkl();
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
 			j = getj(ijkl); k = getk(ijkl); l = getl(ijkl);
@@ -770,17 +755,17 @@ class CpuSolverThread extends Thread {
 			// column does not matter (always occupied by queen l)
 			// add occupation of ld from queens j and l from the bottom row upwards 
 			LD = (L >>> j) | (L >>> l);
-			ld = ldList.getFirst() >>> 1;
+			ld = constellation.getLd() >>> 1;
 			ld |= LD >>> (N-start);
 			// add occupation of rd from queens j and k from the bottom row upwards 
-			rd = rdList.getFirst() >>> 1;
+			rd = constellation.getRd() >>> 1;
 			if(start > k)
 				rd |= (L >>> (start-k+1)); 
 			if(j >= 2*N-33-start)	// only add the rd from queen j if it does not 
 				rd |= (L >>> j) << (N-2-start);		// occupy the sign bit! 
 			
 			// also occupy col and then calculate free 
-			col = (colList.getFirst() >>> 1) | (~smallmask);
+			col = (constellation.getCol() >>> 1) | (~smallmask);
 			free = ~(ld | rd | col);
 			
 		// big case distinction for deciding which soling algorithm to use 
@@ -1041,82 +1026,10 @@ class CpuSolverThread extends Thread {
 					SQd0BkB(ld, rd, col, start, free);
 				}
 			}
-			
-			// sum up solutions
-			solvecounter += tempcounter * symmetry(ijkl);
-
-			// get occupancy of the board for each starting constellation and the hops and max from board Properties 
-			tempcounter = 0;								// set counter of solutions for this starting constellation to 0
 
 			// for saving and loading progress remove the finished starting constellation
-			synchronized(constellationsLock) {
-				startIjklList.removeFirst();
-				ldList.removeFirst();
-				rdList.removeFirst();
-				colList.removeFirst();
-			}
-			
-			// update the current startconstellation-index
-			done++;
-			
-			// check for pausing
-			if(pause == 1) {
-				pause = 2;
-				caller.onPauseStart();
-				while(pause == 2) {
-					if(cancel)
-						break;
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			// check for cancelling
-			if(cancel) {
-				break;
-			}
-			
-		}
-		running = false;
-	}
-
-	// for user interaction
-	void pauseThread() {
-		pause = 1;
-	}
-	
-	void cancelThread() {
-		cancel = true;
-	}
-	
-	void resumeThread() {
-		pause = 0;
-		cancel = false;
-	}
-	
-	boolean isPaused() {
-		return pause == 2;
-	}
-	
-	boolean wasCanceled() {
-		return !running && cancel;
-	}
-	
-	// getters and setters
-	int getDone() {
-		return done;
-	}
-	
-	long getSolutions() {
-		return solvecounter;
-	}
-	
-	record RemainingConstellations(ArrayDeque<Integer> ldList, ArrayDeque<Integer> rdList, ArrayDeque<Integer> colList, ArrayDeque<Integer> startIjklList) {}
-	RemainingConstellations getRemainingConstellations() {
-		synchronized(constellationsLock) {
-			return new RemainingConstellations(ldList.clone(), rdList.clone(), colList.clone(), startIjklList.clone());
+			constellation.setSolutions(tempcounter * symmetry(ijkl));
+			tempcounter = 0;
 		}
 	}
 	
