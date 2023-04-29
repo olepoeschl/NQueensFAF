@@ -24,7 +24,6 @@ gpuSolver.solve();
 # Current Benchmarks
 During the time we have spent developing this program, we have been able to continuously expand our available hardware. 
 Especially the newer graphics cards show the potential of our program. 
-We are looking forward to the distributed project and hope to solve the 26-queens problem until January 2023 with your help! 
 
 <b>GPUs</b>
 |      Board size N     |   18    |     19    |      20      |      21      |      22      |       23       |       24       |   25 |
