@@ -2,12 +2,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.nqueensfaf</groupId>
 	<artifactId>nqueensfaf</artifactId>
-	<version>1.0.0</version>
+	<version>1.7.0</version>
 	<name>NQueensFAF</name>
 	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
 	
 	<properties>
-		<lwjgl.version>3.3.1</lwjgl.version>
+		<lwjgl.version>3.3.2</lwjgl.version>
+		<jackson.version>2.15.0</jackson.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -128,9 +129,14 @@
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.lwjgl</groupId>
