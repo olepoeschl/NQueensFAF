@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.nqueensfaf</groupId>
-	<artifactId>NQueensFAF</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>nqueensfaf</artifactId>
+	<version>1.0.0</version>
 	<name>NQueensFAF</name>
 	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
 	
