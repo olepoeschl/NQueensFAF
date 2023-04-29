@@ -5,28 +5,17 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 
+import de.nqueensfaf.files.Constellation;
+
 class GPUConstellationsGenerator {
 
-	private int N, preQueens, L, mask, LD, RD, counter;					
-	private HashSet<Integer> startConstellations;
-	private ArrayList<Integer> jklList, startList;
-	ArrayList<Integer> ldList, rdList, colList, startjklList, symList;
-	int startConstCount;
+	private int N, preQueens, L, mask, LD, RD, counter, numberOfValidConstellations = 0;		
+	private HashSet<Integer> ijklList;
+	private ArrayList<Constellation> constellations;
 	
 	// generate starting constellations 
 	void genConstellations(int N, int WORKGROUP_SIZE, int preQueens) {
-		// the name says it all
-		ldList = new ArrayList<Integer>();
-		rdList = new ArrayList<Integer>();
-		colList = new ArrayList<Integer>();
-		// jklList contains [17 free bits][5 bits for j][5 bits for k][5 bits for l] 
-		jklList = new ArrayList<Integer>();
-		// sym is or 2 or 4 or 8
-		symList = new ArrayList<Integer>();
-		// starting (first empty) row 
-		startList = new ArrayList<Integer>();
-
-		int ld, rd, col, jkl;
+		int ld, rd, col, ijkl, currentSize;
 		// queen at left border 
 		L = (1 << (N-1));
 		// marks the board 
@@ -35,7 +24,7 @@ class GPUConstellationsGenerator {
 		// set N, halfN half of N rounded up, collection of startConstellations
 		this.N = N;
 		final int halfN = (N + 1) / 2;
-		startConstellations = new HashSet<Integer>();
+		ijklList = new HashSet<Integer>();
 		
 		// set number of preset queens
 		this.preQueens = preQueens;
@@ -44,7 +33,7 @@ class GPUConstellationsGenerator {
 		for(int k = 1; k < N-2; k++) {						// j is idx of Queen in last row				
 			for(int i = k+1; i < N-1; i++) {				// l is idx of Queen in last col
 				// always add the constellation, we can not accidently get symmetric ones 
-				startConstellations.add(toijkl(i, N-1, k, N-1));
+				ijklList.add(toijkl(i, N-1, k, N-1));
 				
 				// occupation of ld, rd according to row 1 
 				// queens i and k
@@ -67,18 +56,20 @@ class GPUConstellationsGenerator {
 				// generate all subconstellations with 5 queens 
 				setPreQueens(ld, rd, col, k, 0, 1, 3);
 				// jam j and k and l together into one integer 
-				jkl = ((N-1) << 10) | (k << 5) | (N-1);
-				// jkl and sym are the same for all subconstellations 
+				ijkl = toijkl(i, (N-1) << 10, k, N-1);
+				
+				currentSize = constellations.size();
+				
+				// ijkl and sym are the same for all subconstellations 
 				for(int a = 0; a < counter; a++) {
-					jklList.add(jkl);
-					symList.add(8);
+					constellations.get(currentSize - a - 1).setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | ijkl);
 				}
 			}
 			// j has to be the same value for all workitems within the same workgroup 
 			// thus add trash constellations with same j, until workgroup is full 
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(N-1, k, N-1);
-				startConstCount--;
+			while(constellations.size() % WORKGROUP_SIZE != 0) {
+				addTrashConstellation(toijkl(N, N, N, N));
+				numberOfValidConstellations--;
 			}
 		}
 
@@ -94,7 +85,7 @@ class GPUConstellationsGenerator {
 							continue;
 						// check, if we already found a symmetric constellation 
 						if(!checkRotations(i, j, k, l)) {	
-							startConstellations.add(toijkl(i, j, k, l));
+							ijklList.add(toijkl(i, j, k, l));
 							
 							// occupy the board corresponding to the queens on the borders of the board 
 							ld = (L >>> (i-1)) | (1 << (N-k));
@@ -110,33 +101,25 @@ class GPUConstellationsGenerator {
 							// generate all subconstellations 
 							setPreQueens(ld, rd, col, k, l, 1, 4);
 							// jam j and k and l into one integer 
-							jkl = (j << 10) | (k << 5) | l;
+							ijkl = toijkl(i, j, k, l);
+							
+							currentSize = constellations.size();
+							
 							// jkl and sym and start are the same for all subconstellations 
 							for(int a = 0; a < counter; a++) {
-								jklList.add(jkl);
-								symList.add(symmetry(toijkl(i, j , k, l)));
+								constellations.get(currentSize - a - 1).setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | ijkl);
 							}
 						}
 					}
 					// fill up the workgroup 
-					while(ldList.size() % WORKGROUP_SIZE != 0) {
-						addTrashConstellation(j, k, l);
-						startConstCount--;
+					while(constellations.size() % WORKGROUP_SIZE != 0) {
+						addTrashConstellation(toijkl(N, N, N, N));
+						numberOfValidConstellations--;
 					}
 				}
 			}
 		}
-		
-		// number of constellations (workitems) for the gpu 
-		startConstCount += ldList.size();
-		
-		startjklList = new ArrayList<Integer>(ldList.size());
-		for(int i = 0; i < ldList.size(); i++) {
-			startjklList.add((startList.get(i) << 15) | jklList.get(i));
-		}
-		// for the trash
-		jklList = null;
-		startList = null;
+		numberOfValidConstellations += constellations.size();
 	}
 
 	// generate subconstellations for each starting constellation with 3 or 4 queens 
@@ -148,11 +131,8 @@ class GPUConstellationsGenerator {
 		}
 		// add queens until we have preQueens queens 
 		if(queens == preQueens) {		
-			// ad the subconstellations to the list 
-			ldList.add(ld);
-			rdList.add(rd);
-			colList.add(col);
-			startList.add(row);
+			// add the subconstellations to the list
+			constellations.add(new Constellation(ld, rd, col, row << 20, -1));
 			counter++;
 			return;
 		}
@@ -169,9 +149,42 @@ class GPUConstellationsGenerator {
 		}
 	}
 
-	// sort constellations so that as many workgroups as possible have solutions with less divergent branches
-	// this can also be done by directly generating the constellations in a different order 
-	void sortConstellations(ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
+	// create trash constellation to fill up workgroups 
+	private void addTrashConstellation(int ijkl) {
+		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
+	}
+	
+	// helper functions
+	// true, if starting constellation rotated by any angle has already been found
+	private boolean checkRotations(int i, int j, int k, int l) {
+		// rot90
+		if(ijklList.contains(((N-1-k)<<24) + ((N-1-l)<<16) + (j<<8) + i)) 
+			return true;
+
+		// rot180
+		if(ijklList.contains(((N-1-j)<<24) + ((N-1-i)<<16) + ((N-1-l)<<8) + N-1-k)) 
+			return true;
+
+		// rot270
+		if(ijklList.contains((l<<24) + (k<<16) + ((N-1-i)<<8) + N-1-j)) 
+			return true;
+
+		return false;
+	}
+
+	// wrap i, j, k and l to one integer using bitwise movement
+	private int toijkl(int i, int j, int k, int l) {
+		return (i<<24) + (j<<16) + (k<<8) + l;
+	}
+
+	// true, if starting constellation is symmetric for rot90
+
+	// sort constellations so that as many workgroups as possible have solutions
+	// with less divergent branches
+	// this can also be done by directly generating the constellations in a
+	// different order
+	void sortConstellations(ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
+			ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
 		record BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
 			BoardProperties(int ld, int rd, int col, int startjkl, int sym) {
 				this.ld = ld;
@@ -184,30 +197,31 @@ class GPUConstellationsGenerator {
 
 		int len = ldList.size();
 		ArrayList<BoardProperties> list = new ArrayList<BoardProperties>(len);
-		for(int i = 0; i < len; i++) {
-			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i), symList.get(i)));
+		for (int i = 0; i < len; i++) {
+			list.add(new BoardProperties(ldList.get(i), rdList.get(i), colList.get(i), startjklList.get(i),
+					symList.get(i)));
 		}
 		Collections.sort(list, new Comparator<BoardProperties>() {
 			@Override
 			public int compare(BoardProperties o1, BoardProperties o2) {
-				int o1jkl = o1.startjkl & ((1 << 15)-1);
-				int o2jkl = o2.startjkl & ((1 << 15)-1);
-				if(o1jkl > o2jkl)
+				int o1jkl = o1.startjkl & ((1 << 15) - 1);
+				int o2jkl = o2.startjkl & ((1 << 15) - 1);
+				if (o1jkl > o2jkl)
 					return 1;
-				else if(o1jkl < o2jkl)
+				else if (o1jkl < o2jkl)
 					return -1;
 				else
 					return 0;
 			}
 		});
-		// clear the unsorted lists 
+		// clear the unsorted lists
 		ldList.clear();
 		rdList.clear();
 		colList.clear();
 		startjklList.clear();
 		symList.clear();
-		// make the sorted list (same elements in new sorted order) 
-		for(int i = 0; i < len; i++) {
+		// make the sorted list (same elements in new sorted order)
+		for (int i = 0; i < len; i++) {
 			ldList.add(list.get(i).ld);
 			rdList.add(list.get(i).rd);
 			colList.add(list.get(i).col);
@@ -215,77 +229,13 @@ class GPUConstellationsGenerator {
 			symList.add(list.get(i).sym);
 		}
 	}
-	
-	// create trash constellation to fill up workgroups 
-	private void addTrashConstellation(int j, int k, int l) {
-		ldList.add((1 << N) - 1);
-		rdList.add((1 << N) - 1);
-		colList.add((1 << N) - 1);
-		startList.add(69);
-		jklList.add((j << 10) | (k << 5) | l);
-		symList.add(0);
+
+	// getters and setters
+	ArrayList<Constellation> getConstellations(){
+		return constellations;
 	}
 	
-	public void addTrashConstellation(int jkl, ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList, 
-			ArrayList<Integer> startjklList, ArrayList<Integer> symList) {
-		ldList.add((1 << N) - 1);
-		rdList.add((1 << N) - 1);
-		colList.add((1 << N) - 1);
-		startjklList.add((69 << 15) | jkl);
-		symList.add(0);
-	}
-
-	// helper functions
-	// true, if starting constellation rotated by any angle has already been found
-	private boolean checkRotations(int i, int j, int k, int l) {
-		// rot90
-		if(startConstellations.contains(((N-1-k)<<24) + ((N-1-l)<<16) + (j<<8) + i)) 
-			return true;
-
-		// rot180
-		if(startConstellations.contains(((N-1-j)<<24) + ((N-1-i)<<16) + ((N-1-l)<<8) + N-1-k)) 
-			return true;
-
-		// rot270
-		if(startConstellations.contains((l<<24) + (k<<16) + ((N-1-i)<<8) + N-1-j)) 
-			return true;
-
-		return false;
-	}
-
-	// wrap i, j, k and l to one integer using bitwise movement
-	private int toijkl(int i, int j, int k, int l) {
-		return (i<<24) + (j<<16) + (k<<8) + l;
-	}
-
-	// how often does a found solution count for this start constellation
-	private int symmetry(int ijkl) {
-		if(geti(ijkl) == N-1-getj(ijkl) && getk(ijkl) == N-1-getl(ijkl))		// starting constellation symmetric by rot180?
-			if(symmetry90(ijkl))		// even by rot90?
-				return 2;
-			else
-				return 4;
-		else
-			return 8;					// none of the above?
-	}
-
-	private int geti(int ijkl) {
-		return ijkl >>> 24;
-	}
-	private int getj(int ijkl) {
-		return (ijkl >>> 16) & 255;
-	}
-	private int getk(int ijkl) {
-		return (ijkl >>> 8) & 255;
-	}
-	private int getl(int ijkl) {
-		return ijkl & 255;
-	}
-
-	// true, if starting constellation is symmetric for rot90
-	private boolean symmetry90(int ijkl) {
-		if(((geti(ijkl) << 24) + (getj(ijkl) << 16) + (getk(ijkl) << 8) + getl(ijkl)) == (((N-1-getk(ijkl))<<24) + ((N-1-getl(ijkl))<<16) + (getj(ijkl)<<8) + geti(ijkl)))
-			return true;
-		return false;
+	int getNumberOfValidConstellations() {
+		return numberOfValidConstellations;
 	}
 }

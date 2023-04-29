@@ -14,8 +14,8 @@ public class Demo {
 	
 	static void store() {
 		CPUSolver s = new CPUSolver();
-		s.setN(17);
-		s.setThreadcount(3);
+		s.setN(16);
+		s.setThreadcount(2);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
@@ -65,7 +65,7 @@ public class Demo {
 		s.setOnProgressUpdateCallback((progress, solutions) -> {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
 		});
-		s.setThreadcount(4);
+		s.setThreadcount(2);
 		try {
 			s.restore("test.faf");
 		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
