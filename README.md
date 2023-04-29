@@ -1,6 +1,6 @@
 # NQueensFAF
-A Java framework containing an insanely fast Solver for CPU using pure Java and for GPU using OpenCL. Also provides useful utilities for implementing custom n queens problem solving algorithms.
-This proces uses Java 17. <br>
+Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom n queens problem solving algorithms.
+This project uses Java 17. <br>
 
 ### Download
 See the "Releases" section.
