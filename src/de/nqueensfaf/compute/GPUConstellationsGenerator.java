@@ -125,6 +125,106 @@ class GPUConstellationsGenerator {
 		numberOfValidConstellations += constellations.size();
 	}
 
+	// for generating only the tasks; used for distributing the workload
+	public void genConstellations(int N, int preQueens) {
+		int ld, rd, col, ijkl, currentSize;
+		// queen at left border 
+		L = (1 << (N-1));
+		// marks the board 
+		mask = (L << 1) - 1;
+
+		// set N, halfN half of N rounded up, collection of startConstellations
+		this.N = N;
+		final int halfN = (N + 1) / 2;
+		ijklList = new HashSet<Integer>();
+		constellations = new ArrayList<Constellation>();
+		
+		// set number of preset queens
+		this.preQueens = preQueens;
+
+		// calculating start constellations with one Queen on the corner square (N-1,N-1)
+		for(int k = 1; k < N-2; k++) {						// j is idx of Queen in last row				
+			for(int i = k+1; i < N-1; i++) {				// l is idx of Queen in last col
+				// always add the constellation, we can not accidently get symmetric ones 
+				ijklList.add(toijkl(i, N-1, k, N-1));
+				
+				// occupation of ld, rd according to row 1 
+				// queens i and k
+				ld = (L >>> (k-1)) | (L >>> (i-1));
+				// queens i and l
+				rd = (L >>> (i+1)) | (L >>> 1);
+				// left border from k, right border from l, also bits i and j from the corresponding queens
+				col = 1 | L | (L >>> i);
+				
+				// diagonals, that are occupied in the last row by the queen j or l 
+				// we are going to shift them upwards the board later 
+				// from queen j and l (same, since queen is in the corner) 
+				LD = 1;
+				// from queen k and l 
+				RD = 1 | (1 << k);
+				
+				// counter of subconstellations, that arise from setting extra queens 
+				counter = 0;
+				
+				// generate all subconstellations with 5 queens 
+				setPreQueens(ld, rd, col, k, 0, 1, 3);
+				// jam j and k and l together into one integer 
+				ijkl = toijkl(i, N-1, k, N-1);
+				
+				currentSize = constellations.size();
+				
+				// ijkl and sym are the same for all subconstellations 
+				for(int a = 0; a < counter; a++) {
+					int start = constellations.get(currentSize - a - 1).getStartijkl();
+					constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
+				}
+			}
+		}
+
+		// calculate starting constellations for no Queens in corners
+		// have a look in the loop above for missing explanations 
+		for(int j = 1; j < halfN; j++) {						// go through last row
+			for(int l = j+1; l < N-1; l++) {					// go through last col
+				for(int k = N-j-2; k > 0; k--) {			// go through first col 
+					if(k == l)						// skip if occupied 
+						continue;
+					for(int i = j+1; i < N-1; i++) {				// go through first row
+						if(i == N-1-l || i == k)								// skip if occupied
+							continue;
+						// check, if we already found a symmetric constellation 
+						if(!checkRotations(i, j, k, l)) {	
+							ijklList.add(toijkl(i, j, k, l));
+							
+							// occupy the board corresponding to the queens on the borders of the board 
+							ld = (L >>> (i-1)) | (1 << (N-k));
+							rd = (L >>> (i+1)) | (1 << (l-1));
+							col = 1 | L | (L >>> j) | (L >>> i);
+							// occupy diagonals of the queens j k l in the last row 
+							// later we are going to shift them upwards the board 
+							LD = (L >>> j) | (L >>> l);
+							RD = (L >>> j) | (1 << k);
+							
+							// counts all subconstellations 
+							counter = 0;
+							// generate all subconstellations 
+							setPreQueens(ld, rd, col, k, l, 1, 4);
+							// jam j and k and l into one integer 
+							ijkl = toijkl(i, j, k, l);
+							
+							currentSize = constellations.size();
+							
+							// jkl and sym and start are the same for all subconstellations 
+							for(int a = 0; a < counter; a++) {
+								int start = constellations.get(currentSize - a - 1).getStartijkl();
+								constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	// generate subconstellations for each starting constellation with 3 or 4 queens 
 	private void setPreQueens(int ld, int rd, int col, int k, int l, int row, int queens) {
 		// in row k and l just go further 
