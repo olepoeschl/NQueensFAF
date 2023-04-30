@@ -57,7 +57,7 @@ class GPUConstellationsGenerator {
 				// generate all subconstellations with 5 queens 
 				setPreQueens(ld, rd, col, k, 0, 1, 3);
 				// jam j and k and l together into one integer 
-				ijkl = i << 15 | (N-1) << 10 | k << 5| N-1;
+				ijkl = toijkl(i, N-1, k, N-1);
 				
 				currentSize = constellations.size();
 				
@@ -102,7 +102,7 @@ class GPUConstellationsGenerator {
 							// generate all subconstellations 
 							setPreQueens(ld, rd, col, k, l, 1, 4);
 							// jam j and k and l into one integer 
-							ijkl = i << 15 | j | k << 5| l;
+							ijkl = toijkl(i, j, k, l);
 							
 							currentSize = constellations.size();
 							
@@ -159,15 +159,15 @@ class GPUConstellationsGenerator {
 	// true, if starting constellation rotated by any angle has already been found
 	private boolean checkRotations(int i, int j, int k, int l) {
 		// rot90
-		if(ijklList.contains(((N-1-k)<<24) + ((N-1-l)<<16) + (j<<8) + i)) 
+		if(ijklList.contains(((N-1-k)<<15) + ((N-1-l)<<10) + (j<<5) + i)) 
 			return true;
 
 		// rot180
-		if(ijklList.contains(((N-1-j)<<24) + ((N-1-i)<<16) + ((N-1-l)<<8) + N-1-k)) 
+		if(ijklList.contains(((N-1-j)<<15) + ((N-1-i)<<10) + ((N-1-l)<<5) + N-1-k)) 
 			return true;
 
 		// rot270
-		if(ijklList.contains((l<<24) + (k<<16) + ((N-1-i)<<8) + N-1-j)) 
+		if(ijklList.contains((l<<15) + (k<<10) + ((N-1-i)<<5) + N-1-j)) 
 			return true;
 
 		return false;
@@ -175,7 +175,7 @@ class GPUConstellationsGenerator {
 
 	// wrap i, j, k and l to one integer using bitwise movement
 	private int toijkl(int i, int j, int k, int l) {
-		return (i<<24) + (j<<16) + (k<<8) + l;
+		return (i<<15) + (j<<10) + (k<<5) + l;
 	}
 
 	// true, if starting constellation is symmetric for rot90
