@@ -2,7 +2,6 @@ package de.nqueensfaf;
 
 import java.io.IOException;
 
-import de.nqueensfaf.compute.CPUSolver;
 import de.nqueensfaf.compute.GPUSolver;
 
 public class Demo {
@@ -15,14 +14,14 @@ public class Demo {
 	
 	static void store() {
 		GPUSolver s = new GPUSolver();
-		s.setN(19);
+		s.setN(20);
 		s.setDevice(0);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
 		s.setOnProgressUpdateCallback((progress, solutions) -> {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
-			if(progress > 0.85) {
+			if(progress > 0.4) {
 				try {
 					s.store("test.faf");
 				} catch (IllegalArgumentException | IOException e) {
@@ -35,13 +34,14 @@ public class Demo {
 	}
 
 	static void restore() {
-		CPUSolver s = new CPUSolver();
+		GPUSolver s = new GPUSolver();
+		s.setDevice(0);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
 		s.setOnProgressUpdateCallback((progress, solutions) -> {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
-			if(progress > 0.5) {
+			if(progress > 0.7) {
 				try {
 					s.store("test.faf");
 				} catch (IllegalArgumentException | IOException e) {
@@ -50,7 +50,6 @@ public class Demo {
 				System.exit(0);
 			}
 		});
-		s.setThreadcount(7);
 		try {
 			s.restore("test.faf");
 		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
@@ -61,7 +60,6 @@ public class Demo {
 	static void rerestore() {
 		GPUSolver s = new GPUSolver();
 		s.setDevice(0);
-//		s.setThreadcount(12);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
