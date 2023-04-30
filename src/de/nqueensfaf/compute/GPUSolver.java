@@ -146,7 +146,7 @@ public class GPUSolver extends Solver {
 	@Override
 	public void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
-		if(start == 0) {
+		if(constellations.size() == 0) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		ArrayList<Constellation> tmpConstellations = new ArrayList<Constellation>();
