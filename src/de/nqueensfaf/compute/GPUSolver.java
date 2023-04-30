@@ -1,18 +1,11 @@
 package de.nqueensfaf.compute;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -30,6 +23,10 @@ import org.lwjgl.opencl.CLContextCallback;
 import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+
 import static org.lwjgl.opencl.CL10.*;
 import static org.lwjgl.opencl.CL11.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
@@ -39,8 +36,10 @@ import static de.nqueensfaf.compute.InfoUtil.*;
 
 import de.nqueensfaf.NQueensFAF;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.files.SolverState;
 
-public class GpuSolver extends Solver {
+public class GPUSolver extends Solver {
 
 	private static Path tempDir;
 	private static boolean openclable = true;
@@ -86,26 +85,25 @@ public class GpuSolver extends Solver {
 	private long clEvent;
 	private long program;
 	private long kernel;
-	private Long ldMem, rdMem, colMem, startjklMem, resMem, progressMem;
-	private final Object resLock = new Object(), progressLock = new Object();
+	private Long ldMem, rdMem, colMem, startijklMem, resMem, progressMem;
+	private int globalWorkSize;
+	
+	// configurable values
 	private int WORKGROUP_SIZE = 64;
 	private int PRE_QUEENS = 6;
-	private int globalWorkSize;
 
 	// calculation related stuff
-	private GpuConstellationsGenerator generator;
-	private int startConstCount;
-	private ArrayList<Integer> ldList, rdList, colList, symList, startjklList;
-	private long solutions, savedSolutions;
-	private long duration, start, end, savedDuration;
+	private GPUConstellationsGenerator generator;
+	private ArrayList<Constellation> constellations, remainingConstellations;
+	private long duration, start, end, storedDuration;
+	private long solutions;
 	private float progress;
-	private int savedSolvedConstellations;
+	private int numberOfValidConstellations;
 	
 	// control flow variables
-	private boolean gpuDone = false;
 	private boolean restored = false;
 	
-	public GpuSolver() {
+	public GPUSolver() {
 		if(openclable)
 			getAvailableDevices();		// fill the devices list with all available devices
 	}
@@ -121,13 +119,10 @@ public class GpuSolver extends Solver {
 		}
 		if(N <= 6) {	// if N is very small, use the simple Solver from the parent class
 			// prepare simulating progress = 100
-			progress = 1f;
-			gpuDone = true;
 			start = System.currentTimeMillis();
 			solutions = solveSmallBoard();
 			end = System.currentTimeMillis();
-			// simulate progress = 100
-			startConstCount = 1;
+			progress = 1;
 			return;
 		}
 		if(device == 0) {
@@ -151,55 +146,16 @@ public class GpuSolver extends Solver {
 	@Override
 	public void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
-		if(start == 0 || gpuDone) {
+		if(start == 0) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
-		long solutions = savedSolutions;
-		ArrayList<Integer> 
-		ldListTmp = new ArrayList<Integer>(),
-		rdListTmp = new ArrayList<Integer>(),
-		colListTmp = new ArrayList<Integer>(),
-		startjklListTmp = new ArrayList<Integer>(),
-		symListTmp = new ArrayList<Integer>();
-		synchronized(resLock) {
-			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-			for(int i = 0; i < globalWorkSize; i++) {
-				if(resBuf.getLong(i*8) > 1) {
-					solutions += resBuf.getLong(i*8) * symList.get(i);
-				} else if(resBuf.getLong(i*8) <= 1 && startjklList.get(i) >> 15 != 69) {
-					ldListTmp.add(ldList.get(i));
-					rdListTmp.add(rdList.get(i));
-					colListTmp.add(colList.get(i));
-					startjklListTmp.add(startjklList.get(i));
-					symListTmp.add(symList.get(i));
-				}
-			}
+		ArrayList<Constellation> tmpConstellations = new ArrayList<Constellation>();
+		for(var c : constellations) {
+			if(c.getStartijkl() >> 20 != 69)
+				tmpConstellations.add(c);
 		}
-		RestorationInformation resInfo = new RestorationInformation(N, getDuration(), solutions, startConstCount, ldListTmp, rdListTmp, colListTmp, startjklListTmp, symListTmp);
-
-		try (
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(baos);
-				RandomAccessFile raf = new RandomAccessFile(filepath, "rw");
-				FileOutputStream fos = new FileOutputStream(raf.getFD());
-				BufferedOutputStream bos = new BufferedOutputStream(fos);
-				) {
-			oos.writeObject(resInfo);
-			oos.flush();
-			var resInfoByteArray = baos.toByteArray();
-			int bytes = 0;
-			int bufsize = 1024;
-			for(int i = 0; i < resInfoByteArray.length/bufsize; i++) {
-				bytes = i*bufsize;
-				bos.write(resInfoByteArray, bytes, bufsize);
-				bos.flush();
-				bytes += bufsize;
-			}
-			if(bytes < resInfoByteArray.length) {
-				bos.write(resInfoByteArray, bytes, resInfoByteArray.length-bytes);
-				bos.flush();
-			}
-		}
+		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+		out.writeValue(new File(filepath), new SolverState(N, System.currentTimeMillis() - start + storedDuration, tmpConstellations));
 	}
 
 	@Override
@@ -207,49 +163,35 @@ public class GpuSolver extends Solver {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot restore while the Solver is running");
 		}
-
-		byte[] resInfoByteArray = Files.readAllBytes(Path.of(filepath));
-		try (
-				ByteArrayInputStream bais = new ByteArrayInputStream(resInfoByteArray);
-				ObjectInputStream ois = new ObjectInputStream (bais);
-				) {
-			RestorationInformation resInfo = (RestorationInformation) ois.readObject();
-
-			reset();
-			N = resInfo.N;
-			savedDuration = resInfo.duration;
-			savedSolutions = resInfo.solutions;
-			startConstCount = resInfo.startConstCount;
-			savedSolvedConstellations = startConstCount - resInfo.ldList.size();
-			progress = (float) savedSolvedConstellations / startConstCount;
-
-			ldList = new ArrayList<Integer>();
-			rdList = new ArrayList<Integer>();
-			colList = new ArrayList<Integer>();
-			startjklList = new ArrayList<Integer>();
-			symList = new ArrayList<Integer>();
-
-			generator = new GpuConstellationsGenerator();
-			generator.sortConstellations(ldList, rdList, colList, startjklList, symList);
-			int currentJKL = resInfo.startjklList.get(0) & ((1 << 15)-1);
-			for(int i = 0; i < resInfo.ldList.size(); i++) {
-				if((resInfo.startjklList.get(i) & ((1 << 15)-1)) != currentJKL) {	// check if new jkl is found
-					while(ldList.size() % WORKGROUP_SIZE != 0) {
-						generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
-					}
-					currentJKL = resInfo.startjklList.get(i) & ((1 << 15)-1);
+		ObjectMapper mapper = new ObjectMapper();
+		SolverState state = mapper.readValue(new File(filepath), SolverState.class);
+		setN(state.getN());
+		storedDuration = state.getStoredDuration();
+		constellations = state.getConstellations();
+		numberOfValidConstellations = constellations.size();
+		
+		generator = new GPUConstellationsGenerator();
+		generator.sortConstellations(constellations);
+		remainingConstellations = new ArrayList<Constellation>();
+		int currentIjkl = constellations.get(0).getStartijkl() & ((1 << 20) - 1);
+		for (var c : constellations) {
+			// iterate through constellations, add each remaining constellations and fill up each group of ijkl till its dividable by workgroup-size
+			if(c.getSolutions() >= 0)
+				continue;
+			
+			if ((c.getStartijkl() & ((1 << 20) - 1)) != currentIjkl) { // check if new ijkl is found
+				while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
+					generator.addTrashConstellation(remainingConstellations, currentIjkl);
 				}
-				ldList.add(resInfo.ldList.get(i));
-				rdList.add(resInfo.rdList.get(i));
-				colList.add(resInfo.colList.get(i));
-				startjklList.add(resInfo.startjklList.get(i));
-				symList.add(resInfo.symList.get(i));
+				currentIjkl = c.getStartijkl() & ((1 << 20) - 1);
 			}
-			while(ldList.size() % WORKGROUP_SIZE != 0) {
-				generator.addTrashConstellation(currentJKL, ldList, rdList, colList, startjklList, symList);
-			}
-			restored = true;
+			remainingConstellations.add(c);
 		}
+		while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
+			generator.addTrashConstellation(remainingConstellations, currentIjkl);
+		}
+		
+		restored = true;
 	}
 
 	@Override
@@ -259,70 +201,33 @@ public class GpuSolver extends Solver {
 	
 	@Override
 	public void reset() {
-		globalWorkSize = 0;
-		startConstCount = 0;
-		progress = 0;
-		savedSolvedConstellations = 0;
-		solutions = 0;
-		savedSolutions = 0;
 		duration = 0;
-		savedDuration = 0;
 		start = 0;
 		end = 0;
-		gpuDone = false;
+		solutions = 0;
+		progress = 0;
+		globalWorkSize = 0;
+		numberOfValidConstellations = 0;
 		restored = false;
 	}
 
 	@Override
 	public long getDuration() {
-		if(restored && isIdle())
-			duration = savedDuration;
-		else if(start != 0 && end == 0)
-			duration = savedDuration + System.currentTimeMillis() - start;
-		else if(end != 0)
-			duration = savedDuration + end - start;
+		if(end == 0)
+			if(isRunning() && start != 0) {
+				return System.currentTimeMillis() - start + storedDuration;
+			}
 		return duration;
 	}
 
 	@Override
 	public float getProgress() {
-		if(startConstCount == 0)
-			return 0;
-		if(gpuDone || (restored && isIdle()) || start == 0)
-			return progress;
-		if(getDuration() == 0 || progressMem == null)
-			return ((float) savedSolvedConstellations) / startConstCount;		// either has a value, is still 0 or is 0 because of reset
-		
-		int solvedConstellations = savedSolvedConstellations;
-		synchronized(progressLock) {
-			clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
-			for(int i = 0; i < globalWorkSize; i++) {
-				if(progressBuf.get(i) == 1) {
-					solvedConstellations++;
-				}
-			}
-			progress = ((float) solvedConstellations) / startConstCount;
-		}
-		
 		return progress;
 	}
 
 	@Override
 	public long getSolutions() {
-		if(gpuDone)
-			return solutions;
-		if(resMem == null || start == 0)
-			return savedSolutions;		// either has a value, is still 0 or is 0 because of reset
-		
-		long solutions = 0;
-		synchronized(resLock) {
-			clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-			for(int i = 0; i < globalWorkSize; i++) {
-				solutions += resBuf.getLong(i*8) * symList.get(i);
-			}
-			this.solutions = solutions;
-		}
-		return savedSolutions + solutions;
+		return solutions;
 	}
 
 	// own functions
@@ -375,19 +280,15 @@ public class GpuSolver extends Solver {
 	}
 
 	private void transferDataToDevice(MemoryStack stack) {
-		if(savedDuration == 0) {		// if duration is 0, then restore() was not called
-			generator = new GpuConstellationsGenerator();
+		if(!restored) {
+			generator = new GPUConstellationsGenerator();
 			generator.genConstellations(N, WORKGROUP_SIZE, PRE_QUEENS);
 			
-			ldList = generator.ldList;
-			rdList = generator.rdList;
-			colList = generator.colList;
-			startjklList = generator.startjklList;
-			symList = generator.symList;
-
-			startConstCount = generator.startConstCount;
+			constellations = generator.getConstellations();
+			remainingConstellations = constellations;
+			numberOfValidConstellations = generator.getNumberOfValidConstellations();
 		}
-		globalWorkSize = ldList.size();
+		globalWorkSize = remainingConstellations.size();
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
@@ -396,9 +297,9 @@ public class GpuSolver extends Solver {
 		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, ldList.get(i));
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getLd());
 		}
-		clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// rd
@@ -407,9 +308,9 @@ public class GpuSolver extends Solver {
 		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, rdList.get(i));
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getRd());
 		}
-		clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
 		// col
@@ -418,20 +319,20 @@ public class GpuSolver extends Solver {
 		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, colList.get(i));
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getCol());
 		}
-		clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 		
-		// startjkl
-		startjklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		// startijkl
+		startijklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
 		checkCLError(errBuf.get(0));
-		paramPtr = clEnqueueMapBuffer(memqueue, startjklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
+		paramPtr = clEnqueueMapBuffer(memqueue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i*4, startjklList.get(i));
+			paramPtr.putInt(i*4, remainingConstellations.get(i).getStartijkl());
 		}
-		clEnqueueUnmapMemObject(memqueue, startjklMem, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
 
 		// result memory
@@ -440,9 +341,9 @@ public class GpuSolver extends Solver {
 		ByteBuffer resWritePtr = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			resWritePtr.putLong(i*8, 0);
+			resWritePtr.putLong(i*8, remainingConstellations.get(i).getSolutions());
 		}
-		clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
 
@@ -454,7 +355,7 @@ public class GpuSolver extends Solver {
 		for(int i = 0; i < globalWorkSize; i++) {
 			progressWritePtr.putInt(i*4, 0);
 		}
-		clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
 		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
@@ -464,27 +365,27 @@ public class GpuSolver extends Solver {
 		// ld
 		LongBuffer ldArg = BufferUtils.createLongBuffer(1);
 		ldArg.put(0, ldMem);
-		clSetKernelArg(kernel, 0, ldArg);
+		checkCLError(clSetKernelArg(kernel, 0, ldArg));
 		// rd
 		LongBuffer rdArg = BufferUtils.createLongBuffer(1);
 		rdArg.put(0, rdMem);
-		clSetKernelArg(kernel, 1, rdArg);
+		checkCLError(clSetKernelArg(kernel, 1, rdArg));
 		// col
 		LongBuffer colArg = BufferUtils.createLongBuffer(1);
 		colArg.put(0, colMem);
-		clSetKernelArg(kernel, 2, colArg);
-		// startjkl
-		LongBuffer startjklArg = BufferUtils.createLongBuffer(1);
-		startjklArg.put(0, startjklMem);
-		clSetKernelArg(kernel, 3, startjklArg);
+		checkCLError(clSetKernelArg(kernel, 2, colArg));
+		// startijkl
+		LongBuffer startijklArg = BufferUtils.createLongBuffer(1);
+		startijklArg.put(0, startijklMem);
+		checkCLError(clSetKernelArg(kernel, 3, startijklArg));
 		// res
 		LongBuffer resArg = BufferUtils.createLongBuffer(1);
 		resArg.put(0, resMem);
-		clSetKernelArg(kernel, 4, resArg);
+		checkCLError(clSetKernelArg(kernel, 4, resArg));
 		// progress
 		LongBuffer progressArg = BufferUtils.createLongBuffer(1);
 		progressArg.put(0, progressMem);
-		clSetKernelArg(kernel, 5, progressArg);
+		checkCLError(clSetKernelArg(kernel, 5, progressArg));
 	}
 	
 	private void explosionBoost9000(MemoryStack stack) {
@@ -496,11 +397,11 @@ public class GpuSolver extends Solver {
 		localWorkSize.put(0, WORKGROUP_SIZE);
 
 		// wait for all memory operations to finish
-		clFinish(memqueue);
+		checkCLError(clFinish(memqueue));
 		
-		// run kernel and profile time
+		// run kernel
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);		// buffer for event that is used for measuring the execution time
-		clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf);
+		checkCLError(clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf));
 		clFlush(xqueue);
 		
 		// set pseudo starttime
@@ -517,57 +418,115 @@ public class GpuSolver extends Solver {
         }), NULL);
         checkCLError(errcode);
         
+        // a thread continously reading gpu data into ram
+        final StringBuilder gpuReaderThreadStopper = new StringBuilder("");
+        gpuReaderThread(gpuReaderThreadStopper).start();
+        
 		// wait for the gpu computation to finish
-		clFinish(xqueue);
-
+		checkCLError(clFinish(xqueue));
+		
+		// stop the thread that continously reads from the GPU
+		gpuReaderThreadStopper.append("STOP");
+		while(!gpuReaderThreadStopper.toString().equals("STOPPED")) {
+			try {
+				Thread.sleep(20);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
+		
+		// measure execution time
 		start = startBuf.get(0);
 		end = endBuf.get(0);
-		
-		// indicator for getProgress() and getSolutions() to not read from gpu memory any more, but just return the variable
-		gpuDone = true;
+		duration = ((end - start) / 1000000) + storedDuration;	// convert nanoseconds to milliseconds
 	}
 	
 	private void readResults(MemoryStack stack) {
 		// read result and progress memory buffers
-		synchronized(resLock) {
-			synchronized(progressLock) {
-				clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null);
-				clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null);
-				solutions = savedSolutions;
-				int solvedConstellations = savedSolvedConstellations;
-				for(int i = 0; i < globalWorkSize; i++) {
-					if(progressBuf.get(i) == 1) {
-						solutions += resBuf.getLong(i*8) *  symList.get(i);
-						solvedConstellations++;
-					}
-				}
-				progress = ((float) solvedConstellations) / startConstCount;
+		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
+		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
+
+		long tmpSolutions = 0;
+		int solvedConstellations = 0;
+		for (int i = 0; i < globalWorkSize; i++) {
+			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+				continue;
+			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+			if(solutionsForConstellation >= 0)
+				// synchronize with the list of constellations on the RAM
+				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
+		}
+		for(var c : constellations) {
+			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+				continue;
+			long solutionsForConstellation = c.getSolutions();
+			if(solutionsForConstellation >= 0) {
+				tmpSolutions += solutionsForConstellation;
+				solvedConstellations++;
 			}
 		}
+		progress = (float) solvedConstellations / numberOfValidConstellations;
+		solutions = tmpSolutions;
 	}
 	
 	private void terminate() {
 		// release all CL-objects
-		clReleaseEvent(clEvent);
+		checkCLError(clReleaseEvent(clEvent));
 		//eventCB.free();
-		clReleaseCommandQueue(xqueue);
-		clReleaseCommandQueue(memqueue);
-		clReleaseKernel(kernel);
-		clReleaseProgram(program);
+		checkCLError(clReleaseCommandQueue(xqueue));
+		checkCLError(clReleaseCommandQueue(memqueue));
+		checkCLError(clReleaseKernel(kernel));
+		checkCLError(clReleaseProgram(program));
 		
-		clReleaseMemObject(ldMem);
-		clReleaseMemObject(rdMem);
-		clReleaseMemObject(colMem);
-		clReleaseMemObject(startjklMem);
-		clReleaseMemObject(resMem);
-		clReleaseMemObject(progressMem);
+		checkCLError(clReleaseMemObject(ldMem));
+		checkCLError(clReleaseMemObject(rdMem));
+		checkCLError(clReleaseMemObject(colMem));
+		checkCLError(clReleaseMemObject(startijklMem));
+		checkCLError(clReleaseMemObject(resMem));
+		checkCLError(clReleaseMemObject(progressMem));
 		
-		int errcode = clReleaseContext(context);
-        checkCLError(errcode);
+		checkCLError(clReleaseContext(context));
 		contextCB.free();
 	}
 	
-	// detect operating system and use corresponding native library file if available
+	private Thread gpuReaderThread (StringBuilder gpuReaderThreadStopper) {
+		return new Thread(() -> {
+        	while(gpuReaderThreadStopper.toString().equals("")) {
+        		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
+        		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
+
+        		long tmpSolutions = 0;
+        		int solvedConstellations = 0;
+        		for (int i = 0; i < globalWorkSize; i++) {
+        			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        				continue;
+        			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+        			if(solutionsForConstellation >= 0)
+        				// synchronize with the list of constellations on the RAM
+        				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
+        		}
+        		for(var c : constellations) {
+        			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        				continue;
+        			long solutionsForConstellation = c.getSolutions();
+        			if(solutionsForConstellation >= 0) {
+        				tmpSolutions += solutionsForConstellation;
+        				solvedConstellations++;
+        			}
+        		}
+        		progress = (float) solvedConstellations / numberOfValidConstellations;
+        		solutions = tmpSolutions;
+        		try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					// bad practice, but just ignore it
+				}
+        	}
+        	gpuReaderThreadStopper.append("PED");
+        });
+	}
+	
+	// utility functions
 	private static String getOS() {
 		String os = System.getProperty("os.name").toLowerCase();
 		if(os.contains("win")) {
@@ -639,7 +598,7 @@ public class GpuSolver extends Solver {
 		try {
 			tempDir = Files.createTempDirectory("NQueensFaf");
 			// copy the clinfo file from within the jar to the temporary directory
-			InputStream in = GpuSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
+			InputStream in = GPUSolver.class.getClassLoader().getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
 			byte[] buffer = new byte[1024];
 			int read = -1;
 			File file = new File(tempDir + "/clinfo.exe");
@@ -667,6 +626,59 @@ public class GpuSolver extends Solver {
 		}
 	}
 	
+	private String getKernelSourceAsString(String filepath) {
+		String resultString = null;
+		try (
+			InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
+			BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));
+		){
+			String line = null;
+			StringBuilder result = new StringBuilder();
+			while((line = br.readLine()) != null) {
+				result.append(line);
+				result.append("\n");
+			}
+			resultString = result.toString();
+		} catch(NullPointerException e) {
+			e.printStackTrace();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		return resultString;
+	}
+	
+	private boolean symmetry90(int ijkl) {
+		if (((geti(ijkl) << 15) + (getj(ijkl) << 10) + (getk(ijkl) << 5) + getl(ijkl)) == (((N - 1 - getk(ijkl)) << 15)
+				+ ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl)))
+			return true;
+		return false;
+	}
+
+	// how often does a found solution count for this start constellation
+	private int symmetry(int ijkl) {
+		if(geti(ijkl) == N-1-getj(ijkl) && getk(ijkl) == N-1-getl(ijkl))		// starting constellation symmetric by rot180?
+			if(symmetry90(ijkl))		// even by rot90?
+				return 2;
+			else
+				return 4;
+		else
+			return 8;					// none of the above?
+	}
+
+	private int geti(int ijkl) {
+		return ijkl >>> 15;
+	}
+	private int getj(int ijkl) {
+		return (ijkl >>> 10) & 31;
+	}
+	private int getk(int ijkl) {
+		return (ijkl >>> 5) & 31;
+	}
+	private int getl(int ijkl) {
+		return ijkl & 31;
+	}
+
+	// getters and setters
 	public String[] getAvailableDevices() {
 		if(!openclable) {
 			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
@@ -727,40 +739,14 @@ public class GpuSolver extends Solver {
 		platform = platformByDevice.get(device);
 	}
 
-	private String getKernelSourceAsString(String filepath) {
-		String resultString = null;
-		try (
-			InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
-			BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));
-		){
-			String line = null;
-			StringBuilder result = new StringBuilder();
-			while((line = br.readLine()) != null) {
-				result.append(line);
-				result.append("\n");
-			}
-			resultString = result.toString();
-		} catch(NullPointerException e) {
-			e.printStackTrace();
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-		return resultString;
-	}
-
-	// getters and setters
-	
-	// returns the total number of enqueued work-items 
 	public int getGlobalWorkSize() {
 		return globalWorkSize;
 	}
 	
-	// gets WORKGROUP_SIZE
 	public int getWorkgroupSize() {
 		return WORKGROUP_SIZE;
 	}
 
-	// sets WORKGROUP_SIZE
 	public void setWorkgroupSize(int s) {
 		if(device == 0) {
 			throw new IllegalStateException("Choose a device first");
@@ -772,22 +758,14 @@ public class GpuSolver extends Solver {
 		WORKGROUP_SIZE = s;
 	}
 
-	// gets PRE_QUEENS
 	public int getNumberOfPresetQueens() {
 		return PRE_QUEENS;
 	}
 	
-	// sets PRE_QUEENS
 	public void setNumberOfPresetQueens(int pq) {
 		if(pq < 4 || pq > 10) {
 			throw new IllegalArgumentException("Number of preset queens must be between 4 and 10");
 		}
 		PRE_QUEENS = pq;
-	}
-	
-	// record class for saving and restoring
-	private record RestorationInformation(int N, long duration, long solutions, int startConstCount,
-			ArrayList<Integer> ldList, ArrayList<Integer> rdList, ArrayList<Integer> colList,
-			ArrayList<Integer> startjklList, ArrayList<Integer> symList) implements Serializable {
 	}
 }

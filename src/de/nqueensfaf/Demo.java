@@ -1,17 +1,76 @@
 package de.nqueensfaf;
 
-import de.nqueensfaf.compute.CpuSolver;
+import java.io.IOException;
+
+import de.nqueensfaf.compute.GPUSolver;
 
 public class Demo {
 	
 	public static void main(String[] args) {
-		CpuSolver s = new CpuSolver();
-		s.setN(16);
-		s.setThreadcount(12);
+		//store();
+		//restore();
+		rerestore();
+	}
+	
+	static void store() {
+		GPUSolver s = new GPUSolver();
+		s.setN(20);
+		s.setDevice(0);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
+		s.setOnProgressUpdateCallback((progress, solutions) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+			if(progress > 0.4) {
+				try {
+					s.store("test.faf");
+				} catch (IllegalArgumentException | IOException e) {
+					e.printStackTrace();
+				}
+				System.exit(0);
+			}
+		});
 		s.solve();
 	}
+
+	static void restore() {
+		GPUSolver s = new GPUSolver();
+		s.setDevice(0);
+		s.addTerminationCallback(() -> {
+			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
+		});
+		s.setOnProgressUpdateCallback((progress, solutions) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+			if(progress > 0.7) {
+				try {
+					s.store("test.faf");
+				} catch (IllegalArgumentException | IOException e) {
+					e.printStackTrace();
+				}
+				System.exit(0);
+			}
+		});
+		try {
+			s.restore("test.faf");
+		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
+	static void rerestore() {
+		GPUSolver s = new GPUSolver();
+		s.setDevice(0);
+		s.addTerminationCallback(() -> {
+			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
+		});
+		s.setOnProgressUpdateCallback((progress, solutions) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+		});
+		try {
+			s.restore("test.faf");
+		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

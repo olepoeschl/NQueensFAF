@@ -107,10 +107,6 @@ public abstract class Solver {
 	 */
 	private boolean finishStoring = false;
 	/**
-	 * for controlflow. Avoids checkForPreparation() being called twice in case solveAsync() is used.
-	 */
-	private boolean preparationChecked = false;
-	/**
 	 * number of solutions - only used by the method that solves the problem for small N's.
 	 * @see #solveSmallBoard()
 	 * @see #nq(int, int, int, int, int, int)
@@ -169,8 +165,7 @@ public abstract class Solver {
 	public final void solve() {
 		finishStoring = false;	// reset finishStoring to false, otherwise autosave doesn't work
 		
-		if(!preparationChecked)
-			checkForPreparation();
+		checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
 		initializationCaller();
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
@@ -191,19 +186,6 @@ public abstract class Solver {
 		terminationCaller();
 		
 		state = NQueensFAF.IDLE;
-	}
-	/**
-	 * Asynchronously starts the {@link Solver} using a new thread and then waits till the Solver is successfully started.
-	 * @throws {@link IllegalStateException} if the {@link Solver} is already running
-	 * @see #solve()
-	 */
-	public final void solveAsync() {
-		checkForPreparation();
-		if(!isIdle()) {
-			throw new IllegalStateException("Solver is already started");
-		}
-		t = new Thread(() -> solve());
-		t.start();
 	}
 	/**
 	 * Waits for the asynchronously running {@link Solver} to finish.
@@ -305,7 +287,7 @@ public abstract class Solver {
 					break;
 				else if(progress >= tmpProgress + autoSavePercentageStep) {
 					try {
-						store(filename, false);
+						store(filename);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -367,31 +349,15 @@ public abstract class Solver {
 				nq((ld|bit)<<1, (rd|bit)>>1, col|bit, row+1, nextfree, mask);
 		}
 	}
-
-	/**
-	 * Replaces all invalid characters of a String that is supposed to be a filename.
-	 * @param filename name of the file the Solver should store its progress state in
-	 * @return the given filename but without invalid characters reagrding filenames
-	 */
-	private String getValidFilename(String filename) throws IllegalArgumentException {
-		String newFilename = filename.replace("^\\.+", "").replaceAll("[\\\\/:*?\"<>|]", "");
-		if(newFilename.length() == 0) {
-			throw new IllegalArgumentException("Invalid filename: '" + filename + "'");
-		}
-		return newFilename;
-	}
 	
 	/**
 	 * Wraps {@link #store_(String)}.
 	 * @param filepath path/name of the file the Solver's progress state should be stored in
-	 * @param bypassValidityCheck if true, does not check if the given filename is valid; should be true for absolute paths and false for filenames
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 */
-	public synchronized void store(String filepath, boolean bypassValidityCheck) throws IOException, IllegalArgumentException {
+	public synchronized void store(String filepath) throws IOException, IllegalArgumentException {
 		isStoring = true;
-		if(!bypassValidityCheck)
-			filepath = getValidFilename(filepath);
 		store_(filepath);
 		isStoring = false;
 	}
@@ -406,6 +372,7 @@ public abstract class Solver {
 	 */
 	public void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 		restore_(filepath);
+		solve();
 	}
 	
 	/**
