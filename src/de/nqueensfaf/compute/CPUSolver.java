@@ -71,6 +71,8 @@ public class CPUSolver extends Solver {
 		}
 		int i = constellations.size()-1;
 		for (Constellation c : constellations) {
+			if(c.getSolutions() >= 0)	// ignore restored constellations that have already been solved
+				continue;
 			threadConstellations.get((i--) % threadcount).add(c);
 		}
 

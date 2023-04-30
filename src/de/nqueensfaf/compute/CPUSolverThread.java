@@ -748,9 +748,6 @@ class CPUSolverThread extends Thread {
 		final int smallmask = (1 << (N-2)) - 1;
 		
 		for(Constellation constellation : constellations) {
-			if(constellation.getSolutions() >= 0)
-				continue;
-			
 			startIjkl = constellation.getStartijkl();
 			start = startIjkl >> 20;
 			ijkl = startIjkl & ((1 << 20) - 1);
