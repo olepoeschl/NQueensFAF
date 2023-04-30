@@ -101,7 +101,6 @@ public class GPUSolver extends Solver {
 	private int numberOfValidConstellations;
 	
 	// control flow variables
-	private boolean gpuDone = false;
 	private boolean restored = false;
 	
 	public GPUSolver() {
@@ -120,8 +119,6 @@ public class GPUSolver extends Solver {
 		}
 		if(N <= 6) {	// if N is very small, use the simple Solver from the parent class
 			// prepare simulating progress = 100
-			progress = 1f;
-			gpuDone = true;
 			start = System.currentTimeMillis();
 			solutions = solveSmallBoard();
 			end = System.currentTimeMillis();
@@ -149,7 +146,7 @@ public class GPUSolver extends Solver {
 	@Override
 	public void store_(String filepath) throws IOException {
 		// if Solver was not even started yet or is already done, throw exception
-		if(start == 0 || gpuDone) {
+		if(start == 0) {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		ArrayList<Constellation> tmpConstellations = new ArrayList<Constellation>();
@@ -211,7 +208,6 @@ public class GPUSolver extends Solver {
 		progress = 0;
 		globalWorkSize = 0;
 		numberOfValidConstellations = 0;
-		gpuDone = false;
 		restored = false;
 	}
 
@@ -476,9 +472,6 @@ public class GPUSolver extends Solver {
 		start = startBuf.get(0);
 		end = endBuf.get(0);
 		duration = (end - start) / 1000000;	// convert nanoseconds to milliseconds
-		
-		// indicator for getProgress() and getSolutions() to not read from gpu memory any more, but just return the variable
-		gpuDone = true;
 	}
 	
 	private void readResults(MemoryStack stack) {
