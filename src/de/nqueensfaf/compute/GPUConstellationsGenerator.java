@@ -153,7 +153,10 @@ class GPUConstellationsGenerator {
 	}
 
 	// create trash constellation to fill up workgroups 
-	void addTrashConstellation(int ijkl) {
+	private void addTrashConstellation(int ijkl) {
+		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
+	}
+	void addTrashConstellation(ArrayList<Constellation> constellations, int ijkl) {
 		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
 	}
 	

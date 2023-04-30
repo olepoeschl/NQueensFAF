@@ -150,10 +150,9 @@ public class GPUSolver extends Solver {
 			throw new IllegalStateException("Nothing to be saved");
 		}
 		ArrayList<Constellation> tmpConstellations = new ArrayList<Constellation>();
-		tmpConstellations.addAll(constellations);
-		for(int i = 0; i < constellations.size(); i++) {
-			if(tmpConstellations.get(i).getStartijkl() >> 20 == 69)
-					tmpConstellations.remove(i);
+		for(var c : constellations) {
+			if(c.getStartijkl() >> 20 != 69)
+				tmpConstellations.add(c);
 		}
 		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
 		out.writeValue(new File(filepath), new SolverState(N, System.currentTimeMillis() - start + storedDuration, tmpConstellations));
@@ -169,6 +168,7 @@ public class GPUSolver extends Solver {
 		setN(state.getN());
 		storedDuration = state.getStoredDuration();
 		constellations = state.getConstellations();
+		numberOfValidConstellations = constellations.size();
 		
 		generator = new GPUConstellationsGenerator();
 		generator.sortConstellations(constellations);
@@ -179,16 +179,16 @@ public class GPUSolver extends Solver {
 			if(c.getSolutions() >= 0)
 				continue;
 			
-			remainingConstellations.add(c);
 			if ((c.getStartijkl() & ((1 << 20) - 1)) != currentIjkl) { // check if new ijkl is found
 				while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
-					generator.addTrashConstellation(currentIjkl);
+					generator.addTrashConstellation(remainingConstellations, currentIjkl);
 				}
 				currentIjkl = c.getStartijkl() & ((1 << 20) - 1);
 			}
+			remainingConstellations.add(c);
 		}
 		while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
-			generator.addTrashConstellation(currentIjkl);
+			generator.addTrashConstellation(remainingConstellations, currentIjkl);
 		}
 		
 		restored = true;
@@ -438,7 +438,7 @@ public class GPUSolver extends Solver {
 		// measure execution time
 		start = startBuf.get(0);
 		end = endBuf.get(0);
-		duration = (end - start) / 1000000;	// convert nanoseconds to milliseconds
+		duration = ((end - start) / 1000000) + storedDuration;	// convert nanoseconds to milliseconds
 	}
 	
 	private void readResults(MemoryStack stack) {
