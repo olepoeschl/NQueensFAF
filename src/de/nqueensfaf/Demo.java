@@ -3,32 +3,33 @@ package de.nqueensfaf;
 import java.io.IOException;
 
 import de.nqueensfaf.compute.CPUSolver;
+import de.nqueensfaf.compute.GPUSolver;
 
 public class Demo {
 	
 	public static void main(String[] args) {
-		//store();
+		store();
 		//restore();
 		//rerestore();
 	}
 	
 	static void store() {
-		CPUSolver s = new CPUSolver();
-		s.setN(16);
-		s.setThreadcount(2);
+		GPUSolver s = new GPUSolver();
+		s.setN(8);
+		s.setDevice(0);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
 		});
 		s.setOnProgressUpdateCallback((progress, solutions) -> {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
-			if(progress > 0.2) {
-				try {
-					s.store("test.faf");
-				} catch (IllegalArgumentException | IOException e) {
-					e.printStackTrace();
-				}
-				System.exit(0);
-			}
+//			if(progress > 0.2) {
+//				try {
+//					s.store("test.faf");
+//				} catch (IllegalArgumentException | IOException e) {
+//					e.printStackTrace();
+//				}
+//				System.exit(0);
+//			}
 		});
 		s.solve();
 	}

@@ -25,6 +25,7 @@ class GPUConstellationsGenerator {
 		this.N = N;
 		final int halfN = (N + 1) / 2;
 		ijklList = new HashSet<Integer>();
+		constellations = new ArrayList<Constellation>();
 		
 		// set number of preset queens
 		this.preQueens = preQueens;
@@ -56,7 +57,7 @@ class GPUConstellationsGenerator {
 				// generate all subconstellations with 5 queens 
 				setPreQueens(ld, rd, col, k, 0, 1, 3);
 				// jam j and k and l together into one integer 
-				ijkl = toijkl(i, (N-1) << 10, k, N-1);
+				ijkl = i << 15 | (N-1) << 10 | k << 5| N-1;
 				
 				currentSize = constellations.size();
 				
@@ -101,7 +102,7 @@ class GPUConstellationsGenerator {
 							// generate all subconstellations 
 							setPreQueens(ld, rd, col, k, l, 1, 4);
 							// jam j and k and l into one integer 
-							ijkl = toijkl(i, j, k, l);
+							ijkl = i << 15 | j | k << 5| l;
 							
 							currentSize = constellations.size();
 							

@@ -7,8 +7,8 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	
 	// variables		
 	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
-	// start_jkl_arr contains [11 queens free][5 queens for start][5 queens for j][5 queens for k][5 queens for l] 
-	int start = start_jkl_arr[g_id] >> 15;		
+	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
+	int start = start_jkl_arr[g_id] >> 20;		
 	if(start == 69) {								// if we have a pseudo constellation we do nothing 
 		progress[g_id] = -1;							// progress is -1 to indicate that this workitem was just for filling up the workgroup
 		return;
@@ -104,7 +104,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	int l_id = get_local_id(0);
 	
 	uint L = 1 << (N-1);
-	int start = start_jkl_arr[g_id] >> 15;		
+	int start = start_jkl_arr[g_id] >> 20;		
 	if(start == 69) {
 		progress[g_id] = -1;
 		return;
