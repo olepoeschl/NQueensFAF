@@ -213,9 +213,10 @@ public class GPUSolver extends Solver {
 
 	@Override
 	public long getDuration() {
-		if(isRunning() && start != 0) {
-			return System.currentTimeMillis() - start + storedDuration;
-		}
+		if(end == 0)
+			if(isRunning() && start != 0) {
+				return System.currentTimeMillis() - start + storedDuration;
+			}
 		return duration;
 	}
 
@@ -398,7 +399,7 @@ public class GPUSolver extends Solver {
 		// wait for all memory operations to finish
 		checkCLError(clFinish(memqueue));
 		
-		// run kernel and profile time
+		// run kernel
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);		// buffer for event that is used for measuring the execution time
 		checkCLError(clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf));
 		clFlush(xqueue);
@@ -417,50 +418,16 @@ public class GPUSolver extends Solver {
         }), NULL);
         checkCLError(errcode);
         
-        // a thread continously reading gpu intern data into ram
-        final StringBuilder stopGPUReaderThread = new StringBuilder("");
-        new Thread(() -> {
-        	while(stopGPUReaderThread.toString().equals("")) {
-        		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
-        		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
-
-        		long tmpSolutions = 0;
-        		int solvedConstellations = 0;
-        		for (int i = 0; i < globalWorkSize; i++) {
-        			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-        				continue;
-        			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-        			if(solutionsForConstellation >= 0)
-        				// synchronize with the list of constellations on the RAM
-        				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
-        		}
-        		for(var c : constellations) {
-        			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-        				continue;
-        			long solutionsForConstellation = c.getSolutions();
-        			if(solutionsForConstellation >= 0) {
-        				tmpSolutions += solutionsForConstellation;
-        				solvedConstellations++;
-        			}
-        		}
-        		progress = (float) solvedConstellations / numberOfValidConstellations;
-        		solutions = tmpSolutions;
-        		try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					// bad practice, but just ignore it
-				}
-        	}
-        	stopGPUReaderThread.append("PED");
-        }).start();
+        // a thread continously reading gpu data into ram
+        final StringBuilder gpuReaderThreadStopper = new StringBuilder("");
+        gpuReaderThread(gpuReaderThreadStopper).start();
         
 		// wait for the gpu computation to finish
 		checkCLError(clFinish(xqueue));
-		checkCLError(clWaitForEvents(xEventBuf));
 		
 		// stop the thread that continously reads from the GPU
-		stopGPUReaderThread.append("STOP");
-		while(!stopGPUReaderThread.toString().equals("STOPPED")) {
+		gpuReaderThreadStopper.append("STOP");
+		while(!gpuReaderThreadStopper.toString().equals("STOPPED")) {
 			try {
 				Thread.sleep(20);
 			} catch (InterruptedException e) {
@@ -468,7 +435,7 @@ public class GPUSolver extends Solver {
 			}
 		}
 		
-		// measure duration
+		// measure execution time
 		start = startBuf.get(0);
 		end = endBuf.get(0);
 		duration = (end - start) / 1000000;	// convert nanoseconds to milliseconds
@@ -520,6 +487,43 @@ public class GPUSolver extends Solver {
 		
 		checkCLError(clReleaseContext(context));
 		contextCB.free();
+	}
+	
+	private Thread gpuReaderThread (StringBuilder gpuReaderThreadStopper) {
+		return new Thread(() -> {
+        	while(gpuReaderThreadStopper.toString().equals("")) {
+        		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
+        		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
+
+        		long tmpSolutions = 0;
+        		int solvedConstellations = 0;
+        		for (int i = 0; i < globalWorkSize; i++) {
+        			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        				continue;
+        			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+        			if(solutionsForConstellation >= 0)
+        				// synchronize with the list of constellations on the RAM
+        				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
+        		}
+        		for(var c : constellations) {
+        			if(c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+        				continue;
+        			long solutionsForConstellation = c.getSolutions();
+        			if(solutionsForConstellation >= 0) {
+        				tmpSolutions += solutionsForConstellation;
+        				solvedConstellations++;
+        			}
+        		}
+        		progress = (float) solvedConstellations / numberOfValidConstellations;
+        		solutions = tmpSolutions;
+        		try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					// bad practice, but just ignore it
+				}
+        	}
+        	gpuReaderThreadStopper.append("PED");
+        });
 	}
 	
 	// utility functions
