@@ -65,10 +65,6 @@ public abstract class Solver {
 	 */
 	private int state = NQueensFAF.IDLE;
 	/**
-	 * thread that executes the solvers run() function if {@link #solveAsync()} is called
-	 */
-	private Thread t;
-	/**
 	 * if true, makes the Solver not calling the onProgressUpdate and onTimeUpdate callbacks
 	 */
 	private boolean progressUpdatesEnabled = true;
@@ -186,17 +182,6 @@ public abstract class Solver {
 		terminationCaller();
 		
 		state = NQueensFAF.IDLE;
-	}
-	/**
-	 * Waits for the asynchronously running {@link Solver} to finish.
-	 * @throws {@link InterruptedException} if the {@link Solver} is not running
-	 * @see #solveAsync()
-	 */
-	public final void waitFor() throws InterruptedException {
-		if(t == null) {
-			return;
-		}
-		t.join();
 	}
 	/**
 	 * Checks if all prepartions are done correctly.
