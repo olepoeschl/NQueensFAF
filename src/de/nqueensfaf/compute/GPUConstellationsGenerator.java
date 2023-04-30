@@ -63,13 +63,14 @@ class GPUConstellationsGenerator {
 				
 				// ijkl and sym are the same for all subconstellations 
 				for(int a = 0; a < counter; a++) {
-					constellations.get(currentSize - a - 1).setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | ijkl);
+					int start = constellations.get(currentSize - a - 1).getStartijkl();
+					constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
 				}
 			}
 			// j has to be the same value for all workitems within the same workgroup 
 			// thus add trash constellations with same j, until workgroup is full 
 			while(constellations.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(toijkl(N, N, N, N));
+				addTrashConstellation(toijkl(0, N-1, k, N-1));
 				numberOfValidConstellations--;
 			}
 		}
@@ -108,13 +109,14 @@ class GPUConstellationsGenerator {
 							
 							// jkl and sym and start are the same for all subconstellations 
 							for(int a = 0; a < counter; a++) {
-								constellations.get(currentSize - a - 1).setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | ijkl);
+								int start = constellations.get(currentSize - a - 1).getStartijkl();
+								constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
 							}
 						}
 					}
 					// fill up the workgroup 
 					while(constellations.size() % WORKGROUP_SIZE != 0) {
-						addTrashConstellation(toijkl(N, N, N, N));
+						addTrashConstellation(toijkl(0, j, k, l));
 						numberOfValidConstellations--;
 					}
 				}
@@ -188,8 +190,8 @@ class GPUConstellationsGenerator {
 		Collections.sort(constellations, new Comparator<Constellation>() {
 			@Override
 			public int compare(Constellation o1, Constellation o2) {
-				int o1jkl = o1.getStartijkl() & ((1 << 15) - 1);
-				int o2jkl = o2.getStartijkl() & ((1 << 15) - 1);
+				int o1jkl = o1.getStartijkl() & ((1 << 20) - 1);
+				int o2jkl = o2.getStartijkl() & ((1 << 20) - 1);
 				if (o1jkl > o2jkl)
 					return 1;
 				else if (o1jkl < o2jkl)

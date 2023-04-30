@@ -15,7 +15,7 @@ public class Demo {
 	
 	static void store() {
 		GPUSolver s = new GPUSolver();
-		s.setN(8);
+		s.setN(19);
 		s.setDevice(0);
 		s.addTerminationCallback(() -> {
 			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");

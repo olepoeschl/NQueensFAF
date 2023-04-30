@@ -217,7 +217,7 @@ public class GPUSolver extends Solver {
 
 	@Override
 	public long getDuration() {
-		if(isRunning()) {
+		if(isRunning() && start != 0) {
 			return System.currentTimeMillis() - start + storedDuration;
 		}
 		return duration;
@@ -292,7 +292,6 @@ public class GPUSolver extends Solver {
 			numberOfValidConstellations = generator.getNumberOfValidConstellations();
 		}
 		globalWorkSize = remainingConstellations.size();
-		System.out.println("globalWorkSize: " + globalWorkSize);
 
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
@@ -393,8 +392,6 @@ public class GPUSolver extends Solver {
 	}
 	
 	private void explosionBoost9000(MemoryStack stack) {
-		globalWorkSize = constellations.size();
-		
 		// create buffer of pointers defining the multi-dimensional size of the number of work units to execute
 		final int dimensions = 1;
 		PointerBuffer globalWorkers = BufferUtils.createPointerBuffer(dimensions);
@@ -436,7 +433,7 @@ public class GPUSolver extends Solver {
         		for (int i = 0; i < globalWorkSize; i++) {
         			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
         				continue;
-        			long solutionsForConstellation = resBuf.getLong(i) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+        			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
         			if(solutionsForConstellation >= 0)
         				// synchronize with the list of constellations on the RAM
         				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
@@ -459,7 +456,7 @@ public class GPUSolver extends Solver {
 				}
         	}
         	stopGPUReaderThread.append("PED");
-        });
+        }).start();
         
 		// wait for the gpu computation to finish
 		checkCLError(clFinish(xqueue));
@@ -494,9 +491,8 @@ public class GPUSolver extends Solver {
 		for (int i = 0; i < globalWorkSize; i++) {
 			if(remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
-			long solutionsForConstellation = resBuf.getLong(i) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+			long solutionsForConstellation = resBuf.getLong(i*8) * symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 			if(solutionsForConstellation >= 0)
-				System.out.println("hi");
 				// synchronize with the list of constellations on the RAM
 				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
 		}
