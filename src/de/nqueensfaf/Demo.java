@@ -16,11 +16,11 @@ public class Demo {
 		GPUSolver s = new GPUSolver();
 		s.setN(20);
 		s.setDevice(0);
-		s.addTerminationCallback(() -> {
-			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
+		s.setTerminationCallback((self) -> {
+			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
 		});
-		s.setOnProgressUpdateCallback((progress, solutions) -> {
-			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 			if(progress > 0.4) {
 				try {
 					s.store("test.faf");
@@ -36,11 +36,11 @@ public class Demo {
 	static void restore() {
 		GPUSolver s = new GPUSolver();
 		s.setDevice(0);
-		s.addTerminationCallback(() -> {
-			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
+		s.setTerminationCallback((self) -> {
+			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
 		});
-		s.setOnProgressUpdateCallback((progress, solutions) -> {
-			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 			if(progress > 0.7) {
 				try {
 					s.store("test.faf");
@@ -60,11 +60,11 @@ public class Demo {
 	static void rerestore() {
 		GPUSolver s = new GPUSolver();
 		s.setDevice(0);
-		s.addTerminationCallback(() -> {
-			System.out.println(s.getSolutions() + " solutions found in " + s.getDuration() + "ms");
+		s.setTerminationCallback((self) -> {
+			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
 		});
-		s.setOnProgressUpdateCallback((progress, solutions) -> {
-			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + s.getDuration() + "ms");
+		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 		});
 		try {
 			s.restore("test.faf");

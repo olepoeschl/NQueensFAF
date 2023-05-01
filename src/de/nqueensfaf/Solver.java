@@ -2,11 +2,16 @@ package de.nqueensfaf;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.nqueensfaf.files.Config;
+import de.nqueensfaf.util.BasicCallback;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
 import de.nqueensfaf.util.OnTimeUpdateCallback;
 
@@ -34,40 +39,31 @@ public abstract class Solver {
 	/**
 	 * callback that is executed on every progress update
 	 */
-	protected OnProgressUpdateCallback  onProgressUpdateCallback = (progress, solutions) -> {};
-	/**
-	 * delay between time updates
-	 */
-	protected long timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY;
+	protected OnProgressUpdateCallback  onProgressUpdateCallback = (progress, solutions, duration) -> {};
 	/**
 	 * delay between progress updates
 	 */
-//	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
-	protected long progressUpdateDelay = 128;
+	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
 	/**
 	 * executor of the update callbacks (uc)
 	 * @see #startUpdateCallerThreads()
 	 */
 	private ThreadPoolExecutor ucExecutor;
 	/**
-	 * list of callbacks to be executed before the run() function of the solver is called
+	 * callback that is executed before the run() function of the solver is called
 	 * @see #solve()
 	 */
-	private ArrayList<Runnable> initialization = new ArrayList<Runnable>();
+	private BasicCallback initializationCallback;
 	/**
-	 * list of callbacks to be executed after the run() function of the solver is finished
+	 * callback that is executed after the run() function of the solver is finished
 	 * @see #solve()
 	 */
-	private ArrayList<Runnable> termination = new ArrayList<Runnable>();
+	private BasicCallback terminationCallback;
 	/**
 	 * current state of the {@link Solver}
 	 * @see NQueensFAF
 	 */
 	private int state = NQueensFAF.IDLE;
-	/**
-	 * if true, makes the Solver not calling the onProgressUpdate and onTimeUpdate callbacks
-	 */
-	private boolean progressUpdatesEnabled = true;
 	/**
 	 * thread for the {@link #autoSave} function
 	 * @see 
@@ -93,7 +89,7 @@ public abstract class Solver {
 	 * only used when {@link #autoSave} is true
 	 * @see #autoSavePercentageStep
 	 */
-	private String autoSaveFilename = "N{N}.nqf";
+	private String autoSaveFilename = "N{N}.faf";
 	/**
 	 * set to true when store() is called and set to false again when store() returned.
 	 */
@@ -151,7 +147,25 @@ public abstract class Solver {
 	 * @return current count of found solutions
 	 */
 	public abstract long getSolutions();
-
+	
+	// type-specific
+	public static <T extends Solver> T withConfig(File configFile) throws StreamReadException, DatabindException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		Config config = mapper.readValue(configFile, Config.class);
+		switch(config.getType().toLowerCase()) {
+		case "cpu":
+			// TODO
+			break;
+		case "gpu":
+			// TODO
+			break;
+		default:
+			break;
+		}
+		
+		return null;
+	}
+	
 	/**
 	 * Calls all initialization callbacks, then starts the {@link Solver}'s run()-method, then calls all termination callbacks.
 	 * @throws InterruptedException if the time limit is exceeded while waiting for the Solverthread to shutdown after terminating (time limit is the bigger one of progressUpdateDelay and timeUpdateDelay)
@@ -163,7 +177,7 @@ public abstract class Solver {
 		
 		checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
-		initializationCaller();
+		initializationCallback.callback(this);
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 		state = NQueensFAF.RUNNING;
@@ -175,11 +189,11 @@ public abstract class Solver {
 		state = NQueensFAF.TERMINATING;
 		ucExecutor.shutdown();
 		try {
-			ucExecutor.awaitTermination(timeUpdateDelay > progressUpdateDelay ? timeUpdateDelay+1000 : progressUpdateDelay+1000, TimeUnit.MILLISECONDS);
+			ucExecutor.awaitTermination(NQueensFAF.DEFAULT_TIME_UPDATE_DELAY > progressUpdateDelay ? NQueensFAF.DEFAULT_TIME_UPDATE_DELAY+100 : progressUpdateDelay+100, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		terminationCaller();
+		terminationCallback.callback(this);
 		
 		state = NQueensFAF.IDLE;
 	}
@@ -220,7 +234,7 @@ public abstract class Solver {
 					if(!isRunning())
 						break;
 					try {
-						Thread.sleep(timeUpdateDelay);
+						Thread.sleep(NQueensFAF.DEFAULT_TIME_UPDATE_DELAY);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -228,13 +242,13 @@ public abstract class Solver {
 				onTimeUpdateCallback.onTimeUpdate(getDuration());
 			});
 		}
-		if(progressUpdatesEnabled && onProgressUpdateCallback != null) {
+		if(onProgressUpdateCallback != null) {
 			ucExecutor.submit(() -> {
 				float tmpProgress = 0;
 				long tmpSolutions = 0;
 				while(isRunning()) {
 					if(getProgress() != tmpProgress || getSolutions() != tmpSolutions) {
-						onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
+						onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
 						tmpProgress = getProgress();
 						tmpSolutions = getSolutions();
 					}
@@ -246,7 +260,7 @@ public abstract class Solver {
 						e.printStackTrace();
 					}
 				}
-				onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions());
+				onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
 			});
 		}
 	}
@@ -341,7 +355,7 @@ public abstract class Solver {
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 */
-	public synchronized void store(String filepath) throws IOException, IllegalArgumentException {
+	public final synchronized void store(String filepath) throws IOException, IllegalArgumentException {
 		isStoring = true;
 		store_(filepath);
 		isStoring = false;
@@ -355,7 +369,7 @@ public abstract class Solver {
 	 * @throws ClassNotFoundException 
 	 * @throws IllegalArgumentException
 	 */
-	public void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+	public final void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 		restore_(filepath);
 		solve();
 	}
@@ -363,53 +377,29 @@ public abstract class Solver {
 	/**
 	 * Adds a callback that will be executed on start of the {@link Solver}.
 	 * The callbacks will be called in reversed insertion order.
-	 * Chainable.
 	 * @param r the callback as {@link Runnable}
-	 * @return the {@link Solver}
 	 * @throws {@link IllegalArgumentException} if r is null
 	 * @see #solve()
 	 */
-	public final Solver addInitializationCallback(Runnable r) {
+	public final void setInitializationCallback(BasicCallback r) {
 		if(r == null) {
 			throw new IllegalArgumentException("initializationCallback must not be null");
 		}
-		initialization.add(r);
-		return this;
+		initializationCallback = r;
 	}
 
 	/**
 	 * Adds a callback that will be executed on finish of the {@link Solver}.
 	 * The callbacks will be called in reversed insertion order.
-	 * Chainable.
 	 * @param r the callback as {@link Runnable}
-	 * @return the {@link Solver}
 	 * @throws {@link IllegalArgumentException} if r is null
 	 * @see #solve()
 	 */
-	public final Solver addTerminationCallback(Runnable r) {
+	public final void setTerminationCallback(BasicCallback r) {
 		if(r == null) {
 			throw new IllegalArgumentException("terminationCallback must not be null");
 		}
-		termination.add(r);
-		return this;
-	}
-
-	/**
-	 * Calls all initialization callbacks in reversed insertion order.
-	 */
-	private void initializationCaller() {
-		for(Runnable r : initialization) {
-			r.run();
-		}
-	}
-
-	/**
-	 * Calls all termination callbacks in reversed insertion order.
-	 */
-	private void terminationCaller() {
-		for(Runnable r : termination) {
-			r.run();
-		}
+		terminationCallback = r;
 	}
 
 	// Getters and Setters
@@ -422,13 +412,11 @@ public abstract class Solver {
 	}
 	/**
 	 * Sets {@link #N}.
-	 * Chainable.
 	 * @param n boardsize 
-	 * @return the {@link Solver}
 	 * @throws {@link IllegalStateException} if the {@link Solver} is already running
 	 * @throws {@link IllegalArgumentException} if the boardsize is invalid 
 	 */
-	public final Solver setN(int n) {
+	public final void setN(int n) {
 		if(!isIdle()) {
 			throw new IllegalStateException("Cannot set board size while solving");
 		}
@@ -436,7 +424,6 @@ public abstract class Solver {
 			throw new IllegalArgumentException("Board size must be a number between 0 and 32 (not inclusive)");
 		}
 		N = n;
-		return this;
 	}
 
 	/**
@@ -448,17 +435,14 @@ public abstract class Solver {
 	}
 	/**
 	 * Sets {@link #onTimeUpdateCallback} or sets a void callback if the parameter is null.
-	 * Chainable.
 	 * @param onTimeUpdateCallback callback to be called on each time update
-	 * @return the {@link Solver}
 	 */
-	public final Solver setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
+	public final void setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
 		if(onTimeUpdateCallback == null) {
 			this.onTimeUpdateCallback = (duration) -> {};
 		} else {
 			this.onTimeUpdateCallback = onTimeUpdateCallback;
 		}
-		return this;
 	}
 
 	/**
@@ -469,43 +453,15 @@ public abstract class Solver {
 		return onProgressUpdateCallback;
 	}
 	/**
-	 * Sets {@link #onProgressUpdateCallback} or sets a void callback if the parameter is null.
-	 * Chainable.
+	 * Sets {@link #onProgressUpdateCallback} or deletes an existing callback if the parameter is null.
 	 * @param onProgressUpdateCallback callback to be called on each progress update
-	 * @return the {@link Solver}
 	 */
-	public final Solver setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
+	public final void setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
 		if(onProgressUpdateCallback == null) {
-			this.onProgressUpdateCallback = (progress, solutions) -> {};
+			this.onProgressUpdateCallback = (progress, solutions, duration) -> {};
 		} else {
 			this.onProgressUpdateCallback = onProgressUpdateCallback;
 		}
-		return this;
-	}
-
-	/**
-	 * Gets {@link #timeUpdateDelay}.
-	 * @return {@link #timeUpdateDelay}
-	 */
-	public final long getTimeUpdateDelay() {
-		return timeUpdateDelay;
-	}
-	/**
-	 * Sets {@link #timeUpdateDelay}.
-	 * Chainable.
-	 * @param timeUpdateDelay
-	 * @return the {@link Solver}
-	 * @throws {@link IllegalArgumentException} if the given delay is <= 0
-	 */
-	public final Solver setTimeUpdateDelay(long timeUpdateDelay) {
-		if(timeUpdateDelay < 0) {
-			throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
-		} else if(timeUpdateDelay== 0) {
-			this.timeUpdateDelay = NQueensFAF.DEFAULT_TIME_UPDATE_DELAY;
-			return this;
-		}
-		this.timeUpdateDelay = timeUpdateDelay;
-		return this;
 	}
 
 	/**
@@ -517,38 +473,16 @@ public abstract class Solver {
 	}
 	/**
 	 * Sets {@link #progressUpdateDelay}.
-	 * Chainable.
 	 * @param progressUpdateDelay
-	 * @return the {@link Solver}
 	 * @throws {@link IllegalArgumentException} if the given delay is <= 0
 	 */
-	public final Solver setProgressUpdateDelay(long progressUpdateDelay) {
+	public final void setProgressUpdateDelay(long progressUpdateDelay) {
 		if(progressUpdateDelay < 0) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
 		} else if(progressUpdateDelay== 0) {
 			this.progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
-			return this;
 		}
 		this.progressUpdateDelay = progressUpdateDelay;
-		return this;
-	}
-
-	/**
-	 * Gets {@link #progressUpdatesEnabled}.
-	 * @return {@link #progressUpdatesEnabled}
-	 */
-	public final boolean areProgressUpdatesEnabled() {
-		return progressUpdatesEnabled;
-	}
-	/**
-	 * Enables or disables progress updates.
-	 * Chainable.
-	 * @param progressUpdatesEnabled if true, enables updates (default value); if false, disables updates.
-	 * @return the {@link Solver}
-	 */
-	public final Solver setProgressUpdatesEnabled(boolean progressUpdatesEnabled) {
-		this.progressUpdatesEnabled = progressUpdatesEnabled;
-		return this;
 	}
 
 	/**
@@ -560,13 +494,10 @@ public abstract class Solver {
 	}
 	/**
 	 * Enables or disables the auto save function.
-	 * Chainable.
 	 * @param autoSaveEnabled if true, enables automatic saving of the current Solver; if false, disables automatic saving (default value).
-	 * @return the {@link Solver}
 	 */
-	public final Solver setAutoSaveEnabled(boolean autoSaveEnabled) {
+	public final void setAutoSaveEnabled(boolean autoSaveEnabled) {
 		this.autoSaveEnabled = autoSaveEnabled;
-		return this;
 	}
 
 	/**
@@ -578,13 +509,10 @@ public abstract class Solver {
 	}
 	/**
 	 * Enables or disables the auto delete function.
-	 * Chainable.
 	 * @param autoDeleteEnabled if true, enables automatic deleting of the files created by the auto save function
-	 * @return the {@link Solver}
 	 */
-	public final Solver setAutoDeleteEnabled(boolean autoDeleteEnabled) {
+	public final void setAutoDeleteEnabled(boolean autoDeleteEnabled) {
 		this.autoDeleteEnabled = autoDeleteEnabled;
-		return this;
 	}
 	
 	/**
@@ -596,16 +524,13 @@ public abstract class Solver {
 	}
 	/**
 	 * Sets {@link #autoSavePercentageStep}.
-	 * Chainable.
 	 * @param autoSavePercentageStep
-	 * @return the {@link Solver}
 	 */
-	public final Solver setAutoSavePercentageStep(int autoSavePercentageStep) {
+	public final void setAutoSavePercentageStep(int autoSavePercentageStep) {
 		if(autoSavePercentageStep <= 0 || autoSavePercentageStep >= 100) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number between 0 and 100");
 		}
 		this.autoSavePercentageStep = autoSavePercentageStep;
-		return this;
 	}
 	
 	/**
@@ -633,13 +558,10 @@ public abstract class Solver {
 	}
 	/**
 	 * Sets {@link #autoSaveFilename}.
-	 * Chainable.
 	 * @param autoSaveFilename
-	 * @return the {@link Solver}
 	 */
-	public final Solver setAutoSaveFilename(String autoSaveFilename) {
+	public final void setAutoSaveFilename(String autoSaveFilename) {
 		this.autoSaveFilename = autoSaveFilename;
-		return this;
 	}
 
 	/**
