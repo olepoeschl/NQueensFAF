@@ -2,17 +2,19 @@ package de.nqueensfaf.files;
 
 public class Config {
 	
+	// all configurable field and their default values
+	
 	// CPU or GPU ?
 	private String type;
 	// for CPU
-	private int cpuThreadcount;
+	private int cpuThreadcount = 1;
 	// for GPU
-	private int gpuDevice, gpuWorkgroupSize, gpuPresetQueens;
+	private int gpuDevice = 0, gpuWorkgroupSize = 64, gpuPresetQueens = 6;
 	// general
-	private long progressUpdateDelay;
-	private boolean autoSaveEnabled, autoDeleteEnabled;
-	private int autoSavePercentageStep;
-	private String autosaveFilename;
+	private long progressUpdateDelay = 128;
+	private boolean autoSaveEnabled = false, autoDeleteEnabled = false;
+	private int autoSavePercentageStep = 10;
+	private String autosaveFilename = "n{N}.faf";
 		
 	public Config() {
 		super();
