@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.nqueensfaf.compute.CPUSolver;
+import de.nqueensfaf.compute.GPUSolver;
 import de.nqueensfaf.files.Config;
 import de.nqueensfaf.util.BasicCallback;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
@@ -152,17 +154,34 @@ public abstract class Solver {
 	public static <T extends Solver> T withConfig(File configFile) throws StreamReadException, DatabindException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		Config config = mapper.readValue(configFile, Config.class);
+		Solver solver;
+		CPUSolver cpuSolver;
+		GPUSolver gpuSolver;
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
-			// TODO
+			cpuSolver = new CPUSolver();
+			cpuSolver.setThreadcount(config.getCpuThreadcount());
+			solver = cpuSolver;
 			break;
 		case "gpu":
-			// TODO
+			gpuSolver = new GPUSolver();
+			gpuSolver.setDevice(config.getGpuDevice());
+			gpuSolver.setWorkgroupSize(config.getGpuWorkgroupSize());
+			gpuSolver.setNumberOfPresetQueens(config.getGpuPresetQueens());
+			solver = gpuSolver;
 			break;
 		default:
-			// TODO
-			break;
+			throw new IllegalArgumentException("Invalid config value '" + config.getType() + "' for solver type: has to be 'cpu' or 'gpu'");
 		}
+		
+		// general settings
+		solver.setProgressUpdateDelay(config.getProgressUpdateDelay());
+		solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
+		solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
+		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
+		solver.setAutoSaveFilename(config.getAutosaveFilename());
+		
+		// TODO: check default values!!!
 		
 		return null;
 	}
