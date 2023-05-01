@@ -151,12 +151,13 @@ public abstract class Solver {
 	public abstract long getSolutions();
 	
 	// type-specific
+	@SuppressWarnings("unchecked")
 	public static <T extends Solver> T withConfig(File configFile) throws StreamReadException, DatabindException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		Config config = mapper.readValue(configFile, Config.class);
 		Solver solver;
-		CPUSolver cpuSolver;
-		GPUSolver gpuSolver;
+		CPUSolver cpuSolver = null;
+		GPUSolver gpuSolver = null;
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
 			cpuSolver = new CPUSolver();
@@ -181,9 +182,9 @@ public abstract class Solver {
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
 		solver.setAutoSaveFilename(config.getAutosaveFilename());
 		
-		// TODO: check for forbidden values!
+		// TODO: check for forbidden values using a method inside of Config class
 		
-		return null;
+		return config.getType().toLowerCase().equals("cpu") ? (T) cpuSolver : (T) gpuSolver;
 	}
 	
 	/**
