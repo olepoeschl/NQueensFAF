@@ -178,7 +178,8 @@ public abstract class Solver {
 		
 		checkForPreparation();
 		state = NQueensFAF.INITIALIZING;
-		initializationCallback.callback(this);
+		if(initializationCallback != null)
+			initializationCallback.callback(this);
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 		state = NQueensFAF.RUNNING;
@@ -194,7 +195,8 @@ public abstract class Solver {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		terminationCallback.callback(this);
+		if(terminationCallback != null)
+			terminationCallback.callback(this);
 		
 		state = NQueensFAF.IDLE;
 	}
