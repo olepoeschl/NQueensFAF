@@ -181,7 +181,7 @@ public abstract class Solver {
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
 		solver.setAutoSaveFilename(config.getAutosaveFilename());
 		
-		// TODO: check default values!!!
+		// TODO: check for forbidden values!
 		
 		return null;
 	}
