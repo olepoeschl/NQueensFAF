@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Config {
 	
-	// all configurable field and their default values
+	// all configurable fields and their default values
 	
 	// CPU or GPU ?
 	private String type;
@@ -57,11 +58,17 @@ public class Config {
 		return c;
 	}
 	
-	public static Config fromFile(File configFile) throws StreamReadException, DatabindException, IOException {
+	public static Config read(File configFile) throws StreamReadException, DatabindException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		Config config = mapper.readValue(configFile, Config.class);
 		config.validate();
 		return config;
+	}
+	
+	public void write(File configFile) throws StreamWriteException, DatabindException, IOException {
+		validate();
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.writeValue(configFile, this);
 	}
 	
 	public void validate() {
