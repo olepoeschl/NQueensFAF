@@ -119,7 +119,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	uint ld_mem = 0;
 	uint rd_mem = 0;
 	
-	// the part that is different form the default kernel
+	// the part that is different from the default kernel
 	local uint jkl_queens[N];
 	uint ldiagbot = (L >> j) | (L >> l);
 	uint rdiagbot = (L >> j) | (L >> (N-1-k));
