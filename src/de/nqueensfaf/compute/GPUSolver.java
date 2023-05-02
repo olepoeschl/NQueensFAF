@@ -36,6 +36,7 @@ import static de.nqueensfaf.compute.InfoUtil.*;
 
 import de.nqueensfaf.NQueensFAF;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.files.Config;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.SolverState;
 
@@ -66,8 +67,6 @@ public class GPUSolver extends Solver {
 		}
 		if(!openclable) {
 			System.err.println("No OpenCL-capable device was found. GpuSolver is not available.");
-		} else {
-	        CL.getFunctionProvider();
 		}
 	}
 
@@ -80,17 +79,15 @@ public class GPUSolver extends Solver {
 	private long platform;
 	private HashMap<Long, Long> platformByDevice;
 	private List<Long> devices;
-	private long device;
+	private long device = Config.getDefaultConfig().getGPUDevice();
 	private long xqueue, memqueue;
 	private long clEvent;
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startijklMem, resMem, progressMem;
 	private int globalWorkSize;
-	
-	// configurable values
-	private int WORKGROUP_SIZE = 64;
-	private int PRE_QUEENS = 6;
+	private int workgroupSize = Config.getDefaultConfig().getGPUWorkgroupSize();
+	private int presetQueens = Config.getDefaultConfig().getGPUPresetQueens();
 
 	// calculation related stuff
 	private GPUConstellationsGenerator generator;
@@ -125,9 +122,7 @@ public class GPUSolver extends Solver {
 			progress = 1;
 			return;
 		}
-		if(device == 0) {
-			throw new IllegalStateException("You have to choose a device by calling setDevice() before starting the Solver. See all available devices using getAvailableDevices()");
-		}
+		
 		// if init fails, do not proceed
 		try (
 			MemoryStack stack = stackPush();
@@ -180,14 +175,14 @@ public class GPUSolver extends Solver {
 				continue;
 			
 			if ((c.getStartijkl() & ((1 << 20) - 1)) != currentIjkl) { // check if new ijkl is found
-				while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
+				while (remainingConstellations.size() % workgroupSize != 0) {
 					generator.addTrashConstellation(remainingConstellations, currentIjkl);
 				}
 				currentIjkl = c.getStartijkl() & ((1 << 20) - 1);
 			}
 			remainingConstellations.add(c);
 		}
-		while (remainingConstellations.size() % WORKGROUP_SIZE != 0) {
+		while (remainingConstellations.size() % workgroupSize != 0) {
 			generator.addTrashConstellation(remainingConstellations, currentIjkl);
 		}
 		
@@ -265,7 +260,7 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf.get(0));
 
 		program = clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
-		String options = "-D N="+N + " -D BLOCK_SIZE="+WORKGROUP_SIZE + " -cl-mad-enable";
+		String options = "-D N="+N + " -D BLOCK_SIZE="+workgroupSize + " -cl-mad-enable";
 		PointerBuffer devicesBuf = stack.mallocPointer(1);
 		devicesBuf.put(0, device);
 		int error = clBuildProgram(program, devicesBuf, options, null, 0);
@@ -282,7 +277,7 @@ public class GPUSolver extends Solver {
 	private void transferDataToDevice(MemoryStack stack) {
 		if(!restored) {
 			generator = new GPUConstellationsGenerator();
-			generator.genConstellations(N, WORKGROUP_SIZE, PRE_QUEENS);
+			generator.genConstellations(N, workgroupSize, presetQueens);
 			
 			constellations = generator.getConstellations();
 			remainingConstellations = constellations;
@@ -394,7 +389,7 @@ public class GPUSolver extends Solver {
 		PointerBuffer globalWorkers = BufferUtils.createPointerBuffer(dimensions);
 		globalWorkers.put(0, globalWorkSize);
 		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
-		localWorkSize.put(0, WORKGROUP_SIZE);
+		localWorkSize.put(0, workgroupSize);
 
 		// wait for all memory operations to finish
 		checkCLError(clFinish(memqueue));
@@ -730,10 +725,10 @@ public class GPUSolver extends Solver {
 
 	public void setDevice(int idx) {
 		if(!openclable) {
-			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
+			throw new IllegalStateException("No OpenCL-capable device was found. GPUSolver is not available.");
 		}
 		if(idx < 0 || idx >= devices.size()) {
-			throw new IllegalArgumentException("Invalid index value: " + idx + " (size:" + devices.size() + ")");
+			throw new IllegalArgumentException("Invalid device index value: " + idx + " (size:" + devices.size() + ")");
 		}
 		device = devices.get(idx);
 		platform = platformByDevice.get(device);
@@ -744,28 +739,25 @@ public class GPUSolver extends Solver {
 	}
 	
 	public int getWorkgroupSize() {
-		return WORKGROUP_SIZE;
+		return workgroupSize;
 	}
 
 	public void setWorkgroupSize(int s) {
-		if(device == 0) {
-			throw new IllegalStateException("Choose a device first");
-		}
 		long maxWorkgroupSize = getDeviceInfoPointer(device, CL_DEVICE_MAX_WORK_GROUP_SIZE);
 		if(s <= 0 || s > maxWorkgroupSize) {
 			throw new IllegalArgumentException("WorkgroupSize must be between 0 and " + maxWorkgroupSize + " (=max for this device)");
 		}
-		WORKGROUP_SIZE = s;
+		workgroupSize = s;
 	}
 
 	public int getNumberOfPresetQueens() {
-		return PRE_QUEENS;
+		return presetQueens;
 	}
 	
 	public void setNumberOfPresetQueens(int pq) {
 		if(pq < 4 || pq > 10) {
 			throw new IllegalArgumentException("Number of preset queens must be between 4 and 10");
 		}
-		PRE_QUEENS = pq;
+		presetQueens = pq;
 	}
 }

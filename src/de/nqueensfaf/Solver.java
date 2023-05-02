@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.nqueensfaf.compute.CPUSolver;
 import de.nqueensfaf.compute.GPUSolver;
@@ -45,7 +44,11 @@ public abstract class Solver {
 	/**
 	 * delay between progress updates
 	 */
-	protected long progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+	protected long progressUpdateDelay = Config.getDefaultConfig().getProgressUpdateDelay();
+	/**
+	 * delay between progress updates
+	 */
+	protected final long timeUpdateDelay = 128;
 	/**
 	 * executor of the update callbacks (uc)
 	 * @see #startUpdateCallerThreads()
@@ -75,23 +78,23 @@ public abstract class Solver {
 	 * if true, the Solver automatically deletes a file created by the auto save function using
 	 * only used when {@link #autoSave} is true
 	 */
-	private boolean autoDeleteEnabled = false;
+	private boolean autoDeleteEnabled = Config.getDefaultConfig().isAutoDeleteEnabled();
 	/**
 	 * if true, the Solver automatically calls store() using {@link #autoSaveFilename} if a specific progress percentage step is completed
 	 * @see #autoSavePercentageStep
 	 */
-	private boolean autoSaveEnabled = false;
+	private boolean autoSaveEnabled = Config.getDefaultConfig().isAutoSaveEnabled();
 	/**
 	 * after the progress increases by this or more percentage, store() is automatically called.
 	 * only used when {@link #autoSave} is true
 	 */
-	private int autoSavePercentageStep = 10;
+	private int autoSavePercentageStep = Config.getDefaultConfig().getAutoSavePercentageStep();
 	/**
 	 * the filename (format) used for the autosave feature.
 	 * only used when {@link #autoSave} is true
 	 * @see #autoSavePercentageStep
 	 */
-	private String autoSaveFilename = "N{N}.faf";
+	private String autoSaveFilePath = Config.getDefaultConfig().getAutosaveFilePath();
 	/**
 	 * set to true when store() is called and set to false again when store() returned.
 	 */
@@ -151,24 +154,26 @@ public abstract class Solver {
 	public abstract long getSolutions();
 	
 	// type-specific
+	public static <T extends Solver> T applyConfig(File configFile) throws StreamReadException, DatabindException, IOException {
+		return applyConfig(Config.fromFile(configFile));
+	}
+
 	@SuppressWarnings("unchecked")
-	public static <T extends Solver> T withConfig(File configFile) throws StreamReadException, DatabindException, IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		Config config = mapper.readValue(configFile, Config.class);
+	public static <T extends Solver> T applyConfig(Config config) {
 		Solver solver;
 		CPUSolver cpuSolver = null;
 		GPUSolver gpuSolver = null;
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
 			cpuSolver = new CPUSolver();
-			cpuSolver.setThreadcount(config.getCpuThreadcount());
+			cpuSolver.setThreadcount(config.getCPUThreadcount());
 			solver = cpuSolver;
 			break;
 		case "gpu":
 			gpuSolver = new GPUSolver();
-			gpuSolver.setDevice(config.getGpuDevice());
-			gpuSolver.setWorkgroupSize(config.getGpuWorkgroupSize());
-			gpuSolver.setNumberOfPresetQueens(config.getGpuPresetQueens());
+			gpuSolver.setDevice(config.getGPUDevice());
+			gpuSolver.setWorkgroupSize(config.getGPUWorkgroupSize());
+			gpuSolver.setNumberOfPresetQueens(config.getGPUPresetQueens());
 			solver = gpuSolver;
 			break;
 		default:
@@ -180,11 +185,18 @@ public abstract class Solver {
 		solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
 		solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
-		solver.setAutoSaveFilename(config.getAutosaveFilename());
+		solver.setAutoSaveFilename(config.getAutosaveFilePath());
 		
 		// TODO: check for forbidden values using a method inside of Config class
 		
-		return config.getType().toLowerCase().equals("cpu") ? (T) cpuSolver : (T) gpuSolver;
+		switch(config.getType().toLowerCase()) {
+		case "cpu":
+			return (T) cpuSolver;
+		case "gpu":
+			return (T) gpuSolver;
+		default: // unreachable code, only here to calm the compiler
+			return null;
+		}
 	}
 	
 	/**
@@ -211,7 +223,7 @@ public abstract class Solver {
 		state = NQueensFAF.TERMINATING;
 		ucExecutor.shutdown();
 		try {
-			ucExecutor.awaitTermination(NQueensFAF.DEFAULT_TIME_UPDATE_DELAY > progressUpdateDelay ? NQueensFAF.DEFAULT_TIME_UPDATE_DELAY+100 : progressUpdateDelay+100, TimeUnit.MILLISECONDS);
+			ucExecutor.awaitTermination(progressUpdateDelay > timeUpdateDelay ? progressUpdateDelay+100 : timeUpdateDelay+100, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -257,7 +269,7 @@ public abstract class Solver {
 					if(!isRunning())
 						break;
 					try {
-						Thread.sleep(NQueensFAF.DEFAULT_TIME_UPDATE_DELAY);
+						Thread.sleep(timeUpdateDelay);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -296,44 +308,50 @@ public abstract class Solver {
 	 */
 	private void startAutoSaverThread() {
 		autoSaverThread = new Thread(() -> {
-			String filename = autoSaveFilename;
-			filename = filename.replaceAll("#N#", ""+ N);
-			if(!filename.endsWith(".faf")) {
-				filename += ".faf";
-			}
-			float progress = getProgress() * 100;
-			int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
-			while(isRunning() && !finishStoring) {
-				progress = getProgress() * 100;
-				if(progress >= 100)
-					break;
-				else if(progress >= tmpProgress + autoSavePercentageStep) {
+			try {
+				String filePath = autoSaveFilePath;
+				filePath = filePath.replaceAll("#N#", "" + N);
+				if (!filePath.endsWith(".faf")) {
+					filePath += ".faf";
+				}
+				float progress = getProgress() * 100;
+				int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
+				while (isRunning() && !finishStoring) {
+					progress = getProgress() * 100;
+					if (progress >= 100)
+						break;
+					else if (progress >= tmpProgress + autoSavePercentageStep) {
+						store(filePath);
+						tmpProgress = (int) progress;
+					}
 					try {
-						store(filename);
-					} catch (IOException e) {
+						Thread.sleep(progressUpdateDelay);
+					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					tmpProgress = (int) progress;
 				}
-				try {
-					Thread.sleep(progressUpdateDelay);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				progress = getProgress() * 100;
+				if (progress >= 100) {
+					if (autoDeleteEnabled) {
+						try {
+							new File(filePath).delete();
+						} catch (SecurityException e) {
+							e.printStackTrace();
+						}
+					} else {
+						store(filePath);	// store one last time
+					}
 				}
-			}
-			progress = getProgress() * 100;
-			if(progress >= 100) {
-				if(autoDeleteEnabled)
-					try {
-						new File(filename).delete();
-					} catch(SecurityException e) {}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		});
 		autoSaverThread.start();
 	}
-	
+
 	/**
 	 * Can be used for solving the problem for small N's (board sizes).
+	 * 
 	 * @return the number of solutions
 	 */
 	protected int solveSmallBoard() {
@@ -503,7 +521,7 @@ public abstract class Solver {
 		if(progressUpdateDelay < 0) {
 			throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
 		} else if(progressUpdateDelay== 0) {
-			this.progressUpdateDelay = NQueensFAF.DEFAULT_PROGRESS_UPDATE_DELAY;
+			this.progressUpdateDelay = Config.getDefaultConfig().getProgressUpdateDelay();
 		}
 		this.progressUpdateDelay = progressUpdateDelay;
 	}
@@ -576,15 +594,15 @@ public abstract class Solver {
 	 * Gets {@link #autoSaveFilename}.
 	 * @return {@link #autoSaveFilename}
 	 */
-	public final String getAutoSaveFilename() {
-		return autoSaveFilename;
+	public final String getAutoSaveFilePath() {
+		return autoSaveFilePath;
 	}
 	/**
 	 * Sets {@link #autoSaveFilename}.
 	 * @param autoSaveFilename
 	 */
-	public final void setAutoSaveFilename(String autoSaveFilename) {
-		this.autoSaveFilename = autoSaveFilename;
+	public final void setAutoSaveFilename(String autoSaveFilePath) {
+		this.autoSaveFilePath= autoSaveFilePath;
 	}
 
 	/**

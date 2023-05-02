@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.files.Config;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.SolverState;
 
@@ -24,7 +25,7 @@ public class CPUSolver extends Solver {
 	// smallestN marks the border, when to use this simpler solver
 	private static final int smallestN = 6;
 	// how many threads in parallel
-	private int threadcount = 1;
+	private int threadcount = Config.getDefaultConfig().getCPUThreadcount();
 	// we fill up the board, until <preQueens> queens are set
 	private int preQueens = 4, L, mask, LD, RD, counter;
 	// for time measurement

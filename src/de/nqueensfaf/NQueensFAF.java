@@ -29,15 +29,6 @@ public final class NQueensFAF {
 	static final int TERMINATING = 4;
 	
 	/**
-	 * Default value for {@link Solver#timeUpdateDelay} in milliseconds.
-	 */
-	static final int DEFAULT_TIME_UPDATE_DELAY = 128;
-	/**
-	 * Default value for {@link Solver#progressUpdateDelay} in milliseconds.
-	 */
-	static final int DEFAULT_PROGRESS_UPDATE_DELAY = 128;
-	
-	/**
 	 * if true, mutes the warning about the existence of an OpenCL-capable device and proceeds anyways.
 	 */
 	private static boolean ignoreOpenCLCheck = false;
