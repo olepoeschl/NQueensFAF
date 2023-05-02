@@ -431,6 +431,13 @@ public class GPUSolver extends Solver {
 		}
 		
 		// measure execution time
+		while(startBuf.get(0) == 0) { // wait for event callback to be executed
+			try {
+				Thread.sleep(30);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
 		start = startBuf.get(0);
 		end = endBuf.get(0);
 		duration = ((end - start) / 1000000) + storedDuration;	// convert nanoseconds to milliseconds
