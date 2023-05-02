@@ -108,7 +108,7 @@ public abstract class Solver {
 	 * @see #solveSmallBoard()
 	 * @see #nq(int, int, int, int, int, int)
 	 */
-	int solutionsSmallN = 0;
+	private int solutionsSmallN = 0;
 
 	// abstract methods
 	/**
