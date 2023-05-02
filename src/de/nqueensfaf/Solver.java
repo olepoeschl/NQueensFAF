@@ -155,7 +155,7 @@ public abstract class Solver {
 	
 	// type-specific
 	public static <T extends Solver> T applyConfig(File configFile) throws StreamReadException, DatabindException, IOException {
-		return applyConfig(Config.fromFile(configFile));
+		return applyConfig(Config.read(configFile));
 	}
 
 	@SuppressWarnings("unchecked")
