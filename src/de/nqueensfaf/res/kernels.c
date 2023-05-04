@@ -1,6 +1,6 @@
 // Explosion Boost 9000
 // Used for all GPU's except Intel GPU's.
-kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
+kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
 	// gpu intern indice
 	int g_id = get_global_id(0);					// global thread id 
 	int l_id = get_local_id(0);						// local thread id within workgroup
@@ -10,7 +10,6 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
 	int start = start_jkl_arr[g_id] >> 20;		
 	if(start == 69) {								// if we have a pseudo constellation we do nothing 
-		progress[g_id] = -1;							// progress is -1 to indicate that this workitem was just for filling up the workgroup
 		return;
 	}
 	int j = (start_jkl_arr[g_id] >> 10) & 31;		// queen in last row at position j
@@ -98,19 +97,17 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 			solutions++;
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
-	progress[g_id] = 1;								// progress 1 if done, 0 if not 
 }
 
 // Same as default kernel, but jkl_queens is initialized using only 1 loop instead of 2.
 // It's a bit slower, but the barrier, that caused problems on Intel GPU's, is not needed.
-kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, global int *progress) {
+kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
 	int g_id = get_global_id(0);
 	int l_id = get_local_id(0);
 	
 	uint L = 1 << (N-1);
 	int start = start_jkl_arr[g_id] >> 20;		
 	if(start == 69) {
-		progress[g_id] = -1;
 		return;
 	}
 	int j = (start_jkl_arr[g_id] >> 10) & 31;
@@ -139,7 +136,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		rd &= ~(rdiagtop >> start);				
 	
 	int row = start;
-	uint solutions = 0;
+	ulong solutions = 0;
 	uint free = ~(ld | rd | col | jkl_queens[row]);
 	uint queen = -free & free;
 	local uint queens[BLOCK_SIZE][N];
@@ -177,5 +174,4 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 			solutions++;
 	}
 	result[g_id] = solutions;
-	progress[g_id] = 1;
 }

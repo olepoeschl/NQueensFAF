@@ -71,7 +71,7 @@ public class GPUSolver extends Solver {
 	}
 
 	// OpenCL stuff
-	private IntBuffer errBuf, progressBuf;
+	private IntBuffer errBuf;
 	private ByteBuffer resBuf;
 	private PointerBuffer ctxProps;
 	private long context;
@@ -84,7 +84,7 @@ public class GPUSolver extends Solver {
 	private long clEvent;
 	private long program;
 	private long kernel;
-	private Long ldMem, rdMem, colMem, startijklMem, resMem, progressMem;
+	private Long ldMem, rdMem, colMem, startijklMem, resMem;
 	private int globalWorkSize;
 	private int workgroupSize = Config.getDefaultConfig().getGPUWorkgroupSize();
 	private int presetQueens = Config.getDefaultConfig().getGPUPresetQueens();
@@ -341,18 +341,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null));
 //		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
 		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
-
-		// progress indicator memory
-		progressMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-		checkCLError(errBuf.get(0));
-		ByteBuffer progressWritePtr = clEnqueueMapBuffer(memqueue, progressMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
-		checkCLError(errBuf.get(0));
-		for(int i = 0; i < globalWorkSize; i++) {
-			progressWritePtr.putInt(i*4, 0);
-		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, progressMem, progressWritePtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, progressWritePtr, null, null);
-		progressBuf = BufferUtils.createIntBuffer(globalWorkSize);
 		
 		clFlush(memqueue);
 
@@ -377,10 +365,6 @@ public class GPUSolver extends Solver {
 		LongBuffer resArg = BufferUtils.createLongBuffer(1);
 		resArg.put(0, resMem);
 		checkCLError(clSetKernelArg(kernel, 4, resArg));
-		// progress
-		LongBuffer progressArg = BufferUtils.createLongBuffer(1);
-		progressArg.put(0, progressMem);
-		checkCLError(clSetKernelArg(kernel, 5, progressArg));
 	}
 	
 	private void explosionBoost9000(MemoryStack stack) {
@@ -446,7 +430,6 @@ public class GPUSolver extends Solver {
 	private void readResults(MemoryStack stack) {
 		// read result and progress memory buffers
 		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
-		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
 
 		long tmpSolutions = 0;
 		int solvedConstellations = 0;
@@ -485,7 +468,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseMemObject(colMem));
 		checkCLError(clReleaseMemObject(startijklMem));
 		checkCLError(clReleaseMemObject(resMem));
-		checkCLError(clReleaseMemObject(progressMem));
 		
 		checkCLError(clReleaseContext(context));
 		contextCB.free();
@@ -495,7 +477,6 @@ public class GPUSolver extends Solver {
 		return new Thread(() -> {
         	while(gpuReaderThreadStopper.toString().equals("")) {
         		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
-        		checkCLError(clEnqueueReadBuffer(memqueue, progressMem, true, 0, progressBuf, null, null));
 
         		long tmpSolutions = 0;
         		int solvedConstellations = 0;
