@@ -9,10 +9,6 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
 	int start = start_jkl_arr[g_id] >> 20;		
-	if(start == 69) {								// if we have a pseudo constellation we do nothing 
-		progress[g_id] = -1;							// progress is -1 to indicate that this workitem was just for filling up the workgroup
-		return;
-	}
 	int j = (start_jkl_arr[g_id] >> 10) & 31;		// queen in last row at position j
 	int k = (start_jkl_arr[g_id] >> 5) & 31;		// in row k queen at left border, in row l queen at right border
 	int l = start_jkl_arr[g_id] & 31;
@@ -30,16 +26,20 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	local uint jkl_queens[N];
 	uint rdiag = (L >> j) | (L >> (N-1-k));			// the rd from queen j and k with respect to the last row
 	uint ldiag = (L >> j) | (L >> l);				// the ld from queen j and l with respect to the last row
-	for(int a = 0;a < N; a++){						// we also occupy the left and right border 
-		jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
+	if(l_id == 0) {
+		for(int a = 0;a < N; a++){						// we also occupy the left and right border 
+			jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
+		}
 	}
 	ldiag = L >> k;									// ld from queen l with respect to the first row 
 	rdiag = 1 << l;									// ld from queen k with respect to the first row 
-	for(int a = 0;a < N; a++){
-		jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
+	if(l_id == 0) {
+		for(int a = 0;a < N; a++){
+			jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
+		}
+		jkl_queens[k] = ~L;
+		jkl_queens[l] = ~1; 
 	}
-	jkl_queens[k] = ~L;
-	jkl_queens[l] = ~1; 
 	barrier(CLK_LOCAL_MEM_FENCE);					// avoid corrupt memory behavior 
 	
 	ld &= ~(ldiag << start);						// remove queen k from ld 
@@ -60,6 +60,13 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 	
 	// going forward (setting a queen) or backward (removing a queen)? 										
 	int direction = 0;
+
+	// if start is 69, this is a trash constellation. 
+	// those are just for filling the workgroups; skip it
+	if(start == 69) {								// if we have a pseudo constellation we do nothing 
+		progress[g_id] = -1;						// progress is -1 to indicate that this workitem was just for filling up the workgroup
+		return;
+	}
 	
 	// iterative loop representing the recursive setqueen-function 
 	// this is the actual solver (via backtracking with Jeff Somers Bit method) 
