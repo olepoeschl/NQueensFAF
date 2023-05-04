@@ -48,7 +48,7 @@ kernel void nqfaf_default(global int *ld_arr, global int *rd_arr, global int *co
 
 	// initialize current row as start and solutions as 0
 	int row = start;
-	uint solutions = 0;
+	ulong solutions = 0;
 	
 	// calculate the occupancy of the first row
 	uint free = ~(ld | rd | col | jkl_queens[row]);	// free is 1 if a queen can be set at the queens location
