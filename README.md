@@ -35,6 +35,8 @@ Especially the newer graphics cards show the potential of our program.
 |      GTX 1650 Ti      |  0.40s  |   3.62s   |    29.08s    |     4:02m    |     35:21m   |  not measured  |  not measured  | not measured |
 |     Intel UHD 770     |  4.71s  |  32.98s   |     4:18m    |    36:13m    | not measured |  not measured  |  not measured  | not measured | 
 
+<!-- |       RX 6650 XT      |  0.27s  |   1.99s   |    15.80s    |   not measured    |    not measured   |  not measured  |  not measured  | not measured | -->
+
 <b>CPUs</b>
 |      Board size N     |        16       |     17    |     18    |     19    |      20      |      21      |      22      |
 |      :----------:     |       :-:       |    :-:    |    :-:    |    :-:    |      :-:     |      :-:     |      :-:     |
