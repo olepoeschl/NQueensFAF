@@ -86,7 +86,7 @@ public class GPUSolver extends Solver {
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startijklMem, resMem;
 	private int globalWorkSize;
-	private final int MAX_GLOBAL_WORKSIZE = 1_000_000;
+	private final int MAX_GLOBAL_WORKSIZE = 500_000;
 	private int workgroupSize = Config.getDefaultConfig().getGPUWorkgroupSize();
 	private int presetQueens = Config.getDefaultConfig().getGPUPresetQueens();
 
