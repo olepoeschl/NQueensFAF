@@ -2,6 +2,7 @@ package de.nqueensfaf.files;
 
 public class Constellation {
 	
+	private int id;
 	private int ld, rd, col, startijkl;
 	private long solutions;
 	
@@ -9,14 +10,21 @@ public class Constellation {
 		super();
 	}
 	
-	public Constellation(int ld, int rd, int col, int startijkl, long solutions) {
+	public Constellation(int id, int ld, int rd, int col, int startijkl, long solutions) {
+		this.id = id;
 		this.ld = ld;
 		this.rd = rd;
 		this.col = col;
 		this.startijkl = startijkl;
 		this.solutions = solutions;
 	}
-	
+
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
 	public int getLd() {
 		return ld;
 	}

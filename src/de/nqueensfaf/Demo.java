@@ -7,14 +7,28 @@ import de.nqueensfaf.compute.GPUSolver;
 public class Demo {
 	
 	public static void main(String[] args) {
+		run();
 		//store();
 		//restore();
-		rerestore();
+		//rerestore();
+	}
+	
+	static void run() {
+		GPUSolver s = new GPUSolver();
+		s.setN(19);
+		s.setDevice(0);
+		s.setTerminationCallback((self) -> {
+			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
+		});
+		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
+			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
+		});
+		s.solve();
 	}
 	
 	static void store() {
 		GPUSolver s = new GPUSolver();
-		s.setN(20);
+		s.setN(19);
 		s.setDevice(0);
 		s.setTerminationCallback((self) -> {
 			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");

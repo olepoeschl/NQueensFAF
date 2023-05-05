@@ -235,7 +235,7 @@ class GPUConstellationsGenerator {
 		// add queens until we have preQueens queens 
 		if(queens == preQueens) {		
 			// add the subconstellations to the list
-			constellations.add(new Constellation(ld, rd, col, row << 20, -1));
+			constellations.add(new Constellation(-1, ld, rd, col, row << 20, -1));
 			counter++;
 			return;
 		}
@@ -254,10 +254,10 @@ class GPUConstellationsGenerator {
 
 	// create trash constellation to fill up workgroups 
 	private void addTrashConstellation(int ijkl) {
-		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
+		constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
 	}
 	void addTrashConstellation(ArrayList<Constellation> constellations, int ijkl) {
-		constellations.add(new Constellation((1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
+		constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
 	}
 	
 	// helper functions
