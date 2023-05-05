@@ -147,6 +147,7 @@ public class GPUSolver extends Solver {
 				transferDataToDevice(stack);
 				explosionBoost9000(stack);
 				readResults(stack);
+				releaseMemObjects();
 				
 				storedDuration = duration;
 				resetBetweenWorkloads();
@@ -481,21 +482,20 @@ public class GPUSolver extends Solver {
 		solutions = tmpSolutions;
 	}
 	
-	private void terminate() {
-		// release all CL-objects
+	private void releaseMemObjects() {
 		checkCLError(clReleaseEvent(clEvent));
-		//eventCB.free();
-		checkCLError(clReleaseCommandQueue(xqueue));
-		checkCLError(clReleaseCommandQueue(memqueue));
-		checkCLError(clReleaseKernel(kernel));
-		checkCLError(clReleaseProgram(program));
-		
 		checkCLError(clReleaseMemObject(ldMem));
 		checkCLError(clReleaseMemObject(rdMem));
 		checkCLError(clReleaseMemObject(colMem));
 		checkCLError(clReleaseMemObject(startijklMem));
 		checkCLError(clReleaseMemObject(resMem));
-		
+	}
+	
+	private void terminate() {
+		checkCLError(clReleaseCommandQueue(xqueue));
+		checkCLError(clReleaseCommandQueue(memqueue));
+		checkCLError(clReleaseKernel(kernel));
+		checkCLError(clReleaseProgram(program));
 		checkCLError(clReleaseContext(context));
 		contextCB.free();
 	}
