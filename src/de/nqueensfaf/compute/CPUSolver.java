@@ -264,7 +264,7 @@ public class CPUSolver extends Solver {
 		// add queens until we have preQueens queens
 		if (queens == preQueens) {
 			// add the subconstellations to the list
-			constellations.add(new Constellation(ld, rd, col, row<<20, -1));
+			constellations.add(new Constellation(-1, ld, rd, col, row<<20, -1));
 			counter++;
 			return;
 		}
