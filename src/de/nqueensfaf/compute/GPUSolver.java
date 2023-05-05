@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opencl.CL;
 import org.lwjgl.opencl.CLContextCallback;
 import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
@@ -124,14 +123,8 @@ public class GPUSolver extends Solver {
 			return;
 		}
 		
-		// if init fails, do not proceed
-		try (
-			MemoryStack stack = stackPush();
-		) {
-			init(stack);
-			
+		try {
 			genConstellations();
-			
 			// split huge global work sizes into multiple smaller workloads
 			int workloadSize = MAX_GLOBAL_WORKSIZE / workgroupSize * workgroupSize;
 			int numberOfWorkloads = remainingConstellations.size() / workloadSize + 1;
@@ -144,16 +137,19 @@ public class GPUSolver extends Solver {
 				workloadConstellations.addAll(remainingConstellations.subList(i * workloadSize, toIdx));
 				globalWorkSize = workloadConstellations.size();
 				
-				transferDataToDevice(stack);
-				explosionBoost9000(stack);
-				readResults(stack);
-				releaseMemObjects();
+				try (MemoryStack stack = stackPush()) {
+					init(stack);
+					transferDataToDevice(stack);
+					explosionBoost9000(stack);
+					readResults(stack);
+					releaseMemObjects();
+					terminate();
+				}
 				
 				storedDuration = duration;
 				resetBetweenWorkloads();
 			}
 			
-			terminate();
 			restored = false;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -257,10 +253,6 @@ public class GPUSolver extends Solver {
 		try {
             IntBuffer pi = stack.mallocInt(1);
             checkCLError(clGetPlatformIDs(null, pi));
-            
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-	            CL.destroy();
-            }));
         } catch (Throwable t) {
         	t.printStackTrace();
             openclable = false;
