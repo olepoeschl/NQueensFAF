@@ -37,7 +37,7 @@ public class Demo {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 			if(progress > 0.4) {
 				try {
-					s.store("test.faf");
+					s.store("test.json");
 				} catch (IllegalArgumentException | IOException e) {
 					e.printStackTrace();
 				}
@@ -57,7 +57,7 @@ public class Demo {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 			if(progress > 0.7) {
 				try {
-					s.store("test.faf");
+					s.store("test.json");
 				} catch (IllegalArgumentException | IOException e) {
 					e.printStackTrace();
 				}
@@ -65,7 +65,7 @@ public class Demo {
 			}
 		});
 		try {
-			s.restore("test.faf");
+			s.restore("test.json");
 		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
 			e.printStackTrace();
 		}
@@ -81,7 +81,7 @@ public class Demo {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
 		});
 		try {
-			s.restore("test.faf");
+			s.restore("test.json");
 		} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
 			e.printStackTrace();
 		}
