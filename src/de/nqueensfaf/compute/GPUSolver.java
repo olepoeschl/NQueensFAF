@@ -140,9 +140,9 @@ public class GPUSolver extends Solver {
 				
 				try (MemoryStack stack = stackPush()) {
 					init(stack);
-					transferDataToDevice(stack);
-					explosionBoost9000(stack);
-					readResults(stack);
+					transferDataToDevice();
+					explosionBoost9000();
+					readResults();
 					releaseCLObjects();
 				}
 				
@@ -297,7 +297,7 @@ public class GPUSolver extends Solver {
 		}
 	}
 	
-	private void transferDataToDevice(MemoryStack stack) {
+	private void transferDataToDevice() {
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
 		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
