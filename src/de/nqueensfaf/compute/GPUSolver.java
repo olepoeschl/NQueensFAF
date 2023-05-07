@@ -140,7 +140,7 @@ public class GPUSolver extends Solver {
 				
 				try (MemoryStack stack = stackPush()) {
 					init(stack);
-					transferDataToDevice();
+					transferDataToDevice(stack);
 					explosionBoost9000();
 					readResults();
 					releaseCLObjects();
@@ -273,9 +273,7 @@ public class GPUSolver extends Solver {
 
 		program = clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
 		String options = "-D N="+N + " -D BLOCK_SIZE="+workgroupSize + " -cl-mad-enable";
-		PointerBuffer devicesBuf = stack.mallocPointer(1);
-		devicesBuf.put(0, device);
-		int error = clBuildProgram(program, devicesBuf, options, null, 0);
+		int error = clBuildProgram(program, device, options, null, 0);
 		checkCLError(error);
 		
 		// determine which kernel to use
@@ -297,7 +295,7 @@ public class GPUSolver extends Solver {
 		}
 	}
 	
-	private void transferDataToDevice() {
+	private void transferDataToDevice(MemoryStack stack) {
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
 		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
@@ -359,28 +357,28 @@ public class GPUSolver extends Solver {
 
 		// set kernel parameters
 		// ld
-		LongBuffer ldArg = BufferUtils.createLongBuffer(1);
+		LongBuffer ldArg = stack.mallocLong(1);
 		ldArg.put(0, ldMem);
 		checkCLError(clSetKernelArg(kernel, 0, ldArg));
 		// rd
-		LongBuffer rdArg = BufferUtils.createLongBuffer(1);
+		LongBuffer rdArg = stack.mallocLong(1);
 		rdArg.put(0, rdMem);
 		checkCLError(clSetKernelArg(kernel, 1, rdArg));
 		// col
-		LongBuffer colArg = BufferUtils.createLongBuffer(1);
+		LongBuffer colArg = stack.mallocLong(1);
 		colArg.put(0, colMem);
 		checkCLError(clSetKernelArg(kernel, 2, colArg));
 		// startijkl
-		LongBuffer startijklArg = BufferUtils.createLongBuffer(1);
+		LongBuffer startijklArg = stack.mallocLong(1);
 		startijklArg.put(0, startijklMem);
 		checkCLError(clSetKernelArg(kernel, 3, startijklArg));
 		// res
-		LongBuffer resArg = BufferUtils.createLongBuffer(1);
+		LongBuffer resArg = stack.mallocLong(1);
 		resArg.put(0, resMem);
 		checkCLError(clSetKernelArg(kernel, 4, resArg));
 	}
 	
-	private void explosionBoost9000(MemoryStack stack) {
+	private void explosionBoost9000() {
 		// create buffer of pointers defining the multi-dimensional size of the number of work units to execute
 		final int dimensions = 1;
 		PointerBuffer globalWorkers = BufferUtils.createPointerBuffer(dimensions);
@@ -440,7 +438,7 @@ public class GPUSolver extends Solver {
 		duration = ((end - start) / 1000000) + storedDuration;	// convert nanoseconds to milliseconds
 	}
 	
-	private void readResults(MemoryStack stack) {
+	private void readResults() {
 		// read result and progress memory buffers
 		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
 
