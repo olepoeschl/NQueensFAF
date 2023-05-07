@@ -81,6 +81,7 @@ public class GPUSolver extends Solver {
 	private long device = Config.getDefaultConfig().getGPUDevice();
 	private long xqueue, memqueue;
 	private long clEvent;
+	private CLEventCallback eventCB;
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startijklMem, resMem;
@@ -142,8 +143,7 @@ public class GPUSolver extends Solver {
 					transferDataToDevice(stack);
 					explosionBoost9000(stack);
 					readResults(stack);
-					releaseMemObjects();
-					terminate();
+					releaseCLObjects();
 				}
 				
 				storedDuration = duration;
@@ -250,22 +250,15 @@ public class GPUSolver extends Solver {
 
 	// own functions
 	private void init(MemoryStack stack) {
-		try {
-            IntBuffer pi = stack.mallocInt(1);
-            checkCLError(clGetPlatformIDs(null, pi));
-        } catch (Throwable t) {
-        	t.printStackTrace();
-            openclable = false;
-        }
-		
 		// intbuffer for containing error information if needed
 		errBuf = stack.callocInt(1);
 
 		ctxProps = stack.mallocPointer(3);
         ctxProps
-            .put(0, CL_CONTEXT_PLATFORM)
-            .put(1, platform)
-            .put(2, 0);
+            .put(CL_CONTEXT_PLATFORM)
+            .put(platform)
+            .put(NULL)
+            .flip();
         
         context = clCreateContext(ctxProps, device, contextCB = CLContextCallback.create((errinfo, private_info, cb, user_data) -> {
             System.err.println("[LWJGL] cl_context_callback");
@@ -409,7 +402,7 @@ public class GPUSolver extends Solver {
 		// get exact time values using CLEvent
 		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
 		clEvent = xEventBuf.get(0);
-        int errcode = clSetEventCallback(clEvent, CL_COMPLETE, CLEventCallback.create((event, event_command_exec_status, user_data) -> {
+        int errcode = clSetEventCallback(clEvent, CL_COMPLETE, eventCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
     		int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
     		checkCLError(err);
     		err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
@@ -474,22 +467,23 @@ public class GPUSolver extends Solver {
 		solutions = tmpSolutions;
 	}
 	
-	private void releaseMemObjects() {
-		checkCLError(clReleaseEvent(clEvent));
+	private void releaseCLObjects() {
 		checkCLError(clReleaseMemObject(ldMem));
 		checkCLError(clReleaseMemObject(rdMem));
 		checkCLError(clReleaseMemObject(colMem));
 		checkCLError(clReleaseMemObject(startijklMem));
 		checkCLError(clReleaseMemObject(resMem));
-	}
-	
-	private void terminate() {
-		checkCLError(clReleaseCommandQueue(xqueue));
-		checkCLError(clReleaseCommandQueue(memqueue));
+
+		eventCB.free();
+		contextCB.free();
+		
+		checkCLError(clReleaseEvent(clEvent));
+		
 		checkCLError(clReleaseKernel(kernel));
 		checkCLError(clReleaseProgram(program));
+		checkCLError(clReleaseCommandQueue(xqueue));
+		checkCLError(clReleaseCommandQueue(memqueue));
 		checkCLError(clReleaseContext(context));
-		contextCB.free();
 	}
 	
 	private Thread gpuReaderThread (StringBuilder gpuReaderThreadStopper) {
