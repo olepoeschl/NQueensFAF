@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -79,7 +78,7 @@ public class GPUSolver extends Solver {
 	private CLContextCallback contextCB;
 	private long platform;
 	private HashMap<Long, Long> platformByDevice;
-	private List<Long> devices;
+	private ArrayList<Long> availableDevices;
 	private long device = Config.getDefaultConfig().getGPUDevice();
 	private long xqueue, memqueue;
 	private long clEvent;
@@ -240,7 +239,11 @@ public class GPUSolver extends Solver {
 		errBuf = stack.callocInt(1);
 
 		ctxProps = stack.mallocPointer(3);
-		ctxProps.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
+		ctxProps
+			.put(CL_CONTEXT_PLATFORM)
+			.put(platform)
+			.put(NULL)
+			.flip();
 
 		context = clCreateContext(ctxProps, device,
 				contextCB = CLContextCallback.create((errinfo, private_info, cb, user_data) -> {
@@ -669,11 +672,11 @@ public class GPUSolver extends Solver {
 		if (!openclable) {
 			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
-		if (devices == null) {
-			devices = new ArrayList<Long>();
+		if (availableDevices == null) {
+			availableDevices = new ArrayList<Long>();
 			platformByDevice = new HashMap<Long, Long>();
 		} else {
-			devices.clear();
+			availableDevices.clear();
 			platformByDevice.clear();
 		}
 
@@ -697,7 +700,7 @@ public class GPUSolver extends Solver {
 					checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
 					for (int d = 0; d < devicesBuf.capacity(); d++) {
 						long device = devicesBuf.get(d);
-						devices.add(device);
+						availableDevices.add(device);
 						platformByDevice.put(device, platform);
 						deviceNames.add(getDeviceInfoStringUTF8(device, CL_DEVICE_NAME));
 					}
@@ -718,10 +721,10 @@ public class GPUSolver extends Solver {
 		if (!openclable) {
 			throw new IllegalStateException("No OpenCL-capable device was found. GPUSolver is not available.");
 		}
-		if (idx < 0 || idx >= devices.size()) {
-			throw new IllegalArgumentException("Invalid device index value: " + idx + " (size:" + devices.size() + ")");
+		if (idx < 0 || idx >= availableDevices.size()) {
+			throw new IllegalArgumentException("Invalid device index value: " + idx + " (size:" + availableDevices.size() + ")");
 		}
-		device = devices.get(idx);
+		device = availableDevices.get(idx);
 		platform = platformByDevice.get(device);
 	}
 
