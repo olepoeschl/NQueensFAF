@@ -66,15 +66,12 @@ public class GPUSolver extends Solver {
 	}
 
 	// OpenCL stuff
-	private IntBuffer errBuf;
-	private PointerBuffer ctxProps;
-	private long context;
-	private CLContextCallback contextCB;
-	private long platform;
 	private ArrayList<Long> availableDevices;
-	private HashMap<Long, Long> platformByDevice;
+	private HashMap<Long, ArrayList<Long>> devicesByPlatform;
 	private HashMap<Long, String> nameByDevice;
 	private ArrayList<DeviceConfig> deviceConfigs;
+	private ArrayList<Long> contexts;
+	private HashMap<Long, Long> contextByDevice;
 	private long queue;
 	private long clEvent;
 	private CLEventCallback eventCB;
@@ -100,10 +97,13 @@ public class GPUSolver extends Solver {
 	// non public constructor
 	protected GPUSolver() {
 		if(openclable) {
+			contexts = new ArrayList<Long>();
+			
 			availableDevices = new ArrayList<Long>();
-			platformByDevice = new HashMap<Long, Long>();
+			devicesByPlatform = new HashMap<Long, ArrayList<Long>>();
 			nameByDevice = new HashMap<Long, String>();
 			deviceConfigs = new ArrayList<DeviceConfig>();
+			contextByDevice = new HashMap<Long, Long>();
 			try (MemoryStack stack = stackPush()) {
 				fetchAvailableDevices(stack);
 			}
@@ -130,17 +130,29 @@ public class GPUSolver extends Solver {
 		}
 
 		try {
-			genConstellations();
-			globalWorkSize = remainingConstellations.size();
-
+			
 			try (MemoryStack stack = stackPush()) {
-				init(stack);
-				transferDataToDevice();
-				setKernelArgs(stack);
-				explosionBoost9000();
-				readResults();
-				releaseCLObjects();
+				createContexts(stack);
+				for(var dvcCfg : deviceConfigs) {
+					
+					init(stack, dvcCfg);
+					
+					genConstellations();
+					
+				}
 			}
+			
+			
+//			globalWorkSize = remainingConstellations.size();
+//
+//			try (MemoryStack stack = stackPush()) {
+//				init(stack);
+//				transferDataToDevice();
+//				setKernelArgs(stack);
+//				explosionBoost9000();
+//				readResults();
+//				releaseCLObjects();
+//			}
 
 			restored = false;
 		} catch (Exception e) {
@@ -238,25 +250,39 @@ public class GPUSolver extends Solver {
 	}
 
 	// own functions
-	private void init(MemoryStack stack) {
-		// intbuffer for containing error information if needed
-		errBuf = stack.callocInt(1);
-
-		ctxProps = stack.mallocPointer(3);
-		ctxProps
-			.put(CL_CONTEXT_PLATFORM)
-			.put(platform)
-			.put(NULL)
-			.flip();
-
-		context = clCreateContext(ctxProps, device,
-				contextCB = CLContextCallback.create((errinfo, private_info, cb, user_data) -> {
-					System.err.println("[LWJGL] cl_context_callback");
-					System.err.println("\tInfo: " + memUTF8(errinfo));
-				}), NULL, errBuf);
-		checkCLError(errBuf);
-
-		queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, errBuf);
+	private void createContexts(MemoryStack stack) {
+		IntBuffer errBuf = stack.callocInt(1);
+		devicesByPlatform.keySet().stream().distinct().forEach(platform -> {
+			PointerBuffer ctxProps = stack.mallocPointer(3);
+			ctxProps
+				.put(CL_CONTEXT_PLATFORM)
+				.put(platform)
+				.put(NULL)
+				.flip();
+			PointerBuffer devices = stack.mallocPointer(devicesByPlatform.get(platform).size());
+			for(long device : devicesByPlatform.get(platform)) {
+				if(deviceConfigs.stream().anyMatch(dvcCfg -> device == dvcCfg.getId()))	// if the device shall be used
+					devices.put(device);
+			}
+			if(devices.capacity() > 0) {	// if at least one device of this platform is used, create the context
+				long context = clCreateContext(ctxProps, devices, null, NULL, errBuf);
+				checkCLError(errBuf.get(0));
+				contexts.add(context);
+				// 
+				devices.position(0);
+				while(devices.hasRemaining()) {
+					contextByDevice.put(devices.get(), context);
+				}
+			}
+		});
+	}
+	
+	private void init(MemoryStack stack, DeviceConfig deviceConfig) {
+		IntBuffer errBuf = stack.callocInt(1);
+		long deviceId = deviceConfig.getId();
+		long context = contextByDevice.get(deviceId);
+		
+		queue = clCreateCommandQueue(context, deviceId, CL_QUEUE_PROFILING_ENABLE, errBuf);
 		checkCLError(errBuf.get(0));
 
 		program = clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
@@ -463,7 +489,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseMemObject(resMem));
 
 		eventCB.free();
-		contextCB.free();
 
 		checkCLError(clReleaseEvent(clEvent));
 
@@ -526,12 +551,13 @@ public class GPUSolver extends Solver {
 			if (entityCountBuf.get(0) == 0) {
 				throw new RuntimeException("No OpenCL devices found.");
 			}
+			devicesByPlatform.put(platform, new ArrayList<Long>());
 			PointerBuffer devicesBuf = stack.mallocPointer(entityCountBuf.get(0));
 			checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
 			for (int d = 0; d < devicesBuf.capacity(); d++) {
 				long device = devicesBuf.get(d);
 				availableDevices.add(device);
-				platformByDevice.put(device, platform);
+				devicesByPlatform.get(platform).add(device);
 				nameByDevice.put(device, getDeviceInfoStringUTF8(device, CL_DEVICE_VENDOR) + ": " + getDeviceInfoStringUTF8(device, CL_DEVICE_NAME));
 			}
 		}
