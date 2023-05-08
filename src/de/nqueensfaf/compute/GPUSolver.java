@@ -93,7 +93,7 @@ public class GPUSolver extends Solver {
 
 	// calculation related stuff
 	private GPUConstellationsGenerator generator;
-	private ArrayList<Constellation> constellations, remainingConstellations, workloadConstellations;
+	private ArrayList<Constellation> constellations, remainingConstellations;
 	private long duration, start, end, storedDuration;
 	private long solutions;
 	private float progress;
@@ -128,6 +128,7 @@ public class GPUSolver extends Solver {
 
 		try {
 			genConstellations();
+			globalWorkSize = remainingConstellations.size();
 
 			try (MemoryStack stack = stackPush()) {
 				init(stack);
@@ -285,7 +286,7 @@ public class GPUSolver extends Solver {
 				errBuf, null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, workloadConstellations.get(i).getLd());
+			paramPtr.putInt(i * 4, remainingConstellations.get(i).getLd());
 		}
 		checkCLError(clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null));
 
@@ -296,7 +297,7 @@ public class GPUSolver extends Solver {
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, workloadConstellations.get(i).getRd());
+			paramPtr.putInt(i * 4, remainingConstellations.get(i).getRd());
 		}
 		checkCLError(clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null));
 
@@ -307,7 +308,7 @@ public class GPUSolver extends Solver {
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, workloadConstellations.get(i).getCol());
+			paramPtr.putInt(i * 4, remainingConstellations.get(i).getCol());
 		}
 		checkCLError(clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null));
 
@@ -318,7 +319,7 @@ public class GPUSolver extends Solver {
 				errBuf, null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, workloadConstellations.get(i).getStartijkl());
+			paramPtr.putInt(i * 4, remainingConstellations.get(i).getStartijkl());
 		}
 		checkCLError(clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null));
 
@@ -329,7 +330,7 @@ public class GPUSolver extends Solver {
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			resBuf.putLong(i * 8, workloadConstellations.get(i).getSolutions());
+			resBuf.putLong(i * 8, remainingConstellations.get(i).getSolutions());
 		}
 		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resBuf, null, null));
 
@@ -430,13 +431,13 @@ public class GPUSolver extends Solver {
 		long tmpSolutions = 0;
 		int solvedConstellations = 0;
 		for (int i = 0; i < globalWorkSize; i++) {
-			if (workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+			if (remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
 			long solutionsForConstellation = resBuf.getLong(i * 8)
-					* symmetry(workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+					* symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 			if (solutionsForConstellation >= 0)
 				// synchronize with the list of constellations on the RAM
-				workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+				remainingConstellations.get(i).setSolutions(solutionsForConstellation);
 		}
 		for (var c : constellations) {
 			if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
@@ -478,14 +479,14 @@ public class GPUSolver extends Solver {
 				long tmpSolutions = 0;
 				int solvedConstellations = 0;
 				for (int i = 0; i < globalWorkSize; i++) {
-					if (workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash
+					if (remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash
 																					// constellations
 						continue;
 					long solutionsForConstellation = resBuf.getLong(i * 8)
-							* symmetry(workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+							* symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 					if (solutionsForConstellation >= 0)
 						// synchronize with the list of constellations on the RAM
-						workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+						remainingConstellations.get(i).setSolutions(solutionsForConstellation);
 				}
 				for (var c : constellations) {
 					if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
