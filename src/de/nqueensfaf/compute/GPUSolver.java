@@ -298,82 +298,55 @@ public class GPUSolver extends Solver {
 	private void transferDataToDevice(MemoryStack stack) {
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
-		ByteBuffer src = BufferUtils.createByteBuffer(globalWorkSize*4);
-		for(int i = 0; i < globalWorkSize; i++) {
-			src.putInt(i*4, workloadConstellations.get(i).getLd());
-		}
-		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, src, errBuf);
+		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
 		checkCLError(errBuf.get(0));
-//		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-//		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
-//		checkCLError(errBuf.get(0));
-//		for(int i = 0; i < globalWorkSize; i++) {
-//			paramPtr.putInt(i*4, workloadConstellations.get(i).getLd());
-//		}
-//		checkCLError(clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+		for(int i = 0; i < globalWorkSize; i++) {
+			paramPtr.putInt(i*4, workloadConstellations.get(i).getLd());
+		}
+		checkCLError(clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null));
 		
 		// rd
+		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		checkCLError(errBuf.get(0));
+		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
+		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			src.putInt(i*4, workloadConstellations.get(i).getRd());
+			paramPtr.putInt(i*4, workloadConstellations.get(i).getRd());
 		}
-		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, src, errBuf);
-//		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-//		checkCLError(errBuf.get(0));
-//		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
-//		checkCLError(errBuf.get(0));
-//		for(int i = 0; i < globalWorkSize; i++) {
-//			paramPtr.putInt(i*4, workloadConstellations.get(i).getRd());
-//		}
-//		checkCLError(clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null));
 		
 		// col
+		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		checkCLError(errBuf.get(0));
+		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
+		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			src.putInt(i*4, workloadConstellations.get(i).getCol());
+			paramPtr.putInt(i*4, workloadConstellations.get(i).getCol());
 		}
-		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, src, errBuf);
-//		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-//		checkCLError(errBuf.get(0));
-//		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
-//		checkCLError(errBuf.get(0));
-//		for(int i = 0; i < globalWorkSize; i++) {
-//			paramPtr.putInt(i*4, workloadConstellations.get(i).getCol());
-//		}
-//		checkCLError(clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null));
 		
 		// startijkl
+		startijklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
+		checkCLError(errBuf.get(0));
+		paramPtr = clEnqueueMapBuffer(memqueue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
+		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
-			src.putInt(i*4, workloadConstellations.get(i).getStartijkl());
+			paramPtr.putInt(i*4, workloadConstellations.get(i).getStartijkl());
 		}
-		startijklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, src, errBuf);
-//		startijklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*4, errBuf);
-//		checkCLError(errBuf.get(0));
-//		paramPtr = clEnqueueMapBuffer(memqueue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize*4, null, null, errBuf, null);
-//		checkCLError(errBuf.get(0));
-//		for(int i = 0; i < globalWorkSize; i++) {
-//			paramPtr.putInt(i*4, workloadConstellations.get(i).getStartijkl());
-//		}
-//		checkCLError(clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, paramPtr, null, null);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null));
 
 		// result memory
-		resBuf = BufferUtils.createByteBuffer(globalWorkSize*8);
+		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
+		checkCLError(errBuf.get(0));
+		resBuf = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
+		checkCLError(errBuf.get(0));
 		for(int i = 0; i < globalWorkSize; i++) {
 			resBuf.putLong(i*8, workloadConstellations.get(i).getSolutions());
 		}
-		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, resBuf, errBuf);
-//		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize*8, errBuf);
-//		checkCLError(errBuf.get(0));
-//		ByteBuffer resWritePtr = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize*8, null, null, errBuf, null);
-//		checkCLError(errBuf.get(0));
-//		for(int i = 0; i < globalWorkSize; i++) {
-//			resWritePtr.putLong(i*8, workloadConstellations.get(i).getSolutions());
-//		}
-//		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resWritePtr, null, null));
-//		clEnqueueWriteBuffer(memqueue, context, true, 0, resWritePtr, null, null);
-//		clFlush(memqueue);
+		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resBuf, null, null));
+		
+		clFlush(memqueue);
 
 		// set kernel parameters
 		// ld
