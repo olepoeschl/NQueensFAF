@@ -1,6 +1,6 @@
 package de.nqueensfaf.util;
 
-import de.nqueensfaf.Solver;
+import de.nqueensfaf.compute.Solver;
 
 public interface BasicCallback {
 	void callback(Solver self);

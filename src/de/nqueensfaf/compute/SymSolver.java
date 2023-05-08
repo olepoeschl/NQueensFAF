@@ -1,6 +1,5 @@
 package de.nqueensfaf.compute;
 
-import de.nqueensfaf.Solver;
 import java.io.IOException;
 
 

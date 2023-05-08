@@ -1,4 +1,4 @@
-package de.nqueensfaf;
+package de.nqueensfaf.compute;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 
-import de.nqueensfaf.compute.CPUSolver;
-import de.nqueensfaf.compute.GPUSolver;
 import de.nqueensfaf.files.Config;
 import de.nqueensfaf.util.BasicCallback;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
@@ -29,6 +27,25 @@ import de.nqueensfaf.util.OnTimeUpdateCallback;
  */
 public abstract class Solver {
 
+	// constants
+	/**
+	 * The {@link Solver} is idle.
+	 */
+	private static final int IDLE = 1;
+	/**
+	 * The {@link Solver} calls the initialization callbacks and starts the threads for continous time and progress updates.
+	 */
+	private static final int INITIALIZING = 2;
+	/**
+	 * The {@link Solver} is executing the solving mechanism.
+	 */
+	private static final int RUNNING = 3;
+	/**
+	 * The {@link Solver} calls the termination callbacks and terminates all threads.
+	 */
+	private static final int TERMINATING = 4;
+	
+	// variables
 	/**
 	 * board size
 	 */
@@ -68,7 +85,7 @@ public abstract class Solver {
 	 * current state of the {@link Solver}
 	 * @see NQueensFAF
 	 */
-	private int state = NQueensFAF.IDLE;
+	private int state = IDLE;
 	/**
 	 * thread for the {@link #autoSave} function
 	 * @see 
@@ -154,12 +171,12 @@ public abstract class Solver {
 	public abstract long getSolutions();
 	
 	// type-specific
-	public static <T extends Solver> T applyConfig(File configFile) throws StreamReadException, DatabindException, IOException {
-		return applyConfig(Config.read(configFile));
+	public static <T extends Solver> T createSolverWithConfig(File configFile) throws StreamReadException, DatabindException, IOException {
+		return createSolverWithConfig(Config.read(configFile));
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends Solver> T applyConfig(Config config) {
+	public static <T extends Solver> T createSolverWithConfig(Config config) {
 		Solver solver;
 		CPUSolver cpuSolver = null;
 		GPUSolver gpuSolver = null;
@@ -171,7 +188,7 @@ public abstract class Solver {
 			break;
 		case "gpu":
 			gpuSolver = new GPUSolver();
-			gpuSolver.setDevice(config.getGPUDevice());
+			gpuSolver.setDevice(config.getGPUDevices());
 			gpuSolver.setWorkgroupSize(config.getGPUWorkgroupSize());
 			gpuSolver.setNumberOfPresetQueens(config.getGPUPresetQueens());
 			solver = gpuSolver;
@@ -187,8 +204,6 @@ public abstract class Solver {
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
 		solver.setAutoSaveFilename(config.getAutosaveFilePath());
 		
-		// TODO: check for forbidden values using a method inside of Config class
-		
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
 			return (T) cpuSolver;
@@ -197,6 +212,20 @@ public abstract class Solver {
 		default: // unreachable code, only here to calm the compiler
 			return null;
 		}
+	}
+	
+	public static CPUSolver createCPUSolver() {
+		Config config = Config.getDefaultConfig();
+		config.setType("cpu");
+		CPUSolver cpuSolver = createSolverWithConfig(config);
+		return cpuSolver;
+	}
+	
+	public static GPUSolver createGPUSolver() {
+		Config config = Config.getDefaultConfig();
+		config.setType("gpu");
+		GPUSolver gpuSolver = createSolverWithConfig(config);
+		return gpuSolver;
 	}
 	
 	/**
@@ -209,18 +238,18 @@ public abstract class Solver {
 		finishStoring = false;	// reset finishStoring to false, otherwise autosave doesn't work
 		
 		checkForPreparation();
-		state = NQueensFAF.INITIALIZING;
+		state = INITIALIZING;
 		if(initializationCallback != null)
 			initializationCallback.callback(this);
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
-		state = NQueensFAF.RUNNING;
+		state = RUNNING;
 		startUpdateCallerThreads();
 		if(autoSaveEnabled)
 			startAutoSaverThread();
 		run();
 
-		state = NQueensFAF.TERMINATING;
+		state = TERMINATING;
 		ucExecutor.shutdown();
 		try {
 			ucExecutor.awaitTermination(progressUpdateDelay > timeUpdateDelay ? progressUpdateDelay+100 : timeUpdateDelay+100, TimeUnit.MILLISECONDS);
@@ -230,7 +259,7 @@ public abstract class Solver {
 		if(terminationCallback != null)
 			terminationCallback.callback(this);
 		
-		state = NQueensFAF.IDLE;
+		state = IDLE;
 	}
 	/**
 	 * Checks if all prepartions are done correctly.
@@ -238,15 +267,15 @@ public abstract class Solver {
 	 */
 	private void checkForPreparation() {
 		if(N == 0) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Board size was not set");
 		}
 		if(!isIdle()) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Solver is already started");
 		}
 		if(getProgress() == 1.0f) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Solver is already done, nothing to do here");
 		}
 	}
@@ -610,27 +639,27 @@ public abstract class Solver {
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#IDLE}
 	 */
 	public final boolean isIdle() {
-		return state == NQueensFAF.IDLE;
+		return state == IDLE;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#INITIALIZING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#INITIALIZING}
 	 */
 	public final boolean isInitializing() {
-		return state == NQueensFAF.INITIALIZING;
+		return state == INITIALIZING;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#RUNNING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#RUNNING}
 	 */
 	public final boolean isRunning() {
-		return state == NQueensFAF.RUNNING;
+		return state == RUNNING;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#TERMINATING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#TERMINATING}
 	 */
 	public final boolean isTerminating() {
-		return state == NQueensFAF.TERMINATING;
+		return state == TERMINATING;
 	}
 }

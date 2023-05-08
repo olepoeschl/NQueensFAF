@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import de.nqueensfaf.Solver;
 import de.nqueensfaf.files.Config;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.SolverState;
@@ -41,6 +40,9 @@ public class CPUSolver extends Solver {
 	private long solutions, duration, storedDuration;
 	private float progress;
 	private boolean restored = false;
+	
+	// non public constructor
+	protected CPUSolver(){}
 	
 	// inherited functions
 	@Override

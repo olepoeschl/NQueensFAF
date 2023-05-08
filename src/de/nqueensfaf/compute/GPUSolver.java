@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -32,10 +33,8 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import static de.nqueensfaf.compute.InfoUtil.*;
 
-import de.nqueensfaf.NQueensFAF;
-import de.nqueensfaf.Solver;
-import de.nqueensfaf.files.Config;
 import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.files.DeviceConfig;
 import de.nqueensfaf.files.SolverState;
 
 public class GPUSolver extends Solver {
@@ -55,14 +54,10 @@ public class GPUSolver extends Solver {
 			break;
 		case -1:
 			// checking for OpenCL-capable devices was not possible
-			if (NQueensFAF.getIgnoreOpenCLCheck()) {
-				openclable = true;
-				break;
-			}
-			System.err.println("Unable to check for OpenCL-capable devices.");
+			System.err.println("Unable to check for OpenCL-capable devices. Assuming that there is at least 1.");
 			System.err.println(
 					"To get rid of this warning, install 'clinfo' (better option) or use NQueensFAF.setIgnoreOpenCLCheck(true) (will crash the JVM if no OpenCL-capable device is found).");
-			openclable = false;
+			openclable = true;
 			break;
 		}
 		if (!openclable) {
@@ -72,23 +67,24 @@ public class GPUSolver extends Solver {
 
 	// OpenCL stuff
 	private IntBuffer errBuf;
-	private ByteBuffer resBuf;
 	private PointerBuffer ctxProps;
 	private long context;
 	private CLContextCallback contextCB;
 	private long platform;
-	private HashMap<Long, Long> platformByDevice;
 	private ArrayList<Long> availableDevices;
-	private long device = Config.getDefaultConfig().getGPUDevice();
-	private long xqueue, memqueue;
+	private HashMap<Long, Long> platformByDevice;
+	private HashMap<Long, String> nameByDevice;
+	private ArrayList<DeviceConfig> deviceConfigs;
+	private long queue;
 	private long clEvent;
 	private CLEventCallback eventCB;
 	private long program;
 	private long kernel;
 	private Long ldMem, rdMem, colMem, startijklMem, resMem;
+	private ByteBuffer resPtr;
 	private int globalWorkSize;
-	private int workgroupSize = Config.getDefaultConfig().getGPUWorkgroupSize();
-	private int presetQueens = Config.getDefaultConfig().getGPUPresetQueens();
+	private int workgroupSize;
+	private int presetQueens;
 
 	// calculation related stuff
 	private GPUConstellationsGenerator generator;
@@ -101,9 +97,17 @@ public class GPUSolver extends Solver {
 	// control flow variables
 	private boolean restored = false;
 
-	public GPUSolver() {
-		if (openclable)
-			getAvailableDevices(); // fill the devices list with all available devices
+	// non public constructor
+	protected GPUSolver() {
+		if(openclable) {
+			availableDevices = new ArrayList<Long>();
+			platformByDevice = new HashMap<Long, Long>();
+			nameByDevice = new HashMap<Long, String>();
+			deviceConfigs = new ArrayList<DeviceConfig>();
+			try (MemoryStack stack = stackPush()) {
+				fetchAvailableDevices(stack);
+			}
+		}
 	}
 
 	// inherited functions
@@ -252,9 +256,7 @@ public class GPUSolver extends Solver {
 				}), NULL, errBuf);
 		checkCLError(errBuf);
 
-		xqueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, errBuf);
-		checkCLError(errBuf.get(0));
-		memqueue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, errBuf);
+		queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, errBuf);
 		checkCLError(errBuf.get(0));
 
 		program = clCreateProgramWithSource(context, getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), null);
@@ -285,59 +287,60 @@ public class GPUSolver extends Solver {
 		// OpenCL-Memory Objects to be passed to the kernel
 		// ld
 		ldMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4, errBuf);
-		ByteBuffer paramPtr = clEnqueueMapBuffer(memqueue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null,
+		ByteBuffer ldPtr = clEnqueueMapBuffer(queue, ldMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null,
 				errBuf, null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, remainingConstellations.get(i).getLd());
+			ldPtr.putInt(i * 4, remainingConstellations.get(i).getLd());
 		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, ldMem, paramPtr, null, null));
+		checkCLError(clEnqueueUnmapMemObject(queue, ldMem, ldPtr, null, null));
 
 		// rd
 		rdMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4, errBuf);
 		checkCLError(errBuf.get(0));
-		paramPtr = clEnqueueMapBuffer(memqueue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null, errBuf,
+		ByteBuffer rdPtr = clEnqueueMapBuffer(queue, rdMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null, errBuf,
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, remainingConstellations.get(i).getRd());
+			rdPtr.putInt(i * 4, remainingConstellations.get(i).getRd());
 		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, rdMem, paramPtr, null, null));
+		checkCLError(clEnqueueUnmapMemObject(queue, rdMem, rdPtr, null, null));
 
 		// col
 		colMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4, errBuf);
 		checkCLError(errBuf.get(0));
-		paramPtr = clEnqueueMapBuffer(memqueue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null, errBuf,
+		ByteBuffer colPtr = clEnqueueMapBuffer(queue, colMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null, errBuf,
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, remainingConstellations.get(i).getCol());
+			colPtr.putInt(i * 4, remainingConstellations.get(i).getCol());
 		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, colMem, paramPtr, null, null));
+		checkCLError(clEnqueueUnmapMemObject(queue, colMem, colPtr, null, null));
 
 		// startijkl
 		startijklMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4, errBuf);
 		checkCLError(errBuf.get(0));
-		paramPtr = clEnqueueMapBuffer(memqueue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null,
+		ByteBuffer startijklPtr = clEnqueueMapBuffer(queue, startijklMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4, null, null,
 				errBuf, null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			paramPtr.putInt(i * 4, remainingConstellations.get(i).getStartijkl());
+			startijklPtr.putInt(i * 4, remainingConstellations.get(i).getStartijkl());
 		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, startijklMem, paramPtr, null, null));
+		checkCLError(clEnqueueUnmapMemObject(queue, startijklMem, startijklPtr, null, null));
 
 		// result memory
 		resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 8, errBuf);
 		checkCLError(errBuf.get(0));
-		resBuf = clEnqueueMapBuffer(memqueue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize * 8, null, null, errBuf,
+		resPtr = clEnqueueMapBuffer(queue, resMem, true, CL_MAP_WRITE, 0, globalWorkSize * 8, null, null, errBuf,
 				null);
 		checkCLError(errBuf.get(0));
 		for (int i = 0; i < globalWorkSize; i++) {
-			resBuf.putLong(i * 8, remainingConstellations.get(i).getSolutions());
+			resPtr.putLong(i * 8, remainingConstellations.get(i).getSolutions());
 		}
-		checkCLError(clEnqueueUnmapMemObject(memqueue, resMem, resBuf, null, null));
+		checkCLError(clEnqueueUnmapMemObject(queue, resMem, resPtr, null, null));
 
-		clFlush(memqueue);
+		checkCLError(clFlush(queue));
+		checkCLError(clFinish(queue));
 	}
 
 	private void setKernelArgs(MemoryStack stack) {
@@ -372,15 +375,11 @@ public class GPUSolver extends Solver {
 		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		localWorkSize.put(0, workgroupSize);
 
-		// wait for all memory operations to finish
-		checkCLError(clFinish(memqueue));
-
 		// run kernel
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that is used for
 																			// measuring the execution time
-		checkCLError(clEnqueueNDRangeKernel(xqueue, kernel, dimensions, null, globalWorkers, localWorkSize, null,
+		checkCLError(clEnqueueNDRangeKernel(queue, kernel, dimensions, null, globalWorkers, localWorkSize, null,
 				xEventBuf));
-		clFlush(xqueue);
 
 		// set pseudo starttime
 		start = System.currentTimeMillis();
@@ -402,7 +401,8 @@ public class GPUSolver extends Solver {
 		gpuReaderThread(gpuReaderThreadStopper).start();
 
 		// wait for the gpu computation to finish
-		checkCLError(clFinish(xqueue));
+		checkCLError(clFlush(queue));
+		checkCLError(clFinish(queue));
 
 		// stop the thread that continously reads from the GPU
 		gpuReaderThreadStopper.append("STOP");
@@ -429,14 +429,14 @@ public class GPUSolver extends Solver {
 
 	private void readResults() {
 		// read result and progress memory buffers
-		checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
+		checkCLError(clEnqueueReadBuffer(queue, resMem, true, 0, resPtr, null, null));
 
 		long tmpSolutions = 0;
 		int solvedConstellations = 0;
 		for (int i = 0; i < globalWorkSize; i++) {
 			if (remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
-			long solutionsForConstellation = resBuf.getLong(i * 8)
+			long solutionsForConstellation = resPtr.getLong(i * 8)
 					* symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 			if (solutionsForConstellation >= 0)
 				// synchronize with the list of constellations on the RAM
@@ -469,15 +469,14 @@ public class GPUSolver extends Solver {
 
 		checkCLError(clReleaseKernel(kernel));
 		checkCLError(clReleaseProgram(program));
-		checkCLError(clReleaseCommandQueue(xqueue));
-		checkCLError(clReleaseCommandQueue(memqueue));
+		checkCLError(clReleaseCommandQueue(queue));
 		checkCLError(clReleaseContext(context));
 	}
 
 	private Thread gpuReaderThread(StringBuilder gpuReaderThreadStopper) {
 		return new Thread(() -> {
 			while (gpuReaderThreadStopper.toString().equals("")) {
-				checkCLError(clEnqueueReadBuffer(memqueue, resMem, true, 0, resBuf, null, null));
+				checkCLError(clEnqueueReadBuffer(queue, resMem, true, 0, resPtr, null, null));
 
 				long tmpSolutions = 0;
 				int solvedConstellations = 0;
@@ -485,7 +484,7 @@ public class GPUSolver extends Solver {
 					if (remainingConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash
 																					// constellations
 						continue;
-					long solutionsForConstellation = resBuf.getLong(i * 8)
+					long solutionsForConstellation = resPtr.getLong(i * 8)
 							* symmetry(remainingConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 					if (solutionsForConstellation >= 0)
 						// synchronize with the list of constellations on the RAM
@@ -512,6 +511,49 @@ public class GPUSolver extends Solver {
 		});
 	}
 
+	private void fetchAvailableDevices(MemoryStack stack) {
+		IntBuffer entityCountBuf = stack.mallocInt(1);
+		checkCLError(clGetPlatformIDs(null, entityCountBuf));
+		if (entityCountBuf.get(0) == 0) {
+			throw new RuntimeException("No OpenCL platforms found.");
+		}
+		PointerBuffer platforms = stack.mallocPointer(entityCountBuf.get(0));
+		checkCLError(clGetPlatformIDs(platforms, (IntBuffer) null));
+		
+		for (int p = 0; p < platforms.capacity(); p++) {
+			long platform = platforms.get(p);
+			checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, entityCountBuf));
+			if (entityCountBuf.get(0) == 0) {
+				throw new RuntimeException("No OpenCL devices found.");
+			}
+			PointerBuffer devicesBuf = stack.mallocPointer(entityCountBuf.get(0));
+			checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
+			for (int d = 0; d < devicesBuf.capacity(); d++) {
+				long device = devicesBuf.get(d);
+				availableDevices.add(device);
+				platformByDevice.put(device, platform);
+				nameByDevice.put(device, getDeviceInfoStringUTF8(device, CL_DEVICE_VENDOR) + ": " + getDeviceInfoStringUTF8(device, CL_DEVICE_NAME));
+			}
+		}
+	}
+	
+	public HashMap<Long, String> getNamesByDevices() {
+		return nameByDevice;
+	}
+
+	public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
+		for(DeviceConfig deviceConfig : deviceConfigsInput) {
+			if(deviceConfig.getId() == -69) { 	// 69 -> use default device
+				deviceConfig.setId(availableDevices.get(0));
+			}
+			if(availableDevices.indexOf(deviceConfig.getId()) == -1)
+				continue;
+			if(deviceConfigs.stream().anyMatch(dvcCfg -> deviceConfig.getId() == dvcCfg.getId()))	// check for duplicates
+				continue;
+			deviceConfigs.add(deviceConfig);
+		}
+	}
+	
 	// utility functions
 	private static String getOS() {
 		String os = System.getProperty("os.name").toLowerCase();
@@ -668,66 +710,6 @@ public class GPUSolver extends Solver {
 	}
 
 	// getters and setters
-	public String[] getAvailableDevices() {
-		if (!openclable) {
-			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
-		}
-		if (availableDevices == null) {
-			availableDevices = new ArrayList<Long>();
-			platformByDevice = new HashMap<Long, Long>();
-		} else {
-			availableDevices.clear();
-			platformByDevice.clear();
-		}
-
-		try (MemoryStack stack = stackPush()) {
-			ArrayList<String> deviceNames = new ArrayList<String>();
-
-			IntBuffer pi = stack.mallocInt(1);
-			checkCLError(clGetPlatformIDs(null, pi));
-			if (pi.get(0) == 0) {
-				throw new RuntimeException("No OpenCL platforms found.");
-			}
-			PointerBuffer platforms = stack.mallocPointer(pi.get(0));
-			checkCLError(clGetPlatformIDs(platforms, (IntBuffer) null));
-
-			try {
-				for (int p = 0; p < platforms.capacity(); p++) {
-					long platform = platforms.get(p);
-
-					checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, pi));
-					PointerBuffer devicesBuf = stack.mallocPointer(pi.get(0));
-					checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
-					for (int d = 0; d < devicesBuf.capacity(); d++) {
-						long device = devicesBuf.get(d);
-						availableDevices.add(device);
-						platformByDevice.put(device, platform);
-						deviceNames.add(getDeviceInfoStringUTF8(device, CL_DEVICE_NAME));
-					}
-				}
-			} catch (NullPointerException e) {
-				throw e;
-			}
-			String[] arr = new String[deviceNames.size()];
-			for (int i = 0; i < arr.length; i++) {
-				arr[i] = deviceNames.get(i);
-			}
-
-			return arr;
-		}
-	}
-
-	public void setDevice(int idx) {
-		if (!openclable) {
-			throw new IllegalStateException("No OpenCL-capable device was found. GPUSolver is not available.");
-		}
-		if (idx < 0 || idx >= availableDevices.size()) {
-			throw new IllegalArgumentException("Invalid device index value: " + idx + " (size:" + availableDevices.size() + ")");
-		}
-		device = availableDevices.get(idx);
-		platform = platformByDevice.get(device);
-	}
-
 	public int getGlobalWorkSize() {
 		return globalWorkSize;
 	}
@@ -736,6 +718,7 @@ public class GPUSolver extends Solver {
 		return workgroupSize;
 	}
 
+	
 	public void setWorkgroupSize(int s) {
 		long maxWorkgroupSize = getDeviceInfoPointer(device, CL_DEVICE_MAX_WORK_GROUP_SIZE);
 		if (s <= 0 || s > maxWorkgroupSize) {

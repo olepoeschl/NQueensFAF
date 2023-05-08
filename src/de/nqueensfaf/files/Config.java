@@ -2,7 +2,9 @@ package de.nqueensfaf.files;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
@@ -13,11 +15,12 @@ public class Config {
 	// all configurable fields and their default values
 	
 	// CPU or GPU ?
+	@JsonProperty(required = true)
 	private String type;
 	// for CPU
 	private int cpuThreadcount;
 	// for GPU
-	private int gpuDevice, gpuWorkgroupSize, gpuPresetQueens;
+	private DeviceConfig[] deviceConfigs;
 	// general
 	private long progressUpdateDelay;
 	private boolean autoSaveEnabled, autoDeleteEnabled;
@@ -28,14 +31,12 @@ public class Config {
 		super();
 	}
 	
-	public Config(String type, int cpuThreadcount, int gpuDevice, int gpuWorkgroupSize, int gpuPresetQueens,
+	public Config(String type, int cpuThreadcount, DeviceConfig[] deviceConfigs,
 			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
 			String autosaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
-		this.gpuDevice = gpuDevice;
-		this.gpuWorkgroupSize = gpuWorkgroupSize;
-		this.gpuPresetQueens = gpuPresetQueens;
+		this.deviceConfigs = deviceConfigs;
 		this.progressUpdateDelay = progressUpdateDelay;
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
@@ -47,9 +48,7 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setGPUDevice(0);
-		c.setGPUWorkgroupSize(64);
-		c.setGPUPresetQueens(6);
+		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6)); // -69 -> use default device
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
@@ -78,14 +77,21 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(gpuDevice < 0)
-			gpuDevice = 0;
-		
-		if(gpuWorkgroupSize <= 0)
-			gpuWorkgroupSize = getDefaultConfig().getGPUWorkgroupSize();
-		
-		if(gpuPresetQueens < 4)
-			gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
+		if(deviceConfigs.length == 0)
+			deviceConfigs = getDefaultConfig().getDeviceConfigs();
+		// check for invalid values and remove each invalid value that is found from the array
+		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
+		for(DeviceConfig deviceConfig : deviceConfigs) {
+			if(deviceConfig.getId() < 0 || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
+				continue;
+			if(deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getId() == dvcCfg.getId())) // check for duplicates
+				continue;
+			deviceConfigsTmp.add(deviceConfig);
+		}
+		deviceConfigs = new DeviceConfig[deviceConfigsTmp.size()];
+		for(int i = 0; i < deviceConfigsTmp.size(); i++) {
+			deviceConfigs[i] = deviceConfigsTmp.get(i);
+		}
 		
 		if(progressUpdateDelay <= 0)
 			progressUpdateDelay = getDefaultConfig().getProgressUpdateDelay();
@@ -120,25 +126,11 @@ public class Config {
 		this.cpuThreadcount = cpuThreadcount;
 	}
 	
-	public int getGPUDevice() {
-		return gpuDevice;
+	public DeviceConfig[] getDeviceConfigs() {
+		return deviceConfigs;
 	}
-	public void setGPUDevice(int gpuDevice) {
-		this.gpuDevice = gpuDevice;
-	}
-	
-	public int getGPUWorkgroupSize() {
-		return gpuWorkgroupSize;
-	}
-	public void setGPUWorkgroupSize(int gpuWorkgroupSize) {
-		this.gpuWorkgroupSize = gpuWorkgroupSize;
-	}
-	
-	public int getGPUPresetQueens() {
-		return gpuPresetQueens;
-	}
-	public void setGPUPresetQueens(int gpuPresetQueens) {
-		this.gpuPresetQueens = gpuPresetQueens;
+	public void setDeviceConfigs(DeviceConfig... deviceConfigs) {
+		this.deviceConfigs = deviceConfigs;
 	}
 	
 	public long getProgressUpdateDelay() {
