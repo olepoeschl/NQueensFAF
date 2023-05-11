@@ -253,16 +253,16 @@ public class GPUSolver extends Solver {
 //				if (getj(o1ijkl) == N-1 && getl(o1ijkl) == N-1) {
 //					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
 //						// both constellations have a queen in a corner
-						if(getjkl(o1ijkl) > getjkl(o2ijkl))
-							return 1;
-						else if(getjkl(o1ijkl) < getjkl(o2ijkl))
-							return -1;
-						return 0;
+//						if(getk(o1ijkl) > getk(o2ijkl))
+//							return 1;
+//						else if(getk(o1ijkl) < getk(o2ijkl))
+//							return -1;
+//						return 0;
 //					}
-//					return -1;
+//					return 1;
 //				} else {
 //					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
-//						return 1;
+//						return -1;
 //					}
 //					// both constellations don't have a queen in a corner
 //					if(getjkl(o1ijkl) > getjkl(o2ijkl))
@@ -271,6 +271,7 @@ public class GPUSolver extends Solver {
 //						return -1;
 //					return 0;
 //				}
+				return Integer.compare(getjkl(o1ijkl), getjkl(o2ijkl));
 			}
 		});
 	}
