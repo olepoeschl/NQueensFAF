@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DeviceConfig {
 	
 	@JsonProperty(required = true)
-	private long id;
+	private int idx;
 	@JsonProperty(required = true)
 	private int workgroupSize;
 	@JsonProperty(required = true)
@@ -16,20 +16,20 @@ public class DeviceConfig {
 		super();
 	}
 
-	public DeviceConfig(long id, int workgroupSize, int presetQueens, int weight) {
+	public DeviceConfig(int idx, int workgroupSize, int presetQueens, int weight) {
 		super();
-		this.id = id;
+		this.idx = idx;
 		this.workgroupSize = workgroupSize;
 		this.presetQueens = presetQueens;
 		this.weight = weight;
 	}
 
-	public long getId() {
-		return id;
+	public int getIdx() {
+		return idx;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setIdx(int idx) {
+		this.idx = idx;
 	}
 
 	public int getWorkgroupSize() {
@@ -60,7 +60,7 @@ public class DeviceConfig {
 	public boolean equals(Object obj) {
 		if(obj instanceof DeviceConfig) {
 			DeviceConfig dvcCfg = (DeviceConfig) obj;
-			return id == dvcCfg.id 
+			return idx == dvcCfg.idx 
 					&& workgroupSize == dvcCfg.workgroupSize 
 					&& presetQueens == dvcCfg.presetQueens 
 					&& weight == dvcCfg.weight;

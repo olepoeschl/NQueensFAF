@@ -52,7 +52,7 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6, 1)); // -69 -> use default device
+		c.setDeviceConfigs(new DeviceConfig(0, 64, 6, 1)); // -69 -> use default device
 		c.setPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
@@ -87,9 +87,9 @@ public class Config {
 		// check for invalid values and remove each invalid value that is found from the array
 		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
 		for(DeviceConfig deviceConfig : deviceConfigs) {
-			if(deviceConfig.getId() < 0 || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
+			if((deviceConfig.getIdx() < 0 && deviceConfig.getIdx() != -420) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
 				continue;
-			if(deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getId() == dvcCfg.getId())) // check for duplicates
+			if(deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx())) // check for duplicates
 				continue;
 			deviceConfigsTmp.add(deviceConfig);
 		}

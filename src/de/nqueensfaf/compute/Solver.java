@@ -188,7 +188,7 @@ public abstract class Solver {
 			break;
 		case "gpu":
 			gpuSolver = new GPUSolver();
-			gpuSolver.setDeviceConfigs(config.getDeviceConfigs());
+//			gpuSolver.setDeviceConfigs(config.getDeviceConfigs());
 			gpuSolver.setPresetQueens(config.getPresetQueens());
 			solver = gpuSolver;
 			break;
