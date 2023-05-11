@@ -55,4 +55,16 @@ public class DeviceConfig {
 	public void setWeight(int weight) {
 		this.weight = weight;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof DeviceConfig) {
+			DeviceConfig dvcCfg = (DeviceConfig) obj;
+			return id == dvcCfg.id 
+					&& workgroupSize == dvcCfg.workgroupSize 
+					&& presetQueens == dvcCfg.presetQueens 
+					&& weight == dvcCfg.weight;
+		}
+		return false;
+	}
 }

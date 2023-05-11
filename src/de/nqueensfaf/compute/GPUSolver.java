@@ -42,12 +42,15 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import static de.nqueensfaf.compute.InfoUtil.*;
 
+import de.nqueensfaf.files.Config;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.DeviceConfig;
 import de.nqueensfaf.files.SolverState;
 
 public class GPUSolver extends Solver {
 
+	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 4, 4, 4);
+	
 	private static Path tempDir;
 	private static boolean openclable = true;
 	// check if a OpenCL-capable device is available and block GpuSolver and print
@@ -236,14 +239,30 @@ public class GPUSolver extends Solver {
 		Collections.sort(constellations, new Comparator<Constellation>() {
 			@Override
 			public int compare(Constellation o1, Constellation o2) {
-				int o1jkl = o1.getStartijkl() & ((1 << 20) - 1);
-				int o2jkl = o2.getStartijkl() & ((1 << 20) - 1);
-				if (o1jkl > o2jkl)
-					return 1;
-				else if (o1jkl < o2jkl)
-					return -1;
-				else
-					return 0;
+				int o1ijkl = o1.getStartijkl() & ((1 << 20) - 1);
+				int o2ijkl = o2.getStartijkl() & ((1 << 20) - 1);
+				
+//				if (getj(o1ijkl) == N-1 && getl(o1ijkl) == N-1) {
+//					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
+//						// both constellations have a queen in a corner
+						if(getjkl(o1ijkl) > getjkl(o2ijkl))
+							return 1;
+						else if(getjkl(o1ijkl) < getjkl(o2ijkl))
+							return -1;
+						return 0;
+//					}
+//					return -1;
+//				} else {
+//					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
+//						return 1;
+//					}
+//					// both constellations don't have a queen in a corner
+//					if(getjkl(o1ijkl) > getjkl(o2ijkl))
+//						return 1;
+//					else if(getjkl(o1ijkl) < getjkl(o2ijkl))
+//						return -1;
+//					return 0;
+//				}
 			}
 		});
 	}
@@ -262,13 +281,10 @@ public class GPUSolver extends Solver {
 		// create one context for each platform
 		for(long platform : platforms) {
 			List<Device> platformDevices = devices.stream().filter(device -> device.platform == platform).collect(Collectors.toList());
-			PointerBuffer ctxDevices = stack.mallocPointer(platformDevices.size() + 2);
-			ctxDevices.put(CL_CONTEXT_DEVICES);
-			for(Device device : platformDevices) {
-				ctxDevices.put(device.id);
+			PointerBuffer ctxDevices = stack.mallocPointer(platformDevices.size());
+			for(int i = 0; i < ctxDevices.capacity(); i++) {
+				ctxDevices.put(i, devices.get(i).id);
 			}
-			ctxDevices.put(NULL);
-			ctxDevices.flip();
 			PointerBuffer ctxPlatform = stack.mallocPointer(3);
 			ctxPlatform
 				.put(CL_CONTEXT_PLATFORM)
@@ -278,6 +294,10 @@ public class GPUSolver extends Solver {
 			long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
 			checkCLError(errBuf);
 			contexts.add(context);
+			for(Device device : devices) {
+				if(device.platform == platform)
+					device.context = context;
+			}
 		}
 	}
 	
@@ -611,6 +631,16 @@ public class GPUSolver extends Solver {
 
 	public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
 		devices.clear();
+		weightSum = 0;
+		
+		if(deviceConfigsInput[0].equals(ALL_DEVICES)) {
+			for(Device device : availableDevices) {
+				devices.add(device);
+				device.config = Config.getDefaultConfig().getDeviceConfigs()[0];
+				weightSum += device.config.getWeight();
+			}
+		}
+		
 		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
 		for(DeviceConfig deviceConfig : deviceConfigsInput) {
 			if(deviceConfig.getId() == -69)	// 69 -> use default device
@@ -796,6 +826,10 @@ public class GPUSolver extends Solver {
 
 	private int getl(int ijkl) {
 		return ijkl & 31;
+	}
+	
+	private int getjkl(int ijkl) {
+		return ijkl & 0b111111111111111;
 	}
 	
 //	public void setWorkgroupSize(int s) {

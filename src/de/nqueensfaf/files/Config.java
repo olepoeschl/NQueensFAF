@@ -52,7 +52,7 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6, 0)); // -69 -> use default device
+		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6, 1)); // -69 -> use default device
 		c.setPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
