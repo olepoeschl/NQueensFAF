@@ -262,17 +262,20 @@ public class GPUSolver extends Solver {
 		// create one context for each platform
 		for(long platform : platforms) {
 			List<Device> platformDevices = devices.stream().filter(device -> device.platform == platform).collect(Collectors.toList());
-			PointerBuffer platformDeviceIds = stack.mallocPointer(platformDevices.size());
+			PointerBuffer ctxDevices = stack.mallocPointer(platformDevices.size() + 2);
+			ctxDevices.put(CL_CONTEXT_DEVICES);
 			for(Device device : platformDevices) {
-				platformDeviceIds.put(device.id);
+				ctxDevices.put(device.id);
 			}
-			PointerBuffer ctxProps = stack.mallocPointer(3);
-			ctxProps
+			ctxDevices.put(NULL);
+			ctxDevices.flip();
+			PointerBuffer ctxPlatform = stack.mallocPointer(3);
+			ctxPlatform
 				.put(CL_CONTEXT_PLATFORM)
 				.put(platform)
 				.put(NULL)
 				.flip();
-			long context = clCreateContext(ctxProps, platformDeviceIds, null, NULL, errBuf);
+			long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
 			checkCLError(errBuf);
 			contexts.add(context);
 		}
