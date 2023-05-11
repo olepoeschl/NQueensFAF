@@ -10,16 +10,18 @@ public class DeviceConfig {
 	private int workgroupSize;
 	@JsonProperty(required = true)
 	private int presetQueens;
+	private int weight;
 	
 	public DeviceConfig() {
 		super();
 	}
 
-	public DeviceConfig(long id, int workgroupSize, int presetQueens) {
+	public DeviceConfig(long id, int workgroupSize, int presetQueens, int weight) {
 		super();
 		this.id = id;
 		this.workgroupSize = workgroupSize;
 		this.presetQueens = presetQueens;
+		this.weight = weight;
 	}
 
 	public long getId() {
@@ -44,5 +46,13 @@ public class DeviceConfig {
 
 	public void setPresetQueens(int presetQueens) {
 		this.presetQueens = presetQueens;
+	}
+	
+	public int getWeight() {
+		return weight;
+	}
+	
+	public void setWeight(int weight) {
+		this.weight = weight;
 	}
 }

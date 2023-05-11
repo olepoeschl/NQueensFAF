@@ -1,131 +1,17 @@
 package de.nqueensfaf.compute;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 
 import de.nqueensfaf.files.Constellation;
 
 class GPUConstellationsGenerator {
 
-	private int N, preQueens, L, mask, LD, RD, counter, numberOfValidConstellations = 0;		
+	private int N, preQueens, L, mask, LD, RD, counter;		
 	private HashSet<Integer> ijklList;
 	private ArrayList<Constellation> constellations;
 	
-	// generate starting constellations 
-	void genConstellations(int N, int WORKGROUP_SIZE, int preQueens) {
-		int ld, rd, col, ijkl, currentSize;
-		// queen at left border 
-		L = (1 << (N-1));
-		// marks the board 
-		mask = (L << 1) - 1;
-
-		// set N, halfN half of N rounded up, collection of startConstellations
-		this.N = N;
-		final int halfN = (N + 1) / 2;
-		ijklList = new HashSet<Integer>();
-		constellations = new ArrayList<Constellation>();
-		
-		// set number of preset queens
-		this.preQueens = preQueens;
-
-		// calculating start constellations with one Queen on the corner square (N-1,N-1)
-		for(int k = 1; k < N-2; k++) {						// j is idx of Queen in last row				
-			for(int i = k+1; i < N-1; i++) {				// l is idx of Queen in last col
-				// always add the constellation, we can not accidently get symmetric ones 
-				ijklList.add(toijkl(i, N-1, k, N-1));
-				
-				// occupation of ld, rd according to row 1 
-				// queens i and k
-				ld = (L >>> (k-1)) | (L >>> (i-1));
-				// queens i and l
-				rd = (L >>> (i+1)) | (L >>> 1);
-				// left border from k, right border from l, also bits i and j from the corresponding queens
-				col = 1 | L | (L >>> i);
-				
-				// diagonals, that are occupied in the last row by the queen j or l 
-				// we are going to shift them upwards the board later 
-				// from queen j and l (same, since queen is in the corner) 
-				LD = 1;
-				// from queen k and l 
-				RD = 1 | (1 << k);
-				
-				// counter of subconstellations, that arise from setting extra queens 
-				counter = 0;
-				
-				// generate all subconstellations with 5 queens 
-				setPreQueens(ld, rd, col, k, 0, 1, 3);
-				// jam j and k and l together into one integer 
-				ijkl = toijkl(i, N-1, k, N-1);
-				
-				currentSize = constellations.size();
-				
-				// ijkl and sym are the same for all subconstellations 
-				for(int a = 0; a < counter; a++) {
-					int start = constellations.get(currentSize - a - 1).getStartijkl();
-					constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
-				}
-			}
-			// j has to be the same value for all workitems within the same workgroup 
-			// thus add trash constellations with same j, until workgroup is full 
-			while(constellations.size() % WORKGROUP_SIZE != 0) {
-				addTrashConstellation(toijkl(0, N-1, k, N-1));
-				numberOfValidConstellations--;
-			}
-		}
-
-		// calculate starting constellations for no Queens in corners
-		// have a look in the loop above for missing explanations 
-		for(int j = 1; j < halfN; j++) {						// go through last row
-			for(int l = j+1; l < N-1; l++) {					// go through last col
-				for(int k = N-j-2; k > 0; k--) {			// go through first col 
-					if(k == l)						// skip if occupied 
-						continue;
-					for(int i = j+1; i < N-1; i++) {				// go through first row
-						if(i == N-1-l || i == k)								// skip if occupied
-							continue;
-						// check, if we already found a symmetric constellation 
-						if(!checkRotations(i, j, k, l)) {	
-							ijklList.add(toijkl(i, j, k, l));
-							
-							// occupy the board corresponding to the queens on the borders of the board 
-							ld = (L >>> (i-1)) | (1 << (N-k));
-							rd = (L >>> (i+1)) | (1 << (l-1));
-							col = 1 | L | (L >>> j) | (L >>> i);
-							// occupy diagonals of the queens j k l in the last row 
-							// later we are going to shift them upwards the board 
-							LD = (L >>> j) | (L >>> l);
-							RD = (L >>> j) | (1 << k);
-							
-							// counts all subconstellations 
-							counter = 0;
-							// generate all subconstellations 
-							setPreQueens(ld, rd, col, k, l, 1, 4);
-							// jam j and k and l into one integer 
-							ijkl = toijkl(i, j, k, l);
-							
-							currentSize = constellations.size();
-							
-							// jkl and sym and start are the same for all subconstellations 
-							for(int a = 0; a < counter; a++) {
-								int start = constellations.get(currentSize - a - 1).getStartijkl();
-								constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
-							}
-						}
-					}
-					// fill up the workgroup 
-					while(constellations.size() % WORKGROUP_SIZE != 0) {
-						addTrashConstellation(toijkl(0, j, k, l));
-						numberOfValidConstellations--;
-					}
-				}
-			}
-		}
-		numberOfValidConstellations += constellations.size();
-	}
-
-	// for generating only the tasks; used for distributing the workload
+	// generates all tasks
 	public void genConstellations(int N, int preQueens) {
 		int ld, rd, col, ijkl, currentSize;
 		// queen at left border 
@@ -252,14 +138,6 @@ class GPUConstellationsGenerator {
 		}
 	}
 
-	// create trash constellation to fill up workgroups 
-	private void addTrashConstellation(int ijkl) {
-		constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
-	}
-	void addTrashConstellation(ArrayList<Constellation> constellations, int ijkl) {
-		constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
-	}
-	
 	// helper functions
 	// true, if starting constellation rotated by any angle has already been found
 	private boolean checkRotations(int i, int j, int k, int l) {
@@ -283,34 +161,8 @@ class GPUConstellationsGenerator {
 		return (i<<15) + (j<<10) + (k<<5) + l;
 	}
 
-	// true, if starting constellation is symmetric for rot90
-
-	// sort constellations so that as many workgroups as possible have solutions
-	// with less divergent branches
-	// this can also be done by directly generating the constellations in a
-	// different order
-	void sortConstellations(ArrayList<Constellation> constellations) {
-		Collections.sort(constellations, new Comparator<Constellation>() {
-			@Override
-			public int compare(Constellation o1, Constellation o2) {
-				int o1jkl = o1.getStartijkl() & ((1 << 20) - 1);
-				int o2jkl = o2.getStartijkl() & ((1 << 20) - 1);
-				if (o1jkl > o2jkl)
-					return 1;
-				else if (o1jkl < o2jkl)
-					return -1;
-				else
-					return 0;
-			}
-		});
-	}
-
 	// getters and setters
 	ArrayList<Constellation> getConstellations(){
 		return constellations;
-	}
-	
-	int getNumberOfValidConstellations() {
-		return numberOfValidConstellations;
 	}
 }

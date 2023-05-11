@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 public class Config {
 	
@@ -21,6 +23,7 @@ public class Config {
 	private int cpuThreadcount;
 	// for GPU
 	private DeviceConfig[] deviceConfigs;
+	private int presetQueens;
 	// general
 	private long progressUpdateDelay;
 	private boolean autoSaveEnabled, autoDeleteEnabled;
@@ -31,12 +34,13 @@ public class Config {
 		super();
 	}
 	
-	public Config(String type, int cpuThreadcount, DeviceConfig[] deviceConfigs,
+	public Config(String type, int cpuThreadcount, DeviceConfig[] deviceConfigs, int presetQueens,
 			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
 			String autosaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
 		this.deviceConfigs = deviceConfigs;
+		this.presetQueens = presetQueens;
 		this.progressUpdateDelay = progressUpdateDelay;
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
@@ -48,7 +52,8 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6)); // -69 -> use default device
+		c.setDeviceConfigs(new DeviceConfig(-69, 64, 6, 0)); // -69 -> use default device
+		c.setPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
@@ -66,8 +71,8 @@ public class Config {
 	
 	public void write(File configFile) throws StreamWriteException, DatabindException, IOException {
 		validate();
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.writeValue(configFile, this);
+		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+		out.writeValue(configFile, this);
 	}
 	
 	public void validate() {
@@ -131,6 +136,13 @@ public class Config {
 	}
 	public void setDeviceConfigs(DeviceConfig... deviceConfigs) {
 		this.deviceConfigs = deviceConfigs;
+	}
+	
+	public int getPresetQueens() {
+		return presetQueens;
+	}
+	public void setPresetQueens(int presetQueens) {
+		this.presetQueens = presetQueens;
 	}
 	
 	public long getProgressUpdateDelay() {
