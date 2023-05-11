@@ -90,6 +90,7 @@ public class GPUSolver extends Solver {
 		if(openclable) {
 			devices = new ArrayList<Device>();
 			availableDevices = new ArrayList<Device>();
+			constellations = new ArrayList<Constellation>();
 			try (MemoryStack stack = stackPush()) {
 				fetchAvailableDevices(stack);
 			}
@@ -113,9 +114,9 @@ public class GPUSolver extends Solver {
 			// prepare simulating progress = 100
 			start = System.currentTimeMillis();
 			devices.add(new Device(0, 0, "", ""));
-			devices.get(0).solutions = solveSmallBoard();
+			constellations.add(new Constellation());
+			constellations.get(0).setSolutions(solveSmallBoard());
 			end = System.currentTimeMillis();
-			devices.get(0).progress = 1;
 			return;
 		}
 
@@ -161,6 +162,7 @@ public class GPUSolver extends Solver {
 						device.workloadSize = totalWorkloadSize - workloadBeginPtr;
 					}
 					device.workloadConstellations = fillWithTrash(constellations.subList(workloadBeginPtr, workloadBeginPtr + device.workloadSize), device.config.getWorkgroupSize());
+					workloadBeginPtr += device.workloadSize;
 					device.workloadGlobalWorkSize = device.workloadConstellations.size();
 					// transfer data to device
 					transferDataToDevice(errBuf, device, device.workloadConstellations, device.workloadGlobalWorkSize);
@@ -175,10 +177,11 @@ public class GPUSolver extends Solver {
 			
 			// wait for all devices to finish (--> events)
 			for(Device device : devices) {
+				device.stopReaderThread = 1;
+				
 				// read results
 				readResults(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize);
 
-				device.stopReaderThread = 1;
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e1) {
@@ -450,9 +453,6 @@ public class GPUSolver extends Solver {
 	private void readResults(Device device, ArrayList<Constellation> workloadConstellations, int workloadSize, int globalWorkSize) {
 		// read result and progress memory buffers
 		checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-
-		long tmpSolutions = 0;
-		int solvedConstellations = 0;
 		for (int i = 0; i < globalWorkSize; i++) {
 			if (workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
@@ -462,17 +462,6 @@ public class GPUSolver extends Solver {
 				// synchronize with the list of constellations on the RAM
 				workloadConstellations.get(i).setSolutions(solutionsForConstellation);
 		}
-		for (var c : constellations) {
-			if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-				continue;
-			long solutionsForConstellation = c.getSolutions();
-			if (solutionsForConstellation >= 0) {
-				tmpSolutions += solutionsForConstellation;
-				solvedConstellations++;
-			}
-		}
-		device.progress = (float) solvedConstellations / workloadSize;
-		device.solutions = tmpSolutions;
 	}
 
 	private void releaseCLObjects(Device device) {
@@ -562,20 +551,28 @@ public class GPUSolver extends Solver {
 
 	@Override
 	public float getProgress() {
-		float progressSum = 0;
-		for(Device device : devices) {
-			progressSum += device.progress;
+		int solvedConstellations = 0;
+		for (var c : constellations) {
+			if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+				continue;
+			if (c.getSolutions() >= 0) {
+				solvedConstellations++;
+			}
 		}
-		return progressSum / devices.size();
+		return (float) solvedConstellations / constellations.size();
 	}
 
 	@Override
 	public long getSolutions() {
-		long solutions = 0;
-		for(Device device : devices) {
-			solutions += device.solutions;
+		long tmpSolutions = 0;
+		for (var c : constellations) {
+			if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+				continue;
+			if (c.getSolutions() >= 0) {
+				tmpSolutions += c.getSolutions();
+			}
 		}
-		return solutions;
+		return tmpSolutions;
 	}
 
 	// --------------------------------------------------------
@@ -625,6 +622,7 @@ public class GPUSolver extends Solver {
 				device.config = Config.getDefaultConfig().getDeviceConfigs()[0];
 				weightSum += device.config.getWeight();
 			}
+			return;
 		}
 		
 		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
@@ -837,8 +835,7 @@ public class GPUSolver extends Solver {
 		// results
 		ArrayList<Constellation> workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
-		long solutions;
-		float progress;
+		long duration;
 		// control flow
 		int stopReaderThread = 0;
 		
