@@ -130,7 +130,6 @@ public class GPUSolver extends Solver {
 			createContexts(stack, errBuf);
 			createPrograms(errBuf);
 			int workloadBeginPtr = 0;
-			start = System.currentTimeMillis();
 			for (int i = 0; i < contexts.length; i++) {
 				long context = contexts[i];
 				long program = programs[i];
@@ -169,6 +168,8 @@ public class GPUSolver extends Solver {
 					transferDataToDevice(errBuf, device, device.workloadConstellations, device.workloadGlobalWorkSize);
 					// set kernel args
 					setKernelArgs(stack, device);
+					if(i == 0)
+						start = System.currentTimeMillis();
 					// run (also run a gpuReaderThread for this device)
 					explosionBoost9000(device, device.workloadGlobalWorkSize);
 					// start a thread continously reading device data
@@ -192,13 +193,13 @@ public class GPUSolver extends Solver {
 				// release all device specific OpenCL objects (memory objects, events, event callbacks, kernel, queue)
 				releaseCLObjects(device);
 			}
+			// measure time
+			end = System.currentTimeMillis();
+			duration = end - start + storedDuration;
 			for (int i = 0; i < contexts.length; i++) {
 				checkCLError(clReleaseProgram(programs[i]));
 				checkCLError(clReleaseContext(contexts[i]));
 			}
-			// measure time
-			end = System.currentTimeMillis();
-			duration = end - start + storedDuration;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
