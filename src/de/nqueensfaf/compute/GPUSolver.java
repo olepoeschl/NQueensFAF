@@ -130,6 +130,7 @@ public class GPUSolver extends Solver {
 			createContexts(stack, errBuf);
 			createPrograms(errBuf);
 			int workloadBeginPtr = 0;
+			start = System.currentTimeMillis();
 			for (int i = 0; i < contexts.length; i++) {
 				long context = contexts[i];
 				long program = programs[i];
@@ -175,9 +176,9 @@ public class GPUSolver extends Solver {
 				}
 			}
 			
-			// wait for all devices to finish (--> events)
 			for(Device device : devices) {
-				device.stopReaderThread = 1;
+				checkCLError(clWaitForEvents(device.xEvent));
+				device.stopReaderThread = 1; // stop the devices reader thread
 				
 				// read results
 				readResults(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize);
@@ -195,6 +196,9 @@ public class GPUSolver extends Solver {
 				checkCLError(clReleaseProgram(programs[i]));
 				checkCLError(clReleaseContext(contexts[i]));
 			}
+			// measure time
+			end = System.currentTimeMillis();
+			duration = end - start + storedDuration;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -414,41 +418,24 @@ public class GPUSolver extends Solver {
 		localWorkSize.put(0, device.config.getWorkgroupSize());
 
 		// run kernel
-		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that is used for
-																			// measuring the execution time
-		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkers, localWorkSize, null,
-				xEventBuf));
-
-		// set pseudo starttime
-		start = System.currentTimeMillis();
+		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that is used for measuring the execution time
+		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkers, localWorkSize, null, xEventBuf));
 
 		// get exact time values using CLEvent
-		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-		device.profilingEvent = xEventBuf.get(0);
-		checkCLError(clSetEventCallback(device.profilingEvent, CL_COMPLETE,
-				device.profilingEventCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
+		device.xEvent = xEventBuf.get(0);
+		checkCLError(clSetEventCallback(device.xEvent, CL_COMPLETE,
+				device.profilingCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
+					LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
 					int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
 					checkCLError(err);
 					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 					checkCLError(err);
+					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
 				}), NULL)
 		);
-
-		// wait for the device computation to finish
-		checkCLError(clFlush(device.xqueue));
-		checkCLError(clFinish(device.xqueue));
 		
-		// measure execution time
-		while (startBuf.get(0) == 0) { // wait for event callback to be executed
-			try {
-				Thread.sleep(30);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-		}
-		start = startBuf.get(0);
-		end = endBuf.get(0);
-		duration = ((end - start) / 1000000) + storedDuration; // convert nanoseconds to milliseconds
+		// flush command to the device
+		checkCLError(clFlush(device.xqueue));
 	}
 
 	private void readResults(Device device, ArrayList<Constellation> workloadConstellations, int workloadSize, int globalWorkSize) {
@@ -472,8 +459,8 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseMemObject(device.startijklMem));
 		checkCLError(clReleaseMemObject(device.resMem));
 		
-		device.profilingEventCB.free();
-		checkCLError(clReleaseEvent(device.profilingEvent));
+		device.profilingCB.free();
+		checkCLError(clReleaseEvent(device.xEvent));
 
 		checkCLError(clReleaseCommandQueue(device.xqueue));
 		checkCLError(clReleaseCommandQueue(device.memqueue));
@@ -831,8 +818,8 @@ public class GPUSolver extends Solver {
 		long platform, context, xqueue, memqueue, kernel;
 		Long ldMem, rdMem, colMem, startijklMem, resMem;
 		ByteBuffer resPtr;
-		long profilingEvent;
-		CLEventCallback profilingEventCB;
+		long xEvent;
+		CLEventCallback profilingCB;
 		// results
 		ArrayList<Constellation> workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
