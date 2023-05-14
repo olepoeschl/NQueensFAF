@@ -127,6 +127,7 @@ public class GPUSolver extends Solver {
 			
 			IntBuffer errBuf = stack.callocInt(1);
 
+			// prepare OpenCL stuff, generate workload and transfer to device
 			createContexts(stack, errBuf);
 			createPrograms(errBuf);
 			int workloadBeginPtr = 0;
@@ -153,7 +154,7 @@ public class GPUSolver extends Solver {
 					long xqueue = clCreateCommandQueue(context, device.id, CL_QUEUE_PROFILING_ENABLE, errBuf);
 					checkCLError(errBuf);
 					device.xqueue = xqueue;
-					long memqueue = clCreateCommandQueue(context, device.id, CL_QUEUE_PROFILING_ENABLE, errBuf);
+					long memqueue = clCreateCommandQueue(context, device.id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, errBuf);
 					checkCLError(errBuf);
 					device.memqueue = memqueue;
 					// create buffers and fill with trash constellations
@@ -168,17 +169,32 @@ public class GPUSolver extends Solver {
 					transferDataToDevice(errBuf, device, device.workloadConstellations, device.workloadGlobalWorkSize);
 					// set kernel args
 					setKernelArgs(stack, device);
-					if(i == 0)
-						start = System.currentTimeMillis();
-					// run (also run a gpuReaderThread for this device)
-					explosionBoost9000(device, device.workloadGlobalWorkSize);
-					// start a thread continously reading device data
-					deviceReaderThread(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize).start();
 				}
 			}
 			
+			// execute device kernels
+			start = System.currentTimeMillis();	// start timer
 			for(Device device : devices) {
-				checkCLError(clWaitForEvents(device.xEvent));
+				// run
+				explosionBoost9000(device, device.workloadGlobalWorkSize);
+				// start a thread continuously reading device data
+//				deviceReaderThread(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize).start();
+			}
+			
+			// wait for all devices to finish, distinct by platform
+			for(long context : contexts) {
+				List<Device> xEventsPerContext = devices.stream().filter(d -> d.context == context).toList();
+				PointerBuffer xEventsPerContextBuf = stack.mallocPointer(xEventsPerContext.size());
+				for(int i = 0; i < xEventsPerContext.size(); i++) {
+					xEventsPerContextBuf.put(i, xEventsPerContext.get(i).xEvent);
+				}
+				checkCLError(clWaitForEvents(xEventsPerContextBuf));
+			}
+			end = System.currentTimeMillis(); // stop timer
+			duration = end - start + storedDuration; // calculate needed time
+			
+			// read results
+			for(Device device : devices) {
 				device.stopReaderThread = 1; // stop the devices reader thread
 				
 				// read results
@@ -193,9 +209,6 @@ public class GPUSolver extends Solver {
 				// release all device specific OpenCL objects (memory objects, events, event callbacks, kernel, queue)
 				releaseCLObjects(device);
 			}
-			// measure time
-			end = System.currentTimeMillis();
-			duration = end - start + storedDuration;
 			for (int i = 0; i < contexts.length; i++) {
 				checkCLError(clReleaseProgram(programs[i]));
 				checkCLError(clReleaseContext(contexts[i]));
@@ -432,6 +445,7 @@ public class GPUSolver extends Solver {
 					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 					checkCLError(err);
 					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
+//					System.out.println(device.name + ": " + device.duration + "ms");
 				}), NULL)
 		);
 		
