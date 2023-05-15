@@ -159,8 +159,8 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
-	local uint queens[BLOCK_SIZE][N-2];				// for remembering the queens for all rows for all boards in the work-group 
-	queens[l_id][start-2] = queen;					// we already calculated the first queen in the start row 
+	uint queens[N-3];				// for remembering the queens for all rows for all boards in the work-group 
+	queens[start-2] = queen;					// we already calculated the first queen in the start row 
 	
 	// going forward (setting a queen) or backward (removing a queen)? 										
 	int direction = 0;
@@ -172,7 +172,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		if(free) {										// if there are free slots in the current row 
 			direction = 1;									// we are going forwards 
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
-			queens[l_id][row-2] = queen;						// remember the queen 
+			queens[row-2] = queen;						// remember the queen 
 			row++;											// increase row counter 
 
 			ld_mem = ld_mem << 1 | ld >> 31;				// place the queen in the diagonals and shift them and remember the diagonals leaving the board 
@@ -183,7 +183,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		else{											// if the row is completely occupied 
 			direction = 0;									// we are going backwards 
 			row--;											// decrease row counter 
-			queen = queens[l_id][row-2];						// recover the queen in order to remove it 
+			queen = queens[row-2];						// recover the queen in order to remove it 
 																									
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;		// shift diagonals one back, remove the queen and insert the diagonals that had left the board 
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
