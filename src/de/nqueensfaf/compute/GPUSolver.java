@@ -420,13 +420,12 @@ public class GPUSolver extends Solver {
 		device.xEvent = xEventBuf.get(0);
 		checkCLError(clSetEventCallback(device.xEvent, CL_COMPLETE,
 				device.profilingCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
-					LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-					int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
-					checkCLError(err);
-					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
-					checkCLError(err);
-					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
-					System.out.println(device.name + ": " + device.duration + "ms");
+//					LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
+//					int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
+//					checkCLError(err);
+//					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
+//					checkCLError(err);
+//					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
 				}), NULL)
 		);
 		
@@ -821,7 +820,7 @@ public class GPUSolver extends Solver {
 		// results
 		ArrayList<Constellation> workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
-		long duration;
+//		long duration;
 		// control flow
 		int stopReaderThread = 0;
 		
