@@ -138,7 +138,9 @@ public class GPUSolver extends Solver {
 					if (device.context != context)
 						continue;
 					// build program
-					String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize() + " -D PRESET_QUEENS=" + presetQueens;
+					String options = "-D N=" + N 
+							+ " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize() 
+							+ " -D PRESET_QUEENS_DIFF=" + (presetQueens-3); // preset queens, but only the ones from the top
 					int error = clBuildProgram(program, device.id, options, null, 0);
 					checkCLError(error);
 					// create kernel
