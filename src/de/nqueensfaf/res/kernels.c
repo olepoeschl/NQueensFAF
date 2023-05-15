@@ -7,8 +7,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 	int l_id = get_local_id(0);						// local thread id within workgroup
 	
 	// variables		
-	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 	
-	
+	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
 	int start = start_jkl_arr[g_id] >> 20;		
 	if(start == 69) {								// if we have a pseudo constellation we do nothing 
@@ -108,10 +107,10 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	int l_id = get_local_id(0);						// local thread id within workgroup
 	
 	// variables		
-	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 		
-	
+	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
-	if(start_jkl_arr[g_id] >> 20 == 69) {								// if we have a pseudo constellation we do nothing 
+	int start = start_jkl_arr[g_id] >> 20;		
+	if(start == 69) {								// if we have a pseudo constellation we do nothing 
 		return;
 	}
 	int j = (start_jkl_arr[g_id] >> 10) & 31;		// queen in last row at position j
@@ -152,7 +151,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		rd &= ~(rdiag >> start);					// otherwise we continue in row N-1 and find too many solutions 
 
 	// initialize current row as start and solutions as 0
-	int row = start_jkl_arr[g_id] >> 20;
+	int row = start;
 	ulong solutions = 0;
 	
 	// calculate the occupancy of the first row
