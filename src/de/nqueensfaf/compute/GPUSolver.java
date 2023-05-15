@@ -145,8 +145,10 @@ public class GPUSolver extends Solver {
 					long kernel;
 					if (device.vendor.toLowerCase().contains("intel")) {
 						kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
+					} else if(device.vendor.toLowerCase().contains("nvidia")) {
+						kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
 					} else {
-						kernel = clCreateKernel(program, "nqfaf_default", errBuf);
+						kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
 					}
 					checkCLError(errBuf);
 					device.kernel = kernel;
@@ -178,7 +180,7 @@ public class GPUSolver extends Solver {
 				// run
 				explosionBoost9000(device, device.workloadGlobalWorkSize);
 				// start a thread continuously reading device data
-//				deviceReaderThread(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize).start();
+				deviceReaderThread(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize).start();
 			}
 			
 			// wait for all devices to finish, distinct by platform
@@ -445,7 +447,7 @@ public class GPUSolver extends Solver {
 					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 					checkCLError(err);
 					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
-//					System.out.println(device.name + ": " + device.duration + "ms");
+					System.out.println(device.name + ": " + device.duration + "ms");
 				}), NULL)
 		);
 		
