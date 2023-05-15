@@ -611,6 +611,8 @@ public class GPUSolver extends Solver {
 		
 		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
 		for(DeviceConfig deviceConfig : deviceConfigsInput) {
+			if(deviceConfig.getWeight() == 0)
+				continue;
 			if(deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx()))	// check for duplicates
 				continue;
 			if (deviceConfig.getIdx() >= 0 && deviceConfig.getIdx() < availableDevices.size()) {
