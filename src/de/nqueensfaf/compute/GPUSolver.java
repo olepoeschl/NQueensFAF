@@ -138,7 +138,7 @@ public class GPUSolver extends Solver {
 					if (device.context != context)
 						continue;
 					// build program
-					String options = "-D N=" + N + " -D BLOCK_SIZE=" + device.config.getWorkgroupSize() + " -cl-mad-enable";
+					String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize() + " -D PRESET_QUEENS=" + presetQueens;
 					int error = clBuildProgram(program, device.id, options, null, 0);
 					checkCLError(error);
 					// create kernel

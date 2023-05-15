@@ -59,7 +59,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
-	local uint queens[BLOCK_SIZE][N-2];				// for remembering the queens for all rows for all boards in the work-group 
+	local uint queens[WORKGROUP_SIZE][N-3];				// for remembering the queens for all rows for all boards in the work-group 
 	queens[l_id][start-2] = queen;					// we already calculated the first queen in the start row 
 	
 	// going forward (setting a queen) or backward (removing a queen)? 										
@@ -241,7 +241,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	ulong solutions = 0;
 	uint free = ~(ld | rd | col | jkl_queens[row]);
 	uint queen = -free & free;
-	local uint queens[BLOCK_SIZE][N-2];
+	local uint queens[WORKGROUP_SIZE][N-3];
 	queens[l_id][start-2] = queen;
 	
 	int direction = 0;
