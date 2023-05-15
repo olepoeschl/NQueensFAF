@@ -147,7 +147,7 @@ public class GPUSolver extends Solver {
 					if (device.vendor.toLowerCase().contains("intel")) {
 						kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
 					} else if(device.vendor.toLowerCase().contains("nvidia")) {
-						kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
+						kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
 					} else {
 						kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
 					}
