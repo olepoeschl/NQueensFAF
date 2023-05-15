@@ -59,8 +59,8 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
-	local uint queens[WORKGROUP_SIZE][N - PRESET_QUEENS_DIFF + 1];				// for remembering the queens for all rows for all boards in the work-group 
-	queens[l_id][start - PRESET_QUEENS_DIFF] = queen;					// we already calculated the first queen in the start row 
+	local uint queens[WORKGROUP_SIZE][N];				// for remembering the queens for all rows for all boards in the work-group 
+	queens[l_id][start] = queen;					// we already calculated the first queen in the start row 
 	
 	// going forward (setting a queen) or backward (removing a queen)? 										
 	int direction = 0;
@@ -72,7 +72,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 		if(free) {										// if there are free slots in the current row 
 			direction = 1;									// we are going forwards 
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
-			queens[l_id][row - PRESET_QUEENS_DIFF] = queen;						// remember the queen 
+			queens[l_id][row] = queen;						// remember the queen 
 			row++;											// increase row counter 
 
 			ld_mem = ld_mem << 1 | ld >> 31;				// place the queen in the diagonals and shift them and remember the diagonals leaving the board 
@@ -83,7 +83,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 		else{											// if the row is completely occupied 
 			direction = 0;									// we are going backwards 
 			row--;											// decrease row counter 
-			queen = queens[l_id][row - PRESET_QUEENS_DIFF];						// recover the queen in order to remove it 
+			queen = queens[l_id][row];						// recover the queen in order to remove it 
 																									
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;		// shift diagonals one back, remove the queen and insert the diagonals that had left the board 
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
@@ -159,8 +159,8 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
-	uint queens[N - PRESET_QUEENS_DIFF + 1];				// for remembering the queens for all rows for all boards in the work-group 
-	queens[start - PRESET_QUEENS_DIFF] = queen;					// we already calculated the first queen in the start row 
+	uint queens[N];				// for remembering the queens for all rows for all boards in the work-group 
+	queens[start] = queen;					// we already calculated the first queen in the start row 
 	
 	// going forward (setting a queen) or backward (removing a queen)? 										
 	int direction = 0;
@@ -172,7 +172,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		if(free) {										// if there are free slots in the current row 
 			direction = 1;									// we are going forwards 
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
-			queens[row - PRESET_QUEENS_DIFF] = queen;						// remember the queen 
+			queens[row] = queen;						// remember the queen 
 			row++;											// increase row counter 
 
 			ld_mem = ld_mem << 1 | ld >> 31;				// place the queen in the diagonals and shift them and remember the diagonals leaving the board 
@@ -183,7 +183,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		else{											// if the row is completely occupied 
 			direction = 0;									// we are going backwards 
 			row--;											// decrease row counter 
-			queen = queens[row - PRESET_QUEENS_DIFF];						// recover the queen in order to remove it 
+			queen = queens[row];						// recover the queen in order to remove it 
 																									
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;		// shift diagonals one back, remove the queen and insert the diagonals that had left the board 
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
@@ -241,8 +241,8 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	ulong solutions = 0;
 	uint free = ~(ld | rd | col | jkl_queens[row]);
 	uint queen = -free & free;
-	local uint queens[WORKGROUP_SIZE][N - PRESET_QUEENS_DIFF + 1];
-	queens[l_id][start - PRESET_QUEENS_DIFF] = queen;
+	local uint queens[WORKGROUP_SIZE][N];
+	queens[l_id][start] = queen;
 	
 	int direction = 0;
 	
@@ -250,7 +250,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		if(free) {
 			direction = 1;
 			queen = -free & free;
-			queens[l_id][row - PRESET_QUEENS_DIFF] = queen;	
+			queens[l_id][row] = queen;	
 			row++;
 
 			ld_mem = ld_mem << 1 | ld >> 31;
@@ -261,7 +261,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		else {
 			direction = 0;
 			row--;
-			queen = queens[l_id][row - PRESET_QUEENS_DIFF];
+			queen = queens[l_id][row];
 																									
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;

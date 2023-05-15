@@ -139,8 +139,7 @@ public class GPUSolver extends Solver {
 						continue;
 					// build program
 					String options = "-D N=" + N 
-							+ " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize() 
-							+ " -D PRESET_QUEENS_DIFF=" + (presetQueens-3); // preset queens, but only the ones from the top
+							+ " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize();
 					int error = clBuildProgram(program, device.id, options, null, 0);
 					checkCLError(error);
 					// create kernel
@@ -148,7 +147,7 @@ public class GPUSolver extends Solver {
 					if (device.vendor.toLowerCase().contains("intel")) {
 						kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
 					} else if(device.vendor.toLowerCase().contains("nvidia")) {
-						kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
+						kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
 					} else {
 						kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
 					}
