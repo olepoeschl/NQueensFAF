@@ -235,23 +235,23 @@ public class GPUSolver extends Solver {
 	private ArrayList<Constellation> fillWithTrash(List<Constellation> constellations, int workgroupSize) {
 		sortConstellations(constellations);
 		ArrayList<Constellation> newConstellations = new ArrayList<Constellation>();
-		int currentIjkl = constellations.get(0).getStartijkl() & ((1 << 20) - 1);
+		int currentJkl = constellations.get(0).getStartijkl() & ((1 << 15) - 1);
 		for (var c : constellations) {
 			// iterate through constellations, add each remaining constellations and fill up
 			// each group of ijkl till its dividable by workgroup-size
 			if (c.getSolutions() >= 0)
 				continue;
 
-			if ((c.getStartijkl() & ((1 << 20) - 1)) != currentIjkl) { // check if new ijkl is found
+			if ((c.getStartijkl() & ((1 << 15) - 1)) != currentJkl) { // check if new ijkl is found
 				while (newConstellations.size() % workgroupSize != 0) {
-					addTrashConstellation(newConstellations, currentIjkl);
+					addTrashConstellation(newConstellations, currentJkl);
 				}
-				currentIjkl = c.getStartijkl() & ((1 << 20) - 1);
+				currentJkl = c.getStartijkl() & ((1 << 15) - 1);
 			}
 			newConstellations.add(c);
 		}
 		while (newConstellations.size() % workgroupSize != 0) {
-			addTrashConstellation(newConstellations, currentIjkl);
+			addTrashConstellation(newConstellations, currentJkl);
 		}
 		return newConstellations;
 	}
@@ -270,28 +270,6 @@ public class GPUSolver extends Solver {
 			public int compare(Constellation o1, Constellation o2) {
 				int o1ijkl = o1.getStartijkl() & ((1 << 20) - 1);
 				int o2ijkl = o2.getStartijkl() & ((1 << 20) - 1);
-				
-//				if (getj(o1ijkl) == N-1 && getl(o1ijkl) == N-1) {
-//					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
-//						// both constellations have a queen in a corner
-//						if(getk(o1ijkl) > getk(o2ijkl))
-//							return 1;
-//						else if(getk(o1ijkl) < getk(o2ijkl))
-//							return -1;
-//						return 0;
-//					}
-//					return 1;
-//				} else {
-//					if (getj(o2ijkl) == N-1 && getl(o2ijkl) == N-1) {
-//						return -1;
-//					}
-//					// both constellations don't have a queen in a corner
-//					if(getjkl(o1ijkl) > getjkl(o2ijkl))
-//						return 1;
-//					else if(getjkl(o1ijkl) < getjkl(o2ijkl))
-//						return -1;
-//					return 0;
-//				}
 				return Integer.compare(getjkl(o1ijkl), getjkl(o2ijkl));
 			}
 		});
