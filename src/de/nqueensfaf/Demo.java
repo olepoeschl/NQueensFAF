@@ -19,7 +19,7 @@ public class Demo {
 //		s.setDeviceConfigs(GPUSolver.ALL_DEVICES);
 		s.setDeviceConfigs(new DeviceConfig(1, 24, 6, 1), new DeviceConfig(0, 64, 6, 9));
 		s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 5));
-//		s.setDeviceConfigs(new DeviceConfig(0, 24, 6, 5));
+//		s.setDeviceConfigs(new DeviceConfig(1, 24, 6, 5));
 		s.setTerminationCallback((self) -> {
 			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
 		});
