@@ -310,10 +310,12 @@ public abstract class Solver {
 				float tmpProgress = 0;
 				long tmpSolutions = 0;
 				while(isRunning()) {
-					if(getProgress() != tmpProgress || getSolutions() != tmpSolutions) {
-						onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
-						tmpProgress = getProgress();
-						tmpSolutions = getSolutions();
+					float progress = getProgress();
+					long solutions = getSolutions();
+					if(!Float.isNaN(progress) && (progress != tmpProgress || solutions != tmpSolutions)) {
+						onProgressUpdateCallback.onProgressUpdate(progress, solutions, getDuration());
+						tmpProgress = progress;
+						tmpSolutions = solutions;
 					}
 					if(!isRunning())
 						break;
