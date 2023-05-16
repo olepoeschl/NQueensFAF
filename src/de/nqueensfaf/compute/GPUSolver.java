@@ -133,6 +133,9 @@ public class GPUSolver extends Solver {
 					device.workloadConstellations = fillWithTrash(constellations.subList(workloadBeginPtr, workloadBeginPtr + device.workloadSize), device.config.getWorkgroupSize());
 					workloadBeginPtr += device.workloadSize;
 					device.workloadGlobalWorkSize = device.workloadConstellations.size();
+					if(device.workloadGlobalWorkSize == 0) {
+						throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
+					}
 					// transfer data to device
 					transferDataToDevice(errBuf, device, device.workloadConstellations, device.workloadGlobalWorkSize);
 					// set kernel args
