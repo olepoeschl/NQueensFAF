@@ -542,7 +542,7 @@ public class GPUSolver extends Solver {
 				solvedConstellations++;
 			}
 		}
-		return (float) solvedConstellations / constellations.size();
+		return constellations.size() > 0 ? (float) solvedConstellations / constellations.size() : 0f;
 	}
 
 	@Override
