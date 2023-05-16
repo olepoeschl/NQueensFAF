@@ -9,25 +9,43 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.compute.Solver;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.Spec;
 
 @Command(mixinStandardHelpOptions = true)
 public class CLI implements Runnable {
 
+	@Spec CommandSpec spec;
+	
 	@Option(names = { "-d", "--show-devices" }, description = "Show a list of all available OpenCL devices")
 	private boolean showAvailableDevices;
 
+	private File configFile;
 	@Option(names = { "-c",
 			"--config-file" }, paramLabel = "FILE", required = false, description = "Absolute path to the file containing the run configuration")
-	private File configFile;
+	public void setConfigFile(File configFile) {
+		if (!configFile.exists()) {
+			throw new ParameterException(spec.commandLine(), "Invalid value '%s' for option '--config-file': file not found");
+		}
+		this.configFile = configFile;
+	}
 
+	private File taskFile;
 	@Option(names = { "-t",
 			"--task-file" }, paramLabel = "FILE", required = false, description = "Absolute path to the file containing the task")
-	private File taskFile;
-
-	@Option(names = { "-N", "--board-size" }, defaultValue = "-1", paramLabel = "INT", required = false, description = "Set the board size")
-	private int N;
+	public void setTaskFile(File taskFile) {
+		if (!configFile.exists()) {
+			throw new ParameterException(spec.commandLine(), "Invalid value '%s' for option '--task-file': file not found");
+		}
+		this.taskFile = taskFile;
+	}
+	
+	@Option(names = { "-N", "--board-size" }, paramLabel = "INT", required = false, description = "Set the board size")
+	private int N = -69;
 	
 	// for printing the progress in the progress callback
 //	private final String progressStringFormat = "\r%c\tprogress: %-9.9f\tsolutions: %-22.22d\tduration: %-12s";
@@ -50,17 +68,15 @@ public class CLI implements Runnable {
 			return;
 		}
 		
-		// validate input
-		if (configFile != null && !configFile.exists()) {
-			System.err.println("Specified config file does not exist!");
-			return;
-		}
-		if (taskFile != null && !taskFile.exists()) {
-			System.err.println("Specified task file does not exist!");
-			return;
-		} else {
+		// validate board size
+		if (taskFile == null) {
+			if(N == -69) {
+				System.err.println("Missing required option: '--board-size=INT'");
+				CommandLine.usage(this, System.err);
+				return;
+			}
 			if(N <= 0 || N >= 32) {
-				System.err.println("Invlalid board size! Must be a number N with N > 0 and N < 32.");
+				System.err.println("Invalid board size! Must be a number N with N > 0 and N < 32.");
 				return;
 			}
 		}
