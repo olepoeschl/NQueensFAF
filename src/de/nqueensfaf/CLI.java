@@ -48,8 +48,7 @@ public class CLI implements Runnable {
 	private int N = -69;
 	
 	// for printing the progress in the progress callback
-//	private final String progressStringFormat = "\r%c\tprogress: %-9.9f\tsolutions: %-22.22d\tduration: %-12s";
-	private final String progressStringFormat = "\r%c\tprogress: %f\tsolutions: %d\tduration: %s";
+	private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
 	// for showing the loading animation in the progress callback
 	private final char[] loadingChars = new char[] {'-', '\\', '|', '/'};
 	private char loadingCharIdx = 0;
