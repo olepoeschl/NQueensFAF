@@ -2,16 +2,12 @@ package de.nqueensfaf.compute;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,32 +39,6 @@ public class GPUSolver extends Solver {
 
 	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 4, 4, 4);
 	
-	private static Path tempDir;
-	private static boolean openclable = true;
-	// check if a OpenCL-capable device is available and block GpuSolver and print
-	// an error message, if not
-	static {
-		int checked = checkOpenCL();
-		switch (checked) {
-		case 0:
-			openclable = false;
-			break;
-		case 1:
-			openclable = true;
-			break;
-		case -1:
-			// checking for OpenCL-capable devices was not possible
-			System.err.println("Unable to check for OpenCL-capable devices. Assuming that there is at least 1.");
-			System.err.println(
-					"To get rid of this warning, install 'clinfo' (better option) or use NQueensFAF.setIgnoreOpenCLCheck(true) (will crash the JVM if no OpenCL-capable device is found).");
-			openclable = true;
-			break;
-		}
-		if (!openclable) {
-			System.err.println("No OpenCL-capable device was found. GpuSolver is not available.");
-		}
-	}
-
 	// OpenCL stuff
 	private ArrayList<Device> devices, availableDevices;
 	private long[] contexts, programs;
@@ -87,13 +57,11 @@ public class GPUSolver extends Solver {
 	private boolean injected = false;
 
 	protected GPUSolver() {
-		if(openclable) {
-			devices = new ArrayList<Device>();
-			availableDevices = new ArrayList<Device>();
-			constellations = new ArrayList<Constellation>();
-			try (MemoryStack stack = stackPush()) {
-				fetchAvailableDevices(stack);
-			}
+		devices = new ArrayList<Device>();
+		availableDevices = new ArrayList<Device>();
+		constellations = new ArrayList<Constellation>();
+		try (MemoryStack stack = stackPush()) {
+			fetchAvailableDevices(stack);
 		}
 	}
 
@@ -106,9 +74,6 @@ public class GPUSolver extends Solver {
 		if (start != 0) {
 			throw new IllegalStateException(
 					"You first have to call reset() when calling solve() multiple times on the same object");
-		}
-		if (!openclable) {
-			throw new IllegalStateException("No OpenCL-capable device was found. GpuSolver is not available.");
 		}
 		if (N <= 6) { // if N is very small, use the simple Solver from the parent class
 			// prepare simulating progress = 100
@@ -638,106 +603,6 @@ public class GPUSolver extends Solver {
 	// --------------------------------------------------------
 	// ------------------  utility methods  -------------------
 	// --------------------------------------------------------
-	
-	private static String getOS() {
-		String os = System.getProperty("os.name").toLowerCase();
-		if (os.contains("win")) {
-			// windows
-			return "win";
-		} else if (os.contains("mac")) {
-			// mac
-			return "mac";
-		} else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-			// unix (linux etc)
-			return "unix";
-		} else if (os.contains("sunos")) {
-			// solaris
-			return "solaris";
-		} else {
-			// unknown os
-			return os;
-		}
-	}
-	
-	private static int checkOpenCL() {
-		Process clinfo;
-		try {
-			clinfo = Runtime.getRuntime().exec(new String[] { "clinfo" });
-			BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
-			String line;
-			if ((line = in.readLine()) != null) {
-				if (line.contains(" 0") || line.contains("no usable platforms")) {
-					return 0;
-				} else {
-					return 1;
-				}
-			}
-		} catch (IOException e) {
-			// clinfo is not installed.
-			switch (getOS()) {
-			case "win":
-				// Good that we have the windows version in our archive!
-				File clinfoFile = unpackClinfo();
-				if (clinfoFile == null) {
-					return -1;
-				}
-				try {
-					clinfo = Runtime.getRuntime().exec(new String[] { clinfoFile.getAbsolutePath() });
-					BufferedReader in = new BufferedReader(new InputStreamReader(clinfo.getInputStream()));
-					String line;
-					if ((line = in.readLine()) != null) {
-						if (line.contains(" 0") || line.contains("no usable platforms")) {
-							return 0;
-						} else {
-							return 1;
-						}
-					}
-				} catch (IOException e1) {
-					return -1;
-				}
-				break;
-			case "mac", "unix", "solaris":
-				break;
-			default:
-				break;
-			}
-		}
-		return -1;
-	}
-	
-	private static File unpackClinfo() {
-		// create temporary directory to store the clinfo file inside
-		try {
-			tempDir = Files.createTempDirectory("NQueensFaf");
-			// copy the clinfo file from within the jar to the temporary directory
-			InputStream in = GPUSolver.class.getClassLoader()
-					.getResourceAsStream("de/nqueensfaf/res/clinfo/clinfo.exe");
-			byte[] buffer = new byte[1024];
-			int read = -1;
-			File file = new File(tempDir + "/clinfo.exe");
-			FileOutputStream fos = new FileOutputStream(file);
-			while ((read = in.read(buffer)) != -1) {
-				fos.write(buffer, 0, read);
-			}
-			fos.close();
-			in.close();
-
-			// delete the temp directory at the end of the program
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				try {
-					Files.delete(Paths.get(tempDir + "/clinfo.exe"));
-					Files.delete(tempDir);
-				} catch (IOException e) {
-					// just ignore it
-				}
-			}));
-
-			return file;
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			return null;
-		}
-	}
 	
 	private String getKernelSourceAsString(String filepath) {
 		String resultString = null;
