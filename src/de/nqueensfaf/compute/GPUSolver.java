@@ -602,7 +602,7 @@ public class GPUSolver extends Solver {
 		if(deviceConfigsInput[0].equals(ALL_DEVICES)) {
 			for(Device device : availableDevices) {
 				devices.add(device);
-				device.config = Config.getDefaultConfig().getDeviceConfigs()[0];
+				device.config = Config.getDefaultConfig().getGPUDeviceConfigs()[0];
 				weightSum += device.config.getWeight();
 			}
 			return;

@@ -139,17 +139,17 @@ public abstract class Solver {
 	 */
 	protected abstract void store_(String filepath) throws IOException;
 	/**
-	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
+	 * Reads the progress of an old run of the {@link Solver} and injects this state so that it can be continued.
 	 * @param filepath path/name of the file the progress was written in
 	 * @throws IOException
 	 * @throws ClassNotFoundException 
 	 */
-	protected abstract void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+	protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
 	/**
-	 * States if the Solver has been restored and therefore contains restored values.
-	 * @return true if restore() was called and the Solver was not started or resetted since, otherwise false
+	 * States if the Solver has been injected and therefore contains injected values.
+	 * @return true if inject() was called and the Solver was not started or resetted since, otherwise false
 	 */
-	public abstract boolean isRestored();
+	public abstract boolean isInjected();
 	/**
 	 * Resets the {@link Solver}; therefore, applies default values to all Solver state and progress related variables.
 	 */
@@ -189,7 +189,7 @@ public abstract class Solver {
 		case "gpu":
 			gpuSolver = new GPUSolver();
 //			gpuSolver.setDeviceConfigs(config.getDeviceConfigs());
-			gpuSolver.setPresetQueens(config.getPresetQueens());
+			gpuSolver.setPresetQueens(config.getGPUPresetQueens());
 			solver = gpuSolver;
 			break;
 		default:
@@ -431,15 +431,28 @@ public abstract class Solver {
 	}
 
 	/**
-	 * Wraps {@link #restore_(String)}.
-	 * @param filepath path/name of the file the Solver's progress state should be restored from
+	 * Wraps {@link #inject_(String)}.
+	 * @param filepath path/name of the file the Solver's progress state should be injected from
 	 * @throws IOException 
 	 * @throws ClassCastException 
 	 * @throws ClassNotFoundException 
 	 * @throws IllegalArgumentException
 	 */
-	public final void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
-		restore_(filepath);
+	public final void inject(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+		inject_(filepath);
+		solve();
+	}
+	
+	/**
+	 * Wraps {@link #inject_(String)}.
+	 * @param file the Solver's progress state should be injected from
+	 * @throws IOException 
+	 * @throws ClassCastException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalArgumentException
+	 */
+	public final void inject(File file) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+		inject_(file.getAbsolutePath());
 		solve();
 	}
 	

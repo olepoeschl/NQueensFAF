@@ -22,8 +22,8 @@ public class Config {
 	// for CPU
 	private int cpuThreadcount;
 	// for GPU
-	private DeviceConfig[] deviceConfigs;
-	private int presetQueens;
+	private DeviceConfig[] gpuDeviceConfigs;
+	private int gpuPresetQueens;
 	// general
 	private long progressUpdateDelay;
 	private boolean autoSaveEnabled, autoDeleteEnabled;
@@ -34,13 +34,13 @@ public class Config {
 		super();
 	}
 	
-	public Config(String type, int cpuThreadcount, DeviceConfig[] deviceConfigs, int presetQueens,
+	public Config(String type, int cpuThreadcount, DeviceConfig[] gpuDeviceConfigs, int gpuPresetQueens,
 			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
 			String autosaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
-		this.deviceConfigs = deviceConfigs;
-		this.presetQueens = presetQueens;
+		this.gpuDeviceConfigs = gpuDeviceConfigs;
+		this.gpuPresetQueens = gpuPresetQueens;
 		this.progressUpdateDelay = progressUpdateDelay;
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
@@ -52,8 +52,8 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setDeviceConfigs(new DeviceConfig(0, 64, 6, 1)); // -69 -> use default device
-		c.setPresetQueens(6);
+		c.setGPUDeviceConfigs(new DeviceConfig(0, 64, 6, 1)); // -69 -> use default device
+		c.setGPUPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
@@ -82,20 +82,20 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(deviceConfigs.length == 0)
-			deviceConfigs = getDefaultConfig().getDeviceConfigs();
+		if(gpuDeviceConfigs.length == 0)
+			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		// check for invalid values and remove each invalid value that is found from the array
-		ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
-		for(DeviceConfig deviceConfig : deviceConfigs) {
+		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
+		for(DeviceConfig deviceConfig : gpuDeviceConfigs) {
 			if((deviceConfig.getIdx() < 0 && deviceConfig.getIdx() != -420) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
 				continue;
-			if(deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx())) // check for duplicates
+			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx())) // check for duplicates
 				continue;
-			deviceConfigsTmp.add(deviceConfig);
+			gpuDeviceConfigsTmp.add(deviceConfig);
 		}
-		deviceConfigs = new DeviceConfig[deviceConfigsTmp.size()];
-		for(int i = 0; i < deviceConfigsTmp.size(); i++) {
-			deviceConfigs[i] = deviceConfigsTmp.get(i);
+		gpuDeviceConfigs = new DeviceConfig[gpuDeviceConfigsTmp.size()];
+		for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
+			gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
 		}
 		
 		if(progressUpdateDelay <= 0)
@@ -131,18 +131,18 @@ public class Config {
 		this.cpuThreadcount = cpuThreadcount;
 	}
 	
-	public DeviceConfig[] getDeviceConfigs() {
-		return deviceConfigs;
+	public DeviceConfig[] getGPUDeviceConfigs() {
+		return gpuDeviceConfigs;
 	}
-	public void setDeviceConfigs(DeviceConfig... deviceConfigs) {
-		this.deviceConfigs = deviceConfigs;
+	public void setGPUDeviceConfigs(DeviceConfig... gpuDeviceConfigs) {
+		this.gpuDeviceConfigs = gpuDeviceConfigs;
 	}
 	
-	public int getPresetQueens() {
-		return presetQueens;
+	public int getGPUPresetQueens() {
+		return gpuPresetQueens;
 	}
-	public void setPresetQueens(int presetQueens) {
-		this.presetQueens = presetQueens;
+	public void setGPUPresetQueens(int gpuPresetQueens) {
+		this.gpuPresetQueens = gpuPresetQueens;
 	}
 	
 	public long getProgressUpdateDelay() {
