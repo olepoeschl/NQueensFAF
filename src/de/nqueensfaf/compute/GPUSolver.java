@@ -84,7 +84,7 @@ public class GPUSolver extends Solver {
 	private long duration, start, end, storedDuration;
 
 	// control flow
-	private boolean restored = false;
+	private boolean injected = false;
 
 	protected GPUSolver() {
 		if(openclable) {
@@ -121,7 +121,7 @@ public class GPUSolver extends Solver {
 		}
 
 		try (MemoryStack stack = stackPush()) {
-			if(!restored)
+			if(!injected)
 				genConstellations();	// generate constellations
 			totalWorkloadSize = constellations.size();
 			
@@ -491,21 +491,21 @@ public class GPUSolver extends Solver {
 	}
 
 	@Override
-	public void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+	public void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 		if (!isIdle()) {
-			throw new IllegalStateException("Cannot restore while the Solver is running");
+			throw new IllegalStateException("Cannot inject while the Solver is running");
 		}
 		ObjectMapper mapper = new ObjectMapper();
 		SolverState state = mapper.readValue(new File(filepath), SolverState.class);
 		setN(state.getN());
 		storedDuration = state.getStoredDuration();
 		constellations = state.getConstellations();
-		restored = true;
+		injected = true;
 	}
 
 	@Override
-	public boolean isRestored() {
-		return restored;
+	public boolean isInjected() {
+		return injected;
 	}
 
 	@Override
@@ -520,7 +520,7 @@ public class GPUSolver extends Solver {
 		end = 0;
 		totalWorkloadSize = 0;
 		weightSum = 0;
-		restored = false;
+		injected = false;
 	}
 
 	@Override
@@ -587,10 +587,10 @@ public class GPUSolver extends Solver {
 		}
 	}
 	
-	public DeviceInfo[] getAvailableDevices() {
-		DeviceInfo[] deviceInfos = new DeviceInfo[availableDevices.size()];
-		for(int i = 0; i < deviceInfos.length; i++) {
-			deviceInfos[i] = new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name);
+	public List<DeviceInfo> getAvailableDevices() {
+		List<DeviceInfo> deviceInfos = new ArrayList<DeviceInfo>(availableDevices.size());
+		for(int i = 0; i < availableDevices.size(); i++) {
+			deviceInfos.add(new DeviceInfo(i, availableDevices.get(i).vendor, availableDevices.get(i).name));
 		}
 		return deviceInfos;
 	}

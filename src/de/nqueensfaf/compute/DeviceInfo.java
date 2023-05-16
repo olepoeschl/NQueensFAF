@@ -1,23 +1,23 @@
 package de.nqueensfaf.compute;
 
 public class DeviceInfo {
-	private int idx;
+	private int index;
 	private String vendor;
 	private String name;
 	
-	public DeviceInfo(int idx, String vendor, String name) {
+	public DeviceInfo(int index, String vendor, String name) {
 		super();
-		this.idx = idx;
+		this.index = index;
 		this.vendor = vendor;
 		this.name = name;
 	}
 
-	public long getIdx() {
-		return idx;
+	public int getIndex() {
+		return index;
 	}
 
-	public void setIdx(int idx) {
-		this.idx = idx;
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	public String getVendor() {
