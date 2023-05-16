@@ -590,7 +590,7 @@ public class GPUSolver extends Solver {
 	public DeviceInfo[] getAvailableDevices() {
 		DeviceInfo[] deviceInfos = new DeviceInfo[availableDevices.size()];
 		for(int i = 0; i < deviceInfos.length; i++) {
-			deviceInfos[i] = new DeviceInfo(devices.get(i).id, devices.get(i).vendor, devices.get(i).name);
+			deviceInfos[i] = new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name);
 		}
 		return deviceInfos;
 	}
