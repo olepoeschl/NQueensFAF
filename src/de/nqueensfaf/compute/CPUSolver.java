@@ -12,7 +12,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import de.nqueensfaf.files.Config;
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.files.Constellation;
 import de.nqueensfaf.files.SolverState;
 

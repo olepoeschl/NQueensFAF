@@ -34,9 +34,9 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import static de.nqueensfaf.compute.InfoUtil.*;
 
-import de.nqueensfaf.files.Config;
+import de.nqueensfaf.config.Config;
+import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.files.Constellation;
-import de.nqueensfaf.files.DeviceConfig;
 import de.nqueensfaf.files.SolverState;
 
 public class GPUSolver extends Solver {

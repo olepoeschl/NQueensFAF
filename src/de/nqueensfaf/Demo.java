@@ -2,7 +2,7 @@ package de.nqueensfaf;
 
 import de.nqueensfaf.compute.GPUSolver;
 import de.nqueensfaf.compute.Solver;
-import de.nqueensfaf.files.DeviceConfig;
+import de.nqueensfaf.config.DeviceConfig;
 
 public class Demo {
 	

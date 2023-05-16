@@ -1,4 +1,4 @@
-package de.nqueensfaf.files;
+package de.nqueensfaf.config;
 
 import java.io.File;
 import java.io.IOException;

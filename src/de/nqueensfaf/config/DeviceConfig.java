@@ -1,4 +1,4 @@
-package de.nqueensfaf.files;
+package de.nqueensfaf.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

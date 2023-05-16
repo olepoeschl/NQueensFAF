@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 
-import de.nqueensfaf.files.Config;
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.util.BasicCallback;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
 import de.nqueensfaf.util.OnTimeUpdateCallback;
