@@ -13,8 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.files.Constellation;
-import de.nqueensfaf.files.SolverState;
+import de.nqueensfaf.data.Constellation;
+import de.nqueensfaf.data.SolverState;
 
 public class CPUSolver extends Solver {
 

@@ -36,8 +36,8 @@ import static de.nqueensfaf.compute.InfoUtil.*;
 
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
-import de.nqueensfaf.files.Constellation;
-import de.nqueensfaf.files.SolverState;
+import de.nqueensfaf.data.Constellation;
+import de.nqueensfaf.data.SolverState;
 
 public class GPUSolver extends Solver {
 

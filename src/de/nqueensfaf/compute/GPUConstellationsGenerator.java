@@ -3,7 +3,7 @@ package de.nqueensfaf.compute;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.data.Constellation;
 
 class GPUConstellationsGenerator {
 

@@ -1,4 +1,4 @@
-package de.nqueensfaf.files;
+package de.nqueensfaf.data;
 
 public class Constellation {
 	

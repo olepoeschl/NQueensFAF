@@ -2,7 +2,7 @@ package de.nqueensfaf.compute;
 
 import java.util.ArrayList;
 
-import de.nqueensfaf.files.Constellation;
+import de.nqueensfaf.data.Constellation;
 
 class CPUSolverThread extends Thread {
 
