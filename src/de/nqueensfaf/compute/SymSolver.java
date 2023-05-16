@@ -147,13 +147,13 @@ public class SymSolver extends Solver{
 	 * not supported 
 	 */
 	@Override
-	protected void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+	protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 	}
 	/**
 	 * not supported 
 	 */
 	@Override
-	public boolean isRestored() {
+	public boolean isInjected() {
 		return false;
 	}
 
