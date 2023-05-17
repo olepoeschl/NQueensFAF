@@ -96,7 +96,7 @@ public class Config {
 		// check for invalid values and remove each invalid value that is found from the array
 		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
 		for(DeviceConfig deviceConfig : gpuDeviceConfigs) {
-			if((deviceConfig.getIndex() < 0 && deviceConfig.getIndex() != -420) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
+			if((deviceConfig.getIndex() < 0) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
 				continue;
 			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
 				continue;
@@ -106,6 +106,9 @@ public class Config {
 		for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
 			gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
 		}
+		
+		if(gpuPresetQueens < 4)
+			gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
 		
 		if(progressUpdateDelay <= 0)
 			progressUpdateDelay = getDefaultConfig().getProgressUpdateDelay();
