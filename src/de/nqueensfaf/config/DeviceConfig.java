@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeviceConfig {
 	
-	@JsonProperty(required = true)
+	@JsonProperty(value = "index", required = true)
 	private int index;
-	@JsonProperty(required = true)
+	@JsonProperty(value = "workgroupSize", required = true)
 	private int workgroupSize;
-	@JsonProperty(required = true)
+	@JsonProperty(value = "presetQueens", required = true)
 	private int presetQueens;
+	@JsonProperty(value = "weight")
 	private int weight;
 	
 	public DeviceConfig() {

@@ -1,9 +1,20 @@
 package de.nqueensfaf.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Constellation {
 	
+	@JsonProperty(value = "i")
 	private int id;
-	private int ld, rd, col, startijkl;
+	@JsonProperty(value = "l")
+	private int ld;
+	@JsonProperty(value = "r")
+	private int rd;
+	@JsonProperty(value = "c")
+	private int col;
+	@JsonProperty(value = "t")
+	private int startijkl;
+	@JsonProperty(value = "s")
 	private long solutions;
 	
 	public Constellation() {
