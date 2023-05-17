@@ -91,7 +91,7 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
+		if(gpuDeviceConfigs == null)
 			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		// check for invalid values and remove each invalid value that is found from the array
 		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
@@ -106,6 +106,8 @@ public class Config {
 		for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
 			gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
 		}
+		if(gpuDeviceConfigs.length == 0)
+			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		
 		if(gpuPresetQueens < 4)
 			gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
