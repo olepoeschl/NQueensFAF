@@ -111,7 +111,7 @@ public abstract class Solver {
 	 * only used when {@link #autoSave} is true
 	 * @see #autoSavePercentageStep
 	 */
-	private String autoSaveFilePath = Config.getDefaultConfig().getAutosaveFilePath();
+	private String autoSaveFilePath = Config.getDefaultConfig().getAutoSaveFilePath();
 	/**
 	 * set to true when store() is called and set to false again when store() returned.
 	 */
@@ -201,7 +201,7 @@ public abstract class Solver {
 		solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
 		solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
-		solver.setAutoSaveFilename(config.getAutosaveFilePath());
+		solver.setAutoSaveFilename(config.getAutoSaveFilePath());
 		
 		switch(config.getType().toLowerCase()) {
 		case "cpu":

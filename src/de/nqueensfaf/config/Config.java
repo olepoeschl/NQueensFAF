@@ -37,7 +37,7 @@ public class Config {
 	@JsonProperty(value = "autoSavePercentageStep")
 	private int autoSavePercentageStep;
 	@JsonProperty(value = "autoSaveFilePath")
-	private String autosaveFilePath;
+	private String autoSaveFilePath;
 		
 	public Config() {
 		super();
@@ -45,7 +45,7 @@ public class Config {
 	
 	public Config(String type, int cpuThreadcount, DeviceConfig[] gpuDeviceConfigs, int gpuPresetQueens,
 			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
-			String autosaveFilePath) {
+			String autoSaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
 		this.gpuDeviceConfigs = gpuDeviceConfigs;
@@ -54,7 +54,7 @@ public class Config {
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
 		this.autoSavePercentageStep = autoSavePercentageStep;
-		this.autosaveFilePath = autosaveFilePath;
+		this.autoSaveFilePath = autoSaveFilePath;
 	}
 
 	public static Config getDefaultConfig() {
@@ -67,7 +67,7 @@ public class Config {
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
 		c.setAutoSavePercentageStep(10);
-		c.setAutosaveFilePath("n{N}.faf");
+		c.setAutoSaveFilePath("n{N}.faf");
 		return c;
 	}
 	
@@ -118,8 +118,8 @@ public class Config {
 		if(autoSavePercentageStep <= 0 || autoSavePercentageStep > 100)
 			autoSavePercentageStep = getDefaultConfig().getAutoSavePercentageStep();
 		
-		if(autosaveFilePath != null) {
-			File file = new File(autosaveFilePath);
+		if(autoSaveFilePath != null) {
+			File file = new File(autoSaveFilePath);
 			try {
 				if(!file.exists()) {
 					// try creating the file. if it works, the path is valid.
@@ -128,7 +128,7 @@ public class Config {
 				}
 			} catch(Exception e) {
 				// if something goes wrong, the path is invalid.
-				autosaveFilePath = getDefaultConfig().getAutosaveFilePath();
+				autoSaveFilePath = getDefaultConfig().getAutoSaveFilePath();
 			}
 		}
 	}
@@ -189,10 +189,10 @@ public class Config {
 		this.autoSavePercentageStep = autoSavePercentageStep;
 	}
 	
-	public String getAutosaveFilePath() {
-		return autosaveFilePath;
+	public String getAutoSaveFilePath() {
+		return autoSaveFilePath;
 	}
-	public void setAutosaveFilePath(String autosaveFilePath) {
-		this.autosaveFilePath = autosaveFilePath;
+	public void setAutoSaveFilePath(String autosaveFilePath) {
+		this.autoSaveFilePath = autosaveFilePath;
 	}
 }
