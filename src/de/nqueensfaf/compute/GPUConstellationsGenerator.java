@@ -2,6 +2,7 @@ package de.nqueensfaf.compute;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import de.nqueensfaf.data.Constellation;
 
@@ -109,6 +110,11 @@ class GPUConstellationsGenerator {
 				}
 			}
 		}
+	}
+	
+	// TODO
+	public List<Constellation> setMorePreQueens(List<Constellation> constellations, int moreQueens) {
+		return null;
 	}
 	
 	// generate subconstellations for each starting constellation with 3 or 4 queens 
