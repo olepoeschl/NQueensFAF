@@ -398,12 +398,12 @@ public class GPUSolver extends Solver {
 		device.xEvent = xEventBuf.get(0);
 		checkCLError(clSetEventCallback(device.xEvent, CL_COMPLETE,
 				device.profilingCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
-//					LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-//					int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
-//					checkCLError(err);
-//					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
-//					checkCLError(err);
-//					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
+					LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
+					int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
+					checkCLError(err);
+					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
+					checkCLError(err);
+					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
 				}), NULL));
 
 		// flush command to the device
@@ -536,6 +536,12 @@ public class GPUSolver extends Solver {
 		}
 		return tmpSolutions;
 	}
+	
+	public long getDurationOfDevice(int deviceIndex) {
+		if(deviceIndex < 0 || deviceIndex >= availableDevices.size())
+			throw new IllegalArgumentException("Invalid valule! Device index must be a number >= 0 and < [number of available devices]");
+		return availableDevices.get(deviceIndex).duration;
+	}
 
 	// --------------------------------------------------------
 	// --------------------- devices ------------------------
@@ -592,8 +598,7 @@ public class GPUSolver extends Solver {
 		for (DeviceConfig deviceConfig : deviceConfigsInput) {
 			if (deviceConfig.getWeight() == 0)
 				continue;
-			if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for
-																										// duplicates
+			if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
 				continue;
 			if (deviceConfig.getIndex() >= 0 && deviceConfig.getIndex() < availableDevices.size()) {
 				deviceConfigsTmp.add(deviceConfig);
@@ -703,7 +708,7 @@ public class GPUSolver extends Solver {
 		// results
 		ArrayList<Constellation> workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
-//		long duration;
+		long duration;
 		// control flow
 		int stopReaderThread = 0;
 
