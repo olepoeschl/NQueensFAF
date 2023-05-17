@@ -17,17 +17,26 @@ public class Config {
 	// all configurable fields and their default values
 	
 	// CPU or GPU ?
-	@JsonProperty(required = true)
+	@JsonProperty(value = "type", required = true)
 	private String type;
 	// for CPU
+	@JsonProperty(value = "cpuThreadcount")
 	private int cpuThreadcount;
 	// for GPU
+	@JsonProperty(value = "gpuDeviceConfigs")
 	private DeviceConfig[] gpuDeviceConfigs;
+	@JsonProperty(value = "gpuPresetQueens")
 	private int gpuPresetQueens;
 	// general
+	@JsonProperty(value = "progressUpdateDelay")
 	private long progressUpdateDelay;
-	private boolean autoSaveEnabled, autoDeleteEnabled;
+	@JsonProperty(value = "autoSaveEnabled")
+	private boolean autoSaveEnabled;
+	@JsonProperty(value = "autoDeleteEnabled")
+	private boolean autoDeleteEnabled;
+	@JsonProperty(value = "autoSavePercentageStep")
 	private int autoSavePercentageStep;
+	@JsonProperty(value = "autoSaveFilePath")
 	private String autosaveFilePath;
 		
 	public Config() {
@@ -82,14 +91,14 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(gpuDeviceConfigs.length == 0)
+		if(gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
 			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		// check for invalid values and remove each invalid value that is found from the array
 		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
 		for(DeviceConfig deviceConfig : gpuDeviceConfigs) {
-			if((deviceConfig.getIdx() < 0 && deviceConfig.getIdx() != -420) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
+			if((deviceConfig.getIndex() < 0 && deviceConfig.getIndex() != -420) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
 				continue;
-			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx())) // check for duplicates
+			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
 				continue;
 			gpuDeviceConfigsTmp.add(deviceConfig);
 		}
@@ -104,16 +113,18 @@ public class Config {
 		if(autoSavePercentageStep <= 0 || autoSavePercentageStep > 100)
 			autoSavePercentageStep = getDefaultConfig().getAutoSavePercentageStep();
 		
-		File file = new File(autosaveFilePath);
-		try {
-			if(!file.exists()) {
-				// try creating the file. if it works, the path is valid.
-				file.createNewFile();
-				file.delete();
+		if(autosaveFilePath != null) {
+			File file = new File(autosaveFilePath);
+			try {
+				if(!file.exists()) {
+					// try creating the file. if it works, the path is valid.
+					file.createNewFile();
+					file.delete();
+				}
+			} catch(Exception e) {
+				// if something goes wrong, the path is invalid.
+				autosaveFilePath = getDefaultConfig().getAutosaveFilePath();
 			}
-		} catch(Exception e) {
-			// if something goes wrong, the path is invalid.
-			autosaveFilePath = getDefaultConfig().getAutosaveFilePath();
 		}
 	}
 	

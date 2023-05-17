@@ -9,6 +9,7 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.compute.Solver;
+import de.nqueensfaf.compute.SymSolver;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -109,6 +110,14 @@ public class CLI implements Runnable {
 				solver.setN(N);
 				solver.solve();
 			}
+			
+			// calculate unique solutions
+			SymSolver symSolver = new SymSolver();
+			symSolver.setTerminationCallback((self) -> {
+				System.out.println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)");
+			});
+			symSolver.setN(N);
+			symSolver.solve();
 		} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException e) {
 			System.err.println("Unexpected error!");
 			e.printStackTrace();

@@ -592,12 +592,12 @@ public class GPUSolver extends Solver {
 		for (DeviceConfig deviceConfig : deviceConfigsInput) {
 			if (deviceConfig.getWeight() == 0)
 				continue;
-			if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIdx() == dvcCfg.getIdx())) // check for
+			if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for
 																										// duplicates
 				continue;
-			if (deviceConfig.getIdx() >= 0 && deviceConfig.getIdx() < availableDevices.size()) {
+			if (deviceConfig.getIndex() >= 0 && deviceConfig.getIndex() < availableDevices.size()) {
 				deviceConfigsTmp.add(deviceConfig);
-				Device device = availableDevices.get(deviceConfig.getIdx());
+				Device device = availableDevices.get(deviceConfig.getIndex());
 				device.config = deviceConfig;
 				devices.add(device);
 				weightSum += deviceConfig.getWeight();
