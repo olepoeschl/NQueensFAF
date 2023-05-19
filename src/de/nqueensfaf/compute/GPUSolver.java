@@ -86,6 +86,11 @@ public class GPUSolver extends Solver {
 		}
 
 		try (MemoryStack stack = stackPush()) {
+			// if only 1 device is used, set presetQueens to the value specified in the
+			// devices config
+			if (devices.size() == 1)
+				presetQueens = devices.get(0).config.getPresetQueens();
+			
 			if (!injected)
 				genConstellations(); // generate constellations
 			var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0).collect(Collectors.toList());
@@ -608,10 +613,6 @@ public class GPUSolver extends Solver {
 				weightSum += deviceConfig.getWeight();
 			}
 		}
-		// if only 1 device is used, set presetQueens to the value specified in the
-		// devices config
-		if (devices.size() == 1)
-			presetQueens = devices.get(0).config.getPresetQueens();
 	}
 
 	// --------------------------------------------------------
