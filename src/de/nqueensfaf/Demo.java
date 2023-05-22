@@ -4,21 +4,35 @@ import java.io.IOException;
 
 import de.nqueensfaf.compute.GPUSolver;
 import de.nqueensfaf.compute.Solver;
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
 
 public class Demo {
 	
 	public static void main(String[] args) {
+		run();
 //		store();
 //		restore();
-		rerestore();
+//		rerestore();
+	}
+	
+	static void run() {
+		GPUSolver s =  Solver.createGPUSolver();
+		s.setN(18);
+		var c = new DeviceConfig(0, 64, 6, 5);
+		s.setDeviceConfigs(c);
+		s.setTerminationCallback((self) -> {
+			System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
+		});
+		s.solve();
 	}
 	
 	static void store() {
 		GPUSolver s = Solver.createGPUSolver();
 		s.setN(20);
 //		s.setDeviceConfigs(GPUSolver.ALL_DEVICES);
-		s.setDeviceConfigs(new DeviceConfig(1, 24, 6, 1), new DeviceConfig(0, 64, 6, 9));
+//		s.setDeviceConfigs(new DeviceConfig(1, 24, 6, 1), new DeviceConfig(0, 64, 6, 9));
+		s.setDeviceConfigs(new DeviceConfig(0, 24, 6, 1), new DeviceConfig(1, 64, 6, 9));
 //		s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 5));
 //		s.setDeviceConfigs(new DeviceConfig(1, 24, 6, 5));
 		s.setTerminationCallback((self) -> {
@@ -26,7 +40,7 @@ public class Demo {
 		});
 		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
 			System.out.println("progress: " + progress + ", solutions: " + solutions + ", duration: " + duration + "ms");
-			if(progress > 0.4)
+			if(progress > 0.1)
 				try {
 					s.store("test_task.json");
 					System.exit(0);
