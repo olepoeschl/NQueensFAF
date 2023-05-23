@@ -344,6 +344,9 @@ public abstract class Solver {
 				if (!filePath.endsWith(".faf")) {
 					filePath += ".faf";
 				}
+//				if (!filePath.endsWith(".faf")) {
+//					filePath += ".faf";
+//				}
 				float progress = getProgress() * 100;
 				int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
 				while (isRunning() && !finishStoring) {
