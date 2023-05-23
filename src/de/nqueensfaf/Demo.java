@@ -14,7 +14,7 @@ public class Demo {
 		GPUSolver s =  Solver.createGPUSolver();
 		var c = new DeviceConfig(0, 64, 6, 5);
 		s.setDeviceConfigs(c);
-		s.setN(20);
+		s.setN(18);
 		s.setInitializationCallback((self) -> {
 			System.out.println("Starting solver for board size " + self.getN() + "...");
 		});
