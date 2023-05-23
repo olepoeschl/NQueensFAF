@@ -340,7 +340,7 @@ public abstract class Solver {
 		autoSaverThread = new Thread(() -> {
 			try {
 				String filePath = autoSaveFilePath;
-				filePath = filePath.replaceAll("#N#", "" + N);
+				filePath = filePath.replaceAll("{N}", "" + N);
 				if (!filePath.endsWith(".faf")) {
 					filePath += ".faf";
 				}
