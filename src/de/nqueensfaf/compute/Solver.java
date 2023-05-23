@@ -201,7 +201,7 @@ public abstract class Solver {
 		solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
 		solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
-		solver.setAutoSaveFilename(config.getAutoSaveFilePath());
+		solver.setAutoSaveFilePath(config.getAutoSaveFilePath());
 		
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
@@ -340,6 +340,7 @@ public abstract class Solver {
 		autoSaverThread = new Thread(() -> {
 			try {
 				String filePath = autoSaveFilePath;
+				filePath = filePath.replaceAll("\\{N\\}", "" + N);
 //				if (!filePath.endsWith(".faf")) {
 //					filePath += ".faf";
 //				}
@@ -441,6 +442,7 @@ public abstract class Solver {
 	 */
 	public final void inject(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 		inject_(filepath);
+		autoSaveFilePath = filepath;
 		solve();
 	}
 	
@@ -454,6 +456,7 @@ public abstract class Solver {
 	 */
 	public final void inject(File file) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 		inject_(file.getAbsolutePath());
+		autoSaveFilePath = file.getAbsolutePath();
 		solve();
 	}
 	
@@ -643,7 +646,7 @@ public abstract class Solver {
 	 * Sets {@link #autoSaveFilename}.
 	 * @param autoSaveFilename
 	 */
-	public final void setAutoSaveFilename(String autoSaveFilePath) {
+	public final void setAutoSaveFilePath(String autoSaveFilePath) {
 		this.autoSaveFilePath= autoSaveFilePath;
 	}
 
