@@ -15,6 +15,9 @@ public class Demo {
 		var c = new DeviceConfig(0, 64, 6, 5);
 		s.setDeviceConfigs(c);
 		s.setN(20);
+		s.setInitializationCallback((self) -> {
+			System.out.println("Starting solver for board size " + self.getN() + "...");
+		});
 		s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
 			System.out.format("\r\tprogress: %1.10f\tsolutions: %18d\tduration: %dms", progress, solutions, duration);
 		});
