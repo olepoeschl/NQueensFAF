@@ -165,8 +165,8 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	// this is the actual solver (via backtracking with Jeff Somers Bit method) 
 	// the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
 	while(row >= start) {							// while we haven't tried everything 
-		if(free) {										// if there are free slots in the current row 
-			direction = 1;									// we are going forwards 
+		direction = (free > 0);							// forwards or backwards?
+		if(direction) {									// if there are free slots in the current row
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
 			queens[l_id][row] = queen;						// remember the queen 
 			row++;											// increase row counter 
@@ -176,8 +176,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld = (ld | queen) << 1;							
 			rd = (rd | queen) >> 1;	
 		}
-		else {											// if the row is completely occupied 
-			direction = 0;									// we are going backwards 
+		else {											// if the row is completely occupied
 			row--;											// decrease row counter 
 			queen = queens[l_id][row];						// recover the queen in order to remove it 
 
@@ -186,12 +185,11 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
-		free = ~(jkl_queens[l_id][row] | ld | rd | col);		// calculate the occupancy of the next row
+		free = ~(jkl_queens[l_id][row] | ld | rd | col);// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
 
-		if(row == N-1)									// increase the solutions, if we are in the last row 
-			solutions++;
+		solutions += (row == N-1);						// increase the solutions, if we are in the last row 
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
 }
