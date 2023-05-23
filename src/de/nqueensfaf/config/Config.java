@@ -1,60 +1,73 @@
-package de.nqueensfaf.files;
+package de.nqueensfaf.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 public class Config {
 	
 	// all configurable fields and their default values
 	
 	// CPU or GPU ?
+	@JsonProperty(value = "type", required = true)
 	private String type;
 	// for CPU
+	@JsonProperty(value = "cpuThreadcount")
 	private int cpuThreadcount;
 	// for GPU
-	private int gpuDevice, gpuWorkgroupSize, gpuPresetQueens;
+	@JsonProperty(value = "gpuDeviceConfigs")
+	private DeviceConfig[] gpuDeviceConfigs;
+	@JsonProperty(value = "gpuPresetQueens")
+	private int gpuPresetQueens;
 	// general
+	@JsonProperty(value = "progressUpdateDelay")
 	private long progressUpdateDelay;
-	private boolean autoSaveEnabled, autoDeleteEnabled;
+	@JsonProperty(value = "autoSaveEnabled")
+	private boolean autoSaveEnabled;
+	@JsonProperty(value = "autoDeleteEnabled")
+	private boolean autoDeleteEnabled;
+	@JsonProperty(value = "autoSavePercentageStep")
 	private int autoSavePercentageStep;
-	private String autosaveFilePath;
+	@JsonProperty(value = "autoSaveFilePath")
+	private String autoSaveFilePath;
 		
 	public Config() {
 		super();
 	}
 	
-	public Config(String type, int cpuThreadcount, int gpuDevice, int gpuWorkgroupSize, int gpuPresetQueens,
+	public Config(String type, int cpuThreadcount, DeviceConfig[] gpuDeviceConfigs, int gpuPresetQueens,
 			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
-			String autosaveFilePath) {
+			String autoSaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
-		this.gpuDevice = gpuDevice;
-		this.gpuWorkgroupSize = gpuWorkgroupSize;
+		this.gpuDeviceConfigs = gpuDeviceConfigs;
 		this.gpuPresetQueens = gpuPresetQueens;
 		this.progressUpdateDelay = progressUpdateDelay;
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
 		this.autoSavePercentageStep = autoSavePercentageStep;
-		this.autosaveFilePath = autosaveFilePath;
+		this.autoSaveFilePath = autoSaveFilePath;
 	}
 
 	public static Config getDefaultConfig() {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setGPUDevice(0);
-		c.setGPUWorkgroupSize(64);
+		c.setGPUDeviceConfigs(new DeviceConfig(0, 64, 6, 1)); // -69 -> use default device
 		c.setGPUPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
 		c.setAutoSavePercentageStep(10);
-		c.setAutosaveFilePath("n{N}.faf");
+		c.setAutoSaveFilePath("n{N}.faf");
 		return c;
 	}
 	
@@ -67,8 +80,8 @@ public class Config {
 	
 	public void write(File configFile) throws StreamWriteException, DatabindException, IOException {
 		validate();
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.writeValue(configFile, this);
+		ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+		out.writeValue(configFile, this);
 	}
 	
 	public void validate() {
@@ -78,11 +91,23 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(gpuDevice < 0)
-			gpuDevice = 0;
-		
-		if(gpuWorkgroupSize <= 0)
-			gpuWorkgroupSize = getDefaultConfig().getGPUWorkgroupSize();
+		if(gpuDeviceConfigs == null)
+			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
+		// check for invalid values and remove each invalid value that is found from the array
+		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
+		for(DeviceConfig deviceConfig : gpuDeviceConfigs) {
+			if((deviceConfig.getIndex() < 0) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
+				continue;
+			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
+				continue;
+			gpuDeviceConfigsTmp.add(deviceConfig);
+		}
+		gpuDeviceConfigs = new DeviceConfig[gpuDeviceConfigsTmp.size()];
+		for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
+			gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
+		}
+		if(gpuDeviceConfigs.length == 0)
+			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		
 		if(gpuPresetQueens < 4)
 			gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
@@ -93,16 +118,18 @@ public class Config {
 		if(autoSavePercentageStep <= 0 || autoSavePercentageStep > 100)
 			autoSavePercentageStep = getDefaultConfig().getAutoSavePercentageStep();
 		
-		File file = new File(autosaveFilePath);
-		try {
-			if(!file.exists()) {
-				// try creating the file. if it works, the path is valid.
-				file.createNewFile();
-				file.delete();
+		if(autoSaveFilePath != null) {
+			File file = new File(autoSaveFilePath);
+			try {
+				if(!file.exists()) {
+					// try creating the file. if it works, the path is valid.
+					file.createNewFile();
+					file.delete();
+				}
+			} catch(Exception e) {
+				// if something goes wrong, the path is invalid.
+				autoSaveFilePath = getDefaultConfig().getAutoSaveFilePath();
 			}
-		} catch(Exception e) {
-			// if something goes wrong, the path is invalid.
-			autosaveFilePath = getDefaultConfig().getAutosaveFilePath();
 		}
 	}
 	
@@ -120,18 +147,11 @@ public class Config {
 		this.cpuThreadcount = cpuThreadcount;
 	}
 	
-	public int getGPUDevice() {
-		return gpuDevice;
+	public DeviceConfig[] getGPUDeviceConfigs() {
+		return gpuDeviceConfigs;
 	}
-	public void setGPUDevice(int gpuDevice) {
-		this.gpuDevice = gpuDevice;
-	}
-	
-	public int getGPUWorkgroupSize() {
-		return gpuWorkgroupSize;
-	}
-	public void setGPUWorkgroupSize(int gpuWorkgroupSize) {
-		this.gpuWorkgroupSize = gpuWorkgroupSize;
+	public void setGPUDeviceConfigs(DeviceConfig... gpuDeviceConfigs) {
+		this.gpuDeviceConfigs = gpuDeviceConfigs;
 	}
 	
 	public int getGPUPresetQueens() {
@@ -169,10 +189,10 @@ public class Config {
 		this.autoSavePercentageStep = autoSavePercentageStep;
 	}
 	
-	public String getAutosaveFilePath() {
-		return autosaveFilePath;
+	public String getAutoSaveFilePath() {
+		return autoSaveFilePath;
 	}
-	public void setAutosaveFilePath(String autosaveFilePath) {
-		this.autosaveFilePath = autosaveFilePath;
+	public void setAutoSaveFilePath(String autosaveFilePath) {
+		this.autoSaveFilePath = autosaveFilePath;
 	}
 }

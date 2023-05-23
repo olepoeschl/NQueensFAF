@@ -1,4 +1,4 @@
-package de.nqueensfaf;
+package de.nqueensfaf.compute;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,9 +9,7 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 
-import de.nqueensfaf.compute.CPUSolver;
-import de.nqueensfaf.compute.GPUSolver;
-import de.nqueensfaf.files.Config;
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.util.BasicCallback;
 import de.nqueensfaf.util.OnProgressUpdateCallback;
 import de.nqueensfaf.util.OnTimeUpdateCallback;
@@ -29,6 +27,25 @@ import de.nqueensfaf.util.OnTimeUpdateCallback;
  */
 public abstract class Solver {
 
+	// constants
+	/**
+	 * The {@link Solver} is idle.
+	 */
+	private static final int IDLE = 1;
+	/**
+	 * The {@link Solver} calls the initialization callbacks and starts the threads for continous time and progress updates.
+	 */
+	private static final int INITIALIZING = 2;
+	/**
+	 * The {@link Solver} is executing the solving mechanism.
+	 */
+	private static final int RUNNING = 3;
+	/**
+	 * The {@link Solver} calls the termination callbacks and terminates all threads.
+	 */
+	private static final int TERMINATING = 4;
+	
+	// variables
 	/**
 	 * board size
 	 */
@@ -68,7 +85,7 @@ public abstract class Solver {
 	 * current state of the {@link Solver}
 	 * @see NQueensFAF
 	 */
-	private int state = NQueensFAF.IDLE;
+	private int state = IDLE;
 	/**
 	 * thread for the {@link #autoSave} function
 	 * @see 
@@ -94,7 +111,7 @@ public abstract class Solver {
 	 * only used when {@link #autoSave} is true
 	 * @see #autoSavePercentageStep
 	 */
-	private String autoSaveFilePath = Config.getDefaultConfig().getAutosaveFilePath();
+	private String autoSaveFilePath = Config.getDefaultConfig().getAutoSaveFilePath();
 	/**
 	 * set to true when store() is called and set to false again when store() returned.
 	 */
@@ -122,17 +139,17 @@ public abstract class Solver {
 	 */
 	protected abstract void store_(String filepath) throws IOException;
 	/**
-	 * Reads the progress of an old run of the {@link Solver} and restores this state so that it can be continued.
+	 * Reads the progress of an old run of the {@link Solver} and injects this state so that it can be continued.
 	 * @param filepath path/name of the file the progress was written in
 	 * @throws IOException
 	 * @throws ClassNotFoundException 
 	 */
-	protected abstract void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+	protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
 	/**
-	 * States if the Solver has been restored and therefore contains restored values.
-	 * @return true if restore() was called and the Solver was not started or resetted since, otherwise false
+	 * States if the Solver has been injected and therefore contains injected values.
+	 * @return true if inject() was called and the Solver was not started or resetted since, otherwise false
 	 */
-	public abstract boolean isRestored();
+	public abstract boolean isInjected();
 	/**
 	 * Resets the {@link Solver}; therefore, applies default values to all Solver state and progress related variables.
 	 */
@@ -154,12 +171,12 @@ public abstract class Solver {
 	public abstract long getSolutions();
 	
 	// type-specific
-	public static <T extends Solver> T applyConfig(File configFile) throws StreamReadException, DatabindException, IOException {
-		return applyConfig(Config.read(configFile));
+	public static <T extends Solver> T createSolverWithConfig(File configFile) throws StreamReadException, DatabindException, IOException {
+		return createSolverWithConfig(Config.read(configFile));
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends Solver> T applyConfig(Config config) {
+	public static <T extends Solver> T createSolverWithConfig(Config config) {
 		Solver solver;
 		CPUSolver cpuSolver = null;
 		GPUSolver gpuSolver = null;
@@ -171,9 +188,8 @@ public abstract class Solver {
 			break;
 		case "gpu":
 			gpuSolver = new GPUSolver();
-			gpuSolver.setDevice(config.getGPUDevice());
-			gpuSolver.setWorkgroupSize(config.getGPUWorkgroupSize());
-			gpuSolver.setNumberOfPresetQueens(config.getGPUPresetQueens());
+			gpuSolver.setPresetQueens(config.getGPUPresetQueens());
+			gpuSolver.setDeviceConfigs(config.getGPUDeviceConfigs());
 			solver = gpuSolver;
 			break;
 		default:
@@ -185,9 +201,7 @@ public abstract class Solver {
 		solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
 		solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
 		solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
-		solver.setAutoSaveFilename(config.getAutosaveFilePath());
-		
-		// TODO: check for forbidden values using a method inside of Config class
+		solver.setAutoSaveFilePath(config.getAutoSaveFilePath());
 		
 		switch(config.getType().toLowerCase()) {
 		case "cpu":
@@ -197,6 +211,20 @@ public abstract class Solver {
 		default: // unreachable code, only here to calm the compiler
 			return null;
 		}
+	}
+	
+	public static CPUSolver createCPUSolver() {
+		Config config = Config.getDefaultConfig();
+		config.setType("cpu");
+		CPUSolver cpuSolver = createSolverWithConfig(config);
+		return cpuSolver;
+	}
+	
+	public static GPUSolver createGPUSolver() {
+		Config config = Config.getDefaultConfig();
+		config.setType("gpu");
+		GPUSolver gpuSolver = createSolverWithConfig(config);
+		return gpuSolver;
 	}
 	
 	/**
@@ -209,18 +237,18 @@ public abstract class Solver {
 		finishStoring = false;	// reset finishStoring to false, otherwise autosave doesn't work
 		
 		checkForPreparation();
-		state = NQueensFAF.INITIALIZING;
+		state = INITIALIZING;
 		if(initializationCallback != null)
 			initializationCallback.callback(this);
 		ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
-		state = NQueensFAF.RUNNING;
+		state = RUNNING;
 		startUpdateCallerThreads();
 		if(autoSaveEnabled)
 			startAutoSaverThread();
 		run();
 
-		state = NQueensFAF.TERMINATING;
+		state = TERMINATING;
 		ucExecutor.shutdown();
 		try {
 			ucExecutor.awaitTermination(progressUpdateDelay > timeUpdateDelay ? progressUpdateDelay+100 : timeUpdateDelay+100, TimeUnit.MILLISECONDS);
@@ -230,7 +258,7 @@ public abstract class Solver {
 		if(terminationCallback != null)
 			terminationCallback.callback(this);
 		
-		state = NQueensFAF.IDLE;
+		state = IDLE;
 	}
 	/**
 	 * Checks if all prepartions are done correctly.
@@ -238,15 +266,15 @@ public abstract class Solver {
 	 */
 	private void checkForPreparation() {
 		if(N == 0) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Board size was not set");
 		}
 		if(!isIdle()) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Solver is already started");
 		}
 		if(getProgress() == 1.0f) {
-			state = NQueensFAF.IDLE;
+			state = IDLE;
 			throw new IllegalStateException("Solver is already done, nothing to do here");
 		}
 	}
@@ -282,10 +310,12 @@ public abstract class Solver {
 				float tmpProgress = 0;
 				long tmpSolutions = 0;
 				while(isRunning()) {
-					if(getProgress() != tmpProgress || getSolutions() != tmpSolutions) {
-						onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
-						tmpProgress = getProgress();
-						tmpSolutions = getSolutions();
+					float progress = getProgress();
+					long solutions = getSolutions();
+					if(!Float.isNaN(progress) && (progress != tmpProgress || solutions != tmpSolutions)) {
+						onProgressUpdateCallback.onProgressUpdate(progress, solutions, getDuration());
+						tmpProgress = progress;
+						tmpSolutions = solutions;
 					}
 					if(!isRunning())
 						break;
@@ -310,10 +340,10 @@ public abstract class Solver {
 		autoSaverThread = new Thread(() -> {
 			try {
 				String filePath = autoSaveFilePath;
-				filePath = filePath.replaceAll("#N#", "" + N);
-				if (!filePath.endsWith(".faf")) {
-					filePath += ".faf";
-				}
+				filePath = filePath.replaceAll("\\{N\\}", "" + N);
+//				if (!filePath.endsWith(".faf")) {
+//					filePath += ".faf";
+//				}
 				float progress = getProgress() * 100;
 				int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
 				while (isRunning() && !finishStoring) {
@@ -403,15 +433,30 @@ public abstract class Solver {
 	}
 
 	/**
-	 * Wraps {@link #restore_(String)}.
-	 * @param filepath path/name of the file the Solver's progress state should be restored from
+	 * Wraps {@link #inject_(String)}.
+	 * @param filepath path/name of the file the Solver's progress state should be injected from
 	 * @throws IOException 
 	 * @throws ClassCastException 
 	 * @throws ClassNotFoundException 
 	 * @throws IllegalArgumentException
 	 */
-	public final void restore(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
-		restore_(filepath);
+	public final void inject(String filepath) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+		inject_(filepath);
+		autoSaveFilePath = filepath;
+		solve();
+	}
+	
+	/**
+	 * Wraps {@link #inject_(String)}.
+	 * @param file the Solver's progress state should be injected from
+	 * @throws IOException 
+	 * @throws ClassCastException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalArgumentException
+	 */
+	public final void inject(File file) throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+		inject_(file.getAbsolutePath());
+		autoSaveFilePath = file.getAbsolutePath();
 		solve();
 	}
 	
@@ -601,7 +646,7 @@ public abstract class Solver {
 	 * Sets {@link #autoSaveFilename}.
 	 * @param autoSaveFilename
 	 */
-	public final void setAutoSaveFilename(String autoSaveFilePath) {
+	public final void setAutoSaveFilePath(String autoSaveFilePath) {
 		this.autoSaveFilePath= autoSaveFilePath;
 	}
 
@@ -610,27 +655,27 @@ public abstract class Solver {
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#IDLE}
 	 */
 	public final boolean isIdle() {
-		return state == NQueensFAF.IDLE;
+		return state == IDLE;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#INITIALIZING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#INITIALIZING}
 	 */
 	public final boolean isInitializing() {
-		return state == NQueensFAF.INITIALIZING;
+		return state == INITIALIZING;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#RUNNING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#RUNNING}
 	 */
 	public final boolean isRunning() {
-		return state == NQueensFAF.RUNNING;
+		return state == RUNNING;
 	}
 	/**
 	 * Returns true if the {@link Solver}'s state is {@link NQueensFAF#TERMINATING}
 	 * @return true if the current state of the {@link Solver} is {@link NQueensFAF#TERMINATING}
 	 */
 	public final boolean isTerminating() {
-		return state == NQueensFAF.TERMINATING;
+		return state == TERMINATING;
 	}
 }

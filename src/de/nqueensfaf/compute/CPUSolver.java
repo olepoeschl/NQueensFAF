@@ -12,10 +12,9 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import de.nqueensfaf.Solver;
-import de.nqueensfaf.files.Config;
-import de.nqueensfaf.files.Constellation;
-import de.nqueensfaf.files.SolverState;
+import de.nqueensfaf.config.Config;
+import de.nqueensfaf.data.Constellation;
+import de.nqueensfaf.data.SolverState;
 
 public class CPUSolver extends Solver {
 
@@ -40,7 +39,10 @@ public class CPUSolver extends Solver {
 	private ArrayList<ArrayList<Constellation>> threadConstellations;
 	private long solutions, duration, storedDuration;
 	private float progress;
-	private boolean restored = false;
+	private boolean injected = false;
+	
+	// non public constructor
+	protected CPUSolver(){}
 	
 	// inherited functions
 	@Override
@@ -60,7 +62,7 @@ public class CPUSolver extends Solver {
 			return;
 		}
 
-		if (!restored) {
+		if (!injected) {
 			genConstellations();
 		}
 
@@ -72,7 +74,7 @@ public class CPUSolver extends Solver {
 		}
 		int i = constellations.size()-1;
 		for (Constellation c : constellations) {
-			if(c.getSolutions() >= 0)	// ignore restored constellations that have already been solved
+			if(c.getSolutions() >= 0)	// ignore injected constellations that have already been solved
 				continue;
 			threadConstellations.get((i--) % threadcount).add(c);
 		}
@@ -104,11 +106,11 @@ public class CPUSolver extends Solver {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		restored = false;
+		injected = false;
 	}
 
 	@Override
-	public void store_(String filepath) throws IOException {
+	protected void store_(String filepath) throws IOException {
 		// if Solver was not even started yet, throw exception
 		if (constellations.size() == 0) {
 			throw new IllegalStateException("Nothing to be saved");
@@ -118,21 +120,21 @@ public class CPUSolver extends Solver {
 	}
 
 	@Override
-	public void restore_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+	protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 		if (!isIdle()) {
-			throw new IllegalStateException("Cannot restore while the Solver is running");
+			throw new IllegalStateException("Cannot inject while the Solver is running");
 		}
 		ObjectMapper mapper = new ObjectMapper();
 		SolverState state = mapper.readValue(new File(filepath), SolverState.class);
 		setN(state.getN());
 		storedDuration = state.getStoredDuration();
 		constellations = state.getConstellations();
-		restored = true;
+		injected = true;
 	}
 
 	@Override
-	public boolean isRestored() {
-		return restored;
+	public boolean isInjected() {
+		return injected;
 	}
 
 	@Override
@@ -146,7 +148,7 @@ public class CPUSolver extends Solver {
 		ijklList.clear();
 		constellations.clear();
 		threads.clear();
-		restored = false;
+		injected = false;
 	}
 
 	@Override
@@ -165,7 +167,7 @@ public class CPUSolver extends Solver {
 				if(c.getSolutions() >= 0)
 					solvedConstellations++;
 			}
-			return (float) solvedConstellations / constellations.size();
+			return constellations.size() > 0 ? (float) solvedConstellations / constellations.size() : 0f;
 		}
 		return progress;
 	}

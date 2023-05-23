@@ -5,8 +5,10 @@
 	<version>1.8.0</version>
 	<name>NQueensFAF</name>
 	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
-	
+	<packaging>jar</packaging>
 	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
 		<lwjgl.version>3.3.2</lwjgl.version>
 		<jackson.version>2.15.0</jackson.version>
 	</properties>
@@ -161,6 +163,16 @@
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
+		<dependency>
+	  		<groupId>info.picocli</groupId>
+	  		<artifactId>picocli</artifactId>
+	  		<version>4.7.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.freva</groupId>
+			<artifactId>ascii-table</artifactId>
+			<version>1.8.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -174,10 +186,28 @@
 		</resources>
 		<plugins>
 			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
-					<release>17</release>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>de.nqueensfaf.Main</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<finalName>nqueensfaf-${project.version}-cli</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
 			</plugin>
 		</plugins>
