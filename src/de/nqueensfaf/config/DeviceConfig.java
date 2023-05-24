@@ -25,6 +25,10 @@ public class DeviceConfig {
 		this.weight = weight;
 	}
 
+	public boolean isValid() {
+		return index >= 0 && workgroupSize > 0 && presetQueens >= 4;
+	}
+	
 	public int getIndex() {
 		return index;
 	}

@@ -91,23 +91,22 @@ public class Config {
 		if(cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
-		if(gpuDeviceConfigs == null)
+		if(gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
 			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
-		// check for invalid values and remove each invalid value that is found from the array
-		ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
-		for(DeviceConfig deviceConfig : gpuDeviceConfigs) {
-			if((deviceConfig.getIndex() < 0) || deviceConfig.getWorkgroupSize() <= 0 || deviceConfig.getPresetQueens() < 4)
-				continue;
-			if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
-				continue;
-			gpuDeviceConfigsTmp.add(deviceConfig);
+		else {
+			// check for invalid values and remove each invalid value that is found
+			ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
+			for(var deviceConfig : gpuDeviceConfigs) {
+				if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
+					continue;
+				if(deviceConfig.isValid())
+					gpuDeviceConfigsTmp.add(deviceConfig);
+			}
+			gpuDeviceConfigs = new DeviceConfig[gpuDeviceConfigsTmp.size()];
+			for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
+				gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
+			}
 		}
-		gpuDeviceConfigs = new DeviceConfig[gpuDeviceConfigsTmp.size()];
-		for(int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
-			gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
-		}
-		if(gpuDeviceConfigs.length == 0)
-			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		
 		if(gpuPresetQueens < 4)
 			gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
