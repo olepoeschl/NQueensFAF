@@ -2,10 +2,9 @@
 Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom n queens problem solving algorithms.
 This project uses Java 17. <br>
 
-<b>If you want to try out the solver itself, download the GUI version from [NQueensFAF-GUI](https://github.com/olepoeschl/NQueensFAF-GUI)!</b>
-
 ### Download
-See the "Releases" section.
+See the "Releases" section. <br>
+Try it out using its command line interface! 
 
 # Usage
 ## Implementing an own Solver
@@ -75,7 +74,14 @@ Unless its stated otherwise, following times are referring to *single-threaded* 
      
 We are very excited!
 
-## 1.17 (latest):
+## 1.18 (latest):
+      - implemented a beautiful command line interface (see Releases page)
+      - now it's possible to use multiple GPUs at the same time
+      - easily configure, how the workload should be distributed to all used GPUs
+      - configuration made simple by using a json file or creating a Config-Object in code
+      - storing and restoring now much cleaner implemented, also using json format
+
+## 1.17:
       - GPU speed up of approximately 35% 
       - prepared the CPU Solver for the distributed version 
       - saving and restoring is now 10 times faster 

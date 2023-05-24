@@ -178,7 +178,10 @@ public class GPUSolver extends Solver {
 			// read results
 			for (Device device : devices) {
 				device.stopReaderThread = 1; // stop the devices reader thread
-
+				while(device.stopReaderThread != 0) {	// wait until the thread has terminated
+					Thread.sleep(50);
+				}
+				
 				// read results
 				readResults(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize);
 
@@ -500,6 +503,7 @@ public class GPUSolver extends Solver {
 					// ignore
 				}
 			}
+			device.stopReaderThread = 0;
 		});
 	}
 
