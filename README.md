@@ -74,7 +74,7 @@ Unless its stated otherwise, following times are referring to *single-threaded* 
      
 We are very excited!
 
-## 1.18:
+## 1.18 (latest):
       - implemented a beautiful command line interface (see Releases page)
       - now it's possible to use multiple GPUs at the same time
       - easily configure, how the workload should be distributed to all used GPUs
