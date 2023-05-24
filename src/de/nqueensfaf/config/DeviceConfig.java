@@ -1,23 +1,24 @@
 package de.nqueensfaf.config;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeviceConfig {
 	
-	@JsonProperty(value = "index", required = true)
 	private int index;
-	@JsonProperty(value = "workgroupSize", required = true)
-	private int workgroupSize;
-	@JsonProperty(value = "presetQueens", required = true)
-	private int presetQueens;
-	@JsonProperty(value = "weight")
-	private int weight;
+	private int workgroupSize = 0;
+	private int presetQueens = 0;
+	private int weight = 0;
 	
 	public DeviceConfig() {
 		super();
 	}
 
-	public DeviceConfig(int index, int workgroupSize, int presetQueens, int weight) {
+	@JsonCreator
+	public DeviceConfig(@JsonProperty(value = "index", required = true) int index,
+			@JsonProperty(value = "workgroupSize") int workgroupSize,
+			@JsonProperty(value = "presetQueens") int presetQueens, 
+			@JsonProperty(value = "weight") int weight) {
 		super();
 		this.index = index;
 		this.workgroupSize = workgroupSize;
@@ -25,6 +26,24 @@ public class DeviceConfig {
 		this.weight = weight;
 	}
 
+	public static DeviceConfig getDefaultDeviceConfig() {
+		final DeviceConfig dc = new DeviceConfig();
+		dc.setIndex(0);
+		dc.setWorkgroupSize(64);
+		dc.setPresetQueens(6);
+		dc.setWeight(1);
+		return dc;
+	}
+	
+	public void fillEmptyFields() {
+		if(workgroupSize == 0)
+			workgroupSize = getDefaultDeviceConfig().workgroupSize;
+		if(presetQueens == 0)
+			presetQueens = getDefaultDeviceConfig().presetQueens;
+		if(weight == 0)
+			weight = getDefaultDeviceConfig().weight;
+	}
+	
 	public boolean isValid() {
 		return index >= 0 && workgroupSize > 0 && presetQueens >= 4;
 	}
@@ -33,7 +52,7 @@ public class DeviceConfig {
 		return index;
 	}
 
-	public void setIdx(int index) {
+	public void setIndex(int index) {
 		this.index = index;
 	}
 

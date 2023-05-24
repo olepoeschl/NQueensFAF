@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
@@ -17,35 +18,33 @@ public class Config {
 	// all configurable fields and their default values
 	
 	// CPU or GPU ?
-	@JsonProperty(value = "type", required = true)
 	private String type;
 	// for CPU
-	@JsonProperty(value = "cpuThreadcount")
 	private int cpuThreadcount;
 	// for GPU
-	@JsonProperty(value = "gpuDeviceConfigs")
 	private DeviceConfig[] gpuDeviceConfigs;
-	@JsonProperty(value = "gpuPresetQueens")
 	private int gpuPresetQueens;
 	// general
-	@JsonProperty(value = "progressUpdateDelay")
 	private long progressUpdateDelay;
-	@JsonProperty(value = "autoSaveEnabled")
 	private boolean autoSaveEnabled;
-	@JsonProperty(value = "autoDeleteEnabled")
 	private boolean autoDeleteEnabled;
-	@JsonProperty(value = "autoSavePercentageStep")
 	private int autoSavePercentageStep;
-	@JsonProperty(value = "autoSaveFilePath")
 	private String autoSaveFilePath;
 		
 	public Config() {
 		super();
 	}
 	
-	public Config(String type, int cpuThreadcount, DeviceConfig[] gpuDeviceConfigs, int gpuPresetQueens,
-			long progressUpdateDelay, boolean autoSaveEnabled, boolean autoDeleteEnabled, int autoSavePercentageStep,
-			String autoSaveFilePath) {
+	@JsonCreator
+	public Config(@JsonProperty(value = "type", required = true) String type,
+			@JsonProperty(value = "cpuThreadcount") int cpuThreadcount,
+			@JsonProperty(value = "gpuDeviceConfigs") DeviceConfig[] gpuDeviceConfigs,
+			@JsonProperty(value = "gpuPresetQueens") int gpuPresetQueens,
+			@JsonProperty(value = "progressUpdateDelay") long progressUpdateDelay,
+			@JsonProperty(value = "autoSaveEnabled") boolean autoSaveEnabled,
+			@JsonProperty(value = "autoDeleteEnabled") boolean autoDeleteEnabled,
+			@JsonProperty(value = "autoSavePercentageStep") int autoSavePercentageStep,
+			@JsonProperty(value = "autoSaveFilePath") String autoSaveFilePath) {
 		this.type = type;
 		this.cpuThreadcount = cpuThreadcount;
 		this.gpuDeviceConfigs = gpuDeviceConfigs;
@@ -92,13 +91,14 @@ public class Config {
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
 		if(gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
-			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
+			gpuDeviceConfigs = new DeviceConfig[] {DeviceConfig.getDefaultDeviceConfig()};
 		else {
 			// check for invalid values and remove each invalid value that is found
 			ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
 			for(var deviceConfig : gpuDeviceConfigs) {
 				if(gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for duplicates
 					continue;
+				deviceConfig.fillEmptyFields();
 				if(deviceConfig.isValid())
 					gpuDeviceConfigsTmp.add(deviceConfig);
 			}
