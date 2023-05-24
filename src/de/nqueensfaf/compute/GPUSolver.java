@@ -483,6 +483,9 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseMemObject(device.colMem));
 		checkCLError(clReleaseMemObject(device.startijklMem));
 		checkCLError(clReleaseMemObject(device.resMem));
+		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
+			checkCLError(clReleaseMemObject(device.jklqueensMem));
+		}
 
 		device.profilingCB.free();
 		checkCLError(clReleaseEvent(device.xEvent));
