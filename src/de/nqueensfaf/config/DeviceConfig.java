@@ -48,10 +48,12 @@ public class DeviceConfig {
 			presetQueens = getDefaultDeviceConfig().presetQueens;
 		if(weight == 0)
 			weight = getDefaultDeviceConfig().weight;
+		if(maxGlobalWorkSize == 0)
+			maxGlobalWorkSize = getDefaultDeviceConfig().maxGlobalWorkSize;
 	}
 	
 	public boolean isValid() {
-		return index >= 0 && workgroupSize > 0 && presetQueens >= 4;
+		return index >= 0 && workgroupSize > 0 && presetQueens >= 4 && maxGlobalWorkSize >= workgroupSize;
 	}
 	
 	public int getIndex() {
