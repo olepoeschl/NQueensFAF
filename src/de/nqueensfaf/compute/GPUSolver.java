@@ -161,7 +161,8 @@ public class GPUSolver extends Solver {
 //				checkCLError(clWaitForEvents(xEventsPerContextBuf));
 //			}
 			for(Device device : devices)
-				clFinish(device.xqueue);
+				while(device.duration == 0)
+					Thread.sleep(50);
 			
 			end = System.currentTimeMillis(); // stop timer
 			duration = end - start + storedDuration; // calculate needed time
@@ -302,7 +303,7 @@ public class GPUSolver extends Solver {
 		while(ptr < device.constellations.size()) {
 			if(device.constellations.size() - workloadSize < ptr)
 				workloadSize = device.constellations.size() - ptr;
-			device.workloadConstellations = (ArrayList<Constellation>) device.constellations.subList(ptr, workloadSize);
+			device.workloadConstellations = device.constellations.subList(ptr, workloadSize);
 			ptr += workloadSize;
 			
 			device.workloadGlobalWorkSize = device.workloadConstellations.size();
@@ -319,7 +320,7 @@ public class GPUSolver extends Solver {
 	}
 	
 	private void transferDataToDevice(IntBuffer errBuf, Device device) {
-		ArrayList<Constellation> workloadConstellations = device.workloadConstellations;
+		List<Constellation> workloadConstellations = device.workloadConstellations;
 		int globalWorkSize = device.workloadGlobalWorkSize;
 		// ld
 		device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
@@ -480,7 +481,7 @@ public class GPUSolver extends Solver {
 		checkCLError(clFlush(device.xqueue));
 	}
 
-	private void readResults(Device device, ArrayList<Constellation> workloadConstellations, int workloadSize,
+	private void readResults(Device device, List<Constellation> workloadConstellations, int workloadSize,
 			int globalWorkSize) {
 		// read result and progress memory buffers
 		checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
@@ -513,7 +514,7 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseKernel(device.kernel));
 	}
 
-	private Thread deviceReaderThread(Device device, ArrayList<Constellation> workloadConstellations, int workloadSize,
+	private Thread deviceReaderThread(Device device, List<Constellation> workloadConstellations, int workloadSize,
 			int globalWorkSize) {
 		return new Thread(() -> {
 			while (device.stopReaderThread == 0) {
@@ -776,7 +777,7 @@ public class GPUSolver extends Solver {
 		long xEvent;
 		CLEventCallback profilingCB;
 		// results
-		ArrayList<Constellation> constellations, workloadConstellations;
+		List<Constellation> constellations, workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
 		long duration;
 		// control flow
