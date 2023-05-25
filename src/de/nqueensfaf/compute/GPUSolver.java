@@ -145,7 +145,7 @@ public class GPUSolver extends Solver {
 						throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
 					}
 					// transfer data to device
-					transferDataToDevice(errBuf, device, device.workloadConstellations, device.workloadGlobalWorkSize);
+					transferDataToDevice(errBuf, device);
 					// set kernel args
 					setKernelArgs(stack, device);
 				}
@@ -299,8 +299,9 @@ public class GPUSolver extends Solver {
 		}
 	}
 
-	private void transferDataToDevice(IntBuffer errBuf, Device device, ArrayList<Constellation> workloadConstellations,
-			int globalWorkSize) {
+	private void transferDataToDevice(IntBuffer errBuf, Device device) {
+		ArrayList<Constellation> workloadConstellations = device.workloadConstellations;
+		int globalWorkSize = device.workloadGlobalWorkSize;
 		// ld
 		device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
 				errBuf);
