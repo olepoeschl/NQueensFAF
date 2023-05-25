@@ -9,8 +9,8 @@ Try it out using its command line interface!
 # Usage
 ## Implementing an own Solver
 The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with code.
-But the Solver class also comes with many nice utilities like setting / adding callbacks for certain events and a method for running your Solver asynchronous.
-<br>Have a look into the Javadocs and just try it out.
+But the Solver class also comes with many nice utilities, for example setting / adding callbacks for certain events. 
+
 
 ## Using one of the builtin Solvers
 ```
