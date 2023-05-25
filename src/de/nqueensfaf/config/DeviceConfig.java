@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeviceConfig {
 	
+	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0, 0);
+	
 	private int index;
 	private int workgroupSize = 0;
 	private int presetQueens = 0;

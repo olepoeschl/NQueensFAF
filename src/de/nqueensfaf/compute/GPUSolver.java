@@ -37,8 +37,6 @@ import de.nqueensfaf.data.SolverState;
 
 public class GPUSolver extends Solver {
 
-	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 4, 4, 4);
-
 	// OpenCL stuff
 	private ArrayList<Device> devices, availableDevices;
 	private long[] contexts, programs;
@@ -642,7 +640,7 @@ public class GPUSolver extends Solver {
 		devices.clear();
 		weightSum = 0;
 
-		if (deviceConfigsInput[0].equals(ALL_DEVICES)) {
+		if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
 			for (Device device : availableDevices) {
 				devices.add(device);
 				device.config = Config.getDefaultConfig().getGPUDeviceConfigs()[0];
