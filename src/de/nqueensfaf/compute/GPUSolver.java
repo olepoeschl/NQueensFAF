@@ -144,49 +144,16 @@ public class GPUSolver extends Solver {
 						throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
 					}
 					
-					runDevice(stack, errBuf, device);
+					new Thread(() -> runDevice(stack, errBuf, device)).start();
 				}
 			}
 
 			// execute device kernels
-			start = System.currentTimeMillis(); // start timer
-
-			// wait for all devices to finish, distinct by platform
-//			for (long context : contexts) {
-//				List<Device> xEventsPerContext = devices.stream().filter(d -> d.context == context).toList();
-//				PointerBuffer xEventsPerContextBuf = stack.mallocPointer(xEventsPerContext.size());
-//				for (int i = 0; i < xEventsPerContext.size(); i++) {
-//					xEventsPerContextBuf.put(i, xEventsPerContext.get(i).xEvent);
-//				}
-//				checkCLError(clWaitForEvents(xEventsPerContextBuf));
-//			}
 			for(Device device : devices)
-				while(device.duration == 0)
+				while(!device.finished)
 					Thread.sleep(50);
 			
-			end = System.currentTimeMillis(); // stop timer
-			duration = end - start + storedDuration; // calculate needed time
-
-			// read results
-			for (Device device : devices) {
-				device.stopReaderThread = 1; // stop the devices reader thread
-				while(device.stopReaderThread != 0) {	// wait until the thread has terminated
-					Thread.sleep(50);
-				}
-				
-				// read results
-				readResults(device, device.workloadConstellations, device.workloadSize, device.workloadGlobalWorkSize);
-
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					// ignore
-				}
-
-				// release all device specific OpenCL objects (memory objects, events, event
-				// callbacks, kernel, queue)
-				releaseCLObjects(device);
-			}
+			// release remaining OpenCL objects
 			for (int i = 0; i < contexts.length; i++) {
 				checkCLError(clReleaseProgram(programs[i]));
 				checkCLError(clReleaseContext(contexts[i]));
@@ -303,7 +270,7 @@ public class GPUSolver extends Solver {
 		while(ptr < device.constellations.size()) {
 			if(device.constellations.size() - workloadSize < ptr)
 				workloadSize = device.constellations.size() - ptr;
-			device.workloadConstellations = device.constellations.subList(ptr, workloadSize);
+			device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
 			ptr += workloadSize;
 			
 			device.workloadGlobalWorkSize = device.workloadConstellations.size();
@@ -311,12 +278,57 @@ public class GPUSolver extends Solver {
 			transferDataToDevice(errBuf, device);
 			// set kernel args
 			setKernelArgs(stack, device);
+			
+			// start timer when the first device starts computing
+			if(start == 0)
+				start = System.currentTimeMillis();
+			
 			// run
 			explosionBoost9000(device, device.workloadGlobalWorkSize);
 			// start a thread continuously reading device data
-			deviceReaderThread(device, device.workloadConstellations, device.workloadSize,
-					device.workloadGlobalWorkSize).start();
+			deviceReaderThread(device).start();
+			
+			// wait for kernel to finish
+			clFinish(device.xqueue);
+			
+			// stop timer when the last device is finished computing
+			if(ptr >= device.constellations.size()) {
+				if(end != devices.size() - 1)
+					end++;
+				else {
+					// calculate needed time
+					if(devices.size() > 1) {
+						end = System.currentTimeMillis();
+						duration = end - start + storedDuration;
+					} else {
+						while(device.duration == 0)
+							try {
+								Thread.sleep(50);
+							} catch (InterruptedException e) {
+								// ignore
+							}
+						duration = device.duration;
+					}
+				}
+			}
+			
+			device.stopReaderThread = 1; // stop the devices reader thread
+			while(device.stopReaderThread != 0) {	// wait until the thread has terminated
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					// ignore
+				}
+			}
+			
+			// read results
+			readResults(device);
+
+			// release opencl memory and event
+			releaseWorkloadCLObjects(device);
 		}
+		releaseCLObjects(device);
+		device.finished = true;
 	}
 	
 	private void transferDataToDevice(IntBuffer errBuf, Device device) {
@@ -325,6 +337,7 @@ public class GPUSolver extends Solver {
 		// ld
 		device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
 				errBuf);
+		checkCLError(errBuf);
 		ByteBuffer ldPtr = clEnqueueMapBuffer(device.memqueue, device.ldMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4,
 				null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -464,7 +477,7 @@ public class GPUSolver extends Solver {
 																			// measuring the execution time
 		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkers,
 				localWorkSize, null, xEventBuf));
-
+		
 		// get exact time values using CLEvent
 		device.xEvent = xEventBuf.get(0);
 		checkCLError(clSetEventCallback(device.xEvent, CL_COMPLETE,
@@ -474,29 +487,28 @@ public class GPUSolver extends Solver {
 					checkCLError(err);
 					err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 					checkCLError(err);
-					device.duration = (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
+					device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000;	// convert nanoseconds to milliseconds
 				}), NULL));
 
 		// flush command to the device
 		checkCLError(clFlush(device.xqueue));
 	}
 
-	private void readResults(Device device, List<Constellation> workloadConstellations, int workloadSize,
-			int globalWorkSize) {
+	private void readResults(Device device) {
 		// read result and progress memory buffers
 		checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-		for (int i = 0; i < globalWorkSize; i++) {
-			if (workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+			if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 				continue;
 			long solutionsForConstellation = device.resPtr.getLong(i * 8)
-					* symmetry(workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+					* symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 			if (solutionsForConstellation >= 0)
 				// synchronize with the list of constellations on the RAM
-				workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+				device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
 		}
 	}
 
-	private void releaseCLObjects(Device device) {
+	private void releaseWorkloadCLObjects(Device device) {
 		checkCLError(clReleaseMemObject(device.ldMem));
 		checkCLError(clReleaseMemObject(device.rdMem));
 		checkCLError(clReleaseMemObject(device.colMem));
@@ -508,17 +520,18 @@ public class GPUSolver extends Solver {
 
 		device.profilingCB.free();
 		checkCLError(clReleaseEvent(device.xEvent));
-
+	}
+	
+	private void releaseCLObjects(Device device) {
 		checkCLError(clReleaseCommandQueue(device.xqueue));
 		checkCLError(clReleaseCommandQueue(device.memqueue));
 		checkCLError(clReleaseKernel(device.kernel));
 	}
 
-	private Thread deviceReaderThread(Device device, List<Constellation> workloadConstellations, int workloadSize,
-			int globalWorkSize) {
+	private Thread deviceReaderThread(Device device) {
 		return new Thread(() -> {
 			while (device.stopReaderThread == 0) {
-				readResults(device, workloadConstellations, workloadSize, globalWorkSize);
+				readResults(device);
 				try {
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
@@ -579,7 +592,7 @@ public class GPUSolver extends Solver {
 
 	@Override
 	public long getDuration() {
-		if (end == 0)
+		if (duration == 0)
 			if (isRunning() && start != 0) {
 				return System.currentTimeMillis() - start + storedDuration;
 			}
@@ -782,6 +795,7 @@ public class GPUSolver extends Solver {
 		long duration;
 		// control flow
 		int stopReaderThread = 0;
+		boolean finished = false;
 
 		public Device(long id, long platform, String vendor, String name) {
 			this.id = id;
