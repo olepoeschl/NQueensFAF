@@ -12,7 +12,7 @@ public class Demo {
 	
 	static void run() {
 		GPUSolver s =  Solver.createGPUSolver();
-		var c = new DeviceConfig(0, 64, 6, 5);
+		var c = new DeviceConfig(0, 64, 6, 5, 1_000_000_000);
 		s.setDeviceConfigs(c);
 		s.setN(18);
 		s.setInitializationCallback((self) -> {

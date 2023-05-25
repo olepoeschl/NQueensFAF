@@ -136,40 +136,33 @@ public class GPUSolver extends Solver {
 					if (devices.indexOf(device) == devices.size() - 1) {
 						device.workloadSize = totalWorkloadSize - workloadBeginPtr;
 					}
-					device.workloadConstellations = fillWithTrash(
+					device.constellations = fillWithTrash(
 							remainingConstellations.subList(workloadBeginPtr, workloadBeginPtr + device.workloadSize),
 							device.config.getWorkgroupSize());
 					workloadBeginPtr += device.workloadSize;
-					device.workloadGlobalWorkSize = device.workloadConstellations.size();
-					if (device.workloadGlobalWorkSize == 0) {
+					if (device.constellations.size() == 0) {
 						throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
 					}
-					// transfer data to device
-					transferDataToDevice(errBuf, device);
-					// set kernel args
-					setKernelArgs(stack, device);
+					
+					runDevice(stack, errBuf, device);
 				}
 			}
 
 			// execute device kernels
 			start = System.currentTimeMillis(); // start timer
-			for (Device device : devices) {
-				// run
-				explosionBoost9000(device, device.workloadGlobalWorkSize);
-				// start a thread continuously reading device data
-				deviceReaderThread(device, device.workloadConstellations, device.workloadSize,
-						device.workloadGlobalWorkSize).start();
-			}
 
 			// wait for all devices to finish, distinct by platform
-			for (long context : contexts) {
-				List<Device> xEventsPerContext = devices.stream().filter(d -> d.context == context).toList();
-				PointerBuffer xEventsPerContextBuf = stack.mallocPointer(xEventsPerContext.size());
-				for (int i = 0; i < xEventsPerContext.size(); i++) {
-					xEventsPerContextBuf.put(i, xEventsPerContext.get(i).xEvent);
-				}
-				checkCLError(clWaitForEvents(xEventsPerContextBuf));
-			}
+//			for (long context : contexts) {
+//				List<Device> xEventsPerContext = devices.stream().filter(d -> d.context == context).toList();
+//				PointerBuffer xEventsPerContextBuf = stack.mallocPointer(xEventsPerContext.size());
+//				for (int i = 0; i < xEventsPerContext.size(); i++) {
+//					xEventsPerContextBuf.put(i, xEventsPerContext.get(i).xEvent);
+//				}
+//				checkCLError(clWaitForEvents(xEventsPerContextBuf));
+//			}
+			for(Device device : devices)
+				clFinish(device.xqueue);
+			
 			end = System.currentTimeMillis(); // stop timer
 			duration = end - start + storedDuration; // calculate needed time
 
@@ -299,6 +292,32 @@ public class GPUSolver extends Solver {
 		}
 	}
 
+	private void runDevice(MemoryStack stack, IntBuffer errBuf, Device device) {
+		// workload partitioning
+		int ptr = 0;
+		
+		// make the max global work size be divisible by the devices workgroup size
+		int workloadSize = device.config.getMaxGlobalWorkSize() / device.config.getWorkgroupSize() * device.config.getWorkgroupSize();
+		
+		while(ptr < device.constellations.size()) {
+			if(device.constellations.size() - workloadSize < ptr)
+				workloadSize = device.constellations.size() - ptr;
+			device.workloadConstellations = (ArrayList<Constellation>) device.constellations.subList(ptr, workloadSize);
+			ptr += workloadSize;
+			
+			device.workloadGlobalWorkSize = device.workloadConstellations.size();
+			// transfer data to device
+			transferDataToDevice(errBuf, device);
+			// set kernel args
+			setKernelArgs(stack, device);
+			// run
+			explosionBoost9000(device, device.workloadGlobalWorkSize);
+			// start a thread continuously reading device data
+			deviceReaderThread(device, device.workloadConstellations, device.workloadSize,
+					device.workloadGlobalWorkSize).start();
+		}
+	}
+	
 	private void transferDataToDevice(IntBuffer errBuf, Device device) {
 		ArrayList<Constellation> workloadConstellations = device.workloadConstellations;
 		int globalWorkSize = device.workloadGlobalWorkSize;
@@ -757,7 +776,7 @@ public class GPUSolver extends Solver {
 		long xEvent;
 		CLEventCallback profilingCB;
 		// results
-		ArrayList<Constellation> workloadConstellations;
+		ArrayList<Constellation> constellations, workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
 		long duration;
 		// control flow
