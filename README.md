@@ -1,5 +1,5 @@
 # NQueensFAF
-Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom n queens problem solving algorithms.
+Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom N queens problem solving algorithms.
 This project uses Java 17. <br>
 
 ### Download
@@ -9,8 +9,8 @@ Try it out using its command line interface!
 # Usage
 ## Implementing an own Solver
 The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with code.
-But the Solver class also comes with many nice utilities like setting / adding callbacks for certain events and a method for running your Solver asynchronous.
-<br>Have a look into the Javadocs and just try it out.
+But the Solver class also comes with many nice utilities, for example setting / adding callbacks for certain events. 
+
 
 ## Using one of the builtin Solvers
 ```
@@ -44,33 +44,40 @@ Especially the newer graphics cards show the potential of our program.
 |   i5 - 9300h single   |      1.32s      |   8.95s   |   1:05m   |   8:20m   |     1:10h    | not measured | not measured |
 |   i5 - 9300h multi    |      0.25s      |   1.75s   |   12.5s   |   1:35m   |    13:05m    |     1:52h    |     16:18h   |
 
-Single stands for single core and multi for Multi-Core. 
+Single stands for single-threaded and multi for Multi-threaded. 
 The CPU's and the GPU's are used with stock settings. 
 
-Attention: when testing times on GPU, your graphics card may go into another power state. To check this and avoid this, you can use a tool such as "nvidiainfo".
+Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 # General
 
-This solution is based on two methods and one idea:
+This solution is based on three ideas, especially the first two:
 
 - using bits to represent the occupancy of the board; based on the <a href="http://users.rcn.com/liusomers/nqueen_demo/nqueens.html">implementation by Jeff Somers </a>
       
 - calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the <a href="https://github.com/preusser/q27">implementation by the TU Dresden</a> (a very good description of this method can be found <a href="http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html">here</a>)
 
-- GPU: remember board-leaving diagonals, when going forward, so that they can be reinserted, when we go backwards. This has also been done in Ping Che Chen's implementation (https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's and it reduces the use of memory. 
+- GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in Ping Che Chen's implementation (https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's. 
+
+The GPU solver does support NVIDIA, AMD and also integrated Intel GPU's.
+However, for AMD the solver currently breaks for N=23 and larger boards. 
+This will hopefully be fixed soon. 
+For NDIDIA and AMD GPU's we recommend a workgroupsize of 64, for the integrated intel graphics we recommend 24 for optimal performance. 
 
 # Versions
-This section shows the improvements we made from version to version related to the performance.
-Unless its stated otherwise, following times are referring to *single-threaded* and the i5-9300h mentioned above.
+This section shows the improvements we made from version to version related to performance.
+Unless stated otherwise, the following times are referring to the i5-9300h mentioned above in *single-threaded* mode.
 
 ## Distributed (yet to come):
       - we already had a working version, but it was only for cpu and due to new ideas and requirements, we started again from zero and reprogram the whole application
      
       - currently developing a system for distributing the workloads as efficent as possible, so that CPU's and GPU's of all classes can contribute usefully
 
-      - we aim to have a working prototype until December 2022, official release will probably be in early 2023
+      - we aim to have a working prototype this summer
    
       - there will be a website with a ranking of all participants and the current progress of the project when it runs
+      
+      - the goal is to first verify the solution of the 27 queens problem and afterwards approach the 28 queens problem 
      
 We are very excited!
 
@@ -83,7 +90,7 @@ We are very excited!
 
 ## 1.17:
       - GPU speed up of approximately 35% 
-      - prepared the CPU Solver for the distributed version 
+      - prepared the CPU Solver for the distributed version (works now for board size up to 31 again)
       - saving and restoring is now 10 times faster 
       - number of preset queens is now configurable 
       - now also showing the passed time in the command line version 
@@ -97,7 +104,7 @@ We are very excited!
 ## 1.14:
       - command line support
 ## 1.13:
-      - BIG IMPROVEMENT in GPU-Solver (about 30%)
+      - bim performance improvement in the GPU-Solver (approximately 30%)
       
       - swapped j with k in GpuConstellationsGenerator
       
@@ -111,10 +118,10 @@ We are very excited!
       
       - some new Gui features
 ## 1.11:
-      - splitted into the Gui program (this repo) and the NQueensFAF library for the computation part 
+      - splitted into the Gui program (NQueensFAF-GUI) and the NQueensFAF library (this repo) for the computation part 
       
       - the GPU solver now rounds the global work size up to the next matching number of constellations 
-        and solves all constellations using GPU instead of solving remaing constellations using CPU
+        and solves all constellations using GPU instead of solving remaining constellations using CPU
         
       - code (especially of the Gui class) is much cleaner now
 ## 1.10:
@@ -124,11 +131,11 @@ We are very excited!
       
       - realtime progress updates using OpenCL read operations
 ## 1.9:
-      - REMARKABLE IMPROVEMENT!!! (~35%)
+      - big performance improvement (~35%)
 
       - implemented case distinction for the different start Constellations in order to get rid of arrays
       
-      - now only 0 - 3 class variables (int) per start constellation instead of int[N-3] and 5 int
+      - now only 0 - 3 class variables (int) per start constellation instead of int[N-3] plus 5 int
       
       - currently only works for board sizes up to N=23, this will be updated soon
       
@@ -142,7 +149,7 @@ We are very excited!
 
       - N = 16 in ~2.1 sec
 ## 1.7:
-      - many minor changes to reduce memory and cache misses
+      - many minor changes to reduce cache misses and also the use of memory
       
       - ability to save progress and continue later
       
@@ -170,7 +177,7 @@ We are very excited!
 ## 1.3:
       - represent the board with diagonals and cols 
       
-      - N = 16 in ~ some min
+      - N = 16 in ~2-3 min
 ## 1.2:
       - reduce to half by only going to the half of the first row
       
