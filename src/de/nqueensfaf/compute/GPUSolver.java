@@ -266,16 +266,35 @@ public class GPUSolver extends Solver {
 		
 		// make the max global work size be divisible by the devices workgroup size
 		int workloadSize = device.config.getMaxGlobalWorkSize() / device.config.getWorkgroupSize() * device.config.getWorkgroupSize();
+		if(device.constellations.size() - workloadSize < ptr) // is it the one and only device workload?
+			workloadSize = device.constellations.size() - ptr;
+		
+
 		
 		while(ptr < device.constellations.size()) {
-			if(device.constellations.size() - workloadSize < ptr)
+			if(ptr == 0) {	// first workload -> create buffers
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
+				ptr += workloadSize;
+				device.workloadGlobalWorkSize = device.workloadConstellations.size();
+				// create buffers once at the beginning and once at the end
+				// because their size the same for all workloads except for the last
+				createBuffers(errBuf, device);
+			} else if(device.constellations.size() - workloadSize < ptr) {	// last workload -> create the buffers new
 				workloadSize = device.constellations.size() - ptr;
-			device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
-			ptr += workloadSize;
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
+				ptr += workloadSize;
+				device.workloadGlobalWorkSize = device.workloadConstellations.size();
+				
+				releaseWorkloadCLObjects(device); // clean up memory from previous workload
+				createBuffers(errBuf, device);
+			} else { // regular workload -> regular iteration, nothing special
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
+				ptr += workloadSize;
+				device.workloadGlobalWorkSize = device.workloadConstellations.size();
+			}
 			
-			device.workloadGlobalWorkSize = device.workloadConstellations.size();
 			// transfer data to device
-			transferDataToDevice(errBuf, device);
+			fillBuffers(errBuf, device);
 			// set kernel args
 			setKernelArgs(stack, device);
 			
@@ -284,7 +303,7 @@ public class GPUSolver extends Solver {
 				start = System.currentTimeMillis();
 			
 			// run
-			explosionBoost9000(device, device.workloadGlobalWorkSize);
+			explosionBoost9000(device);
 			// start a thread continuously reading device data
 			deviceReaderThread(device).start();
 			
@@ -323,21 +342,46 @@ public class GPUSolver extends Solver {
 			
 			// read results
 			readResults(device);
-
-			// release opencl memory and event
-			releaseWorkloadCLObjects(device);
 		}
+		releaseWorkloadCLObjects(device);
 		releaseCLObjects(device);
 		device.finished = true;
 	}
 	
-	private void transferDataToDevice(IntBuffer errBuf, Device device) {
-		List<Constellation> workloadConstellations = device.workloadConstellations;
-		int globalWorkSize = device.workloadGlobalWorkSize;
-		// ld
-		device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
+	private void createBuffers(IntBuffer errBuf, Device device) {
+		device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, device.workloadGlobalWorkSize * 4,
 				errBuf);
 		checkCLError(errBuf);
+		
+		device.rdMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, device.workloadGlobalWorkSize * 4,
+				errBuf);
+		checkCLError(errBuf);
+		
+		device.colMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, device.workloadGlobalWorkSize * 4,
+				errBuf);
+		checkCLError(errBuf);
+		
+		device.startijklMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+				device.workloadGlobalWorkSize * 4, errBuf);
+		checkCLError(errBuf);
+		
+		device.resMem = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, device.workloadGlobalWorkSize * 8,
+				errBuf);
+		checkCLError(errBuf);
+		
+		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
+			int jklqueensSize = (device.workloadGlobalWorkSize / device.config.getWorkgroupSize()) * N;
+			device.jklqueensMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, jklqueensSize * 4,
+					errBuf);
+			checkCLError(errBuf);
+		}
+	}
+	
+	private void fillBuffers(IntBuffer errBuf, Device device) {
+		List<Constellation> workloadConstellations = device.workloadConstellations;
+		int globalWorkSize = device.workloadGlobalWorkSize;
+		
+		// ld
 		ByteBuffer ldPtr = clEnqueueMapBuffer(device.memqueue, device.ldMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4,
 				null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -347,9 +391,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.ldMem, ldPtr, null, null));
 
 		// rd
-		device.rdMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
-				errBuf);
-		checkCLError(errBuf);
 		ByteBuffer rdPtr = clEnqueueMapBuffer(device.memqueue, device.rdMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4,
 				null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -359,9 +400,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.rdMem, rdPtr, null, null));
 
 		// col
-		device.colMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 4,
-				errBuf);
-		checkCLError(errBuf);
 		ByteBuffer colPtr = clEnqueueMapBuffer(device.memqueue, device.colMem, true, CL_MAP_WRITE, 0,
 				globalWorkSize * 4, null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -371,9 +409,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.colMem, colPtr, null, null));
 
 		// startijkl
-		device.startijklMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-				globalWorkSize * 4, errBuf);
-		checkCLError(errBuf);
 		ByteBuffer startijklPtr = clEnqueueMapBuffer(device.memqueue, device.startijklMem, true, CL_MAP_WRITE, 0,
 				globalWorkSize * 4, null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -383,9 +418,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.startijklMem, startijklPtr, null, null));
 
 		// result memory
-		device.resMem = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, globalWorkSize * 8,
-				errBuf);
-		checkCLError(errBuf);
 		device.resPtr = clEnqueueMapBuffer(device.memqueue, device.resMem, true, CL_MAP_WRITE, 0, globalWorkSize * 8,
 				null, null, errBuf, null);
 		checkCLError(errBuf);
@@ -398,9 +430,6 @@ public class GPUSolver extends Solver {
 		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
 			int wgSize = device.config.getWorkgroupSize();
 			int jklqueensSize = (globalWorkSize / wgSize) * N;
-			device.jklqueensMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, jklqueensSize * 4,
-					errBuf);
-			checkCLError(errBuf);
 			// calculate jklqueens content
 			int[] jklqueens = new int[jklqueensSize];
 			int L = 1 << (N-1);
@@ -463,12 +492,12 @@ public class GPUSolver extends Solver {
 		}
 	}
 
-	private void explosionBoost9000(Device device, int globalWorkSize) {
+	private void explosionBoost9000(Device device) {
 		// create buffer of pointers defining the multi-dimensional size of the number
 		// of work units to execute
 		final int dimensions = 1;
 		PointerBuffer globalWorkers = BufferUtils.createPointerBuffer(dimensions);
-		globalWorkers.put(0, globalWorkSize);
+		globalWorkers.put(0, device.workloadGlobalWorkSize);
 		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		localWorkSize.put(0, device.config.getWorkgroupSize());
 
