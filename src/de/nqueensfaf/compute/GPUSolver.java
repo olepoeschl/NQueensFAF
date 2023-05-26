@@ -821,7 +821,7 @@ public class GPUSolver extends Solver {
 		// results
 		List<Constellation> constellations, workloadConstellations;
 		int workloadSize, workloadGlobalWorkSize;
-		long duration;
+		long duration = 0;
 		// control flow
 		int stopReaderThread = 0;
 		boolean finished = false;
