@@ -206,9 +206,31 @@
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
-					<finalName>nqueensfaf-${project.version}-cli</finalName>
+					<finalName>nqueensfaf-cli-${project.version}</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>io.github.fvarrui</groupId>
+				<artifactId>javapackager</artifactId>
+				<version>1.7.2</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<name>nqueensfaf-cli-windows</name>
+							<mainClass>de.nqueensfaf.Main</mainClass>
+							<generateInstaller>false</generateInstaller>
+							<bundleJre>true</bundleJre>
+							<winConfig>
+								<headerType>console</headerType>
+							</winConfig>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
