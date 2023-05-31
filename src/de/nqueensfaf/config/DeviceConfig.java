@@ -5,10 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeviceConfig {
 	
+	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0, 0);
+	
 	private int index;
 	private int workgroupSize = 0;
 	private int presetQueens = 0;
 	private int weight = 0;
+	private int maxGlobalWorkSize = 0;
 	
 	public DeviceConfig() {
 		super();
@@ -18,12 +21,14 @@ public class DeviceConfig {
 	public DeviceConfig(@JsonProperty(value = "index", required = true) int index,
 			@JsonProperty(value = "workgroupSize") int workgroupSize,
 			@JsonProperty(value = "presetQueens") int presetQueens, 
-			@JsonProperty(value = "weight") int weight) {
+			@JsonProperty(value = "weight") int weight,
+			@JsonProperty(value = "maxGlobalWorkSize") int maxGlobalWorkSize) {
 		super();
 		this.index = index;
 		this.workgroupSize = workgroupSize;
 		this.presetQueens = presetQueens;
 		this.weight = weight;
+		this.maxGlobalWorkSize = maxGlobalWorkSize;
 	}
 
 	public static DeviceConfig getDefaultDeviceConfig() {
@@ -32,6 +37,7 @@ public class DeviceConfig {
 		dc.setWorkgroupSize(64);
 		dc.setPresetQueens(6);
 		dc.setWeight(1);
+		dc.setMaxGlobalWorkSize(1_000_000_000);
 		return dc;
 	}
 	
@@ -42,10 +48,12 @@ public class DeviceConfig {
 			presetQueens = getDefaultDeviceConfig().presetQueens;
 		if(weight == 0)
 			weight = getDefaultDeviceConfig().weight;
+		if(maxGlobalWorkSize == 0)
+			maxGlobalWorkSize = getDefaultDeviceConfig().maxGlobalWorkSize;
 	}
 	
 	public boolean isValid() {
-		return index >= 0 && workgroupSize > 0 && presetQueens >= 4;
+		return index >= 0 && workgroupSize > 0 && presetQueens >= 4 && maxGlobalWorkSize >= workgroupSize;
 	}
 	
 	public int getIndex() {
@@ -80,6 +88,14 @@ public class DeviceConfig {
 		this.weight = weight;
 	}
 	
+	public int getMaxGlobalWorkSize() {
+		return maxGlobalWorkSize;
+	}
+	
+	public void setMaxGlobalWorkSize(int maxGlobalWorkSize) {
+		this.maxGlobalWorkSize = maxGlobalWorkSize;
+	}
+	
 	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof DeviceConfig) {
@@ -87,7 +103,8 @@ public class DeviceConfig {
 			return index == dvcCfg.index 
 					&& workgroupSize == dvcCfg.workgroupSize 
 					&& presetQueens == dvcCfg.presetQueens 
-					&& weight == dvcCfg.weight;
+					&& weight == dvcCfg.weight
+					&& maxGlobalWorkSize == dvcCfg.maxGlobalWorkSize;
 		}
 		return false;
 	}
