@@ -221,7 +221,7 @@
 							<goal>package</goal>
 						</goals>
 						<configuration>
-							<name>nqueensfaf-cli-windows</name>
+							<name>nqueensfaf-cli-${project.version}-windows</name>
 							<mainClass>de.nqueensfaf.Main</mainClass>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
