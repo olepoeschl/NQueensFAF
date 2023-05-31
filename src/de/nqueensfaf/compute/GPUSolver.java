@@ -298,7 +298,7 @@ public class GPUSolver extends Solver {
 				start = System.currentTimeMillis();
 			
 			// run
-			explosionBoost9000(device);
+			explosionBoost9000(errBuf, device);
 			// start a thread continuously reading device data
 			deviceReaderThread(device).start();
 			
@@ -441,7 +441,7 @@ public class GPUSolver extends Solver {
 		checkCLError(clSetKernelArg(device.kernel, 4, resArg));
 	}
 
-	private void explosionBoost9000(Device device) {
+	private void explosionBoost9000(IntBuffer errBuf, Device device) {
 		// create buffer of pointers defining the multi-dimensional size of the number
 		// of work units to execute
 		final int dimensions = 1;
@@ -455,6 +455,18 @@ public class GPUSolver extends Solver {
 																			// measuring the execution time
 		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 				localWorkSize, null, xEventBuf));
+		
+		// workaround for AMD GPUs so that they always return the correct results back to the host
+		if(device.vendor.toLowerCase().contains("advanced micro devices") || device.vendor.toLowerCase().contains("amd")) {
+			long nullKernel = clCreateKernel(device.program, "null", errBuf);
+			checkCLError(errBuf);
+			PointerBuffer globalWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
+			globalWorkSizeNullKernel.put(0, 64);
+			PointerBuffer localWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
+			localWorkSizeNullKernel.put(0, 1);
+			checkCLError(clEnqueueNDRangeKernel(device.xqueue, nullKernel, dimensions, null, globalWorkSize,
+					localWorkSize, null, null));
+		}
 		
 		// get exact time values using CLEvent
 		device.xEvent = xEventBuf.get(0);

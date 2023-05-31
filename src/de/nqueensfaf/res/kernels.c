@@ -1,5 +1,10 @@
 // Explosion Boost 9000
 
+// null kernel as a workaround for AMD GPUs to ensure they return the correct results
+kernel void null() {
+	
+}
+
 // Nvidia kernel
 kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
 	// gpu intern indice
