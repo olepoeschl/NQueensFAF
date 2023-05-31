@@ -221,10 +221,12 @@
 							<goal>package</goal>
 						</goals>
 						<configuration>
-							<name>nqueensfaf-cli-${project.version}-windows</name>
+							<name>nqueensfaf-cli-windows</name>
+							<displayName>NQueensFAF</displayName>
 							<mainClass>de.nqueensfaf.Main</mainClass>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
+							<createZipball>true</createZipball>
 							<winConfig>
 								<headerType>console</headerType>
 							</winConfig>
