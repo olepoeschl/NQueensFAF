@@ -228,7 +228,6 @@
 							<bundleJre>true</bundleJre>
 							<createZipball>true</createZipball>
 							<winConfig>
-								<icoFile>C:\Users\olepo\dev\java\workspace\NQueensFAF\src\de\nqueensfaf\res\icon.ico</icoFile>
 								<headerType>console</headerType>
 							</winConfig>
 						</configuration>
