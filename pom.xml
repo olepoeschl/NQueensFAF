@@ -216,20 +216,35 @@
 				<version>1.7.2</version>
 				<executions>
 					<execution>
+						<id>packaging-for-windows</id>
 						<phase>package</phase>
 						<goals>
 							<goal>package</goal>
 						</goals>
 						<configuration>
-							<name>nqueensfaf-cli-windows</name>
-							<displayName>NQueensFAF</displayName>
-							<mainClass>de.nqueensfaf.Main</mainClass>
+							<platform>windows</platform>
+							<createZipball>true</createZipball>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
-							<createZipball>true</createZipball>
 							<winConfig>
 								<headerType>console</headerType>
 							</winConfig>
+							<mainClass>de.nqueensfaf.Main</mainClass>
+						</configuration>
+					</execution>
+					<execution>
+						<id>packaging-for-linux</id>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<platform>linux</platform>
+							<createZipball>true</createZipball>
+							<generateInstaller>false</generateInstaller>
+							<bundleJre>true</bundleJre>
+							<jdkPath>C:\Users\olepo\dev\java\jdks\linux\jdk-18.0.2.1</jdkPath>
+							<mainClass>de.nqueensfaf.Main</mainClass>
 						</configuration>
 					</execution>
 				</executions>
