@@ -795,15 +795,6 @@ public class GPUSolver extends Solver {
 		return ijkl & 0b111111111111111;
 	}
 
-//	public void setWorkgroupSize(int s) {
-//		long maxWorkgroupSize = getDeviceInfoPointer(device, CL_DEVICE_MAX_WORK_GROUP_SIZE);
-//		if (s <= 0 || s > maxWorkgroupSize) {
-//			throw new IllegalArgumentException(
-//					"WorkgroupSize must be between 0 and " + maxWorkgroupSize + " (=max for this device)");
-//		}
-//		workgroupSize = s;
-//	}
-
 	// a class holding all OpenCL bindings needed for a single OpenCL device to
 	// operate
 	private class Device {
