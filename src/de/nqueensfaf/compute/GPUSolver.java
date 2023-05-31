@@ -128,14 +128,14 @@ public class GPUSolver extends Solver {
 				checkCLError(errBuf);
 				device.memqueue = memqueue;
 				// create buffers and fill with trash constellations
-				device.workloadSize = (device.config.getWeight() * workloadSize) / weightSum;
+				int deviceWorkloadSize = (device.config.getWeight() * workloadSize) / weightSum;
 				if (devices.indexOf(device) == devices.size() - 1) {
-					device.workloadSize = workloadSize - workloadBeginPtr;
+					deviceWorkloadSize = workloadSize - workloadBeginPtr;
 				}
 				device.constellations = fillWithTrash(
-						remainingConstellations.subList(workloadBeginPtr, workloadBeginPtr + device.workloadSize),
+						remainingConstellations.subList(workloadBeginPtr, workloadBeginPtr + deviceWorkloadSize),
 						device.config.getWorkgroupSize());
-				workloadBeginPtr += device.workloadSize;
+				workloadBeginPtr += deviceWorkloadSize;
 				if (device.constellations.size() == 0) {
 					throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
 				}
@@ -757,7 +757,7 @@ public class GPUSolver extends Solver {
 		CLEventCallback profilingCB;
 		// results
 		List<Constellation> constellations, workloadConstellations;
-		int workloadSize, workloadGlobalWorkSize;
+		int workloadGlobalWorkSize;
 		long duration = 0;
 		// control flow
 		int stopReaderThread = 0;
