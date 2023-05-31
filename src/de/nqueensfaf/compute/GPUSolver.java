@@ -262,29 +262,29 @@ public class GPUSolver extends Solver {
 		int ptr = 0;
 		
 		// make the max global work size be divisible by the devices workgroup size
-		int workloadSize = device.config.getMaxGlobalWorkSize() / device.config.getWorkgroupSize() * device.config.getWorkgroupSize();
-		if(device.constellations.size() - workloadSize < ptr) // is it the one and only device workload?
-			workloadSize = device.constellations.size() - ptr;
+		int deviceCurrentWorkloadSize = device.config.getMaxGlobalWorkSize() / device.config.getWorkgroupSize() * device.config.getWorkgroupSize();
+		if(device.constellations.size() - deviceCurrentWorkloadSize < ptr) // is it the one and only device workload?
+			deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 		
 		while(ptr < device.constellations.size()) {
 			if(ptr == 0) {	// first workload -> create buffers
-				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
-				ptr += workloadSize;
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
+				ptr += deviceCurrentWorkloadSize;
 				device.workloadGlobalWorkSize = device.workloadConstellations.size();
 				// create buffers once at the beginning and once at the end
 				// because their size the same for all workloads except for the last
 				createBuffers(errBuf, device);
-			} else if(device.constellations.size() - workloadSize < ptr) {	// last workload -> create the buffers new
-				workloadSize = device.constellations.size() - ptr;
-				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
-				ptr += workloadSize;
+			} else if(device.constellations.size() - deviceCurrentWorkloadSize < ptr) {	// last workload -> create the buffers new
+				deviceCurrentWorkloadSize = device.constellations.size() - ptr;
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
+				ptr += deviceCurrentWorkloadSize;
 				device.workloadGlobalWorkSize = device.workloadConstellations.size();
 				
 				releaseWorkloadCLObjects(device); // clean up memory from previous workload
 				createBuffers(errBuf, device);
 			} else { // regular workload -> regular iteration, nothing special
-				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
-				ptr += workloadSize;
+				device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
+				ptr += deviceCurrentWorkloadSize;
 				device.workloadGlobalWorkSize = device.workloadConstellations.size();
 			}
 			
