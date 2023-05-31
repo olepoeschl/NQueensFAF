@@ -269,8 +269,6 @@ public class GPUSolver extends Solver {
 		if(device.constellations.size() - workloadSize < ptr) // is it the one and only device workload?
 			workloadSize = device.constellations.size() - ptr;
 		
-
-		
 		while(ptr < device.constellations.size()) {
 			if(ptr == 0) {	// first workload -> create buffers
 				device.workloadConstellations = device.constellations.subList(ptr, ptr + workloadSize);
@@ -496,15 +494,15 @@ public class GPUSolver extends Solver {
 		// create buffer of pointers defining the multi-dimensional size of the number
 		// of work units to execute
 		final int dimensions = 1;
-		PointerBuffer globalWorkers = BufferUtils.createPointerBuffer(dimensions);
-		globalWorkers.put(0, device.workloadGlobalWorkSize);
+		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
+		globalWorkSize.put(0, device.workloadGlobalWorkSize);
 		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		localWorkSize.put(0, device.config.getWorkgroupSize());
 
 		// run kernel
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that is used for
 																			// measuring the execution time
-		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkers,
+		checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 				localWorkSize, null, xEventBuf));
 		
 		// get exact time values using CLEvent
