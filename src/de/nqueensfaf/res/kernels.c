@@ -1,5 +1,10 @@
 // Explosion Boost 9000
 
+// null kernel as a workaround for AMD GPUs to ensure they return the correct results
+kernel void null() {
+	
+}
+
 // Nvidia kernel
 kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
 	// gpu intern indice
@@ -135,7 +140,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
 		}
 	}
-	ldiag = L >> k;									// ld from queen l with respect to the first row
+	ldiag = L >> k;									// ld from queen l with respect to the first row 
 	rdiag = 1 << l;									// ld from queen k with respect to the first row 
 	if(l_id == 0) {
 		for(int a = 0;a < N; a++){
@@ -146,9 +151,9 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);					// avoid corrupt memory behavior 
 
-	ld &= ~(ldiag << start);						// remove queen k from ld 
+	ld &= ~((L >> k) << start);						// remove queen k from ld 
 	if(l != N-1)									// only remove queen k from rd, if no queen in corner (N-1,N-1)
-		rd &= ~(rdiag >> start);					// otherwise we continue in row N-1 and find too many solutions 
+		rd &= ~((1 << l) >> start);					// otherwise we continue in row N-1 and find too many solutions 
 
 	// initialize current row as start and solutions as 0
 	int row = start;
@@ -169,8 +174,8 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	// this is the actual solver (via backtracking with Jeff Somers Bit method) 
 	// the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
 	while(row >= start) {							// while we haven't tried everything 
-		if(free) {										// if there are free slots in the current row 
-			direction = 1;									// we are going forwards 
+		direction = (free > 0);							// forwards or backwards?
+		if(direction) {									// if there are free slots in the current row
 			queen = -free & free;							// this is the next free slot for a queen (searching from the right border) in the current row
 			queens[l_id][row] = queen;						// remember the queen 
 			row++;											// increase row counter 
@@ -180,8 +185,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld = (ld | queen) << 1;							
 			rd = (rd | queen) >> 1;	
 		}
-		else {											// if the row is completely occupied 
-			direction = 0;									// we are going backwards 
+		else {											// if the row is completely occupied
 			row--;											// decrease row counter 
 			queen = queens[l_id][row];						// recover the queen in order to remove it 
 
@@ -190,12 +194,11 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
-		free = ~(jkl_queens[row] | ld | rd | col);		// calculate the occupancy of the next row
+		free = ~(jkl_queens[row] | ld | rd | col); 		// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
 
-		if(row == N-1)									// increase the solutions, if we are in the last row 
-			solutions++;
+		solutions += (row == N-1);						// increase the solutions, if we are in the last row 
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
 }

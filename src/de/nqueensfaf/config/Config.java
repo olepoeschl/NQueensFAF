@@ -60,7 +60,7 @@ public class Config {
 		final Config c = new Config();
 		c.setType("CPU");
 		c.setCPUThreadcount(1);
-		c.setGPUDeviceConfigs(new DeviceConfig(0, 64, 6, 1)); // -69 -> use default device
+		c.setGPUDeviceConfigs(DeviceConfig.getDefaultDeviceConfig());
 		c.setGPUPresetQueens(6);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
@@ -91,7 +91,7 @@ public class Config {
 			cpuThreadcount = getDefaultConfig().getCPUThreadcount();
 		
 		if(gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
-			gpuDeviceConfigs = new DeviceConfig[] {DeviceConfig.getDefaultDeviceConfig()};
+			gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
 		else {
 			// check for invalid values and remove each invalid value that is found
 			ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
