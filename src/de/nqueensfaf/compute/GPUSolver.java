@@ -366,13 +366,6 @@ public class GPUSolver extends Solver {
 		device.resMem = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, device.workloadGlobalWorkSize * 8,
 				errBuf);
 		checkCLError(errBuf);
-		
-		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
-			int jklqueensSize = (device.workloadGlobalWorkSize / device.config.getWorkgroupSize()) * N;
-			device.jklqueensMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, jklqueensSize * 4,
-					errBuf);
-			checkCLError(errBuf);
-		}
 	}
 	
 	private void fillBuffers(IntBuffer errBuf, Device device) {
@@ -423,39 +416,6 @@ public class GPUSolver extends Solver {
 			device.resPtr.putLong(i * 8, workloadConstellations.get(i).getSolutions());
 		}
 		checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.resMem, device.resPtr, null, null));
-
-		// constant jkl queens memory for amd gpus 
-		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
-			int wgSize = device.config.getWorkgroupSize();
-			int jklqueensSize = (globalWorkSize / wgSize) * N;
-			// calculate jklqueens content
-			int[] jklqueens = new int[jklqueensSize];
-			int L = 1 << (N-1);
-			for (int i = 0; i < jklqueensSize; i += N) {
-				int j = getj(workloadConstellations.get((i/N) * wgSize).getStartijkl() & 0b11111111111111111111);
-				int k = getk(workloadConstellations.get((i/N) * wgSize).getStartijkl() & 0b11111111111111111111);
-				int l = getl(workloadConstellations.get((i/N) * wgSize).getStartijkl() & 0b11111111111111111111);
-				int rdiag = (L >> j) | (L >> (N-1-k));
-				int ldiag = (L >> j) | (L >> l);
-				for(int a = 0; a < N; a++) {
-					jklqueens[i + N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
-				}
-				ldiag = L >> k;
-				rdiag = 1 << l;
-				for(int a = 0; a < N; a++) {
-					jklqueens[i + a] |= (ldiag << a) | (rdiag >> a);
-				}
-				jklqueens[i + k] = ~L;
-				jklqueens[i + l] = ~1;
-			}
-			ByteBuffer jklqueensPtr = clEnqueueMapBuffer(device.memqueue, device.jklqueensMem, true, CL_MAP_WRITE, 0,
-					jklqueensSize * 4, null, null, errBuf, null);
-			checkCLError(errBuf);
-			for (int i = 0; i < jklqueensSize; i++) {
-				jklqueensPtr.putInt(i * 4, jklqueens[i]);
-			}
-			checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.jklqueensMem, jklqueensPtr, null, null));
-		}
 		
 		checkCLError(clFlush(device.memqueue));
 		checkCLError(clFinish(device.memqueue));
@@ -482,12 +442,6 @@ public class GPUSolver extends Solver {
 		LongBuffer resArg = stack.mallocLong(1);
 		resArg.put(0, device.resMem);
 		checkCLError(clSetKernelArg(device.kernel, 4, resArg));
-		// jkl queens for amd gpus
-		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
-			LongBuffer jklqueensArg = stack.mallocLong(1);
-			jklqueensArg.put(0, device.jklqueensMem);
-			checkCLError(clSetKernelArg(device.kernel, 5, jklqueensArg));
-		}
 	}
 
 	private void explosionBoost9000(Device device) {
@@ -541,9 +495,6 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseMemObject(device.colMem));
 		checkCLError(clReleaseMemObject(device.startijklMem));
 		checkCLError(clReleaseMemObject(device.resMem));
-		if (device.vendor.toLowerCase().contains("amd") || device.vendor.toLowerCase().contains("advanced micro devices")) {
-			checkCLError(clReleaseMemObject(device.jklqueensMem));
-		}
 
 		device.profilingCB.free();
 		checkCLError(clReleaseEvent(device.xEvent));
@@ -803,7 +754,7 @@ public class GPUSolver extends Solver {
 		DeviceConfig config;
 		// OpenCL
 		long platform, context, xqueue, memqueue, kernel;
-		Long ldMem, rdMem, colMem, startijklMem, resMem, jklqueensMem;
+		Long ldMem, rdMem, colMem, startijklMem, resMem;
 		ByteBuffer resPtr;
 		long xEvent;
 		CLEventCallback profilingCB;

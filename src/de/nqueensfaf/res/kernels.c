@@ -101,11 +101,10 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 }
 
 // AMD kernel
-kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result, constant uint *jkl_queens_arr) {
+kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
 	// gpu intern indice
 	int g_id = get_global_id(0);					// global thread id 
 	int l_id = get_local_id(0);						// local thread id within workgroup
-	int jkl_queens_idx = get_group_id(0)*N;
 
 	// variables		
 	uint L = 1 << (N-1);							// queen at the left border of the board (right border is represented by 1) 										
@@ -125,6 +124,28 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	uint ld_mem = 0;								// for memorizing board-leaving diagonals 
 	uint rd_mem = 0;
 
+	// jkl_queens occupies the diagonals, that go from bottom row to upper right and upper left 
+	// and also the left and right column 
+	// in row k only L is free and in row l only 1 is free 
+	local uint jkl_queens[N];
+	uint rdiag = (L >> j) | (L >> (N-1-k));			// the rd from queen j and k with respect to the last row
+	uint ldiag = (L >> j) | (L >> l);				// the ld from queen j and l with respect to the last row
+	if(l_id == 0) {
+		for(int a = 0;a < N; a++){						// we also occupy the left and right border 
+			jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
+		}
+	}
+	ldiag = L >> k;									// ld from queen l with respect to the first row 
+	rdiag = 1 << l;									// ld from queen k with respect to the first row 
+	if(l_id == 0) {
+		for(int a = 0;a < N; a++){
+			jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
+		}
+		jkl_queens[k] = ~L;
+		jkl_queens[l] = ~1; 
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);					// avoid corrupt memory behavior 
+
 	ld &= ~((L >> k) << start);						// remove queen k from ld 
 	if(l != N-1)									// only remove queen k from rd, if no queen in corner (N-1,N-1)
 		rd &= ~((1 << l) >> start);					// otherwise we continue in row N-1 and find too many solutions 
@@ -134,7 +155,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 	ulong solutions = 0;
 
 	// calculate the occupancy of the first row
-	uint free = ~(ld | rd | col | jkl_queens_arr[jkl_queens_idx + row]);	// free is 1 if a queen can be set at the queens location
+	uint free = ~(ld | rd | col | jkl_queens[row]);	// free is 1 if a queen can be set at the queens location
 	uint queen = -free & free;						// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
@@ -168,7 +189,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
-		free = ~(jkl_queens_arr[jkl_queens_idx + row] | ld | rd | col); // calculate the occupancy of the next row
+		free = ~(jkl_queens[row] | ld | rd | col); 		// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
 
