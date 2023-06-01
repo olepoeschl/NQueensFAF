@@ -23,8 +23,8 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import static org.lwjgl.opencl.CL10.*;
-import static org.lwjgl.opencl.CL11.clSetEventCallback;
+import static org.lwjgl.opencl.CL12.*;
+import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
