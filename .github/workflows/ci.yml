@@ -33,7 +33,7 @@ jobs:
     - name: Upload built artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: NQueensFAF Nightly
+        name: nqueensfaf linux
         path: |
           target/nqueensfaf-${{ steps.project.outputs.version }}.jar
           target/nqueensfaf-cli-${{ steps.project.outputs.version }}.jar
@@ -60,7 +60,7 @@ jobs:
     - name: Upload built artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: NQueensFAF Nightly
+        name: nqueensfaf windows
         path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-windows.zip
       
   build-macos:
@@ -81,5 +81,5 @@ jobs:
     - name: Upload built artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: NQueensFAF Nightly
+        name: nqueensfaf mac
         path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-mac.zip
