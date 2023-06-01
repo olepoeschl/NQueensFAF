@@ -461,9 +461,9 @@ public class GPUSolver extends Solver {
 			long nullKernel = clCreateKernel(device.program, "null", errBuf);
 			checkCLError(errBuf);
 			PointerBuffer globalWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
-			globalWorkSizeNullKernel.put(0, 64);
+			globalWorkSizeNullKernel.put(0, device.workloadGlobalWorkSize);
 			PointerBuffer localWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
-			localWorkSizeNullKernel.put(0, 1);
+			localWorkSizeNullKernel.put(0, device.config.getWorkgroupSize());
 			checkCLError(clEnqueueNDRangeKernel(device.xqueue, nullKernel, dimensions, null, globalWorkSize,
 					localWorkSize, null, null));
 		}

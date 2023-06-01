@@ -93,7 +93,7 @@ public class CLI implements Runnable {
 			solver.setInitializationCallback((self) -> {
 				System.out.println("Starting solver...");
 			});
-			solver.setOnProgressUpdateCallback((progress, solutions, duration) -> {
+			solver.setOnTimeUpdateCallback((progress, solutions, duration) -> {
 				if(loadingCharIdx == loadingChars.length)
 					loadingCharIdx = 0;
 				System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions, getDurationPrettyString(duration));
