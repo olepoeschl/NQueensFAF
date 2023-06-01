@@ -30,7 +30,7 @@ jobs:
     - name: Extract Maven project version
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> "$GITHUB_OUTPUT"
       id: project
-    - name: Upload built artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf linux
@@ -56,10 +56,10 @@ jobs:
       run: mvn -B package --file pom.xml
     - name: Extract Maven project version
       run: |
-        echo "version=" >> "$GITHUB_OUTPUT"
-        echo "mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec" >> "$GITHUB_OUTPUT"
+        echo "$result = mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec"
+        echo "version=$result" >> "$GITHUB_OUTPUT"
       id: project
-    - name: Upload built artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf windows
@@ -80,7 +80,7 @@ jobs:
     - name: Extract Maven project version
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> "$GITHUB_OUTPUT"
       id: project
-    - name: Upload built artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf mac
