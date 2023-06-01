@@ -242,7 +242,7 @@ public class GPUSolver extends Solver {
 			checkCLError(errBuf);
 			contexts[idx] = context;
 			long program = clCreateProgramWithSource(context,
-					getKernelSourceAsString("de/nqueensfaf/res/kernels.c"), errBuf);
+					getKernelSourceAsString("kernels.c"), errBuf);
 			checkCLError(errBuf);
 			programs[idx] = program;
 			
