@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"de.nqueensfaf"},{"l":"de.nqueensfaf.compute"},{"l":"de.nqueensfaf.util"}];updateSearchResults();
