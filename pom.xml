@@ -3,7 +3,7 @@
 	<groupId>de.nqueensfaf</groupId>
 	<artifactId>nqueensfaf</artifactId>
 	<version>1.8.0</version>
-	<name>NQueensFAF</name>
+	<name>nqueensfaf</name>
 	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
 	<packaging>jar</packaging>
 	<properties>
@@ -206,9 +206,50 @@
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
-					<finalName>nqueensfaf-${project.version}-cli</finalName>
+					<finalName>nqueensfaf-cli-${project.version}</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>io.github.fvarrui</groupId>
+				<artifactId>javapackager</artifactId>
+				<version>1.7.2</version>
+				<executions>
+					<execution>
+						<id>packaging-for-windows</id>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<platform>windows</platform>
+							<name>nqueensfaf-cli</name>
+							<createZipball>true</createZipball>
+							<generateInstaller>false</generateInstaller>
+							<bundleJre>true</bundleJre>
+							<winConfig>
+								<headerType>console</headerType>
+							</winConfig>
+							<mainClass>de.nqueensfaf.Main</mainClass>
+						</configuration>
+					</execution>
+					<execution>
+						<id>packaging-for-linux</id>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<platform>linux</platform>
+							<name>nqueensfaf-cli</name>
+							<createZipball>true</createZipball>
+							<generateInstaller>false</generateInstaller>
+							<bundleJre>true</bundleJre>
+							<jdkPath>C:\Users\olepo\dev\java\jdks\linux\jdk-18.0.2.1</jdkPath>
+							<mainClass>de.nqueensfaf.Main</mainClass>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -23,8 +23,8 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import static org.lwjgl.opencl.CL10.*;
-import static org.lwjgl.opencl.CL11.clSetEventCallback;
+import static org.lwjgl.opencl.CL12.*;
+import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
@@ -461,9 +461,9 @@ public class GPUSolver extends Solver {
 			long nullKernel = clCreateKernel(device.program, "null", errBuf);
 			checkCLError(errBuf);
 			PointerBuffer globalWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
-			globalWorkSizeNullKernel.put(0, 64);
+			globalWorkSizeNullKernel.put(0, device.workloadGlobalWorkSize);
 			PointerBuffer localWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
-			localWorkSizeNullKernel.put(0, 1);
+			localWorkSizeNullKernel.put(0, device.config.getWorkgroupSize());
 			checkCLError(clEnqueueNDRangeKernel(device.xqueue, nullKernel, dimensions, null, globalWorkSize,
 					localWorkSize, null, null));
 		}
@@ -683,6 +683,14 @@ public class GPUSolver extends Solver {
 				weightSum += deviceConfig.getWeight();
 			}
 		}
+	}
+
+	public List<DeviceInfo> getDevices() {
+		List<DeviceInfo> deviceInfos = new ArrayList<DeviceInfo>(devices.size());
+		for (int i = 0; i < devices.size(); i++) {
+			deviceInfos.add(new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name));
+		}
+		return deviceInfos;
 	}
 
 	// --------------------------------------------------------
