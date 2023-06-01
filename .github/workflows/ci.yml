@@ -82,4 +82,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: NQueensFAF Nightly
-        path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-macos.zip
+        path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-mac.zip
