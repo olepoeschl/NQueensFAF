@@ -78,5 +78,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ steps.project.outputs.version }}-mac
-        path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-mac
+        name: nqueensfaf-cli-${{ steps.project.outputs.version }}-osx
+        path: target/nqueensfaf-cli-${{ steps.project.outputs.version }}-osx
