@@ -54,8 +54,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ steps.bump-version.outputs.version }}-windows
-        path: target/nqueensfaf-cli-${{ steps.bump-version.outputs.version }}-windows
+        name: nqueensfaf-cli-${{ jobs.build-linux.steps.bump-version.outputs.version }}-windows
+        path: target/nqueensfaf-cli-${{ jobs.build-linux.steps.bump-version.outputs.version }}-windows
       
   build-macos:
     runs-on: macos-latest
@@ -72,5 +72,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ steps.bump-version.outputs.version }}-osx
-        path: target/nqueensfaf-cli-${{ steps.bump-version.outputs.version }}-osx
+        name: nqueensfaf-cli-${{ jobs.build-linux.steps.bump-version.outputs.version }}-osx
+        path: target/nqueensfaf-cli-${{ jobs.build-linux.steps.bump-version.outputs.version }}-osx
