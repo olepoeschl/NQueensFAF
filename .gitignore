@@ -1,6 +1,3 @@
 *.log
 *.json
-
-# ignore all folders in target, just choose the packaged artifacts we want to distribute
-/target/**/
-/target/nqueensfaf-cli-1.8.0-runnable.jar
+/target/
