@@ -53,7 +53,7 @@ public abstract class Solver {
 	/**
 	 * callback that is executed on every time update
 	 */
-	protected OnTimeUpdateCallback  onTimeUpdateCallback = (duration) -> {};
+	protected OnTimeUpdateCallback  onTimeUpdateCallback = (progress, solutions, duration) -> {};
 	/**
 	 * callback that is executed on every progress update
 	 */
@@ -65,7 +65,7 @@ public abstract class Solver {
 	/**
 	 * delay between progress updates
 	 */
-	protected final long timeUpdateDelay = 128;
+	protected long timeUpdateDelay = Config.getDefaultConfig().getTimeUpdateDelay();
 	/**
 	 * executor of the update callbacks (uc)
 	 * @see #startUpdateCallerThreads()
@@ -291,7 +291,7 @@ public abstract class Solver {
 				long tmpTime = 0;
 				while(isRunning()) {
 					if(getDuration() != tmpTime) {
-						onTimeUpdateCallback.onTimeUpdate(getDuration());
+						onTimeUpdateCallback.onTimeUpdate(getProgress(), getSolutions(), getDuration());
 						tmpTime = getDuration();
 					}
 					if(!isRunning())
@@ -302,7 +302,7 @@ public abstract class Solver {
 						e.printStackTrace();
 					}
 				}
-				onTimeUpdateCallback.onTimeUpdate(getDuration());
+				onTimeUpdateCallback.onTimeUpdate(getProgress(), getSolutions(), getDuration());
 			});
 		}
 		if(onProgressUpdateCallback != null) {
@@ -525,7 +525,7 @@ public abstract class Solver {
 	 */
 	public final void setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
 		if(onTimeUpdateCallback == null) {
-			this.onTimeUpdateCallback = (duration) -> {};
+			this.onTimeUpdateCallback = (progress, solutions, duration) -> {};
 		} else {
 			this.onTimeUpdateCallback = onTimeUpdateCallback;
 		}
@@ -549,7 +549,28 @@ public abstract class Solver {
 			this.onProgressUpdateCallback = onProgressUpdateCallback;
 		}
 	}
-
+	
+	/**
+	 * Gets {@link #timeUpdateDelay}.
+	 * @return {@link #timeUpdateDelay}
+	 */
+	public final long getTimeUpdateDelay() {
+		return timeUpdateDelay;
+	}
+	/**
+	 * Sets {@link #timeUpdateDelay}.
+	 * @param timeUpdateDelay
+	 * @throws {@link IllegalArgumentException} if the given delay is <= 0
+	 */
+	public final void setTimeUpdateDelay(long timeUpdateDelay) {
+		if(timeUpdateDelay < 0) {
+			throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
+		} else if(timeUpdateDelay== 0) {
+			this.timeUpdateDelay = Config.getDefaultConfig().getTimeUpdateDelay();
+		}
+		this.timeUpdateDelay = timeUpdateDelay;
+	}
+	
 	/**
 	 * Gets {@link #progressUpdateDelay}.
 	 * @return {@link #progressUpdateDelay}

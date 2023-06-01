@@ -25,7 +25,7 @@ public class Config {
 	private DeviceConfig[] gpuDeviceConfigs;
 	private int gpuPresetQueens;
 	// general
-	private long progressUpdateDelay;
+	private long timeUpdateDelay, progressUpdateDelay;
 	private boolean autoSaveEnabled;
 	private boolean autoDeleteEnabled;
 	private int autoSavePercentageStep;
@@ -40,6 +40,7 @@ public class Config {
 			@JsonProperty(value = "cpuThreadcount") int cpuThreadcount,
 			@JsonProperty(value = "gpuDeviceConfigs") DeviceConfig[] gpuDeviceConfigs,
 			@JsonProperty(value = "gpuPresetQueens") int gpuPresetQueens,
+			@JsonProperty(value = "timeUpdateDelay") long timeUpdateDelay,
 			@JsonProperty(value = "progressUpdateDelay") long progressUpdateDelay,
 			@JsonProperty(value = "autoSaveEnabled") boolean autoSaveEnabled,
 			@JsonProperty(value = "autoDeleteEnabled") boolean autoDeleteEnabled,
@@ -49,6 +50,7 @@ public class Config {
 		this.cpuThreadcount = cpuThreadcount;
 		this.gpuDeviceConfigs = gpuDeviceConfigs;
 		this.gpuPresetQueens = gpuPresetQueens;
+		this.timeUpdateDelay = timeUpdateDelay;
 		this.progressUpdateDelay = progressUpdateDelay;
 		this.autoSaveEnabled = autoSaveEnabled;
 		this.autoDeleteEnabled = autoDeleteEnabled;
@@ -62,6 +64,7 @@ public class Config {
 		c.setCPUThreadcount(1);
 		c.setGPUDeviceConfigs(DeviceConfig.getDefaultDeviceConfig());
 		c.setGPUPresetQueens(6);
+		c.setTimeUpdateDelay(128);
 		c.setProgressUpdateDelay(128);
 		c.setAutoSaveEnabled(false);
 		c.setAutoDeleteEnabled(false);
@@ -158,6 +161,13 @@ public class Config {
 	}
 	public void setGPUPresetQueens(int gpuPresetQueens) {
 		this.gpuPresetQueens = gpuPresetQueens;
+	}
+	
+	public long getTimeUpdateDelay() {
+		return timeUpdateDelay;
+	}
+	public void setTimeUpdateDelay(long timeUpdateDelay) {
+		this.timeUpdateDelay = timeUpdateDelay;
 	}
 	
 	public long getProgressUpdateDelay() {
