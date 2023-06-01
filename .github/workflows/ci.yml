@@ -76,7 +76,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx/
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
 
   build-linux:
     runs-on: ubuntu-latest
@@ -95,7 +95,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux/
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
       
   build-windows:
     runs-on: windows-latest
@@ -114,4 +114,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows/
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
