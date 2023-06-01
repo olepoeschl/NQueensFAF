@@ -33,7 +33,7 @@ jobs:
     - name: Upload built artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: dist-with-jar
+        name: NQueensFAF Nightly
         path: |
           target/nqueensfaf-${{ steps.project.outputs.version }}.jar
           target/nqueensfaf-cli-${{ steps.project.outputs.version }}.jar
@@ -54,6 +54,17 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Extract Maven project version
+      run: echo ::set-output name=version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+      id: project
+    - name: Upload built artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: NQueensFAF Nightly
+        path: |
+          target/nqueensfaf-${{ steps.project.outputs.version }}.jar
+          target/nqueensfaf-cli-${{ steps.project.outputs.version }}.jar
+          target/nqueensfaf-cli-${{ steps.project.outputs.version }}-windows.zip
       
   build-macos:
     runs-on: macos-latest
@@ -67,3 +78,14 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Extract Maven project version
+      run: echo ::set-output name=version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+      id: project
+    - name: Upload built artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: NQueensFAF Nightly
+        path: |
+          target/nqueensfaf-${{ steps.project.outputs.version }}.jar
+          target/nqueensfaf-cli-${{ steps.project.outputs.version }}.jar
+          target/nqueensfaf-cli-${{ steps.project.outputs.version }}-macos.zip
