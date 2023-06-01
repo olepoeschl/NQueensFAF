@@ -685,6 +685,14 @@ public class GPUSolver extends Solver {
 		}
 	}
 
+	public List<DeviceInfo> getDevices() {
+		List<DeviceInfo> deviceInfos = new ArrayList<DeviceInfo>(devices.size());
+		for (int i = 0; i < devices.size(); i++) {
+			deviceInfos.add(new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name));
+		}
+		return deviceInfos;
+	}
+
 	// --------------------------------------------------------
 	// ------------ further run configurations --------------
 	// --------------------------------------------------------
