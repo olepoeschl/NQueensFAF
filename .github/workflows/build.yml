@@ -125,6 +125,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-jar, build-jar-cli, build-macos, build-linux, build-windows] 
     steps:
+      - name: Delete release drafts
+        uses: hugo19941994/delete-draft-releases@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previously built artifacts
         uses: actions/download-artifact@v3
       - name: Update nightly release
@@ -148,8 +152,5 @@ jobs:
           tag_name: nightly
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Delete release drafts
-        uses: hugo19941994/delete-draft-releases@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
           
