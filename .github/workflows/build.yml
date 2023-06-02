@@ -37,7 +37,7 @@ jobs:
       with:
         name: nqueensfaf-nightly
         path: target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar
-        retention-days: 0
+        retention-days: 1
     - name: Update dependency graph
       uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
 
@@ -59,7 +59,7 @@ jobs:
       with:
         name: nqueensfaf-cli-nightly
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
-        retention-days: 0
+        retention-days: 1
         
   build-macos:
     runs-on: macos-latest
@@ -79,7 +79,7 @@ jobs:
       with:
         name: nqueensfaf-cli-nightly-mac
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
-        retention-days: 0
+        retention-days: 1
 
   build-linux:
     runs-on: ubuntu-latest
@@ -99,7 +99,7 @@ jobs:
       with:
         name: nqueensfaf-cli-nightly-linux
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
-        retention-days: 0
+        retention-days: 1
       
   build-windows:
     runs-on: windows-latest
@@ -119,7 +119,7 @@ jobs:
       with:
         name: nqueensfaf-cli-nightly-windows
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
-        retention-days: 0
+        retention-days: 1
 
   update-nightly-release:
     runs-on: ubuntu-latest
