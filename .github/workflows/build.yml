@@ -141,8 +141,8 @@ jobs:
           allow_override: true
           gzip: folders
           files: >
-            nqueensfaf-nightly:nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
-            nqueensfaf-cli-nightly:nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
+            nqueensfaf-nightly.jar:nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
+            nqueensfaf-cli-nightly.jar:nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
             nqueensfaf-cli-osx-nightly
             nqueensfaf-cli-linux-nightly
             nqueensfaf-cli-windows-nightly
