@@ -125,12 +125,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-jar, build-jar-cli, build-macos, build-linux, build-windows] 
     steps:
-      - name: Update nightly tag
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: nightly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previously built artifacts
         uses: actions/download-artifact@v3
       - name: Update nightly release
@@ -147,3 +141,10 @@ jobs:
             nqueensfaf-cli-nightly-mac/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
             nqueensfaf-cli-nightly-linux/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
             nqueensfaf-cli-nightly-windows/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
+      - name: Update nightly tag
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
