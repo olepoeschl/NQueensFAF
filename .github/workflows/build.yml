@@ -77,7 +77,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx-nightly
+        name: nqueensfaf-cli-osx-nightly
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
         retention-days: 1
 
@@ -97,7 +97,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux-nightly
+        name: nqueensfaf-cli-linux-nightly
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
         retention-days: 1
       
@@ -117,7 +117,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows-nightly
+        name: nqueensfaf-cli-windows-nightly
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
         retention-days: 1
 
@@ -135,7 +135,7 @@ jobs:
           name: Latest successfull nightly build
           prerelease: true
           allow_override: true
-          gip: folders
+          gzip: folders
           files: >
             nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
             nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
