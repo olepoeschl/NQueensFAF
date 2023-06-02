@@ -129,9 +129,9 @@ jobs:
       - name: Download previously built artifacts
         uses: actions/download-artifact@v3
       - name: Update nightly release
-        uses: eine/tip@master
+        uses: pyTooling/Actions/releaser@main
         with:
           tag: nightly
           rm: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: nqueensfaf**
+          files: nqueensfaf*/*
