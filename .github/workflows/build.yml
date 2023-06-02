@@ -130,8 +130,10 @@ jobs:
       - name: Update nightly release
         uses: meeDamian/github-release@2.0
         with:
-          tag: nightly
           token: ${{ secrets.GITHUB_TOKEN }}
+          tag: nightly
+          name: Latest successfull nightly build
+          prerelease: true
           allow_override: true
           files: >
             nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
