@@ -77,8 +77,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-nightly-mac
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
+        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx-nightly
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
         retention-days: 1
 
   build-linux:
@@ -97,8 +97,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-nightly-linux
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
+        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux-nightly
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
         retention-days: 1
       
   build-windows:
@@ -117,8 +117,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-nightly-windows
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
+        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows-nightly
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
         retention-days: 1
 
   update-nightly-release:
@@ -135,12 +135,13 @@ jobs:
           name: Latest successfull nightly build
           prerelease: true
           allow_override: true
+          gip: folders
           files: >
             nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
             nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
-            nqueensfaf-cli-nightly-mac/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
-            nqueensfaf-cli-nightly-linux/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
-            nqueensfaf-cli-nightly-windows/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
+            nqueensfaf-cli-osx-nightly
+            nqueensfaf-cli-linux-nightly
+            nqueensfaf-cli-windows-nightly
       - name: Update nightly tag
         uses: richardsimko/update-tag@v1
         with:
