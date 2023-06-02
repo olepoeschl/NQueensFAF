@@ -221,7 +221,7 @@
 						</goals>
 						<configuration>
 							<platform>auto</platform>
-							<name>nqueensfaf-cli-${project.version}</name>
+							<name>nqueensfaf-cli</name>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
 							<generateZipball>true</generateZipball>
