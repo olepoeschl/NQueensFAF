@@ -35,7 +35,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3.1.2
       with:
-        name: nqueensfaf-${{ steps.bump-version.outputs.version }}-nightly
+        name: nqueensfaf-nightly
         path: target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar
         retention-days: 0
     - name: Update dependency graph
@@ -57,7 +57,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly
+        name: nqueensfaf-cli-nightly
         path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
         retention-days: 0
         
@@ -77,8 +77,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-osx
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
+        name: nqueensfaf-cli-nightly-mac
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
         retention-days: 0
 
   build-linux:
@@ -97,8 +97,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-linux
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
+        name: nqueensfaf-cli-nightly-linux
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
         retention-days: 0
       
   build-windows:
@@ -117,8 +117,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-windows
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
+        name: nqueensfaf-cli-nightly-windows
+        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
         retention-days: 0
 
   update-nightly-release:
@@ -128,10 +128,13 @@ jobs:
       - name: Download previously built artifacts
         uses: actions/download-artifact@v3
       - name: Update nightly release
-        uses: svenstaro/upload-release-action@v2
+        uses: meeDamian/github-release@2.0
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag: nightly
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: nqueensfaf*
-          file_glob: true
-          overwrite: true
+          files: >
+            nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
+            nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
+            nqueensfaf-cli-nightly-mac/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip
+            nqueensfaf-cli-nightly-linux/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip
+            nqueensfaf-cli-nightly-windows/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip
