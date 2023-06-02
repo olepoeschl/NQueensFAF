@@ -224,6 +224,7 @@
 							<name>nqueensfaf-cli-${project.version}-${os.detected.name}</name>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
+							<generateZipball>true</generateZipball>
 							<winConfig>
 								<headerType>console</headerType>
 							</winConfig>
