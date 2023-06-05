@@ -74,6 +74,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip --clobber
+    - name: Extract lwjgl native shared library
+      run: 7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+    - name: Upload shared library
+      uses: actions/upload-artifact@v3
+      with:
+        name: lwjgl-mac-native
+        path: target/liblwjgl.so
+        retention-days: 1
 
   build-linux:
     runs-on: ubuntu-latest
@@ -92,6 +100,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip --clobber
+    - name: Extract lwjgl native shared library
+      run: 7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+    - name: Upload shared library
+      uses: actions/upload-artifact@v3
+      with:
+        name: lwjgl-linux-native
+        path: target/liblwjgl.so
+        retention-days: 1
       
   build-windows:
     runs-on: windows-latest
@@ -110,6 +126,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip --clobber
+    - name: Extract lwjgl native shared library
+      run: 7z e .\nqueensfaf-cli-1.8.0.jar windows/x64/org/lwjgl/lwjgl.dll
+    - name: Upload shared library
+      uses: actions/upload-artifact@v3
+      with:
+        name: lwjgl-windows-native
+        path: target/lwjgl.dll
+        retention-days: 1
 
   update-nightly-tag:
     runs-on: ubuntu-latest
