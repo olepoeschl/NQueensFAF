@@ -40,7 +40,7 @@ jobs:
       uses: advanced-security/maven-dependency-submission-action@v3
 
   build-jar-cli:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: build-jar
     steps:
     - uses: actions/checkout@v3
@@ -75,12 +75,14 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip --clobber
     - name: Extract lwjgl native shared library
-      run: 7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+      run: |
+        cd target
+        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar macos/x64/org/lwjgl/liblwjgl.dylib
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
-        name: lwjgl-mac-native
-        path: target/liblwjgl.so
+        name: lwjgl-macos-native
+        path: target/liblwjgl.dylib
         retention-days: 1
 
   build-linux:
@@ -101,7 +103,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip --clobber
     - name: Extract lwjgl native shared library
-      run: 7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+      run: |
+        cd target
+        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
@@ -127,7 +131,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip --clobber
     - name: Extract lwjgl native shared library
-      run: 7z e .\nqueensfaf-cli-1.8.0.jar windows/x64/org/lwjgl/lwjgl.dll
+      run: |
+        cd target
+        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar windows/x64/org/lwjgl/lwjgl.dll
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
