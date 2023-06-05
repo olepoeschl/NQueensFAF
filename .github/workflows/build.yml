@@ -40,7 +40,7 @@ jobs:
       uses: advanced-security/maven-dependency-submission-action@v3
 
   build-jar-cli:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: build-jar
     steps:
     - uses: actions/checkout@v3
