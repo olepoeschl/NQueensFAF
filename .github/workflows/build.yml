@@ -32,12 +32,8 @@ jobs:
     - name: Extract Maven project version
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
       id: bump-version
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: nqueensfaf-nightly
-        path: target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar
-        retention-days: 1
+    - name: Upload artifact to nightly release
+      run: gh release upload nightly target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar --clobber
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v3
 
@@ -54,12 +50,8 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: nqueensfaf-cli-nightly
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
-        retention-days: 1
+    - name: Upload artifact to nightly release
+      run: gh release upload nightly target/nqueensfaf-cli-${{ steps.bump-version.outputs.version }}.jar --clobber
         
   build-macos:
     runs-on: macos-latest
@@ -74,12 +66,8 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: nqueensfaf-cli-osx-nightly
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx
-        retention-days: 1
+    - name: Upload artifact to nightly release
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx --clobber
 
   build-linux:
     runs-on: ubuntu-latest
@@ -94,12 +82,8 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: nqueensfaf-cli-linux-nightly
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux
-        retention-days: 1
+    - name: Upload artifact to nightly release
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux --clobber
       
   build-windows:
     runs-on: windows-latest
@@ -114,38 +98,19 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: nqueensfaf-cli-windows-nightly
-        path: target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows
-        retention-days: 1
+    - name: Upload artifact to nightly release
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows --clobber
 
   update-nightly-release:
     runs-on: ubuntu-latest
     needs: [build-jar, build-jar-cli, build-macos, build-linux, build-windows] 
     steps:
-      - name: Delete release drafts
-        uses: hugo19941994/delete-draft-releases@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Delete release drafts
+      #  uses: hugo19941994/delete-draft-releases@v1.0.1
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previously built artifacts
         uses: actions/download-artifact@v3
-      - name: Update nightly release
-        uses: meeDamian/github-release@2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: nightly
-          name: Latest successfull nightly build
-          prerelease: true
-          allow_override: true
-          gzip: folders
-          files: >
-            nqueensfaf-nightly.jar:nqueensfaf-nightly/nqueensfaf-${{ needs.build-jar.outputs.project-version }}.jar
-            nqueensfaf-cli-nightly.jar:nqueensfaf-cli-nightly/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar
-            nqueensfaf-cli-osx-nightly
-            nqueensfaf-cli-linux-nightly
-            nqueensfaf-cli-windows-nightly
       - name: Update nightly tag
         uses: richardsimko/update-tag@v1
         with:
