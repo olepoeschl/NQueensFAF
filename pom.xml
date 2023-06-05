@@ -221,9 +221,10 @@
 						</goals>
 						<configuration>
 							<platform>auto</platform>
-							<name>nqueensfaf-cli-${project.version}-${os.detected.name}</name>
+							<name>nqueensfaf-cli</name>
 							<generateInstaller>false</generateInstaller>
 							<bundleJre>true</bundleJre>
+							<createZipball>true</createZipball>
 							<winConfig>
 								<headerType>console</headerType>
 							</winConfig>
@@ -233,12 +234,5 @@
 				</executions>
 			</plugin>
 		</plugins>
-		<extensions>
-			<extension>
-				<groupId>kr.motd.maven</groupId>
-				<artifactId>os-maven-plugin</artifactId>
-				<version>1.7.1</version>
-			</extension>
-		</extensions>
 	</build>
 </project>

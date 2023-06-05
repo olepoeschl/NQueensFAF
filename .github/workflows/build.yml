@@ -55,7 +55,7 @@ jobs:
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ steps.bump-version.outputs.version }}.jar --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar --clobber
         
   build-macos:
     runs-on: macos-latest
@@ -73,7 +73,7 @@ jobs:
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip --clobber
 
   build-linux:
     runs-on: ubuntu-latest
@@ -91,7 +91,7 @@ jobs:
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip --clobber
       
   build-windows:
     runs-on: windows-latest
@@ -109,7 +109,7 @@ jobs:
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip --clobber
 
   update-nightly-tag:
     runs-on: ubuntu-latest
