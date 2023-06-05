@@ -33,6 +33,8 @@ jobs:
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
       id: bump-version
     - name: Upload artifact to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar --clobber
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v3
@@ -51,6 +53,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Upload artifact to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ steps.bump-version.outputs.version }}.jar --clobber
         
   build-macos:
@@ -67,6 +71,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Upload artifact to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-osx --clobber
 
   build-linux:
@@ -83,6 +89,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Upload artifact to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux --clobber
       
   build-windows:
@@ -99,6 +107,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Upload artifact to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows --clobber
 
   update-nightly-tag:
