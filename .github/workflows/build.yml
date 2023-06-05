@@ -140,11 +140,11 @@ jobs:
       uses: actions/download-artifact@v3
     - name: Inject lwjgl natives into runnable jar
       run: |
+        mkdir -p target/macos/x64/org/lwjgl
+        mkdir -p target/windows/x64/org/lwjgl
+        mv lwjgl-macos-native/liblwjgl.dylib target/macos/x64/org/lwjgl
+        mv lwjgl-windows-native/lwjgl.dll target/windows/x64/org/lwjgl
         cd target
-        mkdir -p macos/x64/org/lwjgl
-        mkdir -p windows/x64/org/lwjgl
-        mv lwjgl-macos-native/liblwjgl.dylib macos/x64/org/lwjgl
-        mv lwjgl-windows-native/lwjgl.dll windows/x64/org/lwjgl
         7z a nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar  macos windows
     - name: Upload artifact to nightly release
       env:
