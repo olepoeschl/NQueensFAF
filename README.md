@@ -1,10 +1,12 @@
 # NQueensFAF
-Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom N queens problem solving algorithms.
-This project uses Java 17. <br>
+Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom N queens problem solving algorithms. <br>
+Comes with a command line interface.<br>
+Uses Java 17.
 
 ### Download
-See the "Releases" section. <br>
-Try it out using its command line interface! 
+[Latest Release](https://github.com/olepoeschl/NQueensFAF/releases/latest)<br>
+[Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly)<br>
+For more releases visit the "Releases" section. <br>
 
 # Usage
 ## Implementing an own Solver
