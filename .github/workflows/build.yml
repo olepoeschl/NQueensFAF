@@ -18,6 +18,7 @@ on:
 jobs:
   build-jar:
     runs-on: ubuntu-latest
+    permissions: write-all
     outputs:
       project-version: ${{ steps.bump-version.outputs.version }}
     steps:
