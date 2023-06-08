@@ -193,10 +193,6 @@ We are very excited!
       
       - N = 16 in ~ 10 minutes
       
-
-# Dependencies
-  The library uses [LWJGL 3](http://www.lwjgl.org/) to enable the use of OpenCL for the GPU solver.
- 
 # Contact
 We're happy about every comment, question, idea or whatever - if you have such a thought or need help running the program, you can use the issue templates, the discussion section or reach out to us directly!
 Mail: olepoeschl.developing@gmail.com
