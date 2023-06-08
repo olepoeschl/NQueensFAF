@@ -66,5 +66,5 @@ This will hopefully be fixed soon.
 For NDIDIA and AMD GPU's we recommend a workgroupsize of 64, for the integrated intel graphics we recommend 24 for optimal performance. 
 
 # Contact
-We're happy about every comment, question, idea or whatever - if you have such a thought or need help running the program, you can use the issue templates, the discussion section or reach out to us directly!
+If you have a comment, question, idea or whatever, we will be happy to answer!
 Mail: olepoeschl.developing@gmail.com
