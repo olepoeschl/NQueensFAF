@@ -1,5 +1,5 @@
 package de.nqueensfaf.util;
 
 public interface OnProgressUpdateCallback {
-	void onProgressUpdate(float progress, long solutions, long duration);
+    void onProgressUpdate(float progress, long solutions, long duration);
 }

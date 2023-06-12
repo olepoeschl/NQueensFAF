@@ -12,20 +12,20 @@ import static org.lwjgl.opencl.CL10.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
-/** OpenCL object info utilities. 
+/**
+ * OpenCL object info utilities.
  * 
- *  Code from the lwjgl 3 opencl examples on github.
-*/
+ * Code from the lwjgl 3 opencl examples on github.
+ */
 final class InfoUtil {
 
-    private InfoUtil() {
-    }
+    private InfoUtil() {}
 
     static String getPlatformInfoStringASCII(long cl_platform_id, int param_name) {
         try (MemoryStack stack = stackPush()) {
             PointerBuffer pp = stack.mallocPointer(1);
-            checkCLError(clGetPlatformInfo(cl_platform_id, param_name, (ByteBuffer)null, pp));
-            int bytes = (int)pp.get(0);
+            checkCLError(clGetPlatformInfo(cl_platform_id, param_name, (ByteBuffer) null, pp));
+            int bytes = (int) pp.get(0);
 
             ByteBuffer buffer = stack.malloc(bytes);
             checkCLError(clGetPlatformInfo(cl_platform_id, param_name, buffer, null));
@@ -37,8 +37,8 @@ final class InfoUtil {
     static String getPlatformInfoStringUTF8(long cl_platform_id, int param_name) {
         try (MemoryStack stack = stackPush()) {
             PointerBuffer pp = stack.mallocPointer(1);
-            checkCLError(clGetPlatformInfo(cl_platform_id, param_name, (ByteBuffer)null, pp));
-            int bytes = (int)pp.get(0);
+            checkCLError(clGetPlatformInfo(cl_platform_id, param_name, (ByteBuffer) null, pp));
+            int bytes = (int) pp.get(0);
 
             ByteBuffer buffer = stack.malloc(bytes);
             checkCLError(clGetPlatformInfo(cl_platform_id, param_name, buffer, null));
@@ -74,8 +74,8 @@ final class InfoUtil {
     static String getDeviceInfoStringUTF8(long cl_device_id, int param_name) {
         try (MemoryStack stack = stackPush()) {
             PointerBuffer pp = stack.mallocPointer(1);
-            checkCLError(clGetDeviceInfo(cl_device_id, param_name, (ByteBuffer)null, pp));
-            int bytes = (int)pp.get(0);
+            checkCLError(clGetDeviceInfo(cl_device_id, param_name, (ByteBuffer) null, pp));
+            int bytes = (int) pp.get(0);
 
             ByteBuffer buffer = stack.malloc(bytes);
             checkCLError(clGetDeviceInfo(cl_device_id, param_name, buffer, null));
@@ -92,14 +92,17 @@ final class InfoUtil {
         }
     }
 
-    static String getProgramBuildInfoStringASCII(long cl_program_id, long cl_device_id, int param_name) {
+    static String getProgramBuildInfoStringASCII(long cl_program_id, long cl_device_id,
+            int param_name) {
         try (MemoryStack stack = stackPush()) {
             PointerBuffer pp = stack.mallocPointer(1);
-            checkCLError(clGetProgramBuildInfo(cl_program_id, cl_device_id, param_name, (ByteBuffer)null, pp));
-            int bytes = (int)pp.get(0);
+            checkCLError(clGetProgramBuildInfo(cl_program_id, cl_device_id, param_name,
+                    (ByteBuffer) null, pp));
+            int bytes = (int) pp.get(0);
 
             ByteBuffer buffer = stack.malloc(bytes);
-            checkCLError(clGetProgramBuildInfo(cl_program_id, cl_device_id, param_name, buffer, null));
+            checkCLError(
+                    clGetProgramBuildInfo(cl_program_id, cl_device_id, param_name, buffer, null));
 
             return memASCII(buffer, bytes - 1);
         }
@@ -111,12 +114,12 @@ final class InfoUtil {
 
     static void checkCLError(int errcode) {
         if (errcode != CL_SUCCESS) {
-        	String msg = String.format("OpenCL error [%d]", errcode);
-        	try (FileWriter fw = new FileWriter(new File("nqueensfaf-error.log"))) {
-        		fw.write(msg + "\n");
-        	} catch (IOException e) {
-				e.printStackTrace();
-			}
+            String msg = String.format("OpenCL error [%d]", errcode);
+            try (FileWriter fw = new FileWriter(new File("nqueensfaf-error.log"))) {
+                fw.write(msg + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             throw new RuntimeException(msg);
         }
     }
