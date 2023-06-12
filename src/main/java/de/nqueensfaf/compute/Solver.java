@@ -300,6 +300,7 @@ public abstract class Solver {
 		    TimeUnit.MILLISECONDS);
 	} catch (InterruptedException e) {
 	    e.printStackTrace();
+	    Thread.currentThread().interrupt();
 	}
 	if (terminationCallback != null)
 	    terminationCallback.callback(this);
@@ -350,6 +351,7 @@ public abstract class Solver {
 			Thread.sleep(timeUpdateDelay);
 		    } catch (InterruptedException e) {
 			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		    }
 		}
 		onTimeUpdateCallback.onTimeUpdate(getProgress(), getSolutions(), getDuration());
@@ -373,6 +375,7 @@ public abstract class Solver {
 			Thread.sleep(progressUpdateDelay);
 		    } catch (InterruptedException e) {
 			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		    }
 		}
 		onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
@@ -410,6 +413,7 @@ public abstract class Solver {
 			Thread.sleep(progressUpdateDelay);
 		    } catch (InterruptedException e) {
 			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		    }
 		}
 		progress = getProgress() * 100;
@@ -747,7 +751,8 @@ public abstract class Solver {
 	    try {
 		Thread.sleep(1000);
 	    } catch (InterruptedException e) {
-		// ignore
+		e.printStackTrace();
+		Thread.currentThread().interrupt();
 	    }
 	}
     }

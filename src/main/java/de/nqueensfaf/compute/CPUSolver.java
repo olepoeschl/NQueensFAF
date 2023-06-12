@@ -107,7 +107,8 @@ public class CPUSolver extends Solver {
 		progress = (float) solvedConstellations / constellations.size();
 	    }
 	} catch (InterruptedException e1) {
-	    e1.printStackTrace();
+//	    e.printStackTrace();
+	    Thread.currentThread().interrupt();
 	}
 	injected = false;
     }

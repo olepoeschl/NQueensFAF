@@ -327,7 +327,8 @@ public class GPUSolver extends Solver {
 			    try {
 				Thread.sleep(50);
 			    } catch (InterruptedException e) {
-				// ignore
+				e.printStackTrace();
+				Thread.currentThread().interrupt();
 			    }
 			duration = device.duration;
 		    }
@@ -339,7 +340,8 @@ public class GPUSolver extends Solver {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-		    // ignore
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		}
 	    }
 
@@ -539,7 +541,8 @@ public class GPUSolver extends Solver {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-		    // ignore
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		}
 	    }
 	    device.stopReaderThread = 0;
