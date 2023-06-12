@@ -18,63 +18,63 @@ public class Constellation {
     private long solutions;
 
     public Constellation() {
-        super();
+	super();
     }
 
     public Constellation(int id, int ld, int rd, int col, int startijkl, long solutions) {
-        this.id = id;
-        this.ld = ld;
-        this.rd = rd;
-        this.col = col;
-        this.startijkl = startijkl;
-        this.solutions = solutions;
+	this.id = id;
+	this.ld = ld;
+	this.rd = rd;
+	this.col = col;
+	this.startijkl = startijkl;
+	this.solutions = solutions;
     }
 
     public int getId() {
-        return id;
+	return id;
     }
 
     public void setId(int id) {
-        this.id = id;
+	this.id = id;
     }
 
     public int getLd() {
-        return ld;
+	return ld;
     }
 
     public void setLd(int ld) {
-        this.ld = ld;
+	this.ld = ld;
     }
 
     public int getRd() {
-        return rd;
+	return rd;
     }
 
     public void setRd(int rd) {
-        this.rd = rd;
+	this.rd = rd;
     }
 
     public int getCol() {
-        return col;
+	return col;
     }
 
     public void setCol(int col) {
-        this.col = col;
+	this.col = col;
     }
 
     public int getStartijkl() {
-        return startijkl;
+	return startijkl;
     }
 
     public void setStartijkl(int startijkl) {
-        this.startijkl = startijkl;
+	this.startijkl = startijkl;
     }
 
     public long getSolutions() {
-        return solutions;
+	return solutions;
     }
 
     public void setSolutions(long solutions) {
-        this.solutions = solutions;
+	this.solutions = solutions;
     }
 }

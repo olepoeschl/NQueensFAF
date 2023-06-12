@@ -6,33 +6,33 @@ public class DeviceInfo {
     private String name;
 
     public DeviceInfo(int index, String vendor, String name) {
-        super();
-        this.index = index;
-        this.vendor = vendor;
-        this.name = name;
+	super();
+	this.index = index;
+	this.vendor = vendor;
+	this.name = name;
     }
 
     public int getIndex() {
-        return index;
+	return index;
     }
 
     public void setIndex(int index) {
-        this.index = index;
+	this.index = index;
     }
 
     public String getVendor() {
-        return vendor;
+	return vendor;
     }
 
     public void setVendor(String vendor) {
-        this.vendor = vendor;
+	this.vendor = vendor;
     }
 
     public String getName() {
-        return name;
+	return name;
     }
 
     public void setName(String name) {
-        this.name = name;
+	this.name = name;
     }
 }

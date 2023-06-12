@@ -16,36 +16,36 @@ public class SolverState {
     private ArrayList<Constellation> constellations;
 
     public SolverState() {
-        super();
+	super();
     }
 
     public SolverState(int n, long storedDuration, ArrayList<Constellation> constellations) {
-        N = n;
-        this.storedDuration = storedDuration;
-        this.constellations = constellations;
+	N = n;
+	this.storedDuration = storedDuration;
+	this.constellations = constellations;
     }
 
     public int getN() {
-        return N;
+	return N;
     }
 
     public void setN(int n) {
-        N = n;
+	N = n;
     }
 
     public long getStoredDuration() {
-        return storedDuration;
+	return storedDuration;
     }
 
     public void setStoredDuration(long storedDuration) {
-        this.storedDuration = storedDuration;
+	this.storedDuration = storedDuration;
     }
 
     public ArrayList<Constellation> getConstellations() {
-        return constellations;
+	return constellations;
     }
 
     public void setConstellations(ArrayList<Constellation> constellations) {
-        this.constellations = constellations;
+	this.constellations = constellations;
     }
 }
