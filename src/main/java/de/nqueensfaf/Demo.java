@@ -4,11 +4,24 @@ import java.io.IOException;
 
 import de.nqueensfaf.compute.CPUSolver;
 import de.nqueensfaf.compute.Solver;
+import de.nqueensfaf.config.Config;
 
 public class Demo {
 
     public static void main(String[] args) {
 	run();
+	
+	CPUSolver s = new CPUSolver()
+		.config((config) -> {
+		    config.from("config.txt");
+		    config.threadcount = 4;
+		})
+		.onProgress((progress, solutions, duration) -> System.out.println("progress"))
+		.onFinish((solutions, duration) -> System.out.println("finish"))
+		.boardSize(16)
+		.solve();
+	
+	
     }
 
     static void run() {
