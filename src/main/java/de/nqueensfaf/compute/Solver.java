@@ -146,7 +146,6 @@ public abstract class Solver {
 		    Thread.currentThread().interrupt();
 		}
 	    }
-	    System.out.println("finished storing");
 	}));
     }
     /**
