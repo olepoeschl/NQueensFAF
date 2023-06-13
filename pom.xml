@@ -175,6 +175,12 @@
 			<artifactId>ascii-table</artifactId>
 			<version>1.8.0</version>
 		</dependency>
+		<!-- kryo for binary serialization -->
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>kryo</artifactId>
+			<version>5.5.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<sourceDirectory>src/main/java</sourceDirectory>

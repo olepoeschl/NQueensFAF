@@ -2,6 +2,8 @@ package de.nqueensfaf.compute;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,6 +21,9 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -30,6 +35,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import static de.nqueensfaf.compute.InfoUtil.*;
 
+import de.nqueensfaf.Constants;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.data.Constellation;
@@ -559,9 +565,14 @@ public class GPUSolver extends Solver {
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("Nothing to be saved");
 	}
-	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
-	out.writeValue(new File(filepath),
-		new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+	
+	Kryo kryo = Constants.kryo;
+	kryo.register(SolverState.class);
+	try (Output output = new Output(new FileOutputStream(filepath))) {
+	    kryo.writeObject(output,
+		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+	    output.flush();
+	}
     }
 
     @Override
@@ -569,12 +580,15 @@ public class GPUSolver extends Solver {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
-	ObjectMapper mapper = new ObjectMapper();
-	SolverState state = mapper.readValue(new File(filepath), SolverState.class);
-	setN(state.getN());
-	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
-	injected = true;
+	Kryo kryo = Constants.kryo;
+	kryo.register(SolverState.class);
+	try (Input input = new Input(new FileInputStream(filepath))) {
+	    SolverState state = kryo.readObject(input, SolverState.class);
+	    setN(state.getN());
+	    storedDuration = state.getStoredDuration();
+	    constellations = state.getConstellations();
+	    injected = true;
+	}
     }
 
     @Override
