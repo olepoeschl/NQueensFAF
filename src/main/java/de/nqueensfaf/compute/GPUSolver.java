@@ -35,6 +35,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import static de.nqueensfaf.compute.InfoUtil.*;
 
+import de.nqueensfaf.Constants;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.data.Constellation;
@@ -565,11 +566,12 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("Nothing to be saved");
 	}
 	
-	Kryo kryo = new Kryo();
+	Kryo kryo = Constants.kryo;
 	kryo.register(SolverState.class);
 	try (Output output = new Output(new FileOutputStream(filepath))) {
 	    kryo.writeObject(output,
 		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+	    output.flush();
 	}
     }
 
@@ -578,7 +580,7 @@ public class GPUSolver extends Solver {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
-	Kryo kryo = new Kryo();
+	Kryo kryo = Constants.kryo;
 	kryo.register(SolverState.class);
 	try (Input input = new Input(new FileInputStream(filepath))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);

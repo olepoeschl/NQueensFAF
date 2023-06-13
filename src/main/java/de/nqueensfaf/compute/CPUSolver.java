@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import de.nqueensfaf.Constants;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.data.Constellation;
 import de.nqueensfaf.data.SolverState;
@@ -124,15 +125,12 @@ public class CPUSolver extends Solver {
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("Nothing to be saved");
 	}
-//	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
-//	out.writeValue(new File(filepath),
-//		new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
-//	
-	Kryo kryo = new Kryo();
+	Kryo kryo = Constants.kryo;
 	kryo.register(SolverState.class);
 	try (Output output = new Output(new FileOutputStream(filepath))) {
 	    kryo.writeObject(output,
 		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+	    output.flush();
 	}
     }
 
@@ -141,7 +139,7 @@ public class CPUSolver extends Solver {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
-	Kryo kryo = new Kryo();
+	Kryo kryo = Constants.kryo;
 	kryo.register(SolverState.class);
 	try (Input input = new Input(new FileInputStream(filepath))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
@@ -150,12 +148,6 @@ public class CPUSolver extends Solver {
 	    constellations = state.getConstellations();
 	    injected = true;
 	}
-//	ObjectMapper mapper = new ObjectMapper();
-//	SolverState state = mapper.readValue(new File(filepath), SolverState.class);
-//	setN(state.getN());
-//	storedDuration = state.getStoredDuration();
-//	constellations = state.getConstellations();
-//	injected = true;
     }
 
     @Override
