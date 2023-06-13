@@ -515,7 +515,7 @@ public abstract class Solver {
      * @throws ClassNotFoundException
      * @throws IllegalArgumentException
      */
-    public final void inject(String filepath)
+    public final synchronized void inject(String filepath)
 	    throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 	inject_(filepath);
 	autoSaveFilePath = filepath;
@@ -531,7 +531,7 @@ public abstract class Solver {
      * @throws ClassNotFoundException
      * @throws IllegalArgumentException
      */
-    public final void inject(File file)
+    public final synchronized void inject(File file)
 	    throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 	inject_(file.getAbsolutePath());
 	autoSaveFilePath = file.getAbsolutePath();
