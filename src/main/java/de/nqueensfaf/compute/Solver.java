@@ -130,11 +130,25 @@ public abstract class Solver {
      * set to true when store() is called and set to false again when store()
      * returned.
      */
-    private boolean isStoring = false;
+    private static boolean isStoring = false;
     /**
      * if true, Solver stores() one last time and after that not any more.
      */
-    private boolean finishStoring = false;
+    private static boolean finishStoring = false;
+    static {
+	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+	    finishStoring = true;
+	    while (isStoring) {
+		try {
+		    Thread.sleep(100);
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		    Thread.currentThread().interrupt();
+		}
+	    }
+	    System.out.println("finished storing");
+	}));
+    }
     /**
      * number of solutions - only used by the method that solves the problem for
      * small N's.
@@ -737,24 +751,6 @@ public abstract class Solver {
 	    throw new IllegalArgumentException("progressUpdateDelay must be a number between 0 and 100");
 	}
 	this.autoSavePercentageStep = autoSavePercentageStep;
-    }
-
-    /**
-     * Can be called before exiting the program. If the Solver is currently storing,
-     * this method blocks until the storing is done.
-     * 
-     * @return {@link #isStoring}
-     */
-    public final void finishStoring() {
-	finishStoring = true;
-	while (isStoring) {
-	    try {
-		Thread.sleep(1000);
-	    } catch (InterruptedException e) {
-		e.printStackTrace();
-		Thread.currentThread().interrupt();
-	    }
-	}
     }
 
     /**
