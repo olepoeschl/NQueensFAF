@@ -20,7 +20,7 @@ public class Config implements Configurable {
     public int autoSavePercentageStep;
     public String autoSavePath;
     
-    protected Config() {
+    public Config() {
     }
     
     @SuppressWarnings("unchecked")
