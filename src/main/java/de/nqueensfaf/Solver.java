@@ -9,8 +9,7 @@ import java.util.function.Consumer;
 
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.util.BasicCallback;
-import de.nqueensfaf.util.OnProgressUpdateCallback;
-import de.nqueensfaf.util.OnTimeUpdateCallback;
+import de.nqueensfaf.util.OnUpdateConsumer;
 
 /**
  * <p>
@@ -52,24 +51,14 @@ public abstract class Solver {
      * board size
      */
     protected int N;
-    /**
-     * callback that is executed on every time update
-     */
-    protected OnTimeUpdateCallback onTimeUpdateCallback = (progress, solutions, duration) -> {
-    };
-    /**
-     * callback that is executed on every progress update
-     */
-    protected OnProgressUpdateCallback onProgressUpdateCallback = (progress, solutions, duration) -> {
-    };
+    
     /**
      * delay between progress updates
      */
-    protected long progressUpdateDelay = Config.getDefaultConfig().getProgressUpdateDelay();
-    /**
-     * delay between progress updates
-     */
-    protected long timeUpdateDelay = Config.getDefaultConfig().getTimeUpdateDelay();
+    protected long updateInterval = Config.getDefaultConfig().getProgressUpdateDelay();
+    
+    private OnUpdateConsumer onUpdateConsumer;
+    
     /**
      * executor of the update callbacks (uc)
      * 
@@ -249,9 +238,7 @@ public abstract class Solver {
 	state = TERMINATING;
 	ucExecutor.shutdown();
 	try {
-	    ucExecutor.awaitTermination(
-		    progressUpdateDelay > timeUpdateDelay ? progressUpdateDelay + 100 : timeUpdateDelay + 100,
-		    TimeUnit.MILLISECONDS);
+	    ucExecutor.awaitTermination(updateInterval, TimeUnit.MILLISECONDS);
 	} catch (InterruptedException e) {
 	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
@@ -291,48 +278,24 @@ public abstract class Solver {
      * @see #progressUpdateDelay
      */
     private void startUpdateCallerThreads() {
-	if (onTimeUpdateCallback != null) {
+	if (onUpdateConsumer != null) {
 	    ucExecutor.submit(() -> {
 		long tmpTime = 0;
 		while (isRunning()) {
 		    if (getDuration() != tmpTime) {
-			onTimeUpdateCallback.onTimeUpdate(getProgress(), getSolutions(), getDuration());
+			onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
 			tmpTime = getDuration();
 		    }
 		    if (!isRunning())
 			break;
 		    try {
-			Thread.sleep(timeUpdateDelay);
+			Thread.sleep(updateInterval);
 		    } catch (InterruptedException e) {
 			e.printStackTrace();
 			Thread.currentThread().interrupt();
 		    }
 		}
-		onTimeUpdateCallback.onTimeUpdate(getProgress(), getSolutions(), getDuration());
-	    });
-	}
-	if (onProgressUpdateCallback != null) {
-	    ucExecutor.submit(() -> {
-		float tmpProgress = 0;
-		long tmpSolutions = 0;
-		while (isRunning()) {
-		    float progress = getProgress();
-		    long solutions = getSolutions();
-		    if (!Float.isNaN(progress) && (progress != tmpProgress || solutions != tmpSolutions)) {
-			onProgressUpdateCallback.onProgressUpdate(progress, solutions, getDuration());
-			tmpProgress = progress;
-			tmpSolutions = solutions;
-		    }
-		    if (!isRunning())
-			break;
-		    try {
-			Thread.sleep(progressUpdateDelay);
-		    } catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
-		    }
-		}
-		onProgressUpdateCallback.onProgressUpdate(getProgress(), getSolutions(), getDuration());
+		onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
 	    });
 	}
     }
@@ -364,7 +327,7 @@ public abstract class Solver {
 			tmpProgress = (int) progress;
 		    }
 		    try {
-			Thread.sleep(progressUpdateDelay);
+			Thread.sleep(updateInterval);
 		    } catch (InterruptedException e) {
 			e.printStackTrace();
 			Thread.currentThread().interrupt();
@@ -537,51 +500,11 @@ public abstract class Solver {
 	N = n;
     }
 
-    /**
-     * Gets {@link #onTimeUpdateCallback}.
-     * 
-     * @return {@link #onTimeUpdateCallback}
-     */
-    public final OnTimeUpdateCallback getOnTimeUpdateCallback() {
-	return onTimeUpdateCallback;
-    }
-
-    /**
-     * Sets {@link #onTimeUpdateCallback} or sets a void callback if the parameter
-     * is null.
-     * 
-     * @param onTimeUpdateCallback callback to be called on each time update
-     */
-    public final void setOnTimeUpdateCallback(OnTimeUpdateCallback onTimeUpdateCallback) {
-	if (onTimeUpdateCallback == null) {
-	    this.onTimeUpdateCallback = (progress, solutions, duration) -> {
-	    };
+    public final void onUpdate(OnUpdateConsumer onUpdateConsumer) {
+	if (onUpdateConsumer == null) {
+	    this.onUpdateConsumer = (progress, solutions, duration) -> {};
 	} else {
-	    this.onTimeUpdateCallback = onTimeUpdateCallback;
-	}
-    }
-
-    /**
-     * Gets {@link #onProgressUpdateCallback}.
-     * 
-     * @return {@link #onProgressUpdateCallback}
-     */
-    public final OnProgressUpdateCallback getOnProgressUpdateCallback() {
-	return onProgressUpdateCallback;
-    }
-
-    /**
-     * Sets {@link #onProgressUpdateCallback} or deletes an existing callback if the
-     * parameter is null.
-     * 
-     * @param onProgressUpdateCallback callback to be called on each progress update
-     */
-    public final void setOnProgressUpdateCallback(OnProgressUpdateCallback onProgressUpdateCallback) {
-	if (onProgressUpdateCallback == null) {
-	    this.onProgressUpdateCallback = (progress, solutions, duration) -> {
-	    };
-	} else {
-	    this.onProgressUpdateCallback = onProgressUpdateCallback;
+	    this.onUpdateConsumer = onUpdateConsumer;
 	}
     }
 
@@ -590,8 +513,8 @@ public abstract class Solver {
      * 
      * @return {@link #timeUpdateDelay}
      */
-    public final long getTimeUpdateDelay() {
-	return timeUpdateDelay;
+    public final long getUpdateInterval() {
+	return updateInterval;
     }
 
     /**
@@ -600,37 +523,13 @@ public abstract class Solver {
      * @param timeUpdateDelay
      * @throws {@link IllegalArgumentException} if the given delay is <= 0
      */
-    public final void setTimeUpdateDelay(long timeUpdateDelay) {
-	if (timeUpdateDelay < 0) {
-	    throw new IllegalArgumentException("timeUpdateDelay must be a number >= 0");
-	} else if (timeUpdateDelay == 0) {
-	    this.timeUpdateDelay = Config.getDefaultConfig().getTimeUpdateDelay();
+    public final void setUpdateInterval(long updateInterval) {
+	if (updateInterval < 0) {
+	    throw new IllegalArgumentException("updateInterval must be a number >= 0");
+	} else if (updateInterval == 0) {
+	    this.updateInterval = Config.getDefaultConfig().getTimeUpdateDelay();
 	}
-	this.timeUpdateDelay = timeUpdateDelay;
-    }
-
-    /**
-     * Gets {@link #progressUpdateDelay}.
-     * 
-     * @return {@link #progressUpdateDelay}
-     */
-    public final long getProgressUpdateDelay() {
-	return progressUpdateDelay;
-    }
-
-    /**
-     * Sets {@link #progressUpdateDelay}.
-     * 
-     * @param progressUpdateDelay
-     * @throws {@link IllegalArgumentException} if the given delay is <= 0
-     */
-    public final void setProgressUpdateDelay(long progressUpdateDelay) {
-	if (progressUpdateDelay < 0) {
-	    throw new IllegalArgumentException("progressUpdateDelay must be a number >= 0");
-	} else if (progressUpdateDelay == 0) {
-	    this.progressUpdateDelay = Config.getDefaultConfig().getProgressUpdateDelay();
-	}
-	this.progressUpdateDelay = progressUpdateDelay;
+	this.updateInterval = updateInterval;
     }
 
     /**
