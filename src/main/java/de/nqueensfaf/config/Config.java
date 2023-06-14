@@ -10,20 +10,33 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-public abstract class Config {
+import de.nqueensfaf.impl.GPUSolver.GPUSolverConfig;
+
+public class Config implements Configurable {
 
     public long updateInterval;
     public boolean autoSaveEnabled;
     public boolean autoDeleteEnabled;
     public int autoSavePercentageStep;
     public String autoSavePath;
-
+    
     protected Config() {
     }
-
-    protected abstract void validate_();
     
-    public final void validate() {
+    @SuppressWarnings("unchecked")
+    @Override
+    public Config getDefaultConfig() {
+	Config c = new Config();
+	c.updateInterval = 128;
+	c.autoSaveEnabled = false;
+	c.autoDeleteEnabled = false;
+	c.autoSavePercentageStep = 10;
+	c.autoSavePath = "nqueensfaf{N}.dat";
+	return c;
+    }
+    
+    @Override
+    public void validate() {
 	if (updateInterval <= 0)
 	    throw new IllegalArgumentException("invalid value for update interval: only numbers >0 are allowed");
 
@@ -43,43 +56,21 @@ public abstract class Config {
 		throw new IllegalArgumentException("invalid value for auto save path: " + e.getMessage());
 	    }
 	}
-	validate_();
     }
 
-    public abstract void from(File file) throws StreamReadException, DatabindException, IOException;
-    
-    public final Config getDefaultConfig() {
-	return new ConfigImpl();
-    }
-    
-    protected final void copyParentFields(Config config) {
-	updateInterval = config.updateInterval;
-	autoSaveEnabled = config.autoSaveEnabled;
-	autoDeleteEnabled = config.autoDeleteEnabled;
-	autoSavePercentageStep = config.autoSavePercentageStep;
-	autoSavePath = config.autoSavePath;
-    }
+    public <T extends Config> void from(File file) throws StreamReadException, DatabindException, IOException, IllegalArgumentException, IllegalAccessException {
+	    ObjectMapper mapper = new ObjectMapper();
+	    @SuppressWarnings("unchecked")
+	    T config = (T) mapper.readValue(file, this.getClass());
+	    config.validate();
+	    for(var field : getClass().getFields()) {
+		field.set(this, field.get(config));
+	    }
+	}
     
     public final void writeTo(File file) throws StreamWriteException, DatabindException, IOException {
 	validate();
 	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
 	out.writeValue(file, this);
-    }
-    
-    public class ConfigImpl extends Config {
-	public ConfigImpl() {
-	    updateInterval = 128;
-	    autoSaveEnabled = false;
-	    autoDeleteEnabled = false;
-	    autoSavePercentageStep = 10;
-	    autoSavePath = "nqueensfaf{N}.dat";
-	}
-	
-	@Override
-	protected void validate_() {
-	}
-	@Override
-	public void from(File file) throws StreamReadException, DatabindException, IOException {
-	}
     }
 }

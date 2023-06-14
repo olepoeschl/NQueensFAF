@@ -18,15 +18,20 @@ public class Demo {
 	// @formatter:off
 	GPUSolver s = new GPUSolver()
 		.config((config) -> {
-		    try {
-			config.from(new File("config.txt"));
-		    } catch (IOException e) {
-			e.printStackTrace();
-		    }
+//		    try {
+//			config.from(new File("config.txt"));
+//		    } catch (IOException e) {
+//			e.printStackTrace();
+//		    }
 		    config.deviceConfigs = new DeviceConfig[] {
-			new DeviceConfig(0, 32, 5, 500000)
+			new DeviceConfig(0, 64, 1, 1_000_000_000)
 		    };
-		    config.presetQueens = 7;
+		    config.presetQueens = 6;
+//		    try {
+//			config.writeTo(new File("config.txt"));
+//		    } catch (IOException e) {
+//			e.printStackTrace();
+//		    }
 		})
 		.onInit((self) -> {
 		    System.out.println("Starting solver for board size " + self.getN() + "...");
@@ -48,10 +53,8 @@ public class Demo {
 		    System.out.println();
 		    System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
 		})
-		.setN(20);
+		.setN(18);
 	// @formatter:on
-//	s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 200, 10_000_000), new DeviceConfig(1, 24, 6, 1, 10_000_000));
-	s.setDeviceConfigs(new DeviceConfig(0, 64, 300, 1_000_000));
 	s.solve();
     }
 }

@@ -55,7 +55,7 @@ public class GPUSolver extends Solver {
     private int workloadSize;
 
     // config stuff
-    private GPUSolverConfig config = new GPUSolverConfig();
+    private GPUSolverConfig config = new GPUSolverConfig().getDefaultConfig();
     private int presetQueens;
     private int weightSum;
 
@@ -816,8 +816,24 @@ public class GPUSolver extends Solver {
 	public GPUSolverConfig() {
 	}
 
-	@Override
-	protected void validate_() {
+	public GPUSolverConfig(Config config) {
+	    updateInterval = config.updateInterval;
+	    autoSaveEnabled = config.autoSaveEnabled;
+	    autoDeleteEnabled = config.autoDeleteEnabled;
+	    autoSavePercentageStep = config.autoSavePercentageStep;
+	    autoSavePath = config.autoSavePath;
+	}
+
+	public GPUSolverConfig getDefaultConfig() {
+	    GPUSolverConfig c = new GPUSolverConfig(super.getDefaultConfig());
+	    c.deviceConfigs = new DeviceConfig[] {
+		    new DeviceConfig(0, 64, 1, 1_000_000_000)
+	    };
+	    c.presetQueens = 6;
+	    return c;
+	}
+	
+	public void validate() {
 	    if(deviceConfigs == null || deviceConfigs.length == 0)
 		deviceConfigs = null; // TODO: default config
 	    else {
@@ -825,6 +841,8 @@ public class GPUSolver extends Solver {
 		    dvcCfg.validate();
 		}
 	    }
+	    if (presetQueens < 4)
+		throw new IllegalArgumentException("invalid value for preset queens: only numbers >=4 are allowed");
 	}
 
 	@Override
@@ -834,7 +852,6 @@ public class GPUSolver extends Solver {
 	    config.validate();
 	    deviceConfigs = config.deviceConfigs;
 	    presetQueens = config.presetQueens;
-	    copyParentFields(config);
 	}
     }
     
