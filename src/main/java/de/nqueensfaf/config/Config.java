@@ -18,8 +18,10 @@ public abstract class Config {
     public int autoSavePercentageStep;
     public String autoSavePath;
 
-    public Config() {
+    protected Config() {
     }
+
+    protected abstract void validate_();
     
     public final void validate() {
 	if (updateInterval <= 0)
@@ -44,9 +46,11 @@ public abstract class Config {
 	validate_();
     }
 
-    protected abstract void validate_();
-    
     public abstract void from(File file) throws StreamReadException, DatabindException, IOException;
+    
+    public final Config getDefaultConfig() {
+	return new ConfigImpl();
+    }
     
     protected final void copyParentFields(Config config) {
 	updateInterval = config.updateInterval;
@@ -56,9 +60,26 @@ public abstract class Config {
 	autoSavePath = config.autoSavePath;
     }
     
-    public void writeTo(File file) throws StreamWriteException, DatabindException, IOException {
+    public final void writeTo(File file) throws StreamWriteException, DatabindException, IOException {
 	validate();
 	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
 	out.writeValue(file, this);
+    }
+    
+    public class ConfigImpl extends Config {
+	public ConfigImpl() {
+	    updateInterval = 128;
+	    autoSaveEnabled = false;
+	    autoDeleteEnabled = false;
+	    autoSavePercentageStep = 10;
+	    autoSavePath = "nqueensfaf{N}.dat";
+	}
+	
+	@Override
+	protected void validate_() {
+	}
+	@Override
+	public void from(File file) throws StreamReadException, DatabindException, IOException {
+	}
     }
 }
