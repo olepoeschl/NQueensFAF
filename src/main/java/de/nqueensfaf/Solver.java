@@ -105,7 +105,7 @@ public abstract class Solver {
     private Runnable consumeUpdates() {
 	return () -> {
 	    while (isRunning()) {
-		onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
+		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 		if (!isRunning())
 		    break;
 		try {
@@ -115,7 +115,7 @@ public abstract class Solver {
 		    Thread.currentThread().interrupt();
 		}
 	    }
-	    onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
+	    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 	};
     }
 
@@ -205,34 +205,32 @@ public abstract class Solver {
 	solve();
     }
 
-    public final void onInit(Consumer<Solver> c) {
+    public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("initializationCallback must not be null");
 	}
 	initCb = c;
+	return (T) this;
     }
 
-    public final void onFinish(Consumer<Solver> c) {
+    public final <T extends Solver> T onFinish(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("terminationCallback must not be null");
 	}
 	finishCb = c;
+	return (T) this;
     }
 
-    public final void onUpdate(OnUpdateConsumer onUpdateConsumer) {
+    public final <T extends Solver> T onUpdate(OnUpdateConsumer onUpdateConsumer) {
 	if (onUpdateConsumer == null) {
-	    this.onUpdateConsumer = (progress, solutions, duration) -> {};
+	    this.onUpdateConsumer = (self, progress, solutions, duration) -> {};
 	} else {
 	    this.onUpdateConsumer = onUpdateConsumer;
 	}
+	return (T) this;
     }
 
-    // Getters and Setters
-    public final int getN() {
-	return N;
-    }
-
-    public final void setN(int n) {
+    public final <T extends Solver> T setN(int n) {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot set board size while solving");
 	}
@@ -240,6 +238,12 @@ public abstract class Solver {
 	    throw new IllegalArgumentException("Board size must be a number between 0 and 32 (not inclusive)");
 	}
 	N = n;
+	return (T) this;
+    }
+    
+    // getters
+    public final int getN() {
+	return N;
     }
 
     // get rid of all those config setters and getters
@@ -309,6 +313,6 @@ public abstract class Solver {
     }
     
     interface OnUpdateConsumer {
-	void accept(float progress, long solutions, long duration);
+	void accept(Solver self, float progress, long solutions, long duration);
     }
 }
