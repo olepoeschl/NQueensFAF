@@ -2,8 +2,8 @@ package de.nqueensfaf;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -22,11 +22,10 @@ public abstract class Solver {
     private int state = IDLE;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
-    private ThreadPoolExecutor threadPool;
     private int solutionsSmallN = 0;
+    private ExecutorService executor;
     private boolean isStoring = false;
     
-    private Thread autoSaverThread;
     private boolean autoDeleteEnabled = Config.getDefaultConfig().isAutoDeleteEnabled();
     private boolean autoSaveEnabled = Config.getDefaultConfig().isAutoSaveEnabled();
     private int autoSavePercentageStep = Config.getDefaultConfig().getAutoSavePercentageStep();
@@ -43,35 +42,37 @@ public abstract class Solver {
 		}
 	    }
 	}));
+	executor = Executors.newFixedThreadPool(2);
     }
-    
-    protected abstract void run();
+
     public abstract void config(Consumer<Config> configConsumer);
-    protected abstract void store_(String filepath) throws IOException;
-    protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
     public abstract boolean isInjected();	// get rid of ?
     public abstract void reset();		// get rid of ?
+    protected abstract void run();
+    protected abstract void store_(String filepath) throws IOException;
+    protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
     
     public final void solve() {
-	checkForPreparation();
+	preconditions();
+	
 	state = INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
-	threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+	if (onUpdateConsumer != null)
+	    executor.submit(consumeUpdates());
+	if (autoSaveEnabled)
+	    executor.submit(autoSaver());
 
 	state = RUNNING;
-	startUpdateCallerThreads();
-	if (autoSaveEnabled)
-	    startAutoSaverThread();
 	run();
 
 	state = TERMINATING;
-	threadPool.shutdown();
+	executor.shutdown();
 	try {
-	    threadPool.awaitTermination(updateInterval, TimeUnit.MILLISECONDS);
+	    executor.awaitTermination(updateInterval*2, TimeUnit.MILLISECONDS);
 	} catch (InterruptedException e) {
 	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
@@ -82,7 +83,7 @@ public abstract class Solver {
 	state = IDLE;
     }
 
-    private void checkForPreparation() {
+    private void preconditions() {
 	if (N == 0) {
 	    state = IDLE;
 	    throw new IllegalStateException("Board size was not set");
@@ -97,37 +98,28 @@ public abstract class Solver {
 	}
     }
 
-    private void startUpdateCallerThreads() {
-	if (onUpdateConsumer != null) {
-	    threadPool.submit(() -> {
-		long tmpTime = 0;
-		while (isRunning()) {
-		    if (getDuration() != tmpTime) {
-			onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
-			tmpTime = getDuration();
-		    }
-		    if (!isRunning())
-			break;
-		    try {
-			Thread.sleep(updateInterval);
-		    } catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
-		    }
-		}
+    private Runnable consumeUpdates() {
+	return () -> {
+	    while (isRunning()) {
 		onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
-	    });
-	}
+		if (!isRunning())
+		    break;
+		try {
+		    Thread.sleep(updateInterval);
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		    Thread.currentThread().interrupt();
+		}
+	    }
+	    onUpdateConsumer.accept(getProgress(), getSolutions(), getDuration());
+	};
     }
 
-    private void startAutoSaverThread() {
-	autoSaverThread = new Thread(() -> {
+    private Runnable autoSaver() {
+	return () -> {
 	    try {
 		String filePath = autoSaveFilePath;
 		filePath = filePath.replaceAll("\\{N\\}", "" + N);
-		// if (!filePath.endsWith(".faf")) {
-		// filePath += ".faf";
-		// }
 		float progress = getProgress() * 100;
 		int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
 		while (isRunning()) {
@@ -160,8 +152,7 @@ public abstract class Solver {
 	    } catch (IOException e) {
 		e.printStackTrace();
 	    }
-	});
-	autoSaverThread.start();
+	};
     }
 
     protected int solveSmallBoard() {
