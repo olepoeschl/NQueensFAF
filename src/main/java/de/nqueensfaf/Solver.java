@@ -83,6 +83,10 @@ public abstract class Solver {
 	state = IDLE;
     }
 
+    public final void solveAsync() {
+	new Thread(() -> solve()).start();
+    }
+    
     private void preconditions() {
 	if (N == 0) {
 	    state = IDLE;
