@@ -205,11 +205,13 @@ public abstract class Solver {
 	solve();
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Solver> T config(Consumer<Config> configConsumer) {
 	configConsumer.accept(config);
 	return (T) this;
     }
     
+    @SuppressWarnings("unchecked")
     public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("initializationCallback must not be null");
@@ -218,6 +220,7 @@ public abstract class Solver {
 	return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
     public final <T extends Solver> T onFinish(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("terminationCallback must not be null");
@@ -226,6 +229,7 @@ public abstract class Solver {
 	return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
     public final <T extends Solver> T onUpdate(OnUpdateConsumer onUpdateConsumer) {
 	if (onUpdateConsumer == null) {
 	    this.onUpdateConsumer = (self, progress, solutions, duration) -> {};
@@ -235,6 +239,7 @@ public abstract class Solver {
 	return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
     public final <T extends Solver> T setN(int n) {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot set board size while solving");
