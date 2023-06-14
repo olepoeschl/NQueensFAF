@@ -16,15 +16,12 @@ import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
 
-    private CPUSolverConfig config = new CPUSolverConfig();
-    
     // for very small N it is overkill to use this method
     // thus we use a straightforward recursive implementation of Jeff Somers Bit
     // method for such N
@@ -120,13 +117,6 @@ public class CPUSolver extends Solver {
 	injected = false;
     }
 
-
-    @Override
-    public Config getConfig() {
-	// TODO Auto-generated method stub
-	return null;
-    }
-    
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet, throw exception
