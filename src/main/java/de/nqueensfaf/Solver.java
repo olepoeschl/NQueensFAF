@@ -201,18 +201,26 @@ public abstract class Solver {
 	solve();
     }
 
-    public final void setInitializationCallback(Consumer<Solver> c) {
+    public final void onInit(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("initializationCallback must not be null");
 	}
 	initCb = c;
     }
 
-    public final void setTerminationCallback(Consumer<Solver> c) {
+    public final void onFinish(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("terminationCallback must not be null");
 	}
 	finishCb = c;
+    }
+
+    public final void onUpdate(OnUpdateConsumer onUpdateConsumer) {
+	if (onUpdateConsumer == null) {
+	    this.onUpdateConsumer = (progress, solutions, duration) -> {};
+	} else {
+	    this.onUpdateConsumer = onUpdateConsumer;
+	}
     }
 
     // Getters and Setters
@@ -230,14 +238,7 @@ public abstract class Solver {
 	N = n;
     }
 
-    public final void onUpdate(OnUpdateConsumer onUpdateConsumer) {
-	if (onUpdateConsumer == null) {
-	    this.onUpdateConsumer = (progress, solutions, duration) -> {};
-	} else {
-	    this.onUpdateConsumer = onUpdateConsumer;
-	}
-    }
-
+    // get rid of all those config setters and getters
     public final long getUpdateInterval() {
 	return updateInterval;
     }
@@ -285,7 +286,8 @@ public abstract class Solver {
     public final void setAutoSaveFilePath(String autoSaveFilePath) {
 	this.autoSaveFilePath = autoSaveFilePath;
     }
-
+    // -----
+    
     public final boolean isIdle() {
 	return state == IDLE;
     }
