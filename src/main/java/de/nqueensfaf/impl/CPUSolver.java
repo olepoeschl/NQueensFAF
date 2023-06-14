@@ -1,6 +1,5 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,18 +8,17 @@ import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.Constants;
+import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.data.Constellation;
-import de.nqueensfaf.data.SolverState;
+import de.nqueensfaf.persistence.Constellation;
+import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
 
@@ -119,6 +117,11 @@ public class CPUSolver extends Solver {
 	injected = false;
     }
 
+    @Override
+    public void config(Consumer<Config> configConsumer) {
+	
+    }
+    
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet, throw exception

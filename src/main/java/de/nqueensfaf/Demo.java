@@ -2,9 +2,8 @@ package de.nqueensfaf;
 
 import java.io.IOException;
 
-import de.nqueensfaf.compute.CPUSolver;
-import de.nqueensfaf.compute.Solver;
 import de.nqueensfaf.config.Config;
+import de.nqueensfaf.impl.CPUSolver;
 
 public class Demo {
 
@@ -20,6 +19,7 @@ public class Demo {
 		.onFinish((solutions, duration) -> System.out.println("finish"))
 		.boardSize(16)
 		.solve();
+	
 	
 	
     }

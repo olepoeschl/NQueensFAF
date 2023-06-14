@@ -17,7 +17,7 @@ public class Config {
 
     // all configurable fields and their default values
 
-    // CPU or GPU ?
+    // which Solver implementation?
     private String type;
     // for CPU
     private int cpuThreadcount;
@@ -73,14 +73,14 @@ public class Config {
 	return c;
     }
 
-    public static Config read(File configFile) throws StreamReadException, DatabindException, IOException {
+    public static Config from(File configFile) throws StreamReadException, DatabindException, IOException {
 	ObjectMapper mapper = new ObjectMapper();
 	Config config = mapper.readValue(configFile, Config.class);
 	config.validate();
 	return config;
     }
 
-    public void write(File configFile) throws StreamWriteException, DatabindException, IOException {
+    public void writeTo(File configFile) throws StreamWriteException, DatabindException, IOException {
 	validate();
 	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
 	out.writeValue(configFile, this);

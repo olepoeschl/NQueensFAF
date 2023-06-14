@@ -1,6 +1,10 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.io.IOException;
+import java.util.function.Consumer;
+
+import de.nqueensfaf.Solver;
+import de.nqueensfaf.config.Config;
 
 public class SymSolver extends Solver {
 
@@ -154,6 +158,11 @@ public class SymSolver extends Solver {
 	return 0;
     }
 
+    @Override
+    public void config(Consumer<Config> configConsumer) {
+	
+    }
+    
     /**
      * not supported
      */

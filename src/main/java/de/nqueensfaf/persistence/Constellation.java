@@ -1,4 +1,4 @@
-package de.nqueensfaf.data;
+package de.nqueensfaf.persistence;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

@@ -1,8 +1,8 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 
-import de.nqueensfaf.data.Constellation;
+import de.nqueensfaf.persistence.Constellation;
 
 class CPUSolverThread extends Thread {
 

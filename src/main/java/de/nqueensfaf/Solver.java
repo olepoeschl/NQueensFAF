@@ -1,13 +1,11 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
+import java.util.function.Consumer;
 
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.util.BasicCallback;
@@ -220,65 +218,8 @@ public abstract class Solver {
      */
     public abstract long getSolutions();
 
-    // type-specific
-    public static <T extends Solver> T createSolverWithConfig(File configFile)
-	    throws StreamReadException, DatabindException, IOException {
-	return createSolverWithConfig(Config.read(configFile));
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T extends Solver> T createSolverWithConfig(Config config) {
-	Solver solver;
-	CPUSolver cpuSolver = null;
-	GPUSolver gpuSolver = null;
-	switch (config.getType().toLowerCase()) {
-	case "cpu":
-	    cpuSolver = new CPUSolver();
-	    cpuSolver.setThreadcount(config.getCPUThreadcount());
-	    solver = cpuSolver;
-	    break;
-	case "gpu":
-	    gpuSolver = new GPUSolver();
-	    gpuSolver.setPresetQueens(config.getGPUPresetQueens());
-	    gpuSolver.setDeviceConfigs(config.getGPUDeviceConfigs());
-	    solver = gpuSolver;
-	    break;
-	default:
-	    throw new IllegalArgumentException(
-		    "Invalid config value '" + config.getType() + "' for solver type: has to be 'cpu' or 'gpu'");
-	}
-
-	// general settings
-	solver.setProgressUpdateDelay(config.getProgressUpdateDelay());
-	solver.setAutoSaveEnabled(config.isAutoSaveEnabled());
-	solver.setAutoDeleteEnabled(config.isAutoDeleteEnabled());
-	solver.setAutoSavePercentageStep(config.getAutoSavePercentageStep());
-	solver.setAutoSaveFilePath(config.getAutoSaveFilePath());
-
-	switch (config.getType().toLowerCase()) {
-	case "cpu":
-	    return (T) cpuSolver;
-	case "gpu":
-	    return (T) gpuSolver;
-	default: // unreachable code, only here to calm the compiler
-	    return null;
-	}
-    }
-
-    public static CPUSolver createCPUSolver() {
-	Config config = Config.getDefaultConfig();
-	config.setType("cpu");
-	CPUSolver cpuSolver = createSolverWithConfig(config);
-	return cpuSolver;
-    }
-
-    public static GPUSolver createGPUSolver() {
-	Config config = Config.getDefaultConfig();
-	config.setType("gpu");
-	GPUSolver gpuSolver = createSolverWithConfig(config);
-	return gpuSolver;
-    }
-
+    public abstract void config(Consumer<Config> configConsumer);
+    
     /**
      * Calls all initialization callbacks, then starts the {@link Solver}'s
      * run()-method, then calls all termination callbacks.

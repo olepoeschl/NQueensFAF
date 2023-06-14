@@ -1,4 +1,4 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 public class DeviceInfo {
     private int index;

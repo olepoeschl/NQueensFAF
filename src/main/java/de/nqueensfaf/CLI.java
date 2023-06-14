@@ -8,8 +8,7 @@ import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
-import de.nqueensfaf.compute.Solver;
-import de.nqueensfaf.compute.SymSolver;
+import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;

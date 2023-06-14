@@ -1,7 +1,6 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.lwjgl.BufferUtils;
@@ -24,22 +24,19 @@ import org.lwjgl.system.MemoryStack;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
+import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
 import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
-import static de.nqueensfaf.compute.InfoUtil.*;
-
 import de.nqueensfaf.Constants;
+import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
-import de.nqueensfaf.data.Constellation;
-import de.nqueensfaf.data.SolverState;
+import de.nqueensfaf.persistence.Constellation;
+import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {
 
@@ -559,6 +556,11 @@ public class GPUSolver extends Solver {
     // --------- (re-)storing, real time analytics ----------
     // --------------------------------------------------------
 
+    @Override
+    public void config(Consumer<Config> configConsumer) {
+	
+    }
+    
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet or is already done, throw exception
