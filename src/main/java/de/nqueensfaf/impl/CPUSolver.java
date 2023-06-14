@@ -46,7 +46,7 @@ public class CPUSolver extends Solver {
     private boolean injected = false;
 
     // non public constructor
-    protected CPUSolver() {
+    public CPUSolver() {
     }
 
     // inherited functions
@@ -117,9 +117,10 @@ public class CPUSolver extends Solver {
 	injected = false;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void config(Consumer<Config> configConsumer) {
-	
+    public <T extends Solver> T config(Consumer<Config> configConsumer) {
+	return (T) this;
     }
     
     @Override

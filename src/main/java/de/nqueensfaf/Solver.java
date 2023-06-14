@@ -20,6 +20,7 @@ public abstract class Solver {
     protected long updateInterval = Config.getDefaultConfig().getProgressUpdateDelay();
     
     private int state = IDLE;
+    private Config config = Config.getDefaultConfig();
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
@@ -45,7 +46,6 @@ public abstract class Solver {
 	executor = Executors.newFixedThreadPool(2);
     }
 
-    public abstract void config(Consumer<Config> configConsumer);
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
@@ -205,6 +205,11 @@ public abstract class Solver {
 	solve();
     }
 
+    public <T extends Solver> T config(Consumer<Config> configConsumer) {
+	configConsumer.accept(config);
+	return (T) this;
+    }
+    
     public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("initializationCallback must not be null");

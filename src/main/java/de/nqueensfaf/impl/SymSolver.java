@@ -158,9 +158,10 @@ public class SymSolver extends Solver {
 	return 0;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void config(Consumer<Config> configConsumer) {
-	
+    public <T extends Solver> T config(Consumer<Config> configConsumer) {
+	return (T) this;
     }
     
     /**
