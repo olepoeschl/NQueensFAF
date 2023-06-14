@@ -1,6 +1,7 @@
 package de.nqueensfaf.impl;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,6 +25,9 @@ import org.lwjgl.system.MemoryStack;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
@@ -34,6 +38,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
+import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
@@ -50,6 +55,7 @@ public class GPUSolver extends Solver {
     private int workloadSize;
 
     // config stuff
+    private GPUSolverConfig config = new GPUSolverConfig();
     private int presetQueens;
     private int weightSum;
 
@@ -59,7 +65,7 @@ public class GPUSolver extends Solver {
     // control flow
     private boolean injected = false;
 
-    protected GPUSolver() {
+    public GPUSolver() {
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
@@ -89,11 +95,6 @@ public class GPUSolver extends Solver {
 	}
 
 	try (MemoryStack stack = stackPush()) {
-	    // if only 1 device is used, set presetQueens to the value specified in the
-	    // devices config
-	    if (devices.size() == 1)
-		presetQueens = devices.get(0).config.getPresetQueens();
-
 	    if (!injected)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
@@ -555,10 +556,15 @@ public class GPUSolver extends Solver {
     // --------------------------------------------------------
     // --------- (re-)storing, real time analytics ----------
     // --------------------------------------------------------
-
+    
+    public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
+	configConsumer.accept(config);
+	return this;
+    }
+    
     @Override
-    public void config(Consumer<Config> configConsumer) {
-	
+    public Config getConfig() {
+	return config;
     }
     
     @Override
@@ -700,7 +706,7 @@ public class GPUSolver extends Solver {
 	if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
 	    for (Device device : availableDevices) {
 		devices.add(device);
-		device.config = Config.getDefaultConfig().getGPUDeviceConfigs()[0];
+		device.config = ConfigOld.getDefaultConfig().getGPUDeviceConfigs()[0];
 		weightSum += device.config.getWeight();
 	    }
 	    return;
@@ -803,6 +809,35 @@ public class GPUSolver extends Solver {
 	return ijkl & 0b111111111111111;
     }
 
+    public class GPUSolverConfig extends Config {
+	public DeviceConfig[] deviceConfigs;
+	public int presetQueens;
+	
+	public GPUSolverConfig() {
+	}
+
+	@Override
+	protected void validate_() {
+	    if(deviceConfigs == null || deviceConfigs.length == 0)
+		deviceConfigs = null; // TODO: default config
+	    else {
+		for(var dvcCfg : deviceConfigs) {
+		    dvcCfg.validate();
+		}
+	    }
+	}
+
+	@Override
+	public void from(File file) throws StreamReadException, DatabindException, IOException {
+	    ObjectMapper mapper = new ObjectMapper();
+	    GPUSolverConfig config = mapper.readValue(file, this.getClass());
+	    config.validate();
+	    deviceConfigs = config.deviceConfigs;
+	    presetQueens = config.presetQueens;
+	    copyParentFields(config);
+	}
+    }
+    
     // a class holding all OpenCL bindings needed for a single OpenCL device to
     // operate
     private class Device {

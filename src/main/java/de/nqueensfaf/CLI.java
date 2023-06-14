@@ -8,6 +8,7 @@ import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
+import de.nqueensfaf.impl.GPUSolver;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -61,7 +62,7 @@ public class CLI implements Runnable {
     @Override
     public void run() {
 	if (showAvailableDevices) {
-	    var devices = Solver.createGPUSolver().getAvailableDevices();
+	    var devices = new GPUSolver().getAvailableDevices();
 	    System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
 		    Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
 			    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.getIndex())),
@@ -89,7 +90,7 @@ public class CLI implements Runnable {
 	    // initialize solver
 	    Solver solver;
 	    if (configFile != null)
-		solver = Solver.createSolverWithConfig(configFile);
+		solver = new Solver().config((config) -> config.from(configFile));
 	    else
 		solver = Solver.createCPUSolver();
 

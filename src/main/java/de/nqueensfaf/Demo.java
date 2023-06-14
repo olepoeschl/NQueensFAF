@@ -1,78 +1,57 @@
 package de.nqueensfaf;
 
+import java.io.File;
 import java.io.IOException;
 
-import de.nqueensfaf.config.Config;
+import de.nqueensfaf.config.ConfigOld;
+import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.impl.CPUSolver;
+import de.nqueensfaf.impl.GPUSolver;
 
 public class Demo {
 
     public static void main(String[] args) {
 	run();
-	
-	CPUSolver s = new CPUSolver()
-		.config((config) -> {
-		    config.from("config.txt");
-		    config.threadcount = 4;
-		})
-		.onProgress((progress, solutions, duration) -> System.out.println("progress"))
-		.onFinish((solutions, duration) -> System.out.println("finish"))
-		.boardSize(16)
-		.solve();
-	
-	
-	
     }
 
     static void run() {
-	CPUSolver s = Solver.createCPUSolver();
+	// @formatter:off
+	GPUSolver s = new GPUSolver()
+		.config((config) -> {
+		    try {
+			config.from(new File("config.txt"));
+		    } catch (IOException e) {
+			e.printStackTrace();
+		    }
+		    config.deviceConfigs = new DeviceConfig[] {
+			new DeviceConfig(0, 32, 5, 500000)
+		    };
+		    config.presetQueens = 7;
+		})
+		.onInit((self) -> {
+		    System.out.println("Starting solver for board size " + self.getN() + "...");
+		})
+		.onUpdate((self, progress, solutions, duration) -> {
+		    System.out.format("\r\tprogress: %1.10f\tsolutions: %18d\tduration: %dms", progress, solutions, duration);
+		    if (duration > 3000) {
+			new Thread(() -> {
+        		    try {
+        			self.store("hi.txt");
+        		    } catch (IllegalArgumentException | IOException e) {
+        			e.printStackTrace();
+        		    }
+			}).start();
+			System.exit(0);
+		    }
+		})
+		.onFinish((self) -> {
+		    System.out.println();
+		    System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
+		})
+		.setN(20);
+	// @formatter:on
 //	s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 200, 10_000_000), new DeviceConfig(1, 24, 6, 1, 10_000_000));
-//	s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 300, 1_000_000));
-	s.setInitializationCallback((self) -> {
-	    System.out.println("Starting solver for board size " + self.getN() + "...");
-	});
-	s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
-	    System.out.format("\r\tprogress: %1.10f\tsolutions: %18d\tduration: %dms", progress, solutions, duration);
-	    if(progress > 0.01) {
-		try {
-		    s.store("test.faf");
-		} catch (IllegalArgumentException | IOException e) {
-		    e.printStackTrace();
-		}
-		System.exit(0);
-	    }
-	});
-	s.setTerminationCallback((self) -> {
-	    System.out.println();
-	    System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
-	});
-	s.setN(18);
+	s.setDeviceConfigs(new DeviceConfig(0, 64, 300, 1_000_000));
 	s.solve();
-    }
-    
-    static void restore() {
-	CPUSolver s = Solver.createCPUSolver();
-//	s.setDeviceConfigs(new DeviceConfig(0, 64, 6, 300, 1_000_000));
-	s.setInitializationCallback((self) -> {
-	    System.out.println("Starting solver for board size " + self.getN() + "...");
-	});
-	s.setOnProgressUpdateCallback((progress, solutions, duration) -> {
-	    System.out.format("\r\tprogress: %1.10f\tsolutions: %18d\tduration: %dms", progress, solutions, duration);
-//	    if(progress > 0.4)
-//		try {
-//		    s.store("test.faf");
-//		} catch (IllegalArgumentException | IOException e) {
-//		    e.printStackTrace();
-//		}
-	});
-	s.setTerminationCallback((self) -> {
-	    System.out.println();
-	    System.out.println(self.getSolutions() + " solutions found in " + self.getDuration() + "ms");
-	});
-	try {
-	    s.inject("test.faf");
-	} catch (ClassNotFoundException | ClassCastException | IllegalArgumentException | IOException e) {
-	    e.printStackTrace();
-	}
     }
 }

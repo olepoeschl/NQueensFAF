@@ -17,18 +17,21 @@ import com.esotericsoftware.kryo.io.Output;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
+import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
 
+    private CPUSolverConfig config = new CPUSolverConfig();
+    
     // for very small N it is overkill to use this method
     // thus we use a straightforward recursive implementation of Jeff Somers Bit
     // method for such N
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
     // how many threads in parallel
-    private int threadcount = Config.getDefaultConfig().getCPUThreadcount();
+    private int threadcount = ConfigOld.getDefaultConfig().getCPUThreadcount();
     // we fill up the board, until <preQueens> queens are set
     private int preQueens = 4, L, mask, LD, RD, counter;
     // for time measurement
@@ -117,10 +120,11 @@ public class CPUSolver extends Solver {
 	injected = false;
     }
 
-    @SuppressWarnings("unchecked")
+
     @Override
-    public <T extends Solver> T config(Consumer<Config> configConsumer) {
-	return (T) this;
+    public Config getConfig() {
+	// TODO Auto-generated method stub
+	return null;
     }
     
     @Override

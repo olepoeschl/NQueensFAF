@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.Config;
+import de.nqueensfaf.config.ConfigOld;
 
 public class SymSolver extends Solver {
 
@@ -160,7 +160,7 @@ public class SymSolver extends Solver {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends Solver> T config(Consumer<Config> configConsumer) {
+    public <T extends Solver> T config(Consumer<ConfigOld> configConsumer) {
 	return (T) this;
     }
     
