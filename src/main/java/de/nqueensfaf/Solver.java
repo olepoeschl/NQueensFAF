@@ -22,10 +22,9 @@ public abstract class Solver {
     private int state = IDLE;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
-    private ThreadPoolExecutor ucExecutor;
+    private ThreadPoolExecutor threadPool;
     private int solutionsSmallN = 0;
     private boolean isStoring = false;
-    private boolean finishStoring = false;
     
     private Thread autoSaverThread;
     private boolean autoDeleteEnabled = Config.getDefaultConfig().isAutoDeleteEnabled();
@@ -35,7 +34,6 @@ public abstract class Solver {
     
     protected Solver() {
 	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-	    finishStoring = true;
 	    while (isStoring) {
 		try {
 		    Thread.sleep(100);
@@ -58,13 +56,11 @@ public abstract class Solver {
     public abstract void reset();		// get rid of ?
     
     public final void solve() {
-	finishStoring = false; // reset finishStoring to false, otherwise autosave doesn't work
-
 	checkForPreparation();
 	state = INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
-	ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+	threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 	state = RUNNING;
 	startUpdateCallerThreads();
@@ -73,9 +69,9 @@ public abstract class Solver {
 	run();
 
 	state = TERMINATING;
-	ucExecutor.shutdown();
+	threadPool.shutdown();
 	try {
-	    ucExecutor.awaitTermination(updateInterval, TimeUnit.MILLISECONDS);
+	    threadPool.awaitTermination(updateInterval, TimeUnit.MILLISECONDS);
 	} catch (InterruptedException e) {
 	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
@@ -103,7 +99,7 @@ public abstract class Solver {
 
     private void startUpdateCallerThreads() {
 	if (onUpdateConsumer != null) {
-	    ucExecutor.submit(() -> {
+	    threadPool.submit(() -> {
 		long tmpTime = 0;
 		while (isRunning()) {
 		    if (getDuration() != tmpTime) {
@@ -134,7 +130,7 @@ public abstract class Solver {
 		// }
 		float progress = getProgress() * 100;
 		int tmpProgress = (int) progress / autoSavePercentageStep * autoSavePercentageStep;
-		while (isRunning() && !finishStoring) {
+		while (isRunning()) {
 		    progress = getProgress() * 100;
 		    if (progress >= 100)
 			break;
