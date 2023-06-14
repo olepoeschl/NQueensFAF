@@ -8,8 +8,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.util.BasicCallback;
-import de.nqueensfaf.util.OnUpdateConsumer;
 
 /**
  * <p>
@@ -53,7 +51,7 @@ public abstract class Solver {
     protected int N;
     
     /**
-     * delay between progress updates
+     * delay between updates
      */
     protected long updateInterval = Config.getDefaultConfig().getProgressUpdateDelay();
     
@@ -65,18 +63,8 @@ public abstract class Solver {
      * @see #startUpdateCallerThreads()
      */
     private ThreadPoolExecutor ucExecutor;
-    /**
-     * callback that is executed before the run() function of the solver is called
-     * 
-     * @see #solve()
-     */
-    private BasicCallback initializationCallback;
-    /**
-     * callback that is executed after the run() function of the solver is finished
-     * 
-     * @see #solve()
-     */
-    private BasicCallback terminationCallback;
+    
+    private Consumer<Solver> initCb, finishCb;
     /**
      * current state of the {@link Solver}
      * 
@@ -225,8 +213,8 @@ public abstract class Solver {
 
 	checkForPreparation();
 	state = INITIALIZING;
-	if (initializationCallback != null)
-	    initializationCallback.callback(this);
+	if (initCb != null)
+	    initCb.accept(this);
 	ucExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 	state = RUNNING;
@@ -243,8 +231,8 @@ public abstract class Solver {
 	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
 	}
-	if (terminationCallback != null)
-	    terminationCallback.callback(this);
+	if (finishCb != null)
+	    finishCb.accept(this);
 
 	state = IDLE;
     }
@@ -450,11 +438,11 @@ public abstract class Solver {
      * @throws {@link IllegalArgumentException} if r is null
      * @see #solve()
      */
-    public final void setInitializationCallback(BasicCallback r) {
-	if (r == null) {
+    public final void setInitializationCallback(Consumer<Solver> c) {
+	if (c == null) {
 	    throw new IllegalArgumentException("initializationCallback must not be null");
 	}
-	initializationCallback = r;
+	initCb = c;
     }
 
     /**
@@ -465,11 +453,11 @@ public abstract class Solver {
      * @throws {@link IllegalArgumentException} if r is null
      * @see #solve()
      */
-    public final void setTerminationCallback(BasicCallback r) {
-	if (r == null) {
+    public final void setTerminationCallback(Consumer<Solver> c) {
+	if (c == null) {
 	    throw new IllegalArgumentException("terminationCallback must not be null");
 	}
-	terminationCallback = r;
+	finishCb = c;
     }
 
     // Getters and Setters
@@ -648,5 +636,9 @@ public abstract class Solver {
      */
     public final boolean isTerminating() {
 	return state == TERMINATING;
+    }
+    
+    interface OnUpdateConsumer {
+	void accept(float progress, long solutions, long duration);
     }
 }
