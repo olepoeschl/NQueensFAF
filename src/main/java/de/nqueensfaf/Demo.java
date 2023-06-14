@@ -3,6 +3,10 @@ package de.nqueensfaf;
 import java.io.File;
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.exc.StreamWriteException;
+import com.fasterxml.jackson.databind.DatabindException;
+
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.impl.CPUSolver;
@@ -10,8 +14,11 @@ import de.nqueensfaf.impl.GPUSolver;
 
 public class Demo {
 
-    public static void main(String[] args) {
-	run();
+    public static void main(String[] args) throws StreamWriteException, DatabindException, IOException {
+//	run();
+	Config config = new Config().getDefaultConfig();
+	config.autoSavePath = "hallihallo";
+	config.writeTo(new File("config.txt"));
     }
 
     static void run() {
