@@ -11,16 +11,20 @@ import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.impl.CPUSolver;
 import de.nqueensfaf.impl.GPUSolver;
+import de.nqueensfaf.impl.GPUSolver.GPUSolverConfig;
 
 public class Demo {
 
     public static void main(String[] args) throws StreamWriteException, DatabindException, IOException, IllegalArgumentException, IllegalAccessException {
 //	run();
-	Config config = new Config();
-//	config.autoSavePath = "hallihallo";
-//	config.writeTo(new File("config.txt"));
-	config.from(new File("config.txt"));
-	System.out.println(config.autoSavePath);
+	GPUSolver s = new GPUSolver().config((config) -> {
+	    config.presetQueens = 8;
+	    try {
+		config.writeTo(new File("config.txt"));
+	    } catch (IOException e) {
+		e.printStackTrace();
+	    }
+	});
     }
 
     static void run() {
