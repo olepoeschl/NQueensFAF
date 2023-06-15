@@ -34,7 +34,6 @@ import static org.lwjgl.system.MemoryUtil.*;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
@@ -52,7 +51,6 @@ public class GPUSolver extends Solver {
 
     // config stuff
     private GPUSolverConfig config = new GPUSolverConfig();
-    private int presetQueens;
     private int weightSum;
 
     // user interface
@@ -68,6 +66,7 @@ public class GPUSolver extends Solver {
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	}
+	setDeviceConfigs(config.deviceConfigs);
     }
 
     // --------------------------------------------------------
@@ -166,7 +165,7 @@ public class GPUSolver extends Solver {
 
     private void genConstellations() {
 	generator = new GPUConstellationsGenerator();
-	generator.genConstellations(N, presetQueens);
+	generator.genConstellations(N, config.presetQueens);
 
 	constellations = generator.getConstellations();
     }
@@ -555,6 +554,7 @@ public class GPUSolver extends Solver {
     
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
 	configConsumer.accept(config);
+	setDeviceConfigs(config.deviceConfigs);
 	return this;
     }
     
@@ -696,14 +696,16 @@ public class GPUSolver extends Solver {
 	return deviceInfos;
     }
 
-    public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
+    private void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
 	devices.clear();
 	weightSum = 0;
 
 	if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
+	    int index = 0;
 	    for (Device device : availableDevices) {
 		devices.add(device);
-		device.config = ConfigOld.getDefaultConfig().getGPUDeviceConfigs()[0];
+		device.config = new GPUSolverConfig().deviceConfigs[0];
+		device.config.setIndex(index++);
 		weightSum += device.config.getWeight();
 	    }
 	    return;
@@ -732,14 +734,6 @@ public class GPUSolver extends Solver {
 	    deviceInfos.add(new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name));
 	}
 	return deviceInfos;
-    }
-
-    // --------------------------------------------------------
-    // ------------ further run configurations --------------
-    // --------------------------------------------------------
-
-    public void setPresetQueens(int presetQueens) {
-	this.presetQueens = presetQueens;
     }
 
     // --------------------------------------------------------
@@ -835,8 +829,7 @@ public class GPUSolver extends Solver {
 	}
     }
     
-    // a class holding all OpenCL bindings needed for a single OpenCL device to
-    // operate
+    // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
 	long id;
 	String vendor, name;
