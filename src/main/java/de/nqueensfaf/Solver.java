@@ -185,7 +185,7 @@ public abstract class Solver {
 	isStoring = false;
     }
 
-    public final void inject(File file)
+    public final synchronized void inject(File file)
 	    throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
 	inject_(file.getAbsolutePath());
 	getConfig().autoSavePath = file.getAbsolutePath();
