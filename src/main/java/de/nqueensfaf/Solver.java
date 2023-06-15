@@ -49,7 +49,8 @@ public abstract class Solver {
     protected abstract void store_(String filepath) throws IOException;
     protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
     
-    public final void solve() {
+    @SuppressWarnings("unchecked")
+    public final <T extends Solver> T solve() {
 	preconditions();
 	
 	state = INITIALIZING;
@@ -75,10 +76,13 @@ public abstract class Solver {
 	    finishCb.accept(this);
 
 	state = IDLE;
+	return (T) this;
     }
 
-    public final void solveAsync() {
+    @SuppressWarnings("unchecked")
+    public final <T extends Solver> T solveAsync() {
 	new Thread(() -> solve()).start();
+	return (T) this;
     }
     
     private void preconditions() {
