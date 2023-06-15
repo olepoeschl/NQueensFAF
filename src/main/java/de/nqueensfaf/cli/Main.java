@@ -1,4 +1,4 @@
-package de.nqueensfaf;
+package de.nqueensfaf.cli;
 
 import picocli.CommandLine;
 

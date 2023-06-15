@@ -1,4 +1,4 @@
-package de.nqueensfaf;
+package de.nqueensfaf.cli;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,7 @@ import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
+import de.nqueensfaf.Solver;
 import de.nqueensfaf.impl.GPUSolver;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine;
