@@ -17,7 +17,6 @@ import com.esotericsoftware.kryo.io.Output;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.config.ConfigOld;
 import de.nqueensfaf.impl.GPUSolver.GPUSolverConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
@@ -49,7 +48,6 @@ public class CPUSolver extends Solver {
     
     private CPUSolverConfig config = new CPUSolverConfig();
 
-    // non public constructor
     public CPUSolver() {
     }
 
@@ -126,8 +124,9 @@ public class CPUSolver extends Solver {
 	return this;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
-    public Config getConfig() {
+    public CPUSolverConfig getConfig() {
 	return config;
     }
     

@@ -558,8 +558,9 @@ public class GPUSolver extends Solver {
 	return this;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
-    public Config getConfig() {
+    public GPUSolverConfig getConfig() {
 	return config;
     }
     

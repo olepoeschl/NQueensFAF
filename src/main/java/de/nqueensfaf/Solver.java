@@ -39,7 +39,7 @@ public abstract class Solver {
 	}));
     }
 
-    public abstract Config getConfig();
+    public abstract <T extends Config> T getConfig();
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
