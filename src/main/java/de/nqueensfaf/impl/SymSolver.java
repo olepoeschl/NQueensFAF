@@ -1,10 +1,9 @@
 package de.nqueensfaf.impl;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.ConfigOld;
+import de.nqueensfaf.config.Config;
 
 public class SymSolver extends Solver {
 
@@ -157,12 +156,6 @@ public class SymSolver extends Solver {
     public long getSolutions() {
 	return 0;
     }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends Solver> T config(Consumer<ConfigOld> configConsumer) {
-	return (T) this;
-    }
     
     /**
      * not supported
@@ -184,6 +177,11 @@ public class SymSolver extends Solver {
     @Override
     public boolean isInjected() {
 	return false;
+    }
+
+    @Override
+    public <T extends Config> T getConfig() {
+	return null;
     }
 
 }
