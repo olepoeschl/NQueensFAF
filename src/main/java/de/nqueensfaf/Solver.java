@@ -19,6 +19,7 @@ public abstract class Solver {
     protected int N;
     
     private int state = IDLE;
+    private Thread asyncSolverThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
@@ -81,7 +82,21 @@ public abstract class Solver {
 
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solveAsync() {
-	new Thread(() -> solve()).start();
+	asyncSolverThread = new Thread(() -> solve());
+	asyncSolverThread.start();
+	return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public final <T extends Solver> T waitFor() {
+	if(asyncSolverThread == null || !asyncSolverThread.isAlive())
+	    throw new IllegalStateException("waitFor() can not be called: solver is not running asynchronous at the moment");
+	try {
+	    asyncSolverThread.join();
+	} catch (InterruptedException e) {
+	    e.printStackTrace();
+	    Thread.currentThread().interrupt();
+	}
 	return (T) this;
     }
     
