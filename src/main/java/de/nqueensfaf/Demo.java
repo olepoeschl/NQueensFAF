@@ -14,11 +14,13 @@ import de.nqueensfaf.impl.GPUSolver;
 
 public class Demo {
 
-    public static void main(String[] args) throws StreamWriteException, DatabindException, IOException {
+    public static void main(String[] args) throws StreamWriteException, DatabindException, IOException, IllegalArgumentException, IllegalAccessException {
 //	run();
-	Config config = new Config().getDefaultConfig();
-	config.autoSavePath = "hallihallo";
-	config.writeTo(new File("config.txt"));
+	Config config = new Config();
+//	config.autoSavePath = "hallihallo";
+//	config.writeTo(new File("config.txt"));
+	config.from(new File("config.txt"));
+	System.out.println(config.autoSavePath);
     }
 
     static void run() {

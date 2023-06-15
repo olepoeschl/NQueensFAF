@@ -16,7 +16,9 @@ import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.ConfigOld;
+import de.nqueensfaf.impl.GPUSolver.GPUSolverConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -44,6 +46,8 @@ public class CPUSolver extends Solver {
     private long solutions, duration, storedDuration;
     private float progress;
     private boolean injected = false;
+    
+    private CPUSolverConfig config = new CPUSolverConfig();
 
     // non public constructor
     public CPUSolver() {
@@ -117,6 +121,16 @@ public class CPUSolver extends Solver {
 	injected = false;
     }
 
+    public CPUSolver config(Consumer<CPUSolverConfig> configConsumer) {
+	configConsumer.accept(config);
+	return this;
+    }
+    
+    @Override
+    public Config getConfig() {
+	return config;
+    }
+    
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet, throw exception
@@ -390,5 +404,22 @@ public class CPUSolver extends Solver {
 
     public int getThreadcount() {
 	return threadcount;
+    }
+    
+    public class CPUSolverConfig extends Config {
+	public int threadcount;
+	
+	public CPUSolverConfig() {
+	    // default values
+	    super();
+	    threadcount = 1;
+	}
+	
+	@Override
+	public void validate() {
+	    super.validate();
+	    if (threadcount < 1)
+		throw new IllegalArgumentException("invalid value for threadcount: only numbers >0 are allowed");
+	}
     }
 }

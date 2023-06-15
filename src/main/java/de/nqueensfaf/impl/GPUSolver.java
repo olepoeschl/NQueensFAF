@@ -1,7 +1,6 @@
 package de.nqueensfaf.impl;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,9 +24,6 @@ import org.lwjgl.system.MemoryStack;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
@@ -55,7 +51,7 @@ public class GPUSolver extends Solver {
     private int workloadSize;
 
     // config stuff
-    private GPUSolverConfig config = new GPUSolverConfig().getDefaultConfig();
+    private GPUSolverConfig config = new GPUSolverConfig();
     private int presetQueens;
     private int weightSum;
 
@@ -814,44 +810,27 @@ public class GPUSolver extends Solver {
 	public int presetQueens;
 	
 	public GPUSolverConfig() {
-	}
-
-	public GPUSolverConfig(Config config) {
-	    updateInterval = config.updateInterval;
-	    autoSaveEnabled = config.autoSaveEnabled;
-	    autoDeleteEnabled = config.autoDeleteEnabled;
-	    autoSavePercentageStep = config.autoSavePercentageStep;
-	    autoSavePath = config.autoSavePath;
-	}
-
-	public GPUSolverConfig getDefaultConfig() {
-	    GPUSolverConfig c = new GPUSolverConfig(super.getDefaultConfig());
-	    c.deviceConfigs = new DeviceConfig[] {
+	    // default values
+	    super();
+	    deviceConfigs = new DeviceConfig[] {
 		    new DeviceConfig(0, 64, 1, 1_000_000_000)
 	    };
-	    c.presetQueens = 6;
-	    return c;
+	    presetQueens = 6;
 	}
 	
+	@Override
 	public void validate() {
+	    super.validate();
+	    // if device configs are not specified, use default value
 	    if(deviceConfigs == null || deviceConfigs.length == 0)
-		deviceConfigs = null; // TODO: default config
+		deviceConfigs = new GPUSolverConfig().deviceConfigs;
 	    else {
 		for(var dvcCfg : deviceConfigs) {
 		    dvcCfg.validate();
 		}
 	    }
 	    if (presetQueens < 4)
-		throw new IllegalArgumentException("invalid value for preset queens: only numbers >=4 are allowed");
-	}
-
-	@Override
-	public void from(File file) throws StreamReadException, DatabindException, IOException {
-	    ObjectMapper mapper = new ObjectMapper();
-	    GPUSolverConfig config = mapper.readValue(file, this.getClass());
-	    config.validate();
-	    deviceConfigs = config.deviceConfigs;
-	    presetQueens = config.presetQueens;
+		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
 	}
     }
     
