@@ -392,7 +392,7 @@ public class CPUSolver extends Solver {
 	return config.threadcount;
     }
     
-    public class CPUSolverConfig extends Config {
+    public static class CPUSolverConfig extends Config {
 	public int threadcount;
 	
 	public CPUSolverConfig() {

@@ -800,7 +800,7 @@ public class GPUSolver extends Solver {
 	return ijkl & 0b111111111111111;
     }
 
-    public class GPUSolverConfig extends Config {
+    public static class GPUSolverConfig extends Config {
 	public DeviceConfig[] deviceConfigs;
 	public int presetQueens;
 	
