@@ -17,7 +17,6 @@ import com.esotericsoftware.kryo.io.Output;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.impl.GPUSolver.GPUSolverConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -28,8 +27,6 @@ public class CPUSolver extends Solver {
     // method for such N
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
-    // how many threads in parallel
-    private int threadcount = ConfigOld.getDefaultConfig().getCPUThreadcount();
     // we fill up the board, until <preQueens> queens are set
     private int preQueens = 4, L, mask, LD, RD, counter;
     // for time measurement
@@ -77,7 +74,7 @@ public class CPUSolver extends Solver {
 	// the
 	// threads)
 	threadConstellations = new ArrayList<ArrayList<Constellation>>();
-	for (int i = 0; i < threadcount; i++) {
+	for (int i = 0; i < config.threadcount; i++) {
 	    threadConstellations.add(new ArrayList<Constellation>());
 	}
 	int i = constellations.size() - 1;
@@ -85,12 +82,12 @@ public class CPUSolver extends Solver {
 	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been
 				       // solved
 		continue;
-	    threadConstellations.get((i--) % threadcount).add(c);
+	    threadConstellations.get((i--) % config.threadcount).add(c);
 	}
 
 	// start the threads and wait until they are all finished
-	ExecutorService executor = Executors.newFixedThreadPool(threadcount);
-	for (i = 0; i < threadcount; i++) {
+	ExecutorService executor = Executors.newFixedThreadPool(config.threadcount);
+	for (i = 0; i < config.threadcount; i++) {
 	    CPUSolverThread cpuSolverThread = new CPUSolverThread(N, threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
@@ -390,19 +387,9 @@ public class CPUSolver extends Solver {
     private int rot90(int ijkl) {
 	return ((N - 1 - getk(ijkl)) << 15) + ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl);
     }
-
-    // getters and setters
-    public void setThreadcount(int threadcount) {
-	if (threadcount < 1 || threadcount > Runtime.getRuntime().availableProcessors()) {
-	    throw new IllegalArgumentException(
-		    "threadcount must be a number between 1 and " + Runtime.getRuntime().availableProcessors()
-			    + " (=your CPU's number of logical cores) (inclusive)");
-	}
-	this.threadcount = threadcount;
-    }
-
+    
     public int getThreadcount() {
-	return threadcount;
+	return config.threadcount;
     }
     
     public class CPUSolverConfig extends Config {
