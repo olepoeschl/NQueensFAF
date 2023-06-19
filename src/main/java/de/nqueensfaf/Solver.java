@@ -44,7 +44,6 @@ public abstract class Solver {
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
-    public abstract boolean isInjected();	// get rid of ?
     public abstract void reset();		// get rid of ?
     protected abstract void run();
     protected abstract void store_(String filepath) throws IOException;

@@ -36,7 +36,7 @@ public class CPUSolver extends Solver {
     private ArrayList<ArrayList<Constellation>> threadConstellations;
     private long solutions, duration, storedDuration;
     private float progress;
-    private boolean injected = false;
+    private boolean injected;
 
     private CPUSolverConfig config;
 
@@ -44,6 +44,7 @@ public class CPUSolver extends Solver {
 	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
+	injected = false;
 	config = new CPUSolverConfig();
     }
 
@@ -157,11 +158,6 @@ public class CPUSolver extends Solver {
 	    constellations = state.getConstellations();
 	    injected = true;
 	}
-    }
-
-    @Override
-    public boolean isInjected() {
-	return injected;
     }
 
     @Override

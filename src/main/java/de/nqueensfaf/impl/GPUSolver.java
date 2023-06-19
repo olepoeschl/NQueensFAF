@@ -35,7 +35,6 @@ import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
-import de.nqueensfaf.impl.CPUSolver.CPUSolverConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -603,11 +602,6 @@ public class GPUSolver extends Solver {
 	    constellations = state.getConstellations();
 	    injected = true;
 	}
-    }
-
-    @Override
-    public boolean isInjected() {
-	return injected;
     }
 
     @Override
