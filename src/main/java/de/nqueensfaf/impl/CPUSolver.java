@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -139,7 +141,7 @@ public class CPUSolver extends Solver {
 	    throw new IllegalStateException("Nothing to be saved");
 	}
 	Kryo kryo = Constants.kryo;
-	try (Output output = new Output(new FileOutputStream(filepath))) {
+	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
 	    output.flush();
@@ -152,7 +154,7 @@ public class CPUSolver extends Solver {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
 	Kryo kryo = Constants.kryo;
-	try (Input input = new Input(new FileInputStream(filepath))) {
+	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
 	    storedDuration = state.getStoredDuration();

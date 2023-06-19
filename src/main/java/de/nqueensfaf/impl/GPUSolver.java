@@ -15,6 +15,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -546,7 +548,7 @@ public class GPUSolver extends Solver {
 	}
 	
 	Kryo kryo = Constants.kryo;
-	try (Output output = new Output(new FileOutputStream(filepath))) {
+	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
 	    output.flush();
@@ -559,7 +561,7 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
 	Kryo kryo = Constants.kryo;
-	try (Input input = new Input(new FileInputStream(filepath))) {
+	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
 	    storedDuration = state.getStoredDuration();
