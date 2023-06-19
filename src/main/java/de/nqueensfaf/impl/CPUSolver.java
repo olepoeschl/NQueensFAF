@@ -208,7 +208,6 @@ public class CPUSolver extends Solver {
 	return solutions;
     }
 
-    // own functions
     private void genConstellations() {
 	// halfN half of N rounded up
 	final int halfN = (N + 1) / 2;
@@ -383,10 +382,6 @@ public class CPUSolver extends Solver {
     // rotate 90 degrees clockwise
     private int rot90(int ijkl) {
 	return ((N - 1 - getk(ijkl)) << 15) + ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl);
-    }
-
-    public int getThreadcount() {
-	return config.threadcount;
     }
 
     public static class CPUSolverConfig extends Config {

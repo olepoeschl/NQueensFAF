@@ -40,24 +40,16 @@ import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {
 
-    // OpenCL stuff
-    private ArrayList<Device> devices, availableDevices;
     private long[] contexts, programs;
-
-    // calculation related stuff
+    private ArrayList<Device> devices, availableDevices;
+    private int weightSum;
     private GPUConstellationsGenerator generator;
     private ArrayList<Constellation> constellations;
     private int workloadSize;
-
-    // config stuff
-    private GPUSolverConfig config;
-    private int weightSum;
-
-    // user interface
     private long duration, start, end, storedDuration;
-
-    // control flow
     private boolean injected = false;
+    
+    private GPUSolverConfig config;
 
     public GPUSolver() {
 	devices = new ArrayList<Device>();
@@ -66,15 +58,10 @@ public class GPUSolver extends Solver {
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	}
-	
 	config = new GPUSolverConfig();
 	setDeviceConfigs(config.deviceConfigs);
     }
-
-    // --------------------------------------------------------
-    // ----------------- Solver main method -----------------
-    // --------------------------------------------------------
-
+    
     @Override
     protected void run() {
 	if (start != 0) {
@@ -82,7 +69,6 @@ public class GPUSolver extends Solver {
 		    "You first have to call reset() when calling solve() multiple times on the same object");
 	}
 	if (N <= 6) { // if N is very small, use the simple Solver from the parent class
-	    // prepare simulating progress = 100
 	    start = System.currentTimeMillis();
 	    devices.add(new Device(0, 0, "", ""));
 	    constellations.add(new Constellation());
@@ -161,10 +147,6 @@ public class GPUSolver extends Solver {
 	}
     }
 
-    // --------------------------------------------------------
-    // --------------- prepare total workload ---------------
-    // --------------------------------------------------------
-
     private void genConstellations() {
 	generator = new GPUConstellationsGenerator();
 	generator.genConstellations(N, config.presetQueens);
@@ -200,10 +182,6 @@ public class GPUSolver extends Solver {
 	constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
     }
 
-    // sort constellations so that as many workgroups as possible have solutions
-    // with less divergent branches
-    // this can also be done by directly generating the constellations in a
-    // different order
     void sortConstellations(List<Constellation> constellations) {
 	Collections.sort(constellations, new Comparator<Constellation>() {
 	    @Override
@@ -214,10 +192,6 @@ public class GPUSolver extends Solver {
 	    }
 	});
     }
-
-    // --------------------------------------------------------
-    // -------------------- OpenCL stuff --------------------
-    // --------------------------------------------------------
 
     private void createContextsAndPrograms(MemoryStack stack, IntBuffer errBuf) {
 	// list of platforms to be used
@@ -277,13 +251,8 @@ public class GPUSolver extends Solver {
 		// create buffers once at the beginning and once at the end
 		// because their size the same for all workloads except for the last
 		createBuffers(errBuf, device);
-	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { // last
-											 // workload
-											 // ->
-											 // create
-											 // the
-											 // buffers
-											 // new
+	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { 
+		// last workload -> recreate the buffers
 		deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
@@ -506,9 +475,7 @@ public class GPUSolver extends Solver {
 	// read result and progress memory buffers
 	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
 	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for
-										 // trash
-										 // constellations
+	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
 		    * symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
@@ -550,10 +517,6 @@ public class GPUSolver extends Solver {
 	});
     }
 
-    // --------------------------------------------------------
-    // --------- (re-)storing, real time analytics ----------
-    // --------------------------------------------------------
-    
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
 	var tmp = new GPUSolverConfig();
 	tmp.from(config);
@@ -661,10 +624,6 @@ public class GPUSolver extends Solver {
 	return availableDevices.get(deviceIndex).duration;
     }
 
-    // --------------------------------------------------------
-    // --------------------- devices ------------------------
-    // --------------------------------------------------------
-
     private void fetchAvailableDevices(MemoryStack stack) {
 	IntBuffer entityCountBuf = stack.mallocInt(1);
 	checkCLError(clGetPlatformIDs(null, entityCountBuf));
@@ -738,10 +697,6 @@ public class GPUSolver extends Solver {
 	}
 	return deviceInfos;
     }
-
-    // --------------------------------------------------------
-    // ------------------ utility methods -------------------
-    // --------------------------------------------------------
 
     private String getKernelSourceAsString(String filepath) {
 	String resultString = null;
