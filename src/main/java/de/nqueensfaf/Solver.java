@@ -56,13 +56,14 @@ public abstract class Solver {
 	state = INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
+
+	state = RUNNING;
+	run();
+	// start consumer threads
 	if (onUpdateConsumer != null)
 	    executor.submit(consumeUpdates());
 	if (getConfig().autoSaveEnabled)
 	    executor.submit(autoSaver());
-
-	state = RUNNING;
-	run();
 
 	state = TERMINATING;
 	executor.shutdown();
