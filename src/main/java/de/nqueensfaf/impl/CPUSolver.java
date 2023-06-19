@@ -30,9 +30,9 @@ public class CPUSolver extends Solver {
 
     private int L, mask, LD, RD, counter;
     private long start, end;
-    private HashSet<Integer> ijklList = new HashSet<Integer>();
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
-    private ArrayList<CPUSolverThread> threads = new ArrayList<CPUSolverThread>();
+    private HashSet<Integer> ijklList;
+    private ArrayList<Constellation> constellations;
+    private ArrayList<CPUSolverThread> threads;
     private ArrayList<ArrayList<Constellation>> threadConstellations;
     private long solutions, duration, storedDuration;
     private float progress;
@@ -41,10 +41,12 @@ public class CPUSolver extends Solver {
     private CPUSolverConfig config;
 
     public CPUSolver() {
+	ijklList = new HashSet<Integer>();
+	constellations = new ArrayList<Constellation>();
+	threads = new ArrayList<CPUSolverThread>();
 	config = new CPUSolverConfig();
     }
 
-    // inherited functions
     @Override
     protected void run() {
 	// check if run is called without calling reset after a run call had finished
@@ -57,7 +59,6 @@ public class CPUSolver extends Solver {
 	if (N <= smallestN) { // if N is very small, use the simple Solver from the parent class
 	    solutions = solveSmallBoard();
 	    end = System.currentTimeMillis();
-	    // simulate progress = 100
 	    progress = 1;
 	    return;
 	}
@@ -67,16 +68,14 @@ public class CPUSolver extends Solver {
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
-	// the
-	// threads)
+	// the threads)
 	threadConstellations = new ArrayList<ArrayList<Constellation>>();
 	for (int i = 0; i < config.threadcount; i++) {
 	    threadConstellations.add(new ArrayList<Constellation>());
 	}
 	int i = constellations.size() - 1;
 	for (Constellation c : constellations) {
-	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been
-				       // solved
+	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been solved
 		continue;
 	    threadConstellations.get((i--) % config.threadcount).add(c);
 	}
