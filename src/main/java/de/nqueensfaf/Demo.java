@@ -5,6 +5,7 @@ import de.nqueensfaf.impl.CPUSolver;
 public class Demo {
 
     public static void main(String[] args) {
+	@SuppressWarnings("unused")
 	CPUSolver s = new CPUSolver()
         	.config(config -> {
         	    config.threadcount = 2;
