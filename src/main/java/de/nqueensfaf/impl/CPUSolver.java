@@ -27,22 +27,17 @@ public class CPUSolver extends Solver {
     // method for such N
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
-    // we fill up the board, until <preQueens> queens are set
-    private int preQueens = 4, L, mask, LD, RD, counter;
-    // for time measurement
+
+    private int L, mask, LD, RD, counter;
     private long start, end;
-    // for generating the start constellations
-    // a start constellation contains the starting row, the occupancies of ld and rd
-    // and col, and the values of i, j, k, l
     private HashSet<Integer> ijklList = new HashSet<Integer>();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
-    // for the threads and their respective time measurement etc.
     private ArrayList<CPUSolverThread> threads = new ArrayList<CPUSolverThread>();
     private ArrayList<ArrayList<Constellation>> threadConstellations;
     private long solutions, duration, storedDuration;
     private float progress;
     private boolean injected = false;
-    
+
     private CPUSolverConfig config = new CPUSolverConfig();
 
     public CPUSolver() {
@@ -120,13 +115,13 @@ public class CPUSolver extends Solver {
 	configConsumer.accept(config);
 	return this;
     }
-    
+
     @SuppressWarnings("unchecked")
     @Override
     public CPUSolverConfig getConfig() {
 	return config;
     }
-    
+
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet, throw exception
@@ -292,7 +287,7 @@ public class CPUSolver extends Solver {
 	    return;
 	}
 	// add queens until we have preQueens queens
-	if (queens == preQueens) {
+	if (queens == config.presetQueens) {
 	    // add the subconstellations to the list
 	    constellations.add(new Constellation(-1, ld, rd, col, row << 20, -1));
 	    counter++;
@@ -387,25 +382,31 @@ public class CPUSolver extends Solver {
     private int rot90(int ijkl) {
 	return ((N - 1 - getk(ijkl)) << 15) + ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl);
     }
-    
+
     public int getThreadcount() {
 	return config.threadcount;
     }
-    
+
     public static class CPUSolverConfig extends Config {
 	public int threadcount;
-	
+	public int presetQueens;
+
 	public CPUSolverConfig() {
 	    // default values
 	    super();
 	    threadcount = 1;
+	    presetQueens = 4;
 	}
-	
+
 	@Override
 	public void validate() {
 	    super.validate();
 	    if (threadcount < 1)
 		throw new IllegalArgumentException("invalid value for threadcount: only numbers >0 are allowed");
+	    if (presetQueens < 4)
+		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
+	}
+
 	}
     }
 }
