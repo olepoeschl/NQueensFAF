@@ -35,6 +35,7 @@ import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
+import de.nqueensfaf.impl.CPUSolver.CPUSolverConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -553,7 +554,13 @@ public class GPUSolver extends Solver {
     // --------------------------------------------------------
     
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
-	configConsumer.accept(config);
+	var tmp = new GPUSolverConfig();
+	tmp.from(config);
+	
+	configConsumer.accept(tmp);
+	tmp.validate();
+	
+	config.from(tmp);
 	setDeviceConfigs(config.deviceConfigs);
 	return this;
     }
@@ -826,6 +833,12 @@ public class GPUSolver extends Solver {
 	    }
 	    if (presetQueens < 4)
 		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
+	}
+
+	public void from(GPUSolverConfig config) {
+	    super.from(config);
+	    deviceConfigs = config.deviceConfigs;
+	    presetQueens = config.presetQueens;
 	}
     }
     

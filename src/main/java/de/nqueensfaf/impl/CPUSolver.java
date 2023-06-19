@@ -112,7 +112,13 @@ public class CPUSolver extends Solver {
     }
 
     public CPUSolver config(Consumer<CPUSolverConfig> configConsumer) {
-	configConsumer.accept(config);
+	var tmp = new CPUSolverConfig();
+	tmp.from(config);
+	
+	configConsumer.accept(tmp);
+	tmp.validate();
+	
+	config.from(tmp); // if given config is valid, apply it
 	return this;
     }
 
@@ -407,6 +413,10 @@ public class CPUSolver extends Solver {
 		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
 	}
 
+	public void from(CPUSolverConfig config) {
+	    super.from(config);
+	    threadcount = config.threadcount;
+	    presetQueens = config.presetQueens;
 	}
     }
 }
