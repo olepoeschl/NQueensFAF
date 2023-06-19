@@ -2,10 +2,7 @@ package de.nqueensfaf.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -14,206 +11,76 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 public class Config {
-
-    // all configurable fields and their default values
-
-    // CPU or GPU ?
-    private String type;
-    // for CPU
-    private int cpuThreadcount;
-    // for GPU
-    private DeviceConfig[] gpuDeviceConfigs;
-    private int gpuPresetQueens;
-    // general
-    private long timeUpdateDelay, progressUpdateDelay;
-    private boolean autoSaveEnabled;
-    private boolean autoDeleteEnabled;
-    private int autoSavePercentageStep;
-    private String autoSaveFilePath;
+    
+    public long updateInterval;
+    public boolean autoSaveEnabled;
+    public boolean autoDeleteEnabled;
+    public int autoSavePercentageStep;
+    public String autoSavePath;
 
     public Config() {
-	super();
-    }
-
-    @JsonCreator
-    public Config(@JsonProperty(value = "type", required = true) String type,
-	    @JsonProperty(value = "cpuThreadcount") int cpuThreadcount,
-	    @JsonProperty(value = "gpuDeviceConfigs") DeviceConfig[] gpuDeviceConfigs,
-	    @JsonProperty(value = "gpuPresetQueens") int gpuPresetQueens,
-	    @JsonProperty(value = "timeUpdateDelay") long timeUpdateDelay,
-	    @JsonProperty(value = "progressUpdateDelay") long progressUpdateDelay,
-	    @JsonProperty(value = "autoSaveEnabled") boolean autoSaveEnabled,
-	    @JsonProperty(value = "autoDeleteEnabled") boolean autoDeleteEnabled,
-	    @JsonProperty(value = "autoSavePercentageStep") int autoSavePercentageStep,
-	    @JsonProperty(value = "autoSaveFilePath") String autoSaveFilePath) {
-	this.type = type;
-	this.cpuThreadcount = cpuThreadcount;
-	this.gpuDeviceConfigs = gpuDeviceConfigs;
-	this.gpuPresetQueens = gpuPresetQueens;
-	this.timeUpdateDelay = timeUpdateDelay;
-	this.progressUpdateDelay = progressUpdateDelay;
-	this.autoSaveEnabled = autoSaveEnabled;
-	this.autoDeleteEnabled = autoDeleteEnabled;
-	this.autoSavePercentageStep = autoSavePercentageStep;
-	this.autoSaveFilePath = autoSaveFilePath;
-    }
-
-    public static Config getDefaultConfig() {
-	final Config c = new Config();
-	c.setType("CPU");
-	c.setCPUThreadcount(1);
-	c.setGPUDeviceConfigs(DeviceConfig.getDefaultDeviceConfig());
-	c.setGPUPresetQueens(6);
-	c.setTimeUpdateDelay(128);
-	c.setProgressUpdateDelay(128);
-	c.setAutoSaveEnabled(false);
-	c.setAutoDeleteEnabled(false);
-	c.setAutoSavePercentageStep(10);
-	c.setAutoSaveFilePath("n{N}.faf");
-	return c;
-    }
-
-    public static Config read(File configFile) throws StreamReadException, DatabindException, IOException {
-	ObjectMapper mapper = new ObjectMapper();
-	Config config = mapper.readValue(configFile, Config.class);
-	config.validate();
-	return config;
-    }
-
-    public void write(File configFile) throws StreamWriteException, DatabindException, IOException {
-	validate();
-	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
-	out.writeValue(configFile, this);
+	// default values
+	updateInterval = 128;
+	autoSaveEnabled = false;
+	autoDeleteEnabled = false;
+	autoSavePercentageStep = 10;
+	autoSavePath = "nqueensfaf{N}.dat";
     }
 
     public void validate() {
-	if (!(type.toLowerCase().equals("cpu") || type.toLowerCase().equals("gpu")))
-	    type = getDefaultConfig().getType();
+	if (updateInterval <= 0)
+	    throw new IllegalArgumentException("invalid value for updateInterval: only numbers >0 are allowed");
 
-	if (cpuThreadcount <= 0 || cpuThreadcount > Runtime.getRuntime().availableProcessors())
-	    cpuThreadcount = getDefaultConfig().getCPUThreadcount();
-
-	if (gpuDeviceConfigs == null || gpuDeviceConfigs.length == 0)
-	    gpuDeviceConfigs = getDefaultConfig().getGPUDeviceConfigs();
-	else {
-	    // check for invalid values and remove each invalid value that is found
-	    ArrayList<DeviceConfig> gpuDeviceConfigsTmp = new ArrayList<DeviceConfig>();
-	    for (var deviceConfig : gpuDeviceConfigs) {
-		if (gpuDeviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check
-														   // for
-														   // duplicates
-		    continue;
-		deviceConfig.fillEmptyFields();
-		if (deviceConfig.isValid())
-		    gpuDeviceConfigsTmp.add(deviceConfig);
-	    }
-	    gpuDeviceConfigs = new DeviceConfig[gpuDeviceConfigsTmp.size()];
-	    for (int i = 0; i < gpuDeviceConfigsTmp.size(); i++) {
-		gpuDeviceConfigs[i] = gpuDeviceConfigsTmp.get(i);
-	    }
-	}
-
-	if (gpuPresetQueens < 4)
-	    gpuPresetQueens = getDefaultConfig().getGPUPresetQueens();
-
-	if (progressUpdateDelay <= 0)
-	    progressUpdateDelay = getDefaultConfig().getProgressUpdateDelay();
-
-	if (autoSavePercentageStep <= 0 || autoSavePercentageStep > 100)
-	    autoSavePercentageStep = getDefaultConfig().getAutoSavePercentageStep();
-
-	if (autoSaveFilePath != null) {
-	    File file = new File(autoSaveFilePath);
-	    try {
-		if (!file.exists()) {
-		    // try creating the file. if it works, the path is valid.
-		    file.createNewFile();
-		    file.delete();
+	if (autoSaveEnabled) {
+	    if (autoSavePercentageStep <= 0 || autoSavePercentageStep >= 100)
+		throw new IllegalArgumentException(
+			"invalid value for autoSavePercentageStep: only numbers >0 and <100 are allowed");
+	    if (autoSavePath != null && autoSavePath.length() > 0) {
+		File file = new File(autoSavePath);
+		try {
+		    if (!file.exists()) {
+			// try creating the file. if it works, the path is valid
+			file.createNewFile();
+			file.delete();
+		    }
+		} catch (Exception e) {
+		    // if something goes wrong, the path is invalid
+		    throw new IllegalArgumentException("invalid value for autoSavePath: " + e.getMessage());
 		}
-	    } catch (Exception e) {
-		// if something goes wrong, the path is invalid.
-		autoSaveFilePath = getDefaultConfig().getAutoSaveFilePath();
+	    } else {
+		throw new IllegalArgumentException(
+			"invalid value for autoSavePath: must not be null or empty when autoSaveEnabled is true");
 	    }
+	} else { // auto save is disabled
+	    if (autoDeleteEnabled)
+		throw new IllegalArgumentException(
+			"invalid value for autoDeleteEnabled: must not be true when autoSaveEnabled is true");
 	}
     }
 
-    public String getType() {
-	return type;
+    public void from(Config config) {
+	config.validate();
+	updateInterval = config.updateInterval;
+	autoSaveEnabled = config.autoSaveEnabled;
+	autoDeleteEnabled = config.autoDeleteEnabled;
+	autoSavePercentageStep = config.autoSavePercentageStep;
+	autoSavePath = config.autoSavePath;
     }
 
-    public void setType(String type) {
-	this.type = type;
+    public <T extends Config> void from(File file) throws StreamReadException, DatabindException, IOException,
+	    IllegalArgumentException, IllegalAccessException {
+	ObjectMapper mapper = new ObjectMapper();
+	@SuppressWarnings("unchecked")
+	T config = (T) mapper.readValue(file, this.getClass());
+	config.validate();
+	for (var field : getClass().getFields()) {
+	    field.set(this, field.get(config));
+	}
     }
 
-    public int getCPUThreadcount() {
-	return cpuThreadcount;
-    }
-
-    public void setCPUThreadcount(int cpuThreadcount) {
-	this.cpuThreadcount = cpuThreadcount;
-    }
-
-    public DeviceConfig[] getGPUDeviceConfigs() {
-	return gpuDeviceConfigs;
-    }
-
-    public void setGPUDeviceConfigs(DeviceConfig... gpuDeviceConfigs) {
-	this.gpuDeviceConfigs = gpuDeviceConfigs;
-    }
-
-    public int getGPUPresetQueens() {
-	return gpuPresetQueens;
-    }
-
-    public void setGPUPresetQueens(int gpuPresetQueens) {
-	this.gpuPresetQueens = gpuPresetQueens;
-    }
-
-    public long getTimeUpdateDelay() {
-	return timeUpdateDelay;
-    }
-
-    public void setTimeUpdateDelay(long timeUpdateDelay) {
-	this.timeUpdateDelay = timeUpdateDelay;
-    }
-
-    public long getProgressUpdateDelay() {
-	return progressUpdateDelay;
-    }
-
-    public void setProgressUpdateDelay(long progressUpdateDelay) {
-	this.progressUpdateDelay = progressUpdateDelay;
-    }
-
-    public boolean isAutoSaveEnabled() {
-	return autoSaveEnabled;
-    }
-
-    public void setAutoSaveEnabled(boolean autoSaveEnabled) {
-	this.autoSaveEnabled = autoSaveEnabled;
-    }
-
-    public boolean isAutoDeleteEnabled() {
-	return autoDeleteEnabled;
-    }
-
-    public void setAutoDeleteEnabled(boolean autoDeleteEnabled) {
-	this.autoDeleteEnabled = autoDeleteEnabled;
-    }
-
-    public int getAutoSavePercentageStep() {
-	return autoSavePercentageStep;
-    }
-
-    public void setAutoSavePercentageStep(int autoSavePercentageStep) {
-	this.autoSavePercentageStep = autoSavePercentageStep;
-    }
-
-    public String getAutoSaveFilePath() {
-	return autoSaveFilePath;
-    }
-
-    public void setAutoSaveFilePath(String autosaveFilePath) {
-	this.autoSaveFilePath = autosaveFilePath;
+    public final void writeTo(File file) throws StreamWriteException, DatabindException, IOException {
+	validate();
+	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
+	out.writeValue(file, this);
     }
 }

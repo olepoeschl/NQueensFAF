@@ -1,7 +1,6 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.lwjgl.BufferUtils;
@@ -24,57 +24,46 @@ import org.lwjgl.system.MemoryStack;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
+import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
 import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
-import static de.nqueensfaf.compute.InfoUtil.*;
-
 import de.nqueensfaf.Constants;
+import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
 import de.nqueensfaf.config.DeviceConfig;
-import de.nqueensfaf.data.Constellation;
-import de.nqueensfaf.data.SolverState;
+import de.nqueensfaf.persistence.Constellation;
+import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {
 
-    // OpenCL stuff
-    private ArrayList<Device> devices, availableDevices;
     private long[] contexts, programs;
-
-    // calculation related stuff
+    private ArrayList<Device> devices, availableDevices;
+    private int weightSum;
     private GPUConstellationsGenerator generator;
     private ArrayList<Constellation> constellations;
     private int workloadSize;
-
-    // config stuff
-    private int presetQueens;
-    private int weightSum;
-
-    // user interface
     private long duration, start, end, storedDuration;
-
-    // control flow
     private boolean injected = false;
+    
+    private GPUSolverConfig config;
+    private SolverUtils utils;
 
-    protected GPUSolver() {
+    public GPUSolver() {
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	}
+	config = new GPUSolverConfig();
+	setDeviceConfigs(config.deviceConfigs);
+	utils = new SolverUtils();
     }
-
-    // --------------------------------------------------------
-    // ----------------- Solver main method -----------------
-    // --------------------------------------------------------
-
+    
     @Override
     protected void run() {
 	if (start != 0) {
@@ -82,7 +71,6 @@ public class GPUSolver extends Solver {
 		    "You first have to call reset() when calling solve() multiple times on the same object");
 	}
 	if (N <= 6) { // if N is very small, use the simple Solver from the parent class
-	    // prepare simulating progress = 100
 	    start = System.currentTimeMillis();
 	    devices.add(new Device(0, 0, "", ""));
 	    constellations.add(new Constellation());
@@ -92,11 +80,7 @@ public class GPUSolver extends Solver {
 	}
 
 	try (MemoryStack stack = stackPush()) {
-	    // if only 1 device is used, set presetQueens to the value specified in the
-	    // devices config
-	    if (devices.size() == 1)
-		presetQueens = devices.get(0).config.getPresetQueens();
-
+	    utils.setN(N);
 	    if (!injected)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
@@ -166,13 +150,9 @@ public class GPUSolver extends Solver {
 	}
     }
 
-    // --------------------------------------------------------
-    // --------------- prepare total workload ---------------
-    // --------------------------------------------------------
-
     private void genConstellations() {
 	generator = new GPUConstellationsGenerator();
-	generator.genConstellations(N, presetQueens);
+	generator.genConstellations(N, config.presetQueens);
 
 	constellations = generator.getConstellations();
     }
@@ -205,24 +185,16 @@ public class GPUSolver extends Solver {
 	constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
     }
 
-    // sort constellations so that as many workgroups as possible have solutions
-    // with less divergent branches
-    // this can also be done by directly generating the constellations in a
-    // different order
     void sortConstellations(List<Constellation> constellations) {
 	Collections.sort(constellations, new Comparator<Constellation>() {
 	    @Override
 	    public int compare(Constellation o1, Constellation o2) {
 		int o1ijkl = o1.getStartijkl() & ((1 << 20) - 1);
 		int o2ijkl = o2.getStartijkl() & ((1 << 20) - 1);
-		return Integer.compare(getjkl(o1ijkl), getjkl(o2ijkl));
+		return Integer.compare(utils.getjkl(o1ijkl), utils.getjkl(o2ijkl));
 	    }
 	});
     }
-
-    // --------------------------------------------------------
-    // -------------------- OpenCL stuff --------------------
-    // --------------------------------------------------------
 
     private void createContextsAndPrograms(MemoryStack stack, IntBuffer errBuf) {
 	// list of platforms to be used
@@ -282,13 +254,8 @@ public class GPUSolver extends Solver {
 		// create buffers once at the beginning and once at the end
 		// because their size the same for all workloads except for the last
 		createBuffers(errBuf, device);
-	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { // last
-											 // workload
-											 // ->
-											 // create
-											 // the
-											 // buffers
-											 // new
+	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { 
+		// last workload -> recreate the buffers
 		deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
@@ -511,12 +478,10 @@ public class GPUSolver extends Solver {
 	// read result and progress memory buffers
 	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
 	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for
-										 // trash
-										 // constellations
+	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 	    if (solutionsForConstellation >= 0)
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
@@ -555,10 +520,24 @@ public class GPUSolver extends Solver {
 	});
     }
 
-    // --------------------------------------------------------
-    // --------- (re-)storing, real time analytics ----------
-    // --------------------------------------------------------
-
+    public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
+	var tmp = new GPUSolverConfig();
+	tmp.from(config);
+	
+	configConsumer.accept(tmp);
+	tmp.validate();
+	
+	config.from(tmp);
+	setDeviceConfigs(config.deviceConfigs);
+	return this;
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Override
+    public GPUSolverConfig getConfig() {
+	return config;
+    }
+    
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet or is already done, throw exception
@@ -589,11 +568,6 @@ public class GPUSolver extends Solver {
 	    constellations = state.getConstellations();
 	    injected = true;
 	}
-    }
-
-    @Override
-    public boolean isInjected() {
-	return injected;
     }
 
     @Override
@@ -653,10 +627,6 @@ public class GPUSolver extends Solver {
 	return availableDevices.get(deviceIndex).duration;
     }
 
-    // --------------------------------------------------------
-    // --------------------- devices ------------------------
-    // --------------------------------------------------------
-
     private void fetchAvailableDevices(MemoryStack stack) {
 	IntBuffer entityCountBuf = stack.mallocInt(1);
 	checkCLError(clGetPlatformIDs(null, entityCountBuf));
@@ -691,14 +661,16 @@ public class GPUSolver extends Solver {
 	return deviceInfos;
     }
 
-    public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
+    private void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
 	devices.clear();
 	weightSum = 0;
 
 	if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
+	    int index = 0;
 	    for (Device device : availableDevices) {
 		devices.add(device);
-		device.config = Config.getDefaultConfig().getGPUDeviceConfigs()[0];
+		device.config = new GPUSolverConfig().deviceConfigs[0];
+		device.config.setIndex(index++);
 		weightSum += device.config.getWeight();
 	    }
 	    return;
@@ -729,18 +701,6 @@ public class GPUSolver extends Solver {
 	return deviceInfos;
     }
 
-    // --------------------------------------------------------
-    // ------------ further run configurations --------------
-    // --------------------------------------------------------
-
-    public void setPresetQueens(int presetQueens) {
-	this.presetQueens = presetQueens;
-    }
-
-    // --------------------------------------------------------
-    // ------------------ utility methods -------------------
-    // --------------------------------------------------------
-
     private String getKernelSourceAsString(String filepath) {
 	String resultString = null;
 	try (InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
@@ -760,49 +720,44 @@ public class GPUSolver extends Solver {
 	return resultString;
     }
 
-    private boolean symmetry90(int ijkl) {
-	if (((geti(ijkl) << 15) + (getj(ijkl) << 10) + (getk(ijkl) << 5) + getl(ijkl)) == (((N - 1 - getk(ijkl)) << 15)
-		+ ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl)))
-	    return true;
-	return false;
-    }
+    public static class GPUSolverConfig extends Config {
+	public DeviceConfig[] deviceConfigs;
+	public int presetQueens;
+	
+	public GPUSolverConfig() {
+	    // default values
+	    super();
+	    deviceConfigs = new DeviceConfig[] {
+		    new DeviceConfig(0, 64, 1, 1_000_000_000)
+	    };
+	    presetQueens = 6;
+	}
+	
+	@Override
+	public void validate() {
+	    super.validate();
+	    // if device configs are not specified, use default value
+	    if(deviceConfigs == null || deviceConfigs.length == 0)
+		deviceConfigs = new GPUSolverConfig().deviceConfigs;
+	    else {
+		for(var dvcCfg : deviceConfigs) {
+		    dvcCfg.validate();
+		}
+	    }
+	    if (presetQueens < 4)
+		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
+	}
 
-    // how often does a found solution count for this start constellation
-    private int symmetry(int ijkl) {
-	if (geti(ijkl) == N - 1 - getj(ijkl) && getk(ijkl) == N - 1 - getl(ijkl)) // starting
-										  // constellation
-										  // symmetric by
-										  // rot180?
-	    if (symmetry90(ijkl)) // even by rot90?
-		return 2;
-	    else
-		return 4;
-	else
-	    return 8; // none of the above?
+	public void from(GPUSolverConfig config) {
+	    super.from(config);
+	    deviceConfigs = config.deviceConfigs;
+	    presetQueens = config.presetQueens;
+	}
     }
-
-    private int geti(int ijkl) {
-	return ijkl >>> 15;
-    }
-
-    private int getj(int ijkl) {
-	return (ijkl >>> 10) & 31;
-    }
-
-    private int getk(int ijkl) {
-	return (ijkl >>> 5) & 31;
-    }
-
-    private int getl(int ijkl) {
-	return ijkl & 31;
-    }
-
-    private int getjkl(int ijkl) {
-	return ijkl & 0b111111111111111;
-    }
-
-    // a class holding all OpenCL bindings needed for a single OpenCL device to
-    // operate
+    
+    public record DeviceInfo(int index, String vendor, String name) {}
+    
+    // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
 	long id;
 	String vendor, name;

@@ -1,10 +1,10 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import de.nqueensfaf.data.Constellation;
+import de.nqueensfaf.persistence.Constellation;
 
 class GPUConstellationsGenerator {
 

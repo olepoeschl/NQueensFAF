@@ -1,6 +1,5 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,18 +8,17 @@ import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import de.nqueensfaf.Constants;
+import de.nqueensfaf.Solver;
 import de.nqueensfaf.config.Config;
-import de.nqueensfaf.data.Constellation;
-import de.nqueensfaf.data.SolverState;
+import de.nqueensfaf.persistence.Constellation;
+import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
 
@@ -29,29 +27,29 @@ public class CPUSolver extends Solver {
     // method for such N
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
-    // how many threads in parallel
-    private int threadcount = Config.getDefaultConfig().getCPUThreadcount();
-    // we fill up the board, until <preQueens> queens are set
-    private int preQueens = 4, L, mask, LD, RD, counter;
-    // for time measurement
+
+    private int L, mask, LD, RD, counter;
     private long start, end;
-    // for generating the start constellations
-    // a start constellation contains the starting row, the occupancies of ld and rd
-    // and col, and the values of i, j, k, l
-    private HashSet<Integer> ijklList = new HashSet<Integer>();
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
-    // for the threads and their respective time measurement etc.
-    private ArrayList<CPUSolverThread> threads = new ArrayList<CPUSolverThread>();
+    private HashSet<Integer> ijklList;
+    private ArrayList<Constellation> constellations;
+    private ArrayList<CPUSolverThread> threads;
     private ArrayList<ArrayList<Constellation>> threadConstellations;
     private long solutions, duration, storedDuration;
     private float progress;
-    private boolean injected = false;
+    private boolean injected;
 
-    // non public constructor
-    protected CPUSolver() {
+    private CPUSolverConfig config;
+    private SolverUtils utils;
+
+    public CPUSolver() {
+	ijklList = new HashSet<Integer>();
+	constellations = new ArrayList<Constellation>();
+	threads = new ArrayList<CPUSolverThread>();
+	injected = false;
+	config = new CPUSolverConfig();
+	utils = new SolverUtils();
     }
 
-    // inherited functions
     @Override
     protected void run() {
 	// check if run is called without calling reset after a run call had finished
@@ -64,34 +62,32 @@ public class CPUSolver extends Solver {
 	if (N <= smallestN) { // if N is very small, use the simple Solver from the parent class
 	    solutions = solveSmallBoard();
 	    end = System.currentTimeMillis();
-	    // simulate progress = 100
 	    progress = 1;
 	    return;
 	}
 
+	utils.setN(N);
 	if (!injected) {
 	    genConstellations();
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
-	// the
-	// threads)
+	// the threads)
 	threadConstellations = new ArrayList<ArrayList<Constellation>>();
-	for (int i = 0; i < threadcount; i++) {
+	for (int i = 0; i < config.threadcount; i++) {
 	    threadConstellations.add(new ArrayList<Constellation>());
 	}
 	int i = constellations.size() - 1;
 	for (Constellation c : constellations) {
-	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been
-				       // solved
+	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been solved
 		continue;
-	    threadConstellations.get((i--) % threadcount).add(c);
+	    threadConstellations.get((i--) % config.threadcount).add(c);
 	}
 
 	// start the threads and wait until they are all finished
-	ExecutorService executor = Executors.newFixedThreadPool(threadcount);
-	for (i = 0; i < threadcount; i++) {
-	    CPUSolverThread cpuSolverThread = new CPUSolverThread(N, threadConstellations.get(i));
+	ExecutorService executor = Executors.newFixedThreadPool(config.threadcount);
+	for (i = 0; i < config.threadcount; i++) {
+	    CPUSolverThread cpuSolverThread = new CPUSolverThread(utils, N, threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
 	}
@@ -117,6 +113,23 @@ public class CPUSolver extends Solver {
 	    Thread.currentThread().interrupt();
 	}
 	injected = false;
+    }
+
+    public CPUSolver config(Consumer<CPUSolverConfig> configConsumer) {
+	var tmp = new CPUSolverConfig();
+	tmp.from(config);
+	
+	configConsumer.accept(tmp);
+	tmp.validate();
+	
+	config.from(tmp); // if given config is valid, apply it
+	return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public CPUSolverConfig getConfig() {
+	return config;
     }
 
     @Override
@@ -148,11 +161,6 @@ public class CPUSolver extends Solver {
 	    constellations = state.getConstellations();
 	    injected = true;
 	}
-    }
-
-    @Override
-    public boolean isInjected() {
-	return injected;
     }
 
     @Override
@@ -203,7 +211,6 @@ public class CPUSolver extends Solver {
 	return solutions;
     }
 
-    // own functions
     private void genConstellations() {
 	// halfN half of N rounded up
 	final int halfN = (N + 1) / 2;
@@ -220,10 +227,10 @@ public class CPUSolver extends Solver {
 			if (j == i || l == j)
 			    continue;
 
-			if (!checkRotations(i, j, k, l)) { // if no rotation-symmetric starting
+			if (!utils.checkRotations(ijklList, i, j, k, l)) { // if no rotation-symmetric starting
 							   // constellation already
 							   // found
-			    ijklList.add(toijkl(i, j, k, l));
+			    ijklList.add(utils.toijkl(i, j, k, l));
 			}
 		    }
 		}
@@ -233,7 +240,7 @@ public class CPUSolver extends Solver {
 	// (0,0)
 	for (int j = 1; j < N - 2; j++) { // j is idx of Queen in last row
 	    for (int l = j + 1; l < N - 1; l++) { // l is idx of Queen in last col
-		ijklList.add(toijkl(0, j, 0, l));
+		ijklList.add(utils.toijkl(0, j, 0, l));
 	    }
 	}
 
@@ -241,16 +248,16 @@ public class CPUSolver extends Solver {
 	// rotate and mirror all start constellations, such that the queen in the last
 	// row is as close to the right border as possible
 	for (int startConstellation : ijklList) {
-	    ijklListJasmin.add(jasmin(startConstellation));
+	    ijklListJasmin.add(utils.jasmin(startConstellation));
 	}
 	ijklList = ijklListJasmin;
 
 	int i, j, k, l, ld, rd, col, currentSize = 0;
 	for (int sc : ijklList) {
-	    i = geti(sc);
-	    j = getj(sc);
-	    k = getk(sc);
-	    l = getl(sc);
+	    i = utils.geti(sc);
+	    j = utils.getj(sc);
+	    k = utils.getk(sc);
+	    l = utils.getl(sc);
 	    // fill up the board with preQueens queens and generate corresponding variables
 	    // ld, rd, col, start_queens_ijkl for each constellation
 	    // occupy the board corresponding to the queens on the borders of the board
@@ -271,7 +278,7 @@ public class CPUSolver extends Solver {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < counter; a++) {
 		constellations.get(currentSize - a - 1)
-			.setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | toijkl(i, j, k, l));
+			.setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | utils.toijkl(i, j, k, l));
 	    }
 	}
     }
@@ -284,7 +291,7 @@ public class CPUSolver extends Solver {
 	    return;
 	}
 	// add queens until we have preQueens queens
-	if (queens == preQueens) {
+	if (queens == config.presetQueens) {
 	    // add the subconstellations to the list
 	    constellations.add(new Constellation(-1, ld, rd, col, row << 20, -1));
 	    counter++;
@@ -304,93 +311,30 @@ public class CPUSolver extends Solver {
 	}
     }
 
-    // true, if starting constellation rotated by any angle has already been found
-    private boolean checkRotations(int i, int j, int k, int l) {
-	// rot90
-	if (ijklList.contains(((N - 1 - k) << 15) + ((N - 1 - l) << 10) + (j << 5) + i))
-	    return true;
+    public static class CPUSolverConfig extends Config {
+	public int threadcount;
+	public int presetQueens;
 
-	// rot180
-	if (ijklList.contains(((N - 1 - j) << 15) + ((N - 1 - i) << 10) + ((N - 1 - l) << 5) + N - 1 - k))
-	    return true;
-
-	// rot270
-	if (ijklList.contains((l << 15) + (k << 10) + ((N - 1 - i) << 5) + N - 1 - j))
-	    return true;
-
-	return false;
-    }
-
-    // i, j, k, l to ijkl and functions to get specific entry
-    private int toijkl(int i, int j, int k, int l) {
-	return (i << 15) + (j << 10) + (k << 5) + l;
-    }
-
-    private int geti(int ijkl) {
-	return ijkl >> 15;
-    }
-
-    private int getj(int ijkl) {
-	return (ijkl >> 10) & 31;
-    }
-
-    private int getk(int ijkl) {
-	return (ijkl >> 5) & 31;
-    }
-
-    private int getl(int ijkl) {
-	return ijkl & 31;
-    }
-
-    // rotate and mirror board, so that the queen closest to a corner is on the
-    // right side of the last row
-    private int jasmin(int ijkl) {
-	int min = Math.min(getj(ijkl), N - 1 - getj(ijkl)), arg = 0;
-
-	if (Math.min(geti(ijkl), N - 1 - geti(ijkl)) < min) {
-	    arg = 2;
-	    min = Math.min(geti(ijkl), N - 1 - geti(ijkl));
-	}
-	if (Math.min(getk(ijkl), N - 1 - getk(ijkl)) < min) {
-	    arg = 3;
-	    min = Math.min(getk(ijkl), N - 1 - getk(ijkl));
-	}
-	if (Math.min(getl(ijkl), N - 1 - getl(ijkl)) < min) {
-	    arg = 1;
-	    min = Math.min(getl(ijkl), N - 1 - getl(ijkl));
+	public CPUSolverConfig() {
+	    // default values
+	    super();
+	    threadcount = 1;
+	    presetQueens = 4;
 	}
 
-	for (int i = 0; i < arg; i++) {
-	    ijkl = rot90(ijkl);
+	@Override
+	public void validate() {
+	    super.validate();
+	    if (threadcount < 1)
+		throw new IllegalArgumentException("invalid value for threadcount: only numbers >0 are allowed");
+	    if (presetQueens < 4)
+		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
 	}
 
-	if (getj(ijkl) < N - 1 - getj(ijkl))
-	    ijkl = mirvert(ijkl);
-
-	return ijkl;
-    }
-
-    // mirror left-right
-    private int mirvert(int ijkl) {
-	return toijkl(N - 1 - geti(ijkl), N - 1 - getj(ijkl), getl(ijkl), getk(ijkl));
-    }
-
-    // rotate 90 degrees clockwise
-    private int rot90(int ijkl) {
-	return ((N - 1 - getk(ijkl)) << 15) + ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl);
-    }
-
-    // getters and setters
-    public void setThreadcount(int threadcount) {
-	if (threadcount < 1 || threadcount > Runtime.getRuntime().availableProcessors()) {
-	    throw new IllegalArgumentException(
-		    "threadcount must be a number between 1 and " + Runtime.getRuntime().availableProcessors()
-			    + " (=your CPU's number of logical cores) (inclusive)");
+	public void from(CPUSolverConfig config) {
+	    super.from(config);
+	    threadcount = config.threadcount;
+	    presetQueens = config.presetQueens;
 	}
-	this.threadcount = threadcount;
-    }
-
-    public int getThreadcount() {
-	return threadcount;
     }
 }

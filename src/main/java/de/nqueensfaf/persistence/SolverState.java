@@ -1,18 +1,11 @@
-package de.nqueensfaf.data;
+package de.nqueensfaf.persistence;
 
 import java.util.ArrayList;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class SolverState {
 
-    @JsonProperty(value = "N", required = true)
     private int N;
-
-    @JsonProperty(value = "storedDuration", required = true)
     private long storedDuration;
-
-    @JsonProperty(value = "constellations", required = true)
     private ArrayList<Constellation> constellations;
 
     public SolverState() {

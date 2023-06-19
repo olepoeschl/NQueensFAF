@@ -1,4 +1,4 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import org.lwjgl.*;
 import org.lwjgl.system.*;

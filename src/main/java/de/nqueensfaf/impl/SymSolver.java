@@ -1,6 +1,9 @@
-package de.nqueensfaf.compute;
+package de.nqueensfaf.impl;
 
 import java.io.IOException;
+
+import de.nqueensfaf.Solver;
+import de.nqueensfaf.config.Config;
 
 public class SymSolver extends Solver {
 
@@ -153,7 +156,7 @@ public class SymSolver extends Solver {
     public long getSolutions() {
 	return 0;
     }
-
+    
     /**
      * not supported
      */
@@ -168,12 +171,10 @@ public class SymSolver extends Solver {
     protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
     }
 
-    /**
-     * not supported
-     */
+    @SuppressWarnings("unchecked")
     @Override
-    public boolean isInjected() {
-	return false;
+    public <T extends Config> T getConfig() {
+	return (T) new Config();
     }
 
 }
