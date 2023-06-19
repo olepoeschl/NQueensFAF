@@ -271,7 +271,7 @@ public abstract class Solver {
 	return state == TERMINATING;
     }
     
-    interface OnUpdateConsumer {
+    public interface OnUpdateConsumer {
 	void accept(Solver self, float progress, long solutions, long duration);
     }
 }
