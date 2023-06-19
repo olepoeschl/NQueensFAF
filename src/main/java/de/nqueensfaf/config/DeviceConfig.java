@@ -8,7 +8,7 @@ public class DeviceConfig {
     public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0);
 
     public int index;
-    public int workgroupSize ;
+    public int workgroupSize;
     public int weight;
     public int maxGlobalWorkSize;
 
@@ -17,7 +17,7 @@ public class DeviceConfig {
 
     @JsonCreator
     public DeviceConfig(@JsonProperty(value = "index", required = true) int index,
-	    @JsonProperty(value = "workgroupSize") int workgroupSize, @JsonProperty(value = "weight") int weight,
+	    @JsonProperty(value = "workgroupSize") int workgroupSize, @JsonProperty(value = "weight", required = true) int weight,
 	    @JsonProperty(value = "maxGlobalWorkSize") int maxGlobalWorkSize) {
 	super();
 	this.index = index;
