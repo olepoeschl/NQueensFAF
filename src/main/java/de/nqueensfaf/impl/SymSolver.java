@@ -171,9 +171,10 @@ public class SymSolver extends Solver {
     protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends Config> T getConfig() {
-	return null;
+	return (T) new Config();
     }
 
 }
