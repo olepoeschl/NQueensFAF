@@ -9,6 +9,7 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.impl.CPUSolver;
 import de.nqueensfaf.impl.GPUSolver;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine;
@@ -24,13 +25,13 @@ public class CLI implements Runnable {
     @Spec
     CommandSpec spec;
 
-    @Option(names = { "-d", "--show-devices" }, description = "Show a list of all available OpenCL devices")
+    @Option(names = { "-d", "--show-devices" }, required = false, description = "show a list of all available OpenCL devices")
     private boolean showAvailableDevices;
 
     private File configFile;
 
     @Option(names = { "-c",
-	    "--config-file" }, paramLabel = "FILE", required = false, description = "Absolute path to the file containing the run configuration")
+	    "--config-file" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the run configuration")
     public void setConfigFile(File configFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
@@ -42,7 +43,7 @@ public class CLI implements Runnable {
     private File taskFile;
 
     @Option(names = { "-t",
-	    "--task-file" }, paramLabel = "FILE", required = false, description = "Absolute path to the file containing the task")
+	    "--task-file" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
     public void setTaskFile(File taskFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
@@ -51,9 +52,12 @@ public class CLI implements Runnable {
 	this.taskFile = taskFile;
     }
 
-    @Option(names = { "-N", "--board-size" }, paramLabel = "INT", required = false, description = "Set the board size")
+    @Option(names = { "-N", "--board-size" }, paramLabel = "INT", required = false, description = "board size")
     private int N = -69;
 
+    @Option(names = { "-g", "--use-gpu" }, required = false, description = "execute on GPU('s)")
+    private boolean executeOnGpu;
+    
     // for printing the progress in the progress callback
     private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation in the progress callback
@@ -66,15 +70,15 @@ public class CLI implements Runnable {
 	    var devices = new GPUSolver().getAvailableDevices();
 	    System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
 		    Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-			    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.getIndex())),
+			    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
 			    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.getVendor()),
+				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
 			    new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.getName()))));
+				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
 	    return;
 	}
 
-	// validate board size
+	// validate settings
 	if (taskFile == null) {
 	    if (N == -69) {
 		System.err.println("Missing required option: '--board-size=INT'");
@@ -90,26 +94,64 @@ public class CLI implements Runnable {
 	try {
 	    // initialize solver
 	    Solver solver;
-	    if (configFile != null)
-		solver = new Solver().config((config) -> config.from(configFile));
-	    else
-		solver = Solver.createCPUSolver();
+	    if (!executeOnGpu) {
+		CPUSolver cpuSolver = new CPUSolver();
+		if(configFile != null) {
+		    cpuSolver.config(config -> {
+			try {
+			    config.from(configFile);
+			} catch (IllegalArgumentException | IllegalAccessException | IOException e) {
+			    System.err.println("Could not apply config: " + e.getMessage());
+			    System.exit(0);
+			}
+		    });
+		}
+		solver = cpuSolver;
+	    }
+	    else {
+		GPUSolver gpuSolver = new GPUSolver();
+		if(configFile != null) {
+		    gpuSolver.config(config -> {
+			try {
+			    config.from(configFile);
+			} catch (IllegalArgumentException | IllegalAccessException | IOException e) {
+			    System.err.println("Could not apply config: " + e.getMessage());
+			    System.exit(0);
+			}
+		    });
+		}
+		// print used devices
+		var devices = gpuSolver.getDevices();
+		System.out.println("following GPU's will be used:");
+		System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
+			Arrays.asList(
+				new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
+				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()),
+				new Column().header("Weight").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getWeight())),
+				new Column().header("Workgroup Size").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getWorkgroupSize())),
+				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getMaxGlobalWorkSize()))
+		)));
+		solver = gpuSolver;
+	    }
 
 	    // set callbacks
-	    solver.setInitializationCallback((self) -> {
-		System.out.println("Starting solver...");
-	    });
-	    solver.setOnTimeUpdateCallback((progress, solutions, duration) -> {
+	    solver
+	    	.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
+	    	.onUpdate((self, progress, solutions, duration) -> {
 		if (loadingCharIdx == loadingChars.length)
 		    loadingCharIdx = 0;
 		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
 			getDurationPrettyString(duration));
-	    });
-	    solver.setTerminationCallback((self) -> {
-		System.out.println();
-		System.out.println("found " + self.getSolutions() + " solutions in "
-			+ getDurationPrettyString(self.getDuration()) + " for board size " + self.getN());
-	    });
+	    	})
+	    	.onFinish(self -> {
+	    	    System.out.println();
+	    	    System.out.println("found " + self.getSolutions() + " solutions in " + getDurationPrettyString(self.getDuration()));
+	    	});
 
 	    // start
 	    if (taskFile != null) {
@@ -121,15 +163,13 @@ public class CLI implements Runnable {
 
 	    // calculate unique solutions
 	    SymSolver symSolver = new SymSolver();
-	    symSolver.setTerminationCallback((self) -> {
-		System.out
-			.println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)");
-	    });
+	    symSolver.onFinish(self -> System.out
+		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
 	    symSolver.setN(N);
 	    symSolver.solve();
 	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException e) {
-	    System.err.println("Unexpected error!");
-	    e.printStackTrace();
+	    System.err.println("Unexpected error: " + e.getMessage());
+//	    e.printStackTrace();
 	}
     }
 
