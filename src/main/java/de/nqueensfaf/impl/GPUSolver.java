@@ -755,7 +755,7 @@ public class GPUSolver extends Solver {
 	}
     }
     
-    private record DeviceInfo(int index, String vendor, String name) {}
+    public record DeviceInfo(int index, String vendor, String name) {}
     
     // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
