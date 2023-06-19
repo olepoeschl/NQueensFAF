@@ -80,6 +80,9 @@ public class GPUSolver extends Solver {
 	    end = System.currentTimeMillis();
 	    return;
 	}
+	
+	if(devices.size() == 0)
+	    throw new IllegalStateException("No devices selected!");
 
 	try (MemoryStack stack = stackPush()) {
 	    utils.setN(N);
@@ -96,7 +99,7 @@ public class GPUSolver extends Solver {
 	    int workloadBeginPtr = 0;
 	    for (Device device : devices) {
 		// build program
-		String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.getWorkgroupSize();
+		String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize;
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
 		checkCLError(error);
 		// create kernel
@@ -122,16 +125,16 @@ public class GPUSolver extends Solver {
 		checkCLError(errBuf);
 		device.memqueue = memqueue;
 		// create buffers and fill with trash constellations
-		int deviceWorkloadSize = (device.config.getWeight() * workloadSize) / weightSum;
+		int deviceWorkloadSize = (device.config.weight * workloadSize) / weightSum;
 		if (devices.indexOf(device) == devices.size() - 1) {
 		    deviceWorkloadSize = workloadSize - workloadBeginPtr;
 		}
 		device.constellations = fillWithTrash(
 			remainingConstellations.subList(workloadBeginPtr, workloadBeginPtr + deviceWorkloadSize),
-			device.config.getWorkgroupSize());
+			device.config.workgroupSize);
 		workloadBeginPtr += deviceWorkloadSize;
 		if (device.constellations.size() == 0) {
-		    throw new IllegalArgumentException("Weight " + device.config.getWeight() + " is too low");
+		    throw new IllegalArgumentException("Weight " + device.config.weight + " is too low");
 		}
 
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
@@ -242,8 +245,8 @@ public class GPUSolver extends Solver {
 	int ptr = 0;
 
 	// make the max global work size be divisible by the devices workgroup size
-	int deviceCurrentWorkloadSize = device.config.getMaxGlobalWorkSize() / device.config.getWorkgroupSize()
-		* device.config.getWorkgroupSize();
+	int deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
+		* device.config.workgroupSize;
 	if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) // is it the one and
 									    // only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
@@ -433,7 +436,7 @@ public class GPUSolver extends Solver {
 	PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 	globalWorkSize.put(0, device.workloadGlobalWorkSize);
 	PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
-	localWorkSize.put(0, device.config.getWorkgroupSize());
+	localWorkSize.put(0, device.config.workgroupSize);
 
 	// run kernel
 	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that
@@ -452,7 +455,7 @@ public class GPUSolver extends Solver {
 	    PointerBuffer globalWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
 	    globalWorkSizeNullKernel.put(0, device.workloadGlobalWorkSize);
 	    PointerBuffer localWorkSizeNullKernel = BufferUtils.createPointerBuffer(dimensions);
-	    localWorkSizeNullKernel.put(0, device.config.getWorkgroupSize());
+	    localWorkSizeNullKernel.put(0, device.config.workgroupSize);
 	    checkCLError(clEnqueueNDRangeKernel(device.xqueue, nullKernel, dimensions, null, globalWorkSize,
 		    localWorkSize, null, null));
 	}
@@ -670,25 +673,24 @@ public class GPUSolver extends Solver {
 	    for (Device device : availableDevices) {
 		devices.add(device);
 		device.config = new GPUSolverConfig().deviceConfigs[0];
-		device.config.setIndex(index++);
-		weightSum += device.config.getWeight();
+		device.config.index = index++;
+		weightSum += device.config.weight;
 	    }
 	    return;
 	}
 
 	ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
 	for (DeviceConfig deviceConfig : deviceConfigsInput) {
-	    if (deviceConfig.getWeight() == 0)
+	    if (deviceConfig.weight == 0)
 		continue;
-	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.getIndex() == dvcCfg.getIndex())) // check for
-													    // duplicates
+	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
 		continue;
-	    if (deviceConfig.getIndex() >= 0 && deviceConfig.getIndex() < availableDevices.size()) {
+	    if (deviceConfig.index >= 0 && deviceConfig.index < availableDevices.size()) {
 		deviceConfigsTmp.add(deviceConfig);
-		Device device = availableDevices.get(deviceConfig.getIndex());
+		Device device = availableDevices.get(deviceConfig.index);
 		device.config = deviceConfig;
 		devices.add(device);
-		weightSum += deviceConfig.getWeight();
+		weightSum += deviceConfig.weight;
 	    }
 	}
     }

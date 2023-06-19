@@ -7,13 +7,12 @@ public class DeviceConfig {
 
     public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0);
 
-    private int index;
-    private int workgroupSize = 0;
-    private int weight = 0;
-    private int maxGlobalWorkSize = 0;
+    public int index;
+    public int workgroupSize ;
+    public int weight;
+    public int maxGlobalWorkSize;
 
     public DeviceConfig() {
-	super();
     }
 
     @JsonCreator
@@ -25,24 +24,14 @@ public class DeviceConfig {
 	this.workgroupSize = workgroupSize;
 	this.weight = weight;
 	this.maxGlobalWorkSize = maxGlobalWorkSize;
+	fillEmptyFields();
     }
 
-    public static DeviceConfig getDefaultDeviceConfig() {
-	final DeviceConfig dc = new DeviceConfig();
-	dc.setIndex(0);
-	dc.setWorkgroupSize(64);
-	dc.setWeight(1);
-	dc.setMaxGlobalWorkSize(1_000_000_000);
-	return dc;
-    }
-
-    public void fillEmptyFields() {
+    private void fillEmptyFields() {
 	if (workgroupSize == 0)
-	    workgroupSize = getDefaultDeviceConfig().workgroupSize;
-	if (weight == 0)
-	    weight = getDefaultDeviceConfig().weight;
+	    workgroupSize = 64;
 	if (maxGlobalWorkSize == 0)
-	    maxGlobalWorkSize = getDefaultDeviceConfig().maxGlobalWorkSize;
+	    maxGlobalWorkSize = 1_000_000_000;
     }
 
     public void validate() {
@@ -53,39 +42,7 @@ public class DeviceConfig {
 	if(maxGlobalWorkSize < workgroupSize)
 	    throw new IllegalArgumentException("invalid value for max global work size: only numbers >=[workgroup size] are allowed");
     }
-
-    public int getIndex() {
-	return index;
-    }
-
-    public void setIndex(int index) {
-	this.index = index;
-    }
-
-    public int getWorkgroupSize() {
-	return workgroupSize;
-    }
-
-    public void setWorkgroupSize(int workgroupSize) {
-	this.workgroupSize = workgroupSize;
-    }
-
-    public int getWeight() {
-	return weight;
-    }
-
-    public void setWeight(int weight) {
-	this.weight = weight;
-    }
-
-    public int getMaxGlobalWorkSize() {
-	return maxGlobalWorkSize;
-    }
-
-    public void setMaxGlobalWorkSize(int maxGlobalWorkSize) {
-	this.maxGlobalWorkSize = maxGlobalWorkSize;
-    }
-
+    
     @Override
     public boolean equals(Object obj) {
 	if (obj instanceof DeviceConfig) {

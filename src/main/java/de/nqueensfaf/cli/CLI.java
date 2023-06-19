@@ -35,7 +35,7 @@ public class CLI implements Runnable {
     public void setConfigFile(File configFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
-		    "Invalid value '%s' for option '--config-file': file not found");
+		    "Invalid value '" + configFile.getAbsolutePath() + "' for option '--config-file': file not found");
 	}
 	this.configFile = configFile;
     }
@@ -47,7 +47,7 @@ public class CLI implements Runnable {
     public void setTaskFile(File taskFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
-		    "Invalid value '%s' for option '--task-file': file not found");
+		    "Invalid value '" + taskFile.getAbsolutePath() + "' for option '--task-file': file not found");
 	}
 	this.taskFile = taskFile;
     }
@@ -130,11 +130,11 @@ public class CLI implements Runnable {
 				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()),
 				new Column().header("Weight").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getWeight())),
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].weight)),
 				new Column().header("Workgroup Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getWorkgroupSize())),
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].workgroupSize)),
 				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].getMaxGlobalWorkSize()))
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].maxGlobalWorkSize))
 		)));
 		solver = gpuSolver;
 	    }
@@ -167,7 +167,7 @@ public class CLI implements Runnable {
 		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
 	    symSolver.setN(N);
 	    symSolver.solve();
-	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException e) {
+	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException | IllegalStateException e) {
 	    System.err.println("Unexpected error: " + e.getMessage());
 //	    e.printStackTrace();
 	}

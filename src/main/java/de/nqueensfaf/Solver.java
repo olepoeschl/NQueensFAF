@@ -62,7 +62,13 @@ public abstract class Solver {
 	    executor.submit(autoSaver());
 
 	state = RUNNING;
-	run();
+	try {
+	    run();
+	} catch (Exception e) {
+	    state = TERMINATING;
+	    executor.shutdown();
+	    throw e;
+	}
 
 	state = TERMINATING;
 	executor.shutdown();
