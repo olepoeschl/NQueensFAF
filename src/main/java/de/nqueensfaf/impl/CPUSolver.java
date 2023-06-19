@@ -38,9 +38,10 @@ public class CPUSolver extends Solver {
     private float progress;
     private boolean injected = false;
 
-    private CPUSolverConfig config = new CPUSolverConfig();
+    private CPUSolverConfig config;
 
     public CPUSolver() {
+	config = new CPUSolverConfig();
     }
 
     // inherited functions

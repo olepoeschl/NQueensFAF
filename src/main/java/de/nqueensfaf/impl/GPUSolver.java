@@ -51,7 +51,7 @@ public class GPUSolver extends Solver {
     private int workloadSize;
 
     // config stuff
-    private GPUSolverConfig config = new GPUSolverConfig();
+    private GPUSolverConfig config;
     private int weightSum;
 
     // user interface
@@ -67,6 +67,8 @@ public class GPUSolver extends Solver {
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	}
+	
+	config = new GPUSolverConfig();
 	setDeviceConfigs(config.deviceConfigs);
     }
 
