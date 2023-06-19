@@ -171,14 +171,6 @@ public class SymSolver extends Solver {
     protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
     }
 
-    /**
-     * not supported
-     */
-    @Override
-    public boolean isInjected() {
-	return false;
-    }
-
     @Override
     public <T extends Config> T getConfig() {
 	return null;
