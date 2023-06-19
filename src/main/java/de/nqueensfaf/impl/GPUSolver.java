@@ -546,7 +546,6 @@ public class GPUSolver extends Solver {
 	}
 	
 	Kryo kryo = Constants.kryo;
-	kryo.register(SolverState.class);
 	try (Output output = new Output(new FileOutputStream(filepath))) {
 	    kryo.writeObject(output,
 		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
@@ -560,7 +559,6 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("Cannot inject while the Solver is running");
 	}
 	Kryo kryo = Constants.kryo;
-	kryo.register(SolverState.class);
 	try (Input input = new Input(new FileInputStream(filepath))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
