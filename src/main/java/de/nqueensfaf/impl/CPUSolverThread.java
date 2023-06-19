@@ -7,8 +7,7 @@ import de.nqueensfaf.persistence.Constellation;
 class CPUSolverThread extends Thread {
 
     private final int N, N3, N4, L, L3, L4; // boardsize
-    private long tempcounter = 0; // tempcounter is #(unique solutions) of current start
-				  // constellation, solvecounter is #(all solutions)
+    private long tempcounter = 0; // tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
 
     // mark1 and mark2 mark the lines k-1 and l-1 (not necessarily in this order),
     // because in from this line we will directly shift everything to the next free
