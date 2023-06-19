@@ -50,6 +50,7 @@ public class GPUSolver extends Solver {
     private boolean injected = false;
     
     private GPUSolverConfig config;
+    private SolverUtils utils;
 
     public GPUSolver() {
 	devices = new ArrayList<Device>();
@@ -60,6 +61,7 @@ public class GPUSolver extends Solver {
 	}
 	config = new GPUSolverConfig();
 	setDeviceConfigs(config.deviceConfigs);
+	utils = new SolverUtils();
     }
     
     @Override
@@ -78,6 +80,7 @@ public class GPUSolver extends Solver {
 	}
 
 	try (MemoryStack stack = stackPush()) {
+	    utils.setN(N);
 	    if (!injected)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
@@ -188,7 +191,7 @@ public class GPUSolver extends Solver {
 	    public int compare(Constellation o1, Constellation o2) {
 		int o1ijkl = o1.getStartijkl() & ((1 << 20) - 1);
 		int o2ijkl = o2.getStartijkl() & ((1 << 20) - 1);
-		return Integer.compare(getjkl(o1ijkl), getjkl(o2ijkl));
+		return Integer.compare(utils.getjkl(o1ijkl), utils.getjkl(o2ijkl));
 	    }
 	});
     }
@@ -478,7 +481,7 @@ public class GPUSolver extends Solver {
 	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
 	    if (solutionsForConstellation >= 0)
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
@@ -717,47 +720,6 @@ public class GPUSolver extends Solver {
 	return resultString;
     }
 
-    private boolean symmetry90(int ijkl) {
-	if (((geti(ijkl) << 15) + (getj(ijkl) << 10) + (getk(ijkl) << 5) + getl(ijkl)) == (((N - 1 - getk(ijkl)) << 15)
-		+ ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl)))
-	    return true;
-	return false;
-    }
-
-    // how often does a found solution count for this start constellation
-    private int symmetry(int ijkl) {
-	if (geti(ijkl) == N - 1 - getj(ijkl) && getk(ijkl) == N - 1 - getl(ijkl)) // starting
-										  // constellation
-										  // symmetric by
-										  // rot180?
-	    if (symmetry90(ijkl)) // even by rot90?
-		return 2;
-	    else
-		return 4;
-	else
-	    return 8; // none of the above?
-    }
-
-    private int geti(int ijkl) {
-	return ijkl >>> 15;
-    }
-
-    private int getj(int ijkl) {
-	return (ijkl >>> 10) & 31;
-    }
-
-    private int getk(int ijkl) {
-	return (ijkl >>> 5) & 31;
-    }
-
-    private int getl(int ijkl) {
-	return ijkl & 31;
-    }
-
-    private int getjkl(int ijkl) {
-	return ijkl & 0b111111111111111;
-    }
-
     public static class GPUSolverConfig extends Config {
 	public DeviceConfig[] deviceConfigs;
 	public int presetQueens;
@@ -792,6 +754,8 @@ public class GPUSolver extends Solver {
 	    presetQueens = config.presetQueens;
 	}
     }
+    
+    private record DeviceInfo(int index, String vendor, String name) {}
     
     // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {

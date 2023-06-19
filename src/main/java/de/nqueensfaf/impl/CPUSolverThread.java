@@ -18,8 +18,10 @@ class CPUSolverThread extends Thread {
 
     // list of uncalculated starting positions, their indices
     private ArrayList<Constellation> constellations;
+    
+    private SolverUtils utils;
 
-    CPUSolverThread(int N, ArrayList<Constellation> constellations) {
+    CPUSolverThread(SolverUtils utils, int N, ArrayList<Constellation> constellations) {
 	this.N = N;
 	N3 = N - 3;
 	N4 = N - 4;
@@ -27,6 +29,7 @@ class CPUSolverThread extends Thread {
 	L3 = 1 << N3;
 	L4 = 1 << N4;
 	this.constellations = constellations;
+	this.utils = utils;
     }
 
     // Recursive functions for Placing the Queens
@@ -774,9 +777,9 @@ class CPUSolverThread extends Thread {
 	    startIjkl = constellation.getStartijkl();
 	    start = startIjkl >> 20;
 	    ijkl = startIjkl & ((1 << 20) - 1);
-	    j = getj(ijkl);
-	    k = getk(ijkl);
-	    l = getl(ijkl);
+	    j = utils.getj(ijkl);
+	    k = utils.getk(ijkl);
+	    l = utils.getl(ijkl);
 
 	    // IMPORTANT NOTE: we shift ld and rd one to the right, because the right
 	    // column does not matter (always occupied by queen l)
@@ -1058,48 +1061,8 @@ class CPUSolverThread extends Thread {
 	    }
 
 	    // for saving and loading progress remove the finished starting constellation
-	    constellation.setSolutions(tempcounter * symmetry(ijkl));
+	    constellation.setSolutions(tempcounter * utils.symmetry(ijkl));
 	    tempcounter = 0;
 	}
-    }
-
-    // helper functions for doing the math
-    // for symmetry stuff and working with ijkl
-    // true, if starting constellation is symmetric for rot90
-    private boolean symmetry90(int ijkl) {
-	if (((geti(ijkl) << 15) + (getj(ijkl) << 10) + (getk(ijkl) << 5) + getl(ijkl)) == (((N - 1 - getk(ijkl)) << 15)
-		+ ((N - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl)))
-	    return true;
-	return false;
-    }
-
-    // how often does a found solution count for this start constellation
-    private int symmetry(int ijkl) {
-	if (geti(ijkl) == N - 1 - getj(ijkl) && getk(ijkl) == N - 1 - getl(ijkl)) // starting
-										  // constellation
-										  // symmetric by
-										  // rot180?
-	    if (symmetry90(ijkl)) // even by rot90?
-		return 2;
-	    else
-		return 4;
-	else
-	    return 8; // none of the above?
-    }
-
-    private int geti(int ijkl) {
-	return ijkl >> 15;
-    }
-
-    private int getj(int ijkl) {
-	return (ijkl >> 10) & 31;
-    }
-
-    private int getk(int ijkl) {
-	return (ijkl >> 5) & 31;
-    }
-
-    private int getl(int ijkl) {
-	return ijkl & 31;
     }
 }
