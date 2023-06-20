@@ -9,7 +9,10 @@ Uses Java 17.
 For more releases visit the "Releases" section. <br>
 
 # Usage
-## Using a Solver
+## Try the command line interface
+
+
+## Use it in your project
 ```
 CPUSolver s = new CPUSolver()
       .config(config -> {
@@ -23,8 +26,8 @@ CPUSolver s = new CPUSolver()
       .solve();
 ```
 
-## Implementing an own Solver
-The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with your code.
+## Implement your own algorithm
+The abstract class Solver provides a good structure and handy features for your own N Queens Problem solution algorithm. Just extend it and fill the abstract methods with your code.
 <br>The method names are self explanatory.
 
 # Current Benchmarks
