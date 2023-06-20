@@ -8,28 +8,6 @@ Uses Java 17.
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly)<br>
 For more releases visit the "Releases" section. <br>
 
-# Usage
-## Try the command line interface
-
-
-## Use it in your project
-```
-CPUSolver s = new CPUSolver()
-      .config(config -> {
-            config.threadcount = 1;
-            config.updateInterval = 800;
-      })
-      .onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
-      .onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
-      .onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
-      .setN(16)
-      .solve();
-```
-
-## Implement your own algorithm
-The abstract class Solver provides a good structure and handy features for your own N Queens Problem solution algorithm. Just extend it and fill the abstract methods with your code.
-<br>The method names are self explanatory.
-
 # Current Benchmarks
 During the time we have spent developing this program, we have been able to continuously expand our available hardware. 
 Especially the newer graphics cards show the potential of our program. 
@@ -56,6 +34,17 @@ Single stands for single-threaded and multi for Multi-threaded.
 The CPU's and the GPU's are used with stock settings. 
 
 Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
+
+# Usage
+## Try the command line interface
+_Documentation is in progress._
+
+## Use it in your project
+_Documentation is in progress._
+
+## Implement your own algorithm
+The abstract class Solver provides a good structure and handy features for your own N Queens Problem solution algorithm. Just extend it and fill the abstract methods with your code.
+<br>The method names are self explanatory.
 
 # General
 
