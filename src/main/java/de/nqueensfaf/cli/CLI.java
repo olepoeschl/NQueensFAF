@@ -25,7 +25,8 @@ public class CLI implements Runnable {
     @Spec
     CommandSpec spec;
 
-    @Option(names = { "-d", "--show-devices" }, required = false, description = "show a list of all available OpenCL devices")
+    @Option(names = { "-d",
+	    "--show-devices" }, required = false, description = "show a list of all available OpenCL devices")
     private boolean showAvailableDevices;
 
     private File configFile;
@@ -57,7 +58,7 @@ public class CLI implements Runnable {
 
     @Option(names = { "-g", "--use-gpu" }, required = false, description = "execute on GPU('s)")
     private boolean executeOnGpu;
-    
+
     // for printing the progress in the progress callback
     private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation in the progress callback
@@ -68,13 +69,14 @@ public class CLI implements Runnable {
     public void run() {
 	if (showAvailableDevices) {
 	    var devices = new GPUSolver().getAvailableDevices();
-	    System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
-		    Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-			    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
-			    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
-			    new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
+	    System.out
+		    .println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
+			    Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
+				    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
+				    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
+					    .dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
+				    new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
+					    .dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
 	    return;
 	}
 
@@ -96,7 +98,7 @@ public class CLI implements Runnable {
 	    Solver solver;
 	    if (!executeOnGpu) {
 		CPUSolver cpuSolver = new CPUSolver();
-		if(configFile != null) {
+		if (configFile != null) {
 		    cpuSolver.config(config -> {
 			try {
 			    config.from(configFile);
@@ -109,10 +111,9 @@ public class CLI implements Runnable {
 		    System.out.println("no config file provided, using default config.");
 		}
 		solver = cpuSolver;
-	    }
-	    else {
+	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
-		if(configFile != null) {
+		if (configFile != null) {
 		    gpuSolver.config(config -> {
 			try {
 			    config.from(configFile);
@@ -134,28 +135,36 @@ public class CLI implements Runnable {
 				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()),
 				new Column().header("Weight").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].weight)),
+					.dataAlign(HorizontalAlign.CENTER)
+					.with(device -> Integer
+						.toString(gpuSolver.getConfig().deviceConfigs[device.index()].weight)),
 				new Column().header("Workgroup Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].workgroupSize)),
+					.dataAlign(HorizontalAlign.CENTER)
+					.with(device -> Integer.toString(
+						gpuSolver.getConfig().deviceConfigs[device.index()].workgroupSize)),
 				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device.index()].maxGlobalWorkSize))
-		)));
+					.dataAlign(HorizontalAlign.CENTER)
+					.with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device
+						.index()].maxGlobalWorkSize)))));
+		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
+		    System.err.println(
+				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
+		}
 		solver = gpuSolver;
 	    }
 
 	    // set callbacks
-	    solver
-	    	.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
-	    	.onUpdate((self, progress, solutions, duration) -> {
-		if (loadingCharIdx == loadingChars.length)
-		    loadingCharIdx = 0;
-		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
-			getDurationPrettyString(duration));
-	    	})
-	    	.onFinish(self -> {
-	    	    System.out.println();
-	    	    System.out.println("found " + self.getSolutions() + " solutions in " + getDurationPrettyString(self.getDuration()));
-	    	});
+	    solver.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
+		    .onUpdate((self, progress, solutions, duration) -> {
+			if (loadingCharIdx == loadingChars.length)
+			    loadingCharIdx = 0;
+			System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
+				getDurationPrettyString(duration));
+		    }).onFinish(self -> {
+			System.out.println();
+			System.out.println("found " + self.getSolutions() + " solutions in "
+				+ getDurationPrettyString(self.getDuration()));
+		    });
 
 	    // start
 	    if (taskFile != null) {
@@ -171,7 +180,8 @@ public class CLI implements Runnable {
 		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
 	    symSolver.setN(N);
 	    symSolver.solve();
-	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException | IllegalStateException e) {
+	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException
+		| IllegalStateException e) {
 	    System.err.println("Unexpected error: " + e.getMessage());
 //	    e.printStackTrace();
 	}
