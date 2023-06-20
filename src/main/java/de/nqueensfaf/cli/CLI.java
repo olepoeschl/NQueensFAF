@@ -111,7 +111,7 @@ public class CLI implements Runnable {
 			}
 		    });
 		} else {
-		    System.out.println("no config file provided, using default config.");
+		    System.out.println("no config file provided, using default config...");
 		}
 		solver = cpuSolver;
 	    } else {
