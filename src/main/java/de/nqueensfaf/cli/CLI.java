@@ -105,6 +105,8 @@ public class CLI implements Runnable {
 			    System.exit(0);
 			}
 		    });
+		} else {
+		    System.out.println("no config file provided, using default config.");
 		}
 		solver = cpuSolver;
 	    }
@@ -119,6 +121,8 @@ public class CLI implements Runnable {
 			    System.exit(0);
 			}
 		    });
+		} else {
+		    System.out.println("no config file provided, using default config...");
 		}
 		// print used devices
 		var devices = gpuSolver.getDevices();
