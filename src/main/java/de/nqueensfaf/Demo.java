@@ -8,8 +8,8 @@ public class Demo {
 	@SuppressWarnings("unused")
 	CPUSolver s = new CPUSolver()
         	.config(config -> {
-        	    config.threadcount = 2;
-        	    config.updateInterval = 300;
+        	    config.threadcount = 1;
+        	    config.updateInterval = 800;
         	})
         	.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
         	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))

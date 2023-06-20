@@ -44,22 +44,16 @@ public class CPUSolver extends Solver {
     private SolverUtils utils;
 
     public CPUSolver() {
+	config = new CPUSolverConfig();
+	utils = new SolverUtils();
 	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
 	injected = false;
-	config = new CPUSolverConfig();
-	utils = new SolverUtils();
     }
 
     @Override
     protected void run() {
-	// check if run is called without calling reset after a run call had finished
-	if (start != 0) {
-	    throw new IllegalStateException(
-		    "You first have to call reset() when calling solve() multiple times on the same object");
-	}
-
 	start = System.currentTimeMillis();
 	if (N <= smallestN) { // if N is very small, use the simple Solver from the parent class
 	    solutions = solveSmallBoard();

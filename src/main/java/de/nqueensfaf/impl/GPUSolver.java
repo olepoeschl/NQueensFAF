@@ -38,6 +38,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 import de.nqueensfaf.Config;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.SolverException;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -50,29 +51,28 @@ public class GPUSolver extends Solver {
     private ArrayList<Constellation> constellations;
     private int workloadSize;
     private long duration, start, end, storedDuration;
-    private boolean injected = false;
+    private boolean injected;
     
     private GPUSolverConfig config;
     private SolverUtils utils;
 
     public GPUSolver() {
+	config = new GPUSolverConfig();
+	utils = new SolverUtils();
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
+	injected = false;
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
+	    setDeviceConfigs(config.deviceConfigs);
+	} catch(IllegalStateException e) {
+	    throw new SolverException("gpu solver is not available", e);
 	}
-	config = new GPUSolverConfig();
-	setDeviceConfigs(config.deviceConfigs);
-	utils = new SolverUtils();
     }
     
     @Override
     protected void run() {
-	if (start != 0) {
-	    throw new IllegalStateException(
-		    "You first have to call reset() when calling solve() multiple times on the same object");
-	}
 	if (N <= 6) { // if N is very small, use the simple Solver from the parent class
 	    start = System.currentTimeMillis();
 	    devices.add(new Device(0, 0, "", ""));
@@ -83,7 +83,7 @@ public class GPUSolver extends Solver {
 	}
 	
 	if(devices.size() == 0)
-	    throw new IllegalStateException("No devices selected!");
+	    throw new IllegalStateException("no devices selected");
 
 	try (MemoryStack stack = stackPush()) {
 	    utils.setN(N);
@@ -135,7 +135,7 @@ public class GPUSolver extends Solver {
 			device.config.workgroupSize);
 		workloadBeginPtr += deviceWorkloadSize;
 		if (device.constellations.size() == 0) {
-		    throw new IllegalArgumentException("Weight " + device.config.weight + " is too low");
+		    throw new IllegalArgumentException("weight " + device.config.weight + " is too low");
 		}
 
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
@@ -151,8 +151,10 @@ public class GPUSolver extends Solver {
 		checkCLError(clReleaseProgram(programs[i]));
 		checkCLError(clReleaseContext(contexts[i]));
 	    }
-	} catch (Exception e) {
-	    e.printStackTrace();
+	} catch (InterruptedException e) {
+	    Thread.currentThread().interrupt();
+	} catch (IOException e) {
+	    throw new SolverException("unexpected error while executing solver", e);
 	}
     }
 
@@ -202,7 +204,7 @@ public class GPUSolver extends Solver {
 	});
     }
 
-    private void createContextsAndPrograms(MemoryStack stack, IntBuffer errBuf) {
+    private void createContextsAndPrograms(MemoryStack stack, IntBuffer errBuf) throws IOException {
 	// list of platforms to be used
 	ArrayList<Long> platforms = new ArrayList<Long>();
 	for (Device device : devices) {
@@ -226,7 +228,12 @@ public class GPUSolver extends Solver {
 	    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
 	    checkCLError(errBuf);
 	    contexts[idx] = context;
-	    long program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
+	    long program;
+	    try {
+		program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
+	    } catch (IOException e) {
+		throw new IOException("error while creating program", e);
+	    }
 	    checkCLError(errBuf);
 	    programs[idx] = program;
 
@@ -306,7 +313,6 @@ public class GPUSolver extends Solver {
 			    try {
 				Thread.sleep(50);
 			    } catch (InterruptedException e) {
-				e.printStackTrace();
 				Thread.currentThread().interrupt();
 			    }
 			duration = device.duration;
@@ -319,8 +325,7 @@ public class GPUSolver extends Solver {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
+		    Thread.currentThread().interrupt();
 		}
 	    }
 
@@ -518,8 +523,7 @@ public class GPUSolver extends Solver {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
+		    Thread.currentThread().interrupt();
 		}
 	    }
 	    device.stopReaderThread = 0;
@@ -548,7 +552,7 @@ public class GPUSolver extends Solver {
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet or is already done, throw exception
 	if (constellations.size() == 0) {
-	    throw new IllegalStateException("Nothing to be saved");
+	    throw new IllegalStateException("nothing to be saved");
 	}
 	
 	Kryo kryo = Constants.kryo;
@@ -562,7 +566,7 @@ public class GPUSolver extends Solver {
     @Override
     protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 	if (!isIdle()) {
-	    throw new IllegalStateException("Cannot inject while the Solver is running");
+	    throw new IllegalStateException("cannot inject while the solver is running");
 	}
 	Kryo kryo = Constants.kryo;
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
@@ -612,15 +616,15 @@ public class GPUSolver extends Solver {
     public long getDurationOfDevice(int deviceIndex) {
 	if (deviceIndex < 0 || deviceIndex >= availableDevices.size())
 	    throw new IllegalArgumentException(
-		    "Invalid valule! Device index must be a number >= 0 and < [number of available devices]");
+		    "invalid device index: must be a number >=0 and <" + availableDevices.size() + " (number of available devices)");
 	return availableDevices.get(deviceIndex).duration;
     }
 
-    private void fetchAvailableDevices(MemoryStack stack) {
+    private void fetchAvailableDevices(MemoryStack stack) throws IllegalStateException {
 	IntBuffer entityCountBuf = stack.mallocInt(1);
 	checkCLError(clGetPlatformIDs(null, entityCountBuf));
 	if (entityCountBuf.get(0) == 0) {
-	    throw new RuntimeException("No OpenCL platforms found.");
+	    throw new IllegalStateException("no OpenCL platforms found");
 	}
 	PointerBuffer platforms = stack.mallocPointer(entityCountBuf.get(0));
 	checkCLError(clGetPlatformIDs(platforms, (IntBuffer) null));
@@ -629,7 +633,7 @@ public class GPUSolver extends Solver {
 	    long platform = platforms.get(p);
 	    checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, entityCountBuf));
 	    if (entityCountBuf.get(0) == 0) {
-		throw new RuntimeException("No OpenCL devices found.");
+		throw new IllegalStateException("no OpenCL devices found");
 	    }
 	    PointerBuffer devicesBuf = stack.mallocPointer(entityCountBuf.get(0));
 	    checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
@@ -689,7 +693,7 @@ public class GPUSolver extends Solver {
 	return deviceInfos;
     }
 
-    private String getKernelSourceAsString(String filepath) {
+    private String getKernelSourceAsString(String filepath) throws IOException {
 	String resultString = null;
 	try (InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
 		BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
@@ -700,10 +704,8 @@ public class GPUSolver extends Solver {
 		result.append("\n");
 	    }
 	    resultString = result.toString();
-	} catch (NullPointerException e) {
-	    e.printStackTrace();
 	} catch (IOException e) {
-	    e.printStackTrace();
+	    throw new IOException("unable to read kernel source file", e);
 	}
 	return resultString;
     }

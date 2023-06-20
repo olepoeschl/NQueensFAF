@@ -13,11 +13,6 @@ public class SymSolver extends Solver {
 
     @Override
     protected void run() {
-	if (start != 0) {
-	    throw new IllegalStateException(
-		    "You first have to call reset() when calling solve() multiple times on the same object");
-	}
-
 	start = System.currentTimeMillis();
 	L = 1 << (N - 1);
 	mask = (L - 1) | L;
@@ -115,10 +110,6 @@ public class SymSolver extends Solver {
 	return solutions180;
     }
 
-    /**
-     * @param solutions number of all solutions, unique or not
-     * @return the total number of unique solutions.
-     */
     public long getUniqueSolutionsTotal(long solutions) {
 	if (isRunning())
 	    return 0;
@@ -132,33 +123,21 @@ public class SymSolver extends Solver {
 	else
 	    return System.currentTimeMillis() - start;
     }
-
-    /**
-     * not supported
-     */
+    
     @Override
     public float getProgress() {
 	return 0;
     }
 
-    /**
-     * not supported
-     */
     @Override
     public long getSolutions() {
 	return 0;
     }
     
-    /**
-     * not supported
-     */
     @Override
     protected void store_(String filepath) throws IOException {
     }
 
-    /**
-     * not supported
-     */
     @Override
     protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
     }

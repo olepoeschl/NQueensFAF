@@ -31,7 +31,6 @@ public abstract class Solver {
 		try {
 		    Thread.sleep(100);
 		} catch (InterruptedException e) {
-		    e.printStackTrace();
 		    Thread.currentThread().interrupt();
 		}
 	    }
@@ -72,7 +71,6 @@ public abstract class Solver {
 	try {
 	    executor.awaitTermination(getConfig().updateInterval*2, TimeUnit.MILLISECONDS);
 	} catch (InterruptedException e) {
-	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
 	}
 	if (finishCb != null)
@@ -96,7 +94,6 @@ public abstract class Solver {
 	try {
 	    asyncSolverThread.join();
 	} catch (InterruptedException e) {
-	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
 	}
 	return (T) this;
@@ -105,15 +102,15 @@ public abstract class Solver {
     private void preconditions() {
 	if (N == 0) {
 	    state = IDLE;
-	    throw new IllegalStateException("Board size was not set");
+	    throw new IllegalStateException("board size was not set");
 	}
 	if (!isIdle()) {
 	    state = IDLE;
-	    throw new IllegalStateException("Solver is already started");
+	    throw new IllegalStateException("solver is already started");
 	}
 	if (getProgress() == 1.0f) {
 	    state = IDLE;
-	    throw new IllegalStateException("Solver is already done, nothing to do here");
+	    throw new IllegalStateException("solver is already done, nothing to do here");
 	}
     }
 
@@ -126,7 +123,6 @@ public abstract class Solver {
 		try {
 		    Thread.sleep(getConfig().updateInterval);
 		} catch (InterruptedException e) {
-		    e.printStackTrace();
 		    Thread.currentThread().interrupt();
 		}
 	    }
@@ -149,12 +145,7 @@ public abstract class Solver {
 			store(filePath);
 			tmpProgress = (int) progress;
 		    }
-		    try {
-			Thread.sleep(getConfig().updateInterval);
-		    } catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
-		    }
+		    Thread.sleep(getConfig().updateInterval);
 		}
 		progress = getProgress() * 100;
 		if (progress >= 100) {
@@ -162,14 +153,16 @@ public abstract class Solver {
 			try {
 			    new File(filePath).delete();
 			} catch (SecurityException e) {
-			    e.printStackTrace();
+			    throw new SecurityException("unable to delete autosave file", e);
 			}
 		    } else {
 			store(filePath); // store one last time
 		    }
 		}
 	    } catch (IOException e) {
-		e.printStackTrace();
+		System.err.println("error in autosaver thread: " + e.getMessage());
+	    } catch (InterruptedException e) {
+		Thread.currentThread().interrupt();
 	    }
 	};
     }
@@ -216,7 +209,7 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
-	    throw new IllegalArgumentException("initializationCallback must not be null");
+	    throw new IllegalArgumentException("argument must not be null");
 	}
 	initCb = c;
 	return (T) this;
@@ -225,7 +218,7 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T onFinish(Consumer<Solver> c) {
 	if (c == null) {
-	    throw new IllegalArgumentException("terminationCallback must not be null");
+	    throw new IllegalArgumentException("argument must not be null");
 	}
 	finishCb = c;
 	return (T) this;
@@ -244,10 +237,10 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T setN(int n) {
 	if (!isIdle()) {
-	    throw new IllegalStateException("Cannot set board size while solving");
+	    throw new IllegalStateException("cannot set board size while solving");
 	}
 	if (n <= 0 || n > 31) {
-	    throw new IllegalArgumentException("Board size must be a number between 0 and 32 (not inclusive)");
+	    throw new IllegalArgumentException("board size must be a number between 0 and 32 (not inclusive)");
 	}
 	N = n;
 	return (T) this;
