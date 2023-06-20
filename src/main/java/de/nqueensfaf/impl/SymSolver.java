@@ -126,14 +126,6 @@ public class SymSolver extends Solver {
     }
 
     @Override
-    public void reset() {
-	start = 0;
-	end = 0;
-	solutions90 = 0;
-	solutions180 = 0;
-    }
-
-    @Override
     public long getDuration() {
 	if (end != 0)
 	    return end - start;

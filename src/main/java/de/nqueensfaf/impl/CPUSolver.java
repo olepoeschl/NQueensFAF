@@ -164,20 +164,6 @@ public class CPUSolver extends Solver {
     }
 
     @Override
-    public void reset() {
-	start = 0;
-	end = 0;
-	duration = 0;
-	storedDuration = 0;
-	solutions = 0;
-	progress = 0;
-	ijklList.clear();
-	constellations.clear();
-	threads.clear();
-	injected = false;
-    }
-
-    @Override
     public long getDuration() {
 	if (isRunning()) {
 	    return System.currentTimeMillis() - start + storedDuration;

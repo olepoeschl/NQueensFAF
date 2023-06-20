@@ -574,21 +574,6 @@ public class GPUSolver extends Solver {
     }
 
     @Override
-    public void reset() {
-	devices.clear();
-	contexts = null;
-	programs = null;
-	constellations.clear();
-	duration = 0;
-	storedDuration = 0;
-	start = 0;
-	end = 0;
-	workloadSize = 0;
-	weightSum = 0;
-	injected = false;
-    }
-
-    @Override
     public long getDuration() {
 	if (duration == 0)
 	    if (isRunning() && start != 0) {
