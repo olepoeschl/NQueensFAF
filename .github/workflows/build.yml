@@ -17,7 +17,7 @@ on:
 
 jobs:
   build-jar:
-    if: "contains(github.event.head_commit.message, '[trigger-nightly-build]')"
+    if: ${{ github.event_name == 'workflow_dispatch' }}" || contains(github.event.head_commit.message, '[trigger-nightly-build]')"
     runs-on: ubuntu-latest
     permissions: write-all
     outputs:
