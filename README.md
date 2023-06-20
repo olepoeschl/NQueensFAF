@@ -10,8 +10,8 @@ For more releases visit the "Releases" section. <br>
 
 # Usage
 ## Implementing an own Solver
-The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with code.
-But the Solver class also comes with many nice utilities, for example setting / adding callbacks for certain events. 
+The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with your code.
+<br>The method names are self explanatory.
 
 ## Using one of the builtin Solvers
 ```
