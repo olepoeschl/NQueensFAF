@@ -26,6 +26,8 @@ import org.lwjgl.system.MemoryStack;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
@@ -33,10 +35,9 @@ import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
+import de.nqueensfaf.Config;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.Config;
-import de.nqueensfaf.config.DeviceConfig;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -715,7 +716,7 @@ public class GPUSolver extends Solver {
 	    // default values
 	    super();
 	    deviceConfigs = new DeviceConfig[] {
-		    new DeviceConfig(0, 64, 1, 1_000_000_000)
+		    new DeviceConfig()
 	    };
 	    presetQueens = 6;
 	}
@@ -741,7 +742,56 @@ public class GPUSolver extends Solver {
 	    presetQueens = config.presetQueens;
 	}
     }
-    
+
+    public static class DeviceConfig {
+	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0);
+	public int index;
+	public int workgroupSize;
+	public int weight;
+	public int maxGlobalWorkSize;
+
+	public DeviceConfig() {
+	    index = 0;
+	    workgroupSize = 64;
+	    weight = 1;
+	    maxGlobalWorkSize = 1_000_000_000;
+	}
+
+	@JsonCreator
+	public DeviceConfig(@JsonProperty(value = "index", required = true) int index,
+		@JsonProperty(value = "workgroupSize") int workgroupSize,
+		@JsonProperty(value = "weight", required = true) int weight,
+		@JsonProperty(value = "maxGlobalWorkSize") int maxGlobalWorkSize) {
+	    this();
+	    this.index = index;
+	    if(workgroupSize != 0)
+		this.workgroupSize = workgroupSize;
+	    this.weight = weight;
+	    if(maxGlobalWorkSize != 0)
+		this.maxGlobalWorkSize = maxGlobalWorkSize;
+	}
+
+	public void validate() {
+	    if (index < 0)
+		throw new IllegalArgumentException("invalid value for index: only numbers >=0 are allowed");
+	    if (workgroupSize <= 0)
+		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
+	    if (maxGlobalWorkSize < workgroupSize)
+		throw new IllegalArgumentException(
+			"invalid value for max global work size: only numbers >=[workgroup size] are allowed");
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+	    if (obj instanceof DeviceConfig) {
+		DeviceConfig dvcCfg = (DeviceConfig) obj;
+		return index == dvcCfg.index && workgroupSize == dvcCfg.workgroupSize && weight == dvcCfg.weight
+			&& maxGlobalWorkSize == dvcCfg.maxGlobalWorkSize;
+	    }
+	    return false;
+	}
+    }
+
     public record DeviceInfo(int index, String vendor, String name) {}
     
     // a class holding all OpenCL bindings needed for an OpenCL device to operate

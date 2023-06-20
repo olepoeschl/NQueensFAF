@@ -16,9 +16,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import de.nqueensfaf.Config;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.Config;
 import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 

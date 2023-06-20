@@ -2,8 +2,8 @@ package de.nqueensfaf.impl;
 
 import java.io.IOException;
 
+import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.config.Config;
 
 public class SymSolver extends Solver {
 
