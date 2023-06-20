@@ -10,7 +10,48 @@ For more releases visit the "Releases" section. <br>
 
 # Usage
 ## Try the command line interface
+```
+Usage: nqueensfaf [-dgh] [-c=FILE] [-N=INT] [-t=FILE]
+  -c, --config=FILE      absolute path to the configuration file
+  -d, --show-devices     show a list of all available OpenCL devices
+  -g, --gpu              execute on GPU('s)
+  -h, --help             show this help message
+  -N, --board-size=INT   board size
+  -t, --task=FILE        absolute path to the file containing the task
+```
+For example, to run board size 18 on your default GPU with default settings, you would execute:
+`nqueensfaf -N 18 -g`
 
+With `-c` you can pass a config file. Config files are written in json format and can and may only have following attributes:<br>
+| name | type | allowed values | default value |
+| --- | --- | --- | --- |
+| updateInterval | int | >0 | 128 |
+| autoSaveEnabled | boolean | true, false | false |
+| autoDeleteEnabled | boolean | true, false | false |
+| autoSavePercentageStep | int | >0, <100 | 10 |
+| autoSavePath | String | valid file system path | nqueensfaf{N}.dat |
+
+Specific for cpu solver:
+| name | type | allowed values | default value |
+| --- | --- | --- | --- |
+| threadcount | int | >0 | 1 |
+| presetQueens | int | >=4 | 4 |
+
+Specific for gpu solver:
+| name | type | allowed values | default value |
+| --- | --- | --- | --- |
+| deviceConfigs | deviceConfig[] | see deviceConfig explanation | [{0, 64, 1, 1000000000}] |
+| presetQueens | int | >=4 | 4 |
+
+Attributes of deviceConfig:
+| name | type | allowed values | default value |
+| --- | --- | --- | --- |
+| index | int | >=0 | 0 |
+| workgroupSize | int | >0 | 64 |
+| weight | int | >=0 | 1 |
+| maxGlobalWorkSize | int | >0 | 1000000000 |
+
+Execute `nqueensfaf -d` to see your available devices and their respective indexes.
 
 ## Use it in your project
 ```
