@@ -9,11 +9,7 @@ Uses Java 17.
 For more releases visit the "Releases" section. <br>
 
 # Usage
-## Implementing an own Solver
-The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with code.
-But the Solver class also comes with many nice utilities, for example setting / adding callbacks for certain events. 
-
-## Using one of the builtin Solvers
+## Using a Solver
 ```
 GpuSolver gpuSolver = new GpuSolver();
 gpuSolver.setN(19);
@@ -22,6 +18,10 @@ gpuSolver.setOnProgressUpdateCallback((progress, solutions) -> System.out.printl
 gpuSolver.addTerminationCallback(() -> System.out.println("GPU finished after " + gpuSolver.getDuration() + " ms!"));
 gpuSolver.solve();
 ```
+
+## Implementing an own Solver
+The abstract class Solver provides a good structure for your own N Queens Solver. Just extend it and fill the abstract methods with your code.
+<br>The method names are self explanatory.
 
 # Current Benchmarks
 During the time we have spent developing this program, we have been able to continuously expand our available hardware. 
