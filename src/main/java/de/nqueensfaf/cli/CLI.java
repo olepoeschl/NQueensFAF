@@ -19,12 +19,15 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
 
-@Command(mixinStandardHelpOptions = true)
+@Command(name = "nqueensfaf")
 public class CLI implements Runnable {
 
     @Spec
     CommandSpec spec;
 
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "show this help message")
+    private boolean help;
+    
     @Option(names = { "-d",
 	    "--show-devices" }, required = false, description = "show a list of all available OpenCL devices")
     private boolean showAvailableDevices;
@@ -32,7 +35,7 @@ public class CLI implements Runnable {
     private File configFile;
 
     @Option(names = { "-c",
-	    "--config-file" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the run configuration")
+	    "--config" }, paramLabel = "FILE", required = false, description = "absolute path to the configuration file")
     public void setConfigFile(File configFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
@@ -44,7 +47,7 @@ public class CLI implements Runnable {
     private File taskFile;
 
     @Option(names = { "-t",
-	    "--task-file" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
+	    "--task" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
     public void setTaskFile(File taskFile) {
 	if (!configFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
@@ -56,7 +59,7 @@ public class CLI implements Runnable {
     @Option(names = { "-N", "--board-size" }, paramLabel = "INT", required = false, description = "board size")
     private int N = -69;
 
-    @Option(names = { "-g", "--use-gpu" }, required = false, description = "execute on GPU('s)")
+    @Option(names = { "-g", "--gpu" }, required = false, description = "execute on GPU('s)")
     private boolean executeOnGpu;
 
     // for printing the progress in the progress callback
