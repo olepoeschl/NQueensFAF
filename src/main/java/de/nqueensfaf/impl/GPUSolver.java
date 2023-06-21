@@ -305,18 +305,8 @@ public class GPUSolver extends Solver {
 		    end++;
 		else {
 		    // calculate needed time
-		    if (devices.size() > 1) {
-			end = System.currentTimeMillis();
-			duration = end - start + storedDuration;
-		    } else {
-			while (device.duration == 0)
-			    try {
-				Thread.sleep(50);
-			    } catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			    }
-			duration = device.duration;
-		    }
+		    end = System.currentTimeMillis();
+		    duration = end - start + storedDuration;
 		}
 	    }
 
