@@ -56,8 +56,6 @@ This solution is based on three ideas, especially the first two:
 - GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in Ping Che Chen's implementation (https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's. 
 
 The GPU solver does support NVIDIA, AMD and also integrated Intel GPU's.
-However, for AMD the solver currently breaks for N=23 and larger boards. 
-This will hopefully be fixed soon. 
 For NDIDIA and AMD GPU's we recommend a workgroupsize of 64, for the integrated intel graphics we recommend 24 for optimal performance. 
 
 # Contact
