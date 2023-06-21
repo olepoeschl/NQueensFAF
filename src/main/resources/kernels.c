@@ -95,6 +95,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
+		barrier(CLK_LOCAL_MEM_FENCE);
 		free = ~(jkl_queens[row] | ld | rd | col);		// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
@@ -103,6 +104,7 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 			solutions++;
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
+	barrier(CLK_GLOBAL_MEM_FENCE);
 }
 
 // AMD kernel
@@ -194,6 +196,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 			ld_mem >>= 1;
 			rd_mem <<= 1;						
 		}
+		barrier(CLK_LOCAL_MEM_FENCE);
 		free = ~(jkl_queens[row] | ld | rd | col); 		// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);					// occupy all bits right from the last queen in order to not place the same queen again 
 		col ^= queen;									// free up the column AFTER calculating free in order to not place the same queen again		
@@ -201,6 +204,7 @@ kernel void nqfaf_amd(global int *ld_arr, global int *rd_arr, global int *col_ar
 		solutions += (row == N-1);						// increase the solutions, if we are in the last row 
 	}
 	result[g_id] = solutions;						// number of solutions of the work item 
+	barrier(CLK_GLOBAL_MEM_FENCE);
 }
 
 // Intel kernel
