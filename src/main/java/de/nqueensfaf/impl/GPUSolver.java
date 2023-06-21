@@ -298,6 +298,7 @@ public class GPUSolver extends Solver {
 
 	    // wait for kernel to finish
 	    clFinish(device.xqueue);
+	    checkCLError(clWaitForEvents(device.xEvent));
 
 	    // stop timer when the last device is finished computing
 	    if (ptr >= device.constellations.size()) {
