@@ -155,8 +155,6 @@ public abstract class Solver {
 			} catch (SecurityException e) {
 			    throw new SecurityException("unable to delete autosave file", e);
 			}
-		    } else {
-			store(filePath); // store one last time
 		    }
 		}
 	    } catch (IOException e) {
