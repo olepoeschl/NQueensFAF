@@ -149,10 +149,10 @@ public class CLI implements Runnable {
 					.dataAlign(HorizontalAlign.CENTER)
 					.with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device
 						.index()].maxGlobalWorkSize)))));
-		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
-		    System.err.println(
-				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
-		}
+//		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
+//		    System.err.println(
+//				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
+//		}
 		solver = gpuSolver;
 	    }
 
