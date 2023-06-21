@@ -181,7 +181,7 @@ public class CLI implements Runnable {
 	    SymSolver symSolver = new SymSolver();
 	    symSolver.onFinish(self -> System.out
 		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
-	    symSolver.setN(N);
+	    symSolver.setN(solver.getN());
 	    symSolver.solve();
 	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException
 		| IllegalStateException e) {
