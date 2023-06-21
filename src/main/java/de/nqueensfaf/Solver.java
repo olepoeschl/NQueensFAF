@@ -52,12 +52,12 @@ public abstract class Solver {
 	state = INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
+
+	state = RUNNING;
 	if (onUpdateConsumer != null)
 	    executor.submit(consumeUpdates());
 	if (getConfig().autoSaveEnabled)
 	    executor.submit(autoSaver());
-
-	state = RUNNING;
 	try {
 	    run();
 	} catch (Exception e) {
