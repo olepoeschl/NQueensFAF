@@ -46,10 +46,10 @@ public class GPUSolver extends Solver {
 
     private long[] contexts, programs;
     private ArrayList<Device> devices, availableDevices;
-    private int weightSum;
     private GPUConstellationsGenerator generator;
     private ArrayList<Constellation> constellations;
     private int workloadSize;
+    private int weightSum;
     private long duration, start, end, storedDuration;
     private boolean injected;
     
@@ -95,7 +95,6 @@ public class GPUSolver extends Solver {
 
 	    IntBuffer errBuf = stack.callocInt(1);
 
-	    // prepare OpenCL stuff, generate workload and transfer to device
 	    createContextsAndPrograms(stack, errBuf);
 	    int workloadBeginPtr = 0;
 	    for (Device device : devices) {
@@ -292,7 +291,7 @@ public class GPUSolver extends Solver {
 		start = System.currentTimeMillis();
 
 	    // run
-	    explosionBoost9000(errBuf, device);
+	    enqueueKernel(errBuf, device);
 	    // start a thread continuously reading device data
 	    deviceReaderThread(device).start();
 
@@ -426,7 +425,7 @@ public class GPUSolver extends Solver {
 	checkCLError(clSetKernelArg(device.kernel, 4, resArg));
     }
 
-    private void explosionBoost9000(IntBuffer errBuf, Device device) {
+    private void enqueueKernel(IntBuffer errBuf, Device device) {
 	// create buffer of pointers defining the multi-dimensional size of the number
 	// of work units to execute
 	final int dimensions = 1;
@@ -436,10 +435,7 @@ public class GPUSolver extends Solver {
 	localWorkSize.put(0, device.config.workgroupSize);
 
 	// run kernel
-	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that
-									    // is used for
-									    // measuring the
-									    // execution time
+	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
 	checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 		localWorkSize, null, xEventBuf));
 
@@ -466,10 +462,7 @@ public class GPUSolver extends Solver {
 		    checkCLError(err);
 		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 		    checkCLError(err);
-		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert
-										    // nanoseconds
-										    // to
-										    // milliseconds
+		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
 		}), NULL));
 
 	// flush command to the device
