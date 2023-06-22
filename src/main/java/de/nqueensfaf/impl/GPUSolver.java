@@ -124,7 +124,7 @@ public class GPUSolver extends Solver {
 			errBuf);
 		checkCLError(errBuf);
 		device.memqueue = memqueue;
-		// create buffers and fill with trash constellations
+		// calculate workload size for device
 		int deviceWorkloadSize = (device.config.weight * workloadSize) / weightSum;
 		if (devices.indexOf(device) == devices.size() - 1) {
 		    deviceWorkloadSize = workloadSize - workloadBeginPtr;
@@ -254,8 +254,7 @@ public class GPUSolver extends Solver {
 	// make the max global work size be divisible by the devices workgroup size
 	int deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
 		* device.config.workgroupSize;
-	if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) // is it the one and
-									    // only device workload?
+	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
 	while (ptr < device.constellations.size()) {
