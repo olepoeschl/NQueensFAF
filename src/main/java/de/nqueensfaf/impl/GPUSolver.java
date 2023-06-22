@@ -439,8 +439,8 @@ public class GPUSolver extends Solver {
 	checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 		localWorkSize, null, xEventBuf));
 
-	// workaround for AMD GPUs so that they always return the correct results back
-	// to the host
+	// workaround for AMD GPUs returning not all results correctly: enqueue a no-operation kernel
+	// (without this, sometimes the program finishes with progrss = 0.999...)
 	if (device.vendor.toLowerCase().contains("advanced micro devices")
 		|| device.vendor.toLowerCase().contains("amd")) {
 	    long nullKernel = clCreateKernel(device.program, "null", errBuf);
