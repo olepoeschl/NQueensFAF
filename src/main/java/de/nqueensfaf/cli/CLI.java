@@ -129,26 +129,24 @@ public class CLI implements Runnable {
 		    System.out.println("no config file provided, using default config...");
 		}
 		// print used devices
-		var devices = gpuSolver.getDevices();
+		var devices = gpuSolver.getDevicesWithConfig();
 		System.out.println("following GPU's will be used:");
 		System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
 			Arrays.asList(
 				new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.config().index)),
 				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()),
 				new Column().header("Weight").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER)
 					.with(device -> Integer
-						.toString(gpuSolver.getConfig().deviceConfigs[device.index()].weight)),
+						.toString(device.config().weight)),
 				new Column().header("Workgroup Size").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER)
-					.with(device -> Integer.toString(
-						gpuSolver.getConfig().deviceConfigs[device.index()].workgroupSize)),
+					.with(device -> Integer.toString(device.config().workgroupSize)),
 				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER)
-					.with(device -> Integer.toString(gpuSolver.getConfig().deviceConfigs[device
-						.index()].maxGlobalWorkSize)))));
+					.with(device -> Integer.toString(device.config().maxGlobalWorkSize)))));
 //		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
 //		    System.err.println(
 //				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");

@@ -669,11 +669,11 @@ public class GPUSolver extends Solver {
     }
 
     public List<DeviceInfo> getDevices() {
-	List<DeviceInfo> deviceInfos = new ArrayList<DeviceInfo>(devices.size());
-	for (int i = 0; i < devices.size(); i++) {
-	    deviceInfos.add(new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name));
-	}
-	return deviceInfos;
+	return devices.stream().map(device -> new DeviceInfo(device.config.index, device.vendor, device.name)).toList();
+    }
+    
+    public List<DeviceInfoWithConfig> getDevicesWithConfig(){
+	return devices.stream().map(device -> new DeviceInfoWithConfig(device.config, device.vendor, device.name)).toList();
     }
 
     private String getKernelSourceAsString(String filepath) throws IOException {
@@ -778,6 +778,7 @@ public class GPUSolver extends Solver {
     }
 
     public record DeviceInfo(int index, String vendor, String name) {}
+    public record DeviceInfoWithConfig(DeviceConfig config, String vendor, String name) {}
     
     // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
