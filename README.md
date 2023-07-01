@@ -61,6 +61,9 @@ With `-c` you can pass a config file. Config files are written in json format an
   </thead>
   <tbody>
     <tr>
+      <td colspan="4" align="center"><i>General configs</i></td>
+    </tr>
+    <tr>
       <td>updateInterval</td>
       <td>int</td>
       <td>>0</td>
