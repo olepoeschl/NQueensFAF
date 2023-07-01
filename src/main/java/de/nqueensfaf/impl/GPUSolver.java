@@ -645,7 +645,7 @@ public class GPUSolver extends Solver {
 	devices.clear();
 	weightSum = 0;
 
-	if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
+	if (deviceConfigsInput.equals(DeviceConfig.ALL_DEVICES)) {
 	    int index = 0;
 	    for (Device device : availableDevices) {
 		devices.add(device);
@@ -733,7 +733,7 @@ public class GPUSolver extends Solver {
     }
 
     public static class DeviceConfig {
-	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0);
+	public static final DeviceConfig[] ALL_DEVICES = new DeviceConfig[] {new DeviceConfig(0, 9999, 1, 9999)};
 	public int index;
 	public int workgroupSize;
 	public int weight;
