@@ -49,37 +49,109 @@ For example, to run board size 18 on your default GPU with default settings, you
 `nqueensfaf -N 18 -g`
 
 With `-c` you can pass a config file. Config files are written in json format and may only have following attributes:<br>
-| name | type | allowed values | default value |
-| --- | --- | --- | --- |
-| updateInterval | int | >0 | 128 |
-| autoSaveEnabled | boolean | true, false | false |
-| autoDeleteEnabled | boolean | true, false | false |
-| autoSavePercentageStep | int | >0, <100 | 10 |
-| autoSavePath | String | valid file system path | nqueensfaf{N}.dat |
-
-CPU configs:
-| name | type | allowed values | default value |
-| --- | --- | --- | --- |
-| threadcount | int | >0 | 1 |
-| presetQueens | int | >=4 | 4 |
-
-GPU configs:
-| name | type | allowed values | default value |
-| --- | --- | --- | --- |
-| deviceConfigs | deviceConfig[] | see deviceConfig explanation | [{0, 64, 1, 1000000000}] |
-| presetQueens | int | >=4 | 4 |
-
-Attributes of deviceConfig:
-| name | type | allowed values | default value |
-| --- | --- | --- | --- |
-| index | int | >=0 | 0 |
-| workgroupSize | int | >0 | 64 |
-| weight | int | >=0 | 1 |
-| maxGlobalWorkSize | int | >0 | 1000000000 |
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>type</th>
+      <th>allowed values</th>
+      <th>default value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>updateInterval</td>
+      <td>int</td>
+      <td>>0</td>
+      <td>128</td>
+    </tr>
+    <tr>
+      <td>autoSaveEnabled</td>
+      <td>boolean</td>
+      <td>true, false</td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>autoDeleteEnabled</td>
+      <td>boolean</td>
+      <td>true, false</td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>autoSavePercentageStep</td>
+      <td>int</td>
+      <td>>0 && <100</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td>autoSavePath</td>
+      <td>String</td>
+      <td>valid file system path</td>
+      <td>nqueensfaf{N}.dat</td>
+    </tr>
+    <tr>
+      <td colspan="4" align="center">CPU configs</td>
+    </tr>
+    <tr>
+      <td>threadcount</td>
+      <td>int</td>
+      <td>>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>presetQueens</td>
+      <td>int</td>
+      <td>>=4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td colspan="4" align="center">GPU configs</td>
+    </tr>
+    <tr>
+      <td>deviceConfigs</td>
+      <td>deviceConfig[]</td>
+      <td>see deviceConfig section</td>
+      <td>[{0, 64, 1, 1000000000}]</td>
+    </tr>
+    <tr>
+      <td>presetQueens</td>
+      <td>int</td>
+      <td>>=4</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td colspan="4" align="center">deviceConfig attributes</td>
+    </tr>
+    <tr>
+      <td>index</td>
+      <td>int</td>
+      <td>>=0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>workgroupSize</td>
+      <td>int</td>
+      <td>>0</td>
+      <td>64</td>
+    </tr>
+    <tr>
+      <td>weight</td>
+      <td>int</td>
+      <td>>=0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>maxGlobalWorkSize</td>
+      <td>int</td>
+      <td>>=workgroupSize</td>
+      <td>1000000000</td>
+    </tr>
+  </tbody>
+</table>
 
 Execute `nqueensfaf -d` to see your available devices and their respective indexes.
 
-## Use it in your project
+## Java usage
 ```
 CPUSolver s = new CPUSolver()
       .config(config -> {
