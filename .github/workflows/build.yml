@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Java CI with Maven
+name: Build
 
 on:
   workflow_dispatch:
@@ -17,7 +17,9 @@ on:
 
 jobs:
   build-jar:
-    if: "contains(github.event.head_commit.message, '[trigger-nightly-build]')"
+    if: |
+      contains(github.event_name, 'workflow_dispatch') ||
+      contains(github.event.head_commit.message, '[trigger-nightly-build]')
     runs-on: ubuntu-latest
     permissions: write-all
     outputs:

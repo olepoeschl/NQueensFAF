@@ -52,12 +52,12 @@ public abstract class Solver {
 	state = INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
+
+	state = RUNNING;
 	if (onUpdateConsumer != null)
 	    executor.submit(consumeUpdates());
 	if (getConfig().autoSaveEnabled)
 	    executor.submit(autoSaver());
-
-	state = RUNNING;
 	try {
 	    run();
 	} catch (Exception e) {
@@ -155,8 +155,6 @@ public abstract class Solver {
 			} catch (SecurityException e) {
 			    throw new SecurityException("unable to delete autosave file", e);
 			}
-		    } else {
-			store(filePath); // store one last time
 		    }
 		}
 	    } catch (IOException e) {

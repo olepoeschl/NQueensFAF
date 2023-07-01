@@ -46,10 +46,10 @@ public class GPUSolver extends Solver {
 
     private long[] contexts, programs;
     private ArrayList<Device> devices, availableDevices;
-    private int weightSum;
     private GPUConstellationsGenerator generator;
     private ArrayList<Constellation> constellations;
     private int workloadSize;
+    private int weightSum;
     private long duration, start, end, storedDuration;
     private boolean injected;
     
@@ -95,14 +95,17 @@ public class GPUSolver extends Solver {
 
 	    IntBuffer errBuf = stack.callocInt(1);
 
-	    // prepare OpenCL stuff, generate workload and transfer to device
 	    createContextsAndPrograms(stack, errBuf);
 	    int workloadBeginPtr = 0;
 	    for (Device device : devices) {
 		// build program
-		String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize;
+		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize + " -Werror";
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
-		checkCLError(error);
+		if(error != 0) {
+		    String buildLog = getProgramBuildInfoStringASCII(device.program, device.id, CL_PROGRAM_BUILD_LOG);
+		    String msg = String.format("OpenCL error [%d]: failed to build program: %s", error, buildLog);
+		    throw new RuntimeException(msg);
+		}
 		// create kernel
 		long kernel;
 		if (device.vendor.toLowerCase().contains("intel")) {
@@ -125,7 +128,7 @@ public class GPUSolver extends Solver {
 			errBuf);
 		checkCLError(errBuf);
 		device.memqueue = memqueue;
-		// create buffers and fill with trash constellations
+		// calculate workload size for device
 		int deviceWorkloadSize = (device.config.weight * workloadSize) / weightSum;
 		if (devices.indexOf(device) == devices.size() - 1) {
 		    deviceWorkloadSize = workloadSize - workloadBeginPtr;
@@ -255,8 +258,7 @@ public class GPUSolver extends Solver {
 	// make the max global work size be divisible by the devices workgroup size
 	int deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
 		* device.config.workgroupSize;
-	if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) // is it the one and
-									    // only device workload?
+	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
 	while (ptr < device.constellations.size()) {
@@ -292,12 +294,13 @@ public class GPUSolver extends Solver {
 		start = System.currentTimeMillis();
 
 	    // run
-	    explosionBoost9000(errBuf, device);
+	    enqueueKernel(errBuf, device);
 	    // start a thread continuously reading device data
 	    deviceReaderThread(device).start();
 
 	    // wait for kernel to finish
 	    clFinish(device.xqueue);
+	    checkCLError(clWaitForEvents(device.xEvent));
 
 	    // stop timer when the last device is finished computing
 	    if (ptr >= device.constellations.size()) {
@@ -305,18 +308,8 @@ public class GPUSolver extends Solver {
 		    end++;
 		else {
 		    // calculate needed time
-		    if (devices.size() > 1) {
-			end = System.currentTimeMillis();
-			duration = end - start + storedDuration;
-		    } else {
-			while (device.duration == 0)
-			    try {
-				Thread.sleep(50);
-			    } catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			    }
-			duration = device.duration;
-		    }
+		    end = System.currentTimeMillis();
+		    duration = end - start + storedDuration;
 		}
 	    }
 
@@ -435,7 +428,7 @@ public class GPUSolver extends Solver {
 	checkCLError(clSetKernelArg(device.kernel, 4, resArg));
     }
 
-    private void explosionBoost9000(IntBuffer errBuf, Device device) {
+    private void enqueueKernel(IntBuffer errBuf, Device device) {
 	// create buffer of pointers defining the multi-dimensional size of the number
 	// of work units to execute
 	final int dimensions = 1;
@@ -445,15 +438,12 @@ public class GPUSolver extends Solver {
 	localWorkSize.put(0, device.config.workgroupSize);
 
 	// run kernel
-	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1); // buffer for event that
-									    // is used for
-									    // measuring the
-									    // execution time
+	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
 	checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 		localWorkSize, null, xEventBuf));
 
-	// workaround for AMD GPUs so that they always return the correct results back
-	// to the host
+	// workaround for AMD GPUs returning not all results correctly: enqueue a no-operation kernel
+	// (without this, sometimes the program finishes with progrss = 0.999...)
 	if (device.vendor.toLowerCase().contains("advanced micro devices")
 		|| device.vendor.toLowerCase().contains("amd")) {
 	    long nullKernel = clCreateKernel(device.program, "null", errBuf);
@@ -475,10 +465,7 @@ public class GPUSolver extends Solver {
 		    checkCLError(err);
 		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 		    checkCLError(err);
-		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert
-										    // nanoseconds
-										    // to
-										    // milliseconds
+		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
 		}), NULL));
 
 	// flush command to the device
@@ -658,7 +645,7 @@ public class GPUSolver extends Solver {
 	devices.clear();
 	weightSum = 0;
 
-	if (deviceConfigsInput[0].equals(DeviceConfig.ALL_DEVICES)) {
+	if (deviceConfigsInput.equals(DeviceConfig.ALL_DEVICES)) {
 	    int index = 0;
 	    for (Device device : availableDevices) {
 		devices.add(device);
@@ -686,11 +673,11 @@ public class GPUSolver extends Solver {
     }
 
     public List<DeviceInfo> getDevices() {
-	List<DeviceInfo> deviceInfos = new ArrayList<DeviceInfo>(devices.size());
-	for (int i = 0; i < devices.size(); i++) {
-	    deviceInfos.add(new DeviceInfo(i, devices.get(i).vendor, devices.get(i).name));
-	}
-	return deviceInfos;
+	return devices.stream().map(device -> new DeviceInfo(device.config.index, device.vendor, device.name)).toList();
+    }
+    
+    public List<DeviceInfoWithConfig> getDevicesWithConfig(){
+	return devices.stream().map(device -> new DeviceInfoWithConfig(device.config, device.vendor, device.name)).toList();
     }
 
     private String getKernelSourceAsString(String filepath) throws IOException {
@@ -746,7 +733,7 @@ public class GPUSolver extends Solver {
     }
 
     public static class DeviceConfig {
-	public static final DeviceConfig ALL_DEVICES = new DeviceConfig(-420, 0, 0, 0);
+	public static final DeviceConfig[] ALL_DEVICES = new DeviceConfig[] {new DeviceConfig(0, 9999, 1, 9999)};
 	public int index;
 	public int workgroupSize;
 	public int weight;
@@ -795,6 +782,7 @@ public class GPUSolver extends Solver {
     }
 
     public record DeviceInfo(int index, String vendor, String name) {}
+    public record DeviceInfoWithConfig(DeviceConfig config, String vendor, String name) {}
     
     // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
