@@ -99,9 +99,13 @@ public class GPUSolver extends Solver {
 	    int workloadBeginPtr = 0;
 	    for (Device device : devices) {
 		// build program
-		String options = "-D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize;
+		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize + " -Werror";
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
-		checkCLError(error);
+		if(error != 0) {
+		    String buildLog = getProgramBuildInfoStringASCII(device.program, device.id, CL_PROGRAM_BUILD_LOG);
+		    String msg = String.format("OpenCL error [%d]: failed to build program: %s", error, buildLog);
+		    throw new RuntimeException(msg);
+		}
 		// create kernel
 		long kernel;
 		if (device.vendor.toLowerCase().contains("intel")) {
