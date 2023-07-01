@@ -35,7 +35,7 @@ The CPU's and the GPU's are used with stock settings.
 Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 # Usage
-## Try the command line interface
+## command line interface
 ```
 Usage: nqueensfaf [-dgh] [-c=FILE] [-N=INT] [-t=FILE]
   -c, --config=FILE      absolute path to the configuration file
