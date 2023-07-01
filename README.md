@@ -48,7 +48,8 @@ Usage: nqueensfaf [-dgh] [-c=FILE] [-N=INT] [-t=FILE]
 For example, to run board size 18 on your default GPU with default settings, you would execute:
 `nqueensfaf -N 18 -g`
 
-With `-c` you can pass a config file. Config files are written in json format and may only have following attributes:<br>
+### config files
+With `-c` you can pass a config file. Config files are written in json format and may have attributes from the following table.<br>
 <table>
   <thead>
     <tr>
