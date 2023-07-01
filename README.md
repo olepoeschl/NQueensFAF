@@ -91,7 +91,7 @@ With `-c` you can pass a config file. Config files are written in json format an
       <td>nqueensfaf{N}.dat</td>
     </tr>
     <tr>
-      <td colspan="4" align="center">CPU configs</td>
+      <td colspan="4" align="center"><i>CPU configs</i></td>
     </tr>
     <tr>
       <td>threadcount</td>
@@ -106,7 +106,7 @@ With `-c` you can pass a config file. Config files are written in json format an
       <td>4</td>
     </tr>
     <tr>
-      <td colspan="4" align="center">GPU configs</td>
+      <td colspan="4" align="center"><i>GPU configs</i></td>
     </tr>
     <tr>
       <td>deviceConfigs</td>
@@ -121,7 +121,7 @@ With `-c` you can pass a config file. Config files are written in json format an
       <td>6</td>
     </tr>
     <tr>
-      <td colspan="4" align="center">deviceConfig attributes</td>
+      <td colspan="4" align="center"><i>deviceConfig attributes</i></td>
     </tr>
     <tr>
       <td>index</td>
