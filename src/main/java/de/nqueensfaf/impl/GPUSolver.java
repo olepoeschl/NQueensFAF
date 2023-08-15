@@ -769,6 +769,8 @@ public class GPUSolver extends Solver {
 		throw new IllegalArgumentException("invalid value for index: only numbers >=0 are allowed");
 	    if (workgroupSize <= 0)
 		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
+	    if(weight < 0)
+		throw new IllegalArgumentException("invalid value for weight: only numbers >=0 are allowed");
 	    if (maxGlobalWorkSize != 0 && maxGlobalWorkSize < workgroupSize)
 		throw new IllegalArgumentException(
 			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (no limit) are allowed");
