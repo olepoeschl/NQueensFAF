@@ -28,8 +28,8 @@ public class Config {
     }
 
     public void validate() {
-	if (updateInterval <= 0)
-	    throw new IllegalArgumentException("invalid value for updateInterval: only numbers >0 are allowed");
+	if (updateInterval < 0)
+	    throw new IllegalArgumentException("invalid value for updateInterval: only numbers >0 or 0 (no updates) are allowed");
 
 	if (autoSaveEnabled) {
 	    if (autoSavePercentageStep <= 0 || autoSavePercentageStep >= 100)

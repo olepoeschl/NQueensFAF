@@ -54,7 +54,7 @@ public abstract class Solver {
 	    initCb.accept(this);
 
 	state = RUNNING;
-	if (onUpdateConsumer != null)
+	if (onUpdateConsumer != null && getConfig().updateInterval > 0) // if updateInterval is 0, it means, disable progress updates
 	    executor.submit(consumeUpdates());
 	if (getConfig().autoSaveEnabled)
 	    executor.submit(autoSaver());

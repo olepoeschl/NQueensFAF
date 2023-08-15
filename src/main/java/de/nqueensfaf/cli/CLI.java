@@ -162,7 +162,8 @@ public class CLI implements Runnable {
 			System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
 				getDurationPrettyString(duration));
 		    }).onFinish(self -> {
-			System.out.println();
+			if(self.getConfig().updateInterval > 0)
+			    System.out.println();
 			System.out.println("found " + self.getSolutions() + " solutions in "
 				+ getDurationPrettyString(self.getDuration()));
 		    });
