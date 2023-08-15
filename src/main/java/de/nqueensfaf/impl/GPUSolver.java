@@ -256,7 +256,11 @@ public class GPUSolver extends Solver {
 	int ptr = 0;
 
 	// make the max global work size be divisible by the devices workgroup size
-	int deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
+	int deviceCurrentWorkloadSize;
+	if(device.config.maxGlobalWorkSize == 0) // if no max global work size is specified, don't limit the global work size
+	    deviceCurrentWorkloadSize = device.constellations.size();
+	else
+	    deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
 		* device.config.workgroupSize;
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
@@ -743,7 +747,7 @@ public class GPUSolver extends Solver {
 	    index = 0;
 	    workgroupSize = 64;
 	    weight = 1;
-	    maxGlobalWorkSize = 1_000_000_000;
+	    maxGlobalWorkSize = 0;
 	}
 
 	@JsonCreator
@@ -753,10 +757,10 @@ public class GPUSolver extends Solver {
 		@JsonProperty(value = "maxGlobalWorkSize") int maxGlobalWorkSize) {
 	    this();
 	    this.index = index;
-	    if(workgroupSize != 0)
+	    if(workgroupSize > 0)
 		this.workgroupSize = workgroupSize;
 	    this.weight = weight;
-	    if(maxGlobalWorkSize != 0)
+	    if(maxGlobalWorkSize > 0)
 		this.maxGlobalWorkSize = maxGlobalWorkSize;
 	}
 
@@ -765,9 +769,9 @@ public class GPUSolver extends Solver {
 		throw new IllegalArgumentException("invalid value for index: only numbers >=0 are allowed");
 	    if (workgroupSize <= 0)
 		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
-	    if (maxGlobalWorkSize < workgroupSize)
+	    if (maxGlobalWorkSize != 0 && maxGlobalWorkSize < workgroupSize)
 		throw new IllegalArgumentException(
-			"invalid value for max global work size: only numbers >=[workgroup size] are allowed");
+			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (no limit) are allowed");
 	}
 
 	@Override
