@@ -618,9 +618,9 @@ public class GPUSolver extends Solver {
 
 	for (int p = 0; p < platforms.capacity(); p++) {
 	    long platform = platforms.get(p);
-	    checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, entityCountBuf));
-	    if (entityCountBuf.get(0) == 0) {
-		throw new IllegalStateException("no OpenCL devices found");
+	    int error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, entityCountBuf);
+	    if(error == CL_DEVICE_NOT_FOUND) { // if no OpenCL GPUs are found for this platform, skip
+		continue;
 	    }
 	    PointerBuffer devicesBuf = stack.mallocPointer(entityCountBuf.get(0));
 	    checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, devicesBuf, (IntBuffer) null));
