@@ -300,7 +300,8 @@ public class GPUSolver extends Solver {
 	    // run
 	    enqueueKernel(errBuf, device);
 	    // start a thread continuously reading device data
-	    deviceReaderThread(device).start();
+	    if(config.updateInterval > 0)
+		deviceReaderThread(device).start();
 
 	    // wait for kernel to finish
 	    clFinish(device.xqueue);
@@ -317,12 +318,14 @@ public class GPUSolver extends Solver {
 		}
 	    }
 
-	    device.stopReaderThread = 1; // stop the devices reader thread
-	    while (device.stopReaderThread != 0) { // wait until the thread has terminated
-		try {
-		    Thread.sleep(50);
-		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
+	    if (config.updateInterval > 0) {
+		device.stopReaderThread = 1; // stop the devices reader thread
+		while (device.stopReaderThread != 0) { // wait until the thread has terminated
+		    try {
+			Thread.sleep(50);
+		    } catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		    }
 		}
 	    }
 
