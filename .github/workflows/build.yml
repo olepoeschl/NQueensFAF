@@ -37,10 +37,12 @@ jobs:
     - name: Extract Maven project version
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
       id: bump-version
+    - name: Rename artifact to contain "nightly"
+      run: mv target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar target/nqueensfaf-${{ steps.bump-version.outputs.version }}-nightly.jar
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar --clobber
+      run: gh release upload nightly target/nqueensfaf-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v3
 
@@ -57,10 +59,12 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Rename artifact to contain "nightly"
+      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-linux.zip
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-linux.zip --clobber
     - name: Extract lwjgl native shared library
       run: |
         cd target
@@ -85,10 +89,12 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Rename artifact to contain "nightly"
+      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-mac.zip
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-mac.zip --clobber
     - name: Extract lwjgl native shared library
       run: |
         cd target
@@ -113,10 +119,12 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Rename artifact to contain "nightly"
+      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-windows.zip
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-windows.zip --clobber
     - name: Extract lwjgl native shared library
       run: |
         cd target
@@ -151,10 +159,12 @@ jobs:
         mv lwjgl-windows-native/lwjgl.dll target/windows/x64/org/lwjgl
         cd target
         7z a nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar  macos windows
+    - name: Rename artifact to contain "nightly"
+      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly.jar
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar --clobber
+      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly.jar --clobber
         
   update-nightly-tag:
     runs-on: ubuntu-latest
