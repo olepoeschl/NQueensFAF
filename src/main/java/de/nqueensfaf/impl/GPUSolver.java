@@ -760,11 +760,9 @@ public class GPUSolver extends Solver {
 		@JsonProperty(value = "maxGlobalWorkSize") int maxGlobalWorkSize) {
 	    this();
 	    this.index = index;
-	    if(workgroupSize > 0)
-		this.workgroupSize = workgroupSize;
+	    this.workgroupSize = workgroupSize;
 	    this.weight = weight;
-	    if(maxGlobalWorkSize > 0)
-		this.maxGlobalWorkSize = maxGlobalWorkSize;
+	    this.maxGlobalWorkSize = maxGlobalWorkSize;
 	}
 
 	public void validate() {
@@ -772,11 +770,11 @@ public class GPUSolver extends Solver {
 		throw new IllegalArgumentException("invalid value for index: only numbers >=0 are allowed");
 	    if (workgroupSize <= 0)
 		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
-	    if(weight < 0)
-		throw new IllegalArgumentException("invalid value for weight: only numbers >=0 are allowed");
+	    if (weight < 0)
+		throw new IllegalArgumentException("invalid value for weight: only numbers >0 or 0 (device disabled) are allowed");
 	    if (maxGlobalWorkSize != 0 && maxGlobalWorkSize < workgroupSize)
 		throw new IllegalArgumentException(
-			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (no limit) are allowed");
+			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (unlimited global work size) are allowed");
 	}
 
 	@Override
