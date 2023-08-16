@@ -69,7 +69,7 @@ With `-c` you can pass a config file. Config files are written in json format an
     <tr>
       <td>updateInterval</td>
       <td>int</td>
-      <td>>0, =0 (no progress updates) </td>
+      <td>>0 || =0 (no progress updates) </td>
       <td>128</td>
     </tr>
     <tr>
@@ -144,13 +144,13 @@ With `-c` you can pass a config file. Config files are written in json format an
     <tr>
       <td>weight</td>
       <td>int</td>
-      <td>>0, =0 (device disabled) </td>
+      <td>>0 || =0 (device disabled) </td>
       <td>1</td>
     </tr>
     <tr>
       <td>maxGlobalWorkSize</td>
       <td>int</td>
-      <td>>=workgroupSize, =0 (unlimited global work size) </td>
+      <td>>=workgroupSize || =0 (unlimited global work size) </td>
       <td>0</td>
     </tr>
   </tbody>
