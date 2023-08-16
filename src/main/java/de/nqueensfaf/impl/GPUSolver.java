@@ -228,20 +228,22 @@ public class GPUSolver extends Solver {
 	    PointerBuffer ctxPlatform = stack.mallocPointer(3);
 	    ctxPlatform.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
 
-	    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
-	    checkCLError(errBuf);
-	    contexts[idx] = context;
-	    long program;
-	    try {
-		program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
-	    } catch (IOException e) {
-		throw new IOException("error while creating program", e);
-	    }
-	    checkCLError(errBuf);
-	    programs[idx] = program;
+	   
 
 	    for (Device device : devices) {
 		if (device.platform == platform) {
+		    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
+		    checkCLError(errBuf);
+		    contexts[idx] = context;
+		    long program;
+		    try {
+			program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
+		    } catch (IOException e) {
+			throw new IOException("error while creating program", e);
+		    }
+		    checkCLError(errBuf);
+		    programs[idx] = program;
+		    
 		    device.context = context;
 		    device.program = program;
 		}
