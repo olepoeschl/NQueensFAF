@@ -515,7 +515,7 @@ public class GPUSolver extends Solver {
 	    while (device.stopReaderThread == 0) {
 		readResults(device);
 		try {
-		    Thread.sleep(50);
+		    Thread.sleep(config.updateInterval);
 		} catch (InterruptedException e) {
 		    Thread.currentThread().interrupt();
 		}
