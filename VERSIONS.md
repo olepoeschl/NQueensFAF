@@ -60,13 +60,13 @@ We are very excited!
         and solves all constellations using GPU instead of solving remaining constellations using CPU
         
       - code (especially of the Gui class) is much cleaner now
-## 0.10.0:
+## 0.10:
       - included support for GPU's using OpenCL through lwjgl
       
       - insanely fast thanks to optimized parallel programming
       
       - realtime progress updates using OpenCL read operations
-## 0.9.0:
+## 0.9:
       - big performance improvement (~35%)
 
       - implemented case distinction for the different start Constellations in order to get rid of arrays
@@ -76,7 +76,7 @@ We are very excited!
       - currently only works for board sizes up to N=23, this will be updated soon
       
       - N = 16 in ~1.35 sec --> broke the 2-second-Barrier!
-## 0.8.0:
+## 0.8:
       - better handling of the different start constellation cases
       
       - optimization of the recursion functions
@@ -84,7 +84,7 @@ We are very excited!
       - many further little optimizations
 
       - N = 16 in ~2.1 sec
-## 0.7.0:
+## 0.7:
       - many minor changes to reduce cache misses and also the use of memory
       
       - ability to save progress and continue later
@@ -92,7 +92,7 @@ We are very excited!
       - use newest java jdk 15
       
       - N = 16 in ~2.5 sec
-## 0.6.0:
+## 0.6:
       - bit representation of integers for modelling the board
       
       - rest of the program stays the same
@@ -100,7 +100,7 @@ We are very excited!
       - has a gui now
       
       - N = 16 in ~ 4 sec
-## 0.5.0:
+## 0.5:
       - better use of symmetry of solutions by using starting constellations
       
       - set Queens on the outer rows and cols
@@ -108,17 +108,17 @@ We are very excited!
       - multithreading by distributing the starting positions to the threads
       
       - N = 16 in ~ 1 min     
-## 0.4.0:
+## 0.4:
       - multithreading by setting Queen in the first row on different places
-## 0.3.0:
+## 0.3:
       - represent the board with diagonals and cols 
       
       - N = 16 in ~2-3 min
-## 0.2.0:
+## 0.2:
       - reduce to half by only going to the half of the first row
       
       - N = 16 in ~ 5 min
-## 0.1.0: 
+## 0.1: 
       - board as NxN-boolean
       
       - occupy each square individually
