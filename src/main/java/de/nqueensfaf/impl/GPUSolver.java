@@ -529,7 +529,11 @@ public class GPUSolver extends Solver {
 	tmp.from(config);
 	
 	configConsumer.accept(tmp);
-	tmp.validate();
+	try {
+	    tmp.validate();
+	} catch(IllegalArgumentException e) {
+	    throw new IllegalArgumentException("invalid GPUSolverConfig", e);
+	}
 	
 	config.from(tmp);
 	setDeviceConfigs(config.deviceConfigs);
@@ -669,7 +673,12 @@ public class GPUSolver extends Solver {
 		continue;
 	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
 		continue;
-	    if (deviceConfig.index >= 0 && deviceConfig.index < availableDevices.size()) {
+	    try {
+		deviceConfig.validate();
+	    } catch(IllegalArgumentException e) {
+		throw new IllegalArgumentException("invalid device config", e);
+	    }
+	    if (deviceConfig.index < availableDevices.size()) {
 		deviceConfigsTmp.add(deviceConfig);
 		Device device = availableDevices.get(deviceConfig.index);
 		device.config = deviceConfig;

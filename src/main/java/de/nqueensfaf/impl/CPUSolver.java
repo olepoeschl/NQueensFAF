@@ -116,7 +116,11 @@ public class CPUSolver extends Solver {
 	tmp.from(config);
 	
 	configConsumer.accept(tmp);
-	tmp.validate();
+	try {
+	    tmp.validate();
+	} catch(IllegalArgumentException e) {
+	    throw new IllegalArgumentException("invalid CPUSolverConfig", e);
+	}
 	
 	config.from(tmp); // if given config is valid, apply it
 	return this;
