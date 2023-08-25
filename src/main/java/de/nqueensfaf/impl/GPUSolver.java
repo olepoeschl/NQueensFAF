@@ -228,8 +228,6 @@ public class GPUSolver extends Solver {
 	    PointerBuffer ctxPlatform = stack.mallocPointer(3);
 	    ctxPlatform.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
 
-	   
-
 	    for (Device device : devices) {
 		if (device.platform == platform) {
 		    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
