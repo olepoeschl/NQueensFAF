@@ -101,6 +101,38 @@ kernel void nqfaf_nvidia(global int *ld_arr, global int *rd_arr, global int *col
 
 		if(row == N-1)					// increase the solutions, if we are in the last row 
 			solutions++;
+		
+		// unroll 1 iteration
+		if(row < start)
+		    break;
+		
+		if(free) {					// if there are free slots in the current row 
+			direction = 1;					// we are going forwards 
+			queen = -free & free;				// this is the next free slot for a queen (searching from the right border) in the current row
+			queens[l_id][row] = queen;			// remember the queen 
+			row++;						// increase row counter 
+
+			ld_mem = ld_mem << 1 | ld >> 31;		// place the queen in the diagonals and shift them and remember the diagonals leaving the board 
+			rd_mem = rd_mem >> 1 | rd << 31;
+			ld = (ld | queen) << 1;							
+			rd = (rd | queen) >> 1;	
+		}
+		else {						// if the row is completely occupied 
+			direction = 0;					// we are going backwards 
+			row--;						// decrease row counter 
+			queen = queens[l_id][row];			// recover the queen in order to remove it 
+
+			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;	// shift diagonals one back, remove the queen and insert the diagonals that had left the board 
+			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
+			ld_mem >>= 1;
+			rd_mem <<= 1;						
+		}
+		free = ~(jkl_queens[row] | ld | rd | col);	// calculate the occupancy of the next row
+		free &= ~(queen + direction-1);			// occupy all bits right from the last queen in order to not place the same queen again 
+		col ^= queen;					// free up the column AFTER calculating free in order to not place the same queen again		
+
+		if(row == N-1)					// increase the solutions, if we are in the last row 
+			solutions++;
 	}
 	result[g_id] = solutions;			// number of solutions of the work item 
 }
