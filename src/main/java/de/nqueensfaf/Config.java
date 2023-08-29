@@ -15,7 +15,7 @@ public class Config {
     public long updateInterval;
     public boolean autoSaveEnabled;
     public boolean autoDeleteEnabled;
-    public int autoSavePercentageStep;
+    public float autoSavePercentageStep;
     public String autoSavePath;
 
     public Config() {

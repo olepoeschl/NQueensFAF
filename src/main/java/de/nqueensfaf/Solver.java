@@ -136,14 +136,14 @@ public abstract class Solver {
 		String filePath = getConfig().autoSavePath;
 		filePath = filePath.replaceAll("\\{N\\}", "" + N);
 		float progress = getProgress() * 100;
-		int tmpProgress = (int) progress / getConfig().autoSavePercentageStep * getConfig().autoSavePercentageStep;
+		float tmpProgress = progress;
 		while (isRunning()) {
 		    progress = getProgress() * 100;
 		    if (progress >= 100)
 			break;
 		    else if (progress >= tmpProgress + getConfig().autoSavePercentageStep) {
 			store(filePath);
-			tmpProgress = (int) progress;
+			tmpProgress = progress;
 		    }
 		    Thread.sleep(getConfig().updateInterval);
 		}
@@ -191,7 +191,9 @@ public abstract class Solver {
 	}
     }
 
-    public final synchronized void store(String filepath) throws IOException, IllegalArgumentException {
+    public final void store(String filepath) throws IOException, IllegalArgumentException {
+	if(isStoring)
+	    return;
 	isStoring = true;
 	store_(filepath);
 	isStoring = false;
