@@ -144,16 +144,11 @@ public class GPUSolver extends Solver {
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
 
-	    // execute device kernels
+	    // wait for execution of device kernels
 	    for (Device device : devices)
 		while (!device.finished)
 		    Thread.sleep(50);
-
-	    // release remaining OpenCL objects
-	    for (int i = 0; i < contexts.length; i++) {
-		checkCLError(clReleaseProgram(programs[i]));
-		checkCLError(clReleaseContext(contexts[i]));
-	    }
+	    
 	} catch (InterruptedException e) {
 	    Thread.currentThread().interrupt();
 	} catch (IOException e) {
@@ -508,6 +503,9 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseCommandQueue(device.xqueue));
 	checkCLError(clReleaseCommandQueue(device.memqueue));
 	checkCLError(clReleaseKernel(device.kernel));
+	checkCLError(clReleaseProgram(device.program));
+	checkCLError(clReleaseContext(device.context));
+	checkCLError(clReleaseDevice(device.id));
     }
 
     private Thread deviceReaderThread(Device device) {

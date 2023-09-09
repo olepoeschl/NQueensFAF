@@ -49,7 +49,7 @@ public class CLI implements Runnable {
     @Option(names = { "-t",
 	    "--task" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
     public void setTaskFile(File taskFile) {
-	if (!configFile.exists()) {
+	if (!taskFile.exists()) {
 	    throw new ParameterException(spec.commandLine(),
 		    "Invalid value '" + taskFile.getAbsolutePath() + "' for option '--task-file': file not found");
 	}

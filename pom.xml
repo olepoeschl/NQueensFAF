@@ -172,7 +172,7 @@
 		<dependency>
 	  		<groupId>info.picocli</groupId>
 	  		<artifactId>picocli</artifactId>
-	  		<version>4.7.4</version>
+	  		<version>4.7.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.freva</groupId>
@@ -222,7 +222,7 @@
 			<plugin>
 				<groupId>io.github.fvarrui</groupId>
 				<artifactId>javapackager</artifactId>
-				<version>1.7.2</version>
+				<version>1.7.4</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
