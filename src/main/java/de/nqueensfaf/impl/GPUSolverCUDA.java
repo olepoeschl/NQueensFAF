@@ -173,7 +173,7 @@ public class GPUSolverCUDA extends Solver {
 	checkNVRTC(nvrtcCreateProgram(pb, getKernelSourceAsString("kernel.cu"), "nqueensfaf.cu", null, null));
 	long program = pb.get(0);
 	
-	String[] options = new String[]{"-D N=" + N + "\0", "-D BLOCK_SIZE=" + device.config.workgroupSize + "\0", "-G\0", "-lineinfo\0"};
+	String[] options = new String[]{"-D N=" + N + "\0", "-D BLOCK_SIZE=" + device.config.workgroupSize + "\0"};
 	PointerBuffer optionsPb = stack.mallocPointer(options.length);
 	optionsPb.rewind();
 	for(String s : options) {
