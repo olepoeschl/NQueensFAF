@@ -1,10 +1,10 @@
 // Explosion Boost 9000
 
-extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *start_jkl_arr, long *result) {
+extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *start_jkl_arr, long long *result) {
 	// gpu intern indice
 	int g_id = blockIdx.x * blockDim.x + threadIdx.x;		// global thread id 
 	int l_id = threadIdx.x;  								// local thread id within block
-	printf("g_id: %d, l_id: %d\n", g_id, l_id);
+
 	// variables		
 	unsigned int L = 1 << (N-1);				// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
@@ -12,7 +12,7 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 	if(start == 69) {				// if we have a pseudo constellation we do nothing 
 		return;
 	}
-	// printf("[%d] N: %d, startjkl: %d\n", g_id, N, start_jkl_arr[g_id]);
+
 	int j = (start_jkl_arr[g_id] >> 10) & 31;	// queen in last row at position j
 	int k = (start_jkl_arr[g_id] >> 5) & 31;	// in row k queen at left border, in row l queen at right border
 	int l = start_jkl_arr[g_id] & 31;
@@ -52,14 +52,14 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 
 	// initialize current row as start and solutions as 0
 	int row = start;
-	unsigned long solutions = 0;
+	long long solutions = 0;
 
 	// calculate the occupancy of the first row
 	unsigned int free = ~(ld | rd | col | jkl_queens[row]);	// free is 1 if a queen can be set at the queens location
 	unsigned int queen = -free & free;			// the queen that will be set in the current row
 	// each row of queens contains the queens of the board of one workitem 
 	// local arrays are faster 
-	__shared__ unsigned int queens[WORKGROUP_SIZE][N];		// for remembering the queens for all rows for all boards in the work-group 
+	__shared__ unsigned int queens[BLOCK_SIZE][N];		// for remembering the queens for all rows for all boards in the work-group 
 	queens[l_id][start] = queen;			// we already calculated the first queen in the start row 
 
 	// going forward (setting a queen) or backward (removing a queen)? 										
@@ -96,6 +96,5 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 		if(row == N-1)					// increase the solutions, if we are in the last row 
 			solutions++;
 	}
-	printf("solutions: %d\n", solutions);
-	result[g_id] = solutions;			// number of solutions of the work item 
+	result[g_id] = solutions;			// number of solutions of the work item
 }

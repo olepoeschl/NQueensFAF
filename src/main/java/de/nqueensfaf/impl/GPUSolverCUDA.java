@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -172,7 +173,7 @@ public class GPUSolverCUDA extends Solver {
 	checkNVRTC(nvrtcCreateProgram(pb, getKernelSourceAsString("kernel.cu"), "nqueensfaf.cu", null, null));
 	long program = pb.get(0);
 	
-	String[] options = new String[]{"-D N=" + N + "\0", "-D WORKGROUP_SIZE=" + device.config.workgroupSize + "\0", "-G\0", "-lineinfo\0"};
+	String[] options = new String[]{"-D N=" + N + "\0", "-D BLOCK_SIZE=" + device.config.workgroupSize + "\0", "-G\0", "-lineinfo\0"};
 	PointerBuffer optionsPb = stack.mallocPointer(options.length);
 	optionsPb.rewind();
 	for(String s : options) {
@@ -283,9 +284,9 @@ public class GPUSolverCUDA extends Solver {
 	    // wait for kernel to finish
 	    cuEventRecord(device.endevent, device.xstream);
 	    cuEventSynchronize(device.endevent);
-//	    FloatBuffer fb = stack.mallocFloat(1);
-//	    check(cuEventElapsedTime(fb, device.startevent, device.endevent));
-//	    device.duration += (int) fb.get(0);
+	    FloatBuffer fb = stack.mallocFloat(1);
+	    check(cuEventElapsedTime(fb, device.startevent, device.endevent));
+	    device.duration += (int) fb.get(0);
 
 	    // stop timer when the last device is finished computing
 	    if (ptr >= device.constellations.size()) {
@@ -368,11 +369,10 @@ public class GPUSolverCUDA extends Solver {
 
     private void enqueueKernel(MemoryStack stack, Device device) {
 	check(cuLaunchKernel(
-		device.function, device.workloadGlobalWorkSize/device.config.workgroupSize, 1, 1,  // Nx1x1 blocks
-		device.config.workgroupSize, 1, 1,            // 1x1x1 threads per block
+		device.function, device.workloadGlobalWorkSize/device.config.workgroupSize, 1, 1,
+		device.config.workgroupSize, 1, 1,
 		0,
 		device.xstream,
-		// method 1: unpacked (simple, no alignment requirements)
 		stack.pointers(
 			memAddress(stack.longs(device.deviceLdMem)),
 			memAddress(stack.longs(device.deviceRdMem)),
@@ -391,9 +391,10 @@ public class GPUSolverCUDA extends Solver {
 		continue;
 	    long solutionsForConstellation = device.hostResMem.get(i)
 		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-	    if (solutionsForConstellation >= 0)
+	    if (solutionsForConstellation >= 0) {
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+	    }
 	}
     }
 
