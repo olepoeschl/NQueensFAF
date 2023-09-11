@@ -168,39 +168,6 @@ public class GPUSolverCUDA extends Solver {
 	});
     }
 
-    private void compileProgram(MemoryStack stack, Device device) throws IOException {
-	PointerBuffer pb = stack.mallocPointer(1);
-	checkNVRTC(nvrtcCreateProgram(pb, getKernelSourceAsString("kernel.cu"), "nqueensfaf.cu", null, null));
-	long program = pb.get(0);
-	
-	String[] options = new String[]{"-D N=" + N + "\0", "-D BLOCK_SIZE=" + device.config.workgroupSize + "\0"};
-	PointerBuffer optionsPb = stack.mallocPointer(options.length);
-	optionsPb.rewind();
-	for(String s : options) {
-	    ByteBuffer buf = stack.malloc(s.length());
-	    buf.rewind();
-	    buf.put(s.getBytes());
-	    buf.flip();
-	    optionsPb.put(MemoryUtil.memAddress(buf));
-	}
-	optionsPb.flip();
-	checkNVRTC(nvrtcCompileProgram(program, optionsPb));
-	{
-	    checkNVRTC(nvrtcGetProgramLogSize(program, pb));
-	    if (1L < pb.get(0)) {
-		ByteBuffer log = stack.malloc((int) pb.get(0) - 1);
-
-		checkNVRTC(nvrtcGetProgramLog(program, log));
-		System.err.println("Compilation log:");
-		System.err.println("----------------");
-		System.err.println(memASCII(log));
-	    }
-	}
-	checkNVRTC(nvrtcGetPTXSize(program, pb));
-	device.ptx = memAlloc((int)pb.get(0));
-	checkNVRTC(nvrtcGetPTX(program, device.ptx));
-    }
-
     private void runDevice(MemoryStack stack, Device device) {
 	PointerBuffer pb = stack.mallocPointer(1);
 	
@@ -320,6 +287,39 @@ public class GPUSolverCUDA extends Solver {
 	releaseWorkloadObjects(device);
 	releaseObjects(device);
 	device.finished = true;
+    }
+
+    private void compileProgram(MemoryStack stack, Device device) throws IOException {
+	PointerBuffer pb = stack.mallocPointer(1);
+	checkNVRTC(nvrtcCreateProgram(pb, getKernelSourceAsString("kernel.cu"), "nqueensfaf.cu", null, null));
+	long program = pb.get(0);
+	
+	String[] options = new String[]{"-D N=" + N + "\0", "-D BLOCK_SIZE=" + device.config.workgroupSize + "\0"};
+	PointerBuffer optionsPb = stack.mallocPointer(options.length);
+	optionsPb.rewind();
+	for(String s : options) {
+	    ByteBuffer buf = stack.malloc(s.length());
+	    buf.rewind();
+	    buf.put(s.getBytes());
+	    buf.flip();
+	    optionsPb.put(MemoryUtil.memAddress(buf));
+	}
+	optionsPb.flip();
+	checkNVRTC(nvrtcCompileProgram(program, optionsPb));
+	{
+	    checkNVRTC(nvrtcGetProgramLogSize(program, pb));
+	    if (1L < pb.get(0)) {
+		ByteBuffer log = stack.malloc((int) pb.get(0) - 1);
+
+		checkNVRTC(nvrtcGetProgramLog(program, log));
+		System.err.println("Compilation log:");
+		System.err.println("----------------");
+		System.err.println(memASCII(log));
+	    }
+	}
+	checkNVRTC(nvrtcGetPTXSize(program, pb));
+	device.ptx = memAlloc((int)pb.get(0));
+	checkNVRTC(nvrtcGetPTX(program, device.ptx));
     }
 
     private void allocBuffers(MemoryStack stack, Device device) {
