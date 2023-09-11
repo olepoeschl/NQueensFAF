@@ -4,7 +4,7 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 	// gpu intern indice
 	int g_id = blockIdx.x * blockDim.x + threadIdx.x;		// global thread id 
 	int l_id = threadIdx.x;  								// local thread id within block
-
+	printf("g_id: %d, l_id: %d\n", g_id, l_id);
 	// variables		
 	unsigned int L = 1 << (N-1);				// queen at the left border of the board (right border is represented by 1) 										
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
@@ -12,6 +12,7 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 	if(start == 69) {				// if we have a pseudo constellation we do nothing 
 		return;
 	}
+	// printf("[%d] N: %d, startjkl: %d\n", g_id, N, start_jkl_arr[g_id]);
 	int j = (start_jkl_arr[g_id] >> 10) & 31;	// queen in last row at position j
 	int k = (start_jkl_arr[g_id] >> 5) & 31;	// in row k queen at left border, in row l queen at right border
 	int l = start_jkl_arr[g_id] & 31;
@@ -72,7 +73,7 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 			direction = 1;					// we are going forwards 
 			queen = -free & free;				// this is the next free slot for a queen (searching from the right border) in the current row
 			queens[l_id][row] = queen;			// remember the queen 
-			row++;						// increase row counter 
+			row++;						// increase row counter
 
 			ld_mem = ld_mem << 1 | ld >> 31;		// place the queen in the diagonals and shift them and remember the diagonals leaving the board 
 			rd_mem = rd_mem >> 1 | rd << 31;
@@ -83,7 +84,6 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 			direction = 0;					// we are going backwards 
 			row--;						// decrease row counter 
 			queen = queens[l_id][row];			// recover the queen in order to remove it 
-
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;	// shift diagonals one back, remove the queen and insert the diagonals that had left the board 
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
 			ld_mem >>= 1;
@@ -96,5 +96,6 @@ extern "C" __global__ void nqfaf(int *ld_arr, int *rd_arr, int *col_arr, int *st
 		if(row == N-1)					// increase the solutions, if we are in the last row 
 			solutions++;
 	}
+	printf("solutions: %d\n", solutions);
 	result[g_id] = solutions;			// number of solutions of the work item 
 }

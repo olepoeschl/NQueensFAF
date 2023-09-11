@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -19,10 +18,7 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.cuda.*;
-import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -176,9 +172,9 @@ public class GPUSolverCUDA extends Solver {
 	checkNVRTC(nvrtcCreateProgram(pb, getKernelSourceAsString("kernel.cu"), "nqueensfaf.cu", null, null));
 	long program = pb.get(0);
 	
-	PointerBuffer optionsPb = stack.mallocPointer(2);
+	String[] options = new String[]{"-D N=" + N + "\0", "-D WORKGROUP_SIZE=" + device.config.workgroupSize + "\0", "-G\0", "-lineinfo\0"};
+	PointerBuffer optionsPb = stack.mallocPointer(options.length);
 	optionsPb.rewind();
-	String[] options = new String[]{"-D N=" + N + "\0", "-D WORKGROUP_SIZE=" + device.config.workgroupSize + "\0"};
 	for(String s : options) {
 	    ByteBuffer buf = stack.malloc(s.length());
 	    buf.rewind();
@@ -228,7 +224,7 @@ public class GPUSolverCUDA extends Solver {
 	device.startevent = pb.get(0);
         cuEventCreate(pb, 0);
 	device.endevent = pb.get(0);
-	// load function
+	// function
         check(cuModuleLoadData(pb, device.ptx));
         long module = pb.get(0);
         check(cuModuleGetFunction(pb, module, "nqfaf"));
@@ -246,7 +242,7 @@ public class GPUSolverCUDA extends Solver {
 		* device.config.workgroupSize;
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
-
+	
 	while (ptr < device.constellations.size()) {
 	    if (ptr == 0) { // first workload -> create buffers
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -280,7 +276,7 @@ public class GPUSolverCUDA extends Solver {
 	    // run
 	    check(cuEventRecord(device.startevent, device.xstream));
 	    enqueueKernel(stack, device);
-//	    // start a thread continuously reading device data
+	    // start a thread continuously reading device data
 //	    if(config.updateInterval > 0)
 //		deviceReaderThread(device).start();
 
@@ -422,6 +418,7 @@ public class GPUSolverCUDA extends Solver {
 
     private Thread deviceReaderThread(Device device) {
 	return new Thread(() -> {
+	    check(cuCtxSetCurrent(device.ctx));
 	    while (device.stopReaderThread == 0) {
 		readResults(device);
 		try {
