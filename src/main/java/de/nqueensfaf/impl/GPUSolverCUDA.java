@@ -218,6 +218,8 @@ public class GPUSolverCUDA extends Solver {
         device.xstream = pb.get(0);
 	check(cuStreamCreate(pb, 0));
         device.memstream = pb.get(0);
+	check(cuStreamCreate(pb, 0));
+        device.updatestream = pb.get(0);
         // events
         cuEventCreate(pb, 0);
 	device.memevent = pb.get(0);
@@ -225,6 +227,8 @@ public class GPUSolverCUDA extends Solver {
 	device.startevent = pb.get(0);
         cuEventCreate(pb, 0);
 	device.endevent = pb.get(0);
+        cuEventCreate(pb, 0);
+	device.updateevent = pb.get(0);
 	// function
         check(cuModuleLoadData(pb, device.ptx));
         long module = pb.get(0);
@@ -278,8 +282,8 @@ public class GPUSolverCUDA extends Solver {
 	    check(cuEventRecord(device.startevent, device.xstream));
 	    enqueueKernel(stack, device);
 	    // start a thread continuously reading device data
-//	    if(config.updateInterval > 0)
-//		deviceReaderThread(device).start();
+	    if(config.updateInterval > 0)
+		deviceReaderThread(device).start();
 
 	    // wait for kernel to finish
 	    cuEventRecord(device.endevent, device.xstream);
@@ -299,16 +303,16 @@ public class GPUSolverCUDA extends Solver {
 		}
 	    }
 
-//	    if (config.updateInterval > 0) {
-//		device.stopReaderThread = 1; // stop the devices reader thread
-//		while (device.stopReaderThread != 0) { // wait until the thread has terminated
-//		    try {
-//			Thread.sleep(50);
-//		    } catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
-//		    }
-//		}
-//	    }
+	    if (config.updateInterval > 0) {
+		device.stopReaderThread = 1; // stop the devices reader thread
+		while (device.stopReaderThread != 0) { // wait until the thread has terminated
+		    try {
+			Thread.sleep(50);
+		    } catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		    }
+		}
+	    }
 
 	    // read results
 	    readResults(device);
@@ -355,7 +359,7 @@ public class GPUSolverCUDA extends Solver {
 	    device.hostRdMem.put(i, workloadConstellations.get(i).getRd());
 	    device.hostColMem.put(i, workloadConstellations.get(i).getCol());
 	    device.hostStartijklMem.put(i, workloadConstellations.get(i).getStartijkl());
-	    device.hostResMem.put(i, 0);
+	    device.hostResMem.put(i, -1); // mark each constellation as unsolved
 	}
 	
 	// copy buffers to device
@@ -363,6 +367,7 @@ public class GPUSolverCUDA extends Solver {
         check(cuMemcpyHtoDAsync(device.deviceRdMem, device.hostRdMem, device.memstream));
         check(cuMemcpyHtoDAsync(device.deviceColMem, device.hostColMem, device.memstream));
         check(cuMemcpyHtoDAsync(device.deviceStartijklMem, device.hostStartijklMem, device.memstream));
+        check(cuMemcpyHtoDAsync(device.deviceResMem, device.hostResMem, device.memstream));
 	check(cuEventRecord(device.memevent, device.memstream));
 	check(cuEventSynchronize(device.memevent));
     }
@@ -385,7 +390,9 @@ public class GPUSolverCUDA extends Solver {
     }
 
     private void readResults(Device device) {
-	check(cuMemcpyDtoH(device.hostResMem, device.deviceResMem));
+	check(cuMemcpyDtoHAsync(device.hostResMem, device.deviceResMem, device.updatestream));
+	check(cuEventRecord(device.updateevent, device.updatestream));
+	check(cuEventSynchronize(device.updateevent));
 	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
 	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
@@ -727,7 +734,7 @@ public class GPUSolverCUDA extends Solver {
 	
 	// cuda
 	ByteBuffer ptx;
-	long function, ctx, xstream, memstream, memevent, startevent, endevent;
+	long function, ctx, xstream, memstream, updatestream, memevent, startevent, endevent, updateevent;
 	IntBuffer hostLdMem, hostRdMem, hostColMem, hostStartijklMem;
 	LongBuffer hostResMem;
 	long deviceLdMem, deviceRdMem, deviceColMem, deviceStartijklMem, deviceResMem;
