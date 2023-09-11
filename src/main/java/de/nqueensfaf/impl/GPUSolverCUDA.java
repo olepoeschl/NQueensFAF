@@ -368,7 +368,7 @@ public class GPUSolverCUDA extends Solver {
 
     private void enqueueKernel(MemoryStack stack, Device device) {
 	check(cuLaunchKernel(
-		device.function, device.workloadGlobalWorkSize, 1, 1,  // Nx1x1 blocks
+		device.function, device.workloadGlobalWorkSize/device.config.workgroupSize, 1, 1,  // Nx1x1 blocks
 		device.config.workgroupSize, 1, 1,            // 1x1x1 threads per block
 		0,
 		device.xstream,
