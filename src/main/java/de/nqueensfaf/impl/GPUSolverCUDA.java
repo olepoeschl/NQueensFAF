@@ -346,7 +346,6 @@ public class GPUSolverCUDA extends Solver {
         device.deviceResMem = pb.get(0);
         
         check(cuEventRecord(device.memevent, device.memstream));
-        check(cuEventSynchronize(device.memevent));
     }
 
     private void fillBuffers(MemoryStack stack, Device device) {
@@ -361,7 +360,10 @@ public class GPUSolverCUDA extends Solver {
 	    device.hostStartijklMem.put(i, workloadConstellations.get(i).getStartijkl());
 	    device.hostResMem.put(i, -1); // mark each constellation as unsolved
 	}
-	
+
+	// wait for previous event
+        check(cuEventSynchronize(device.memevent));
+        
 	// copy buffers to device
         check(cuMemcpyHtoDAsync(device.deviceLdMem, device.hostLdMem, device.memstream));
         check(cuMemcpyHtoDAsync(device.deviceRdMem, device.hostRdMem, device.memstream));
