@@ -86,7 +86,7 @@ With `-c` you can pass a config file. Config files are written in json format an
     </tr>
     <tr>
       <td>autoSavePercentageStep</td>
-      <td>int</td>
+      <td>float</td>
       <td>>0 && <100</td>
       <td>10</td>
     </tr>
@@ -157,6 +157,16 @@ With `-c` you can pass a config file. Config files are written in json format an
 </table>
 
 Execute `nqueensfaf -d` to see your available devices and their respective indexes.
+
+An example config file would look something like this:
+```
+{
+"updateInterval": 200,
+"deviceConfigs": [
+    {"index": 0, "weight": 1, "workgroupSize": 64}
+]
+}
+```
 
 ## Java usage
 ```
