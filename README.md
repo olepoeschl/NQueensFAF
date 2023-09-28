@@ -9,7 +9,7 @@ Built with Java 17.
 For more releases visit the "Releases" section. <br>
 
 # News
-We are excited to announce that we have succesfully verified the number of solutions for the *26-Queens problem*. <br> 
+We are excited to announce that we have succesfully verified the number of solutions for the **26-Queens problem**. <br> 
 The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slightly more than 3 weeks to finish. <br>
 27 - Here we come! <br>
 
