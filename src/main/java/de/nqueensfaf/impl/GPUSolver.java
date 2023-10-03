@@ -333,6 +333,7 @@ public class GPUSolver extends Solver {
 	    readResults(device);
 	}
 	device.status = 2;
+	synchronized (device.readResultsMutex) {}
 	while(!device.xCallbackDone) {
 	    try {
 		Thread.sleep(50);
@@ -491,6 +492,8 @@ public class GPUSolver extends Solver {
     private void readResults(Device device) {
 	// read result and progress memory buffers
 	synchronized (device.readResultsMutex) {
+	    if(device.status >= 2)
+		return;
 	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
 	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
 		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
@@ -816,9 +819,9 @@ public class GPUSolver extends Solver {
 	int workloadGlobalWorkSize;
 	long duration = 0;
 	// control flow
-	int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
+	volatile int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
 	final Object readResultsMutex = new Object();
-	boolean xCallbackDone = false;
+	volatile boolean xCallbackDone = false;
 
 	public Device(long id, long platform, String vendor, String name) {
 	    this.id = id;
