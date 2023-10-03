@@ -2,9 +2,6 @@ package de.nqueensfaf;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public abstract class Solver {
@@ -17,15 +14,13 @@ public abstract class Solver {
     protected int N;
     
     private int state = IDLE;
-    private Thread asyncSolverThread;
+    private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
-    private ExecutorService executor;
     private boolean isStoring = false;
     
     protected Solver() {
-	executor = Executors.newFixedThreadPool(2);
 	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 	    while (isStoring) {
 		try {
@@ -54,24 +49,26 @@ public abstract class Solver {
 	    initCb.accept(this);
 
 	state = RUNNING;
+	boolean updateConsumer = false, autoSaver = false;
 	if (onUpdateConsumer != null && getConfig().updateInterval > 0) // if updateInterval is 0, it means, disable progress updates
-	    executor.submit(consumeUpdates());
+	    updateConsumer = true;
 	if (getConfig().autoSaveEnabled)
-	    executor.submit(autoSaver());
+	    autoSaver = true;
+	bgThread = backgroundThread(updateConsumer, autoSaver);
+	bgThread.start();
+	
 	try {
 	    run();
 	} catch (Exception e) {
 	    state = TERMINATING;
-	    executor.shutdown();
 	    throw e;
 	}
 
 	state = TERMINATING;
-	executor.shutdown();
 	try {
-	    executor.awaitTermination(getConfig().updateInterval*2, TimeUnit.MILLISECONDS);
+	    bgThread.join();
 	} catch (InterruptedException e) {
-	    Thread.currentThread().interrupt();
+	    throw new RuntimeException("unexpected error while waiting for background thread to die: " + e.getMessage());
 	}
 	if (finishCb != null)
 	    finishCb.accept(this);
@@ -114,39 +111,45 @@ public abstract class Solver {
 	}
     }
 
-    private Runnable consumeUpdates() {
-	return () -> {
-	    while (isRunning()) {
-		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		if (!isRunning())
-		    break;
+    private Thread backgroundThread(boolean updateConsumer, boolean autoSaver) {
+	return new Thread(() -> {
+	    // for autoSaver
+	    String filePath = getConfig().autoSavePath;
+	    filePath = filePath.replaceAll("\\{N\\}", "" + N);
+	    float progress = getProgress() * 100;
+	    float tmpProgress = progress;
+	    
+	    while (isRunning() && getProgress() < 1f) {
+		if(updateConsumer) {
+		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
+		}
+		
+		if(autoSaver) {
+		    progress = getProgress() * 100;
+		    if (progress >= 100)
+			break;
+		    else if (progress >= tmpProgress + getConfig().autoSavePercentageStep) {
+			try {
+			    store(filePath);
+			} catch (IllegalArgumentException | IOException e) {
+			    System.err.println("error in autosaver thread: " + e.getMessage());
+			}
+			tmpProgress = progress;
+		    }
+		}
+		
 		try {
 		    Thread.sleep(getConfig().updateInterval);
 		} catch (InterruptedException e) {
 		    Thread.currentThread().interrupt();
 		}
 	    }
-	    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-	};
-    }
 
-    private Runnable autoSaver() {
-	return () -> {
-	    try {
-		String filePath = getConfig().autoSavePath;
-		filePath = filePath.replaceAll("\\{N\\}", "" + N);
-		float progress = getProgress() * 100;
-		float tmpProgress = progress;
-		while (isRunning()) {
-		    progress = getProgress() * 100;
-		    if (progress >= 100)
-			break;
-		    else if (progress >= tmpProgress + getConfig().autoSavePercentageStep) {
-			store(filePath);
-			tmpProgress = progress;
-		    }
-		    Thread.sleep(getConfig().updateInterval);
-		}
+	    if(updateConsumer) {
+		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
+	    }
+		
+	    if(autoSaver) {
 		progress = getProgress() * 100;
 		if (progress >= 100) {
 		    if (getConfig().autoDeleteEnabled) {
@@ -157,14 +160,10 @@ public abstract class Solver {
 			}
 		    }
 		}
-	    } catch (IOException e) {
-		System.err.println("error in autosaver thread: " + e.getMessage());
-	    } catch (InterruptedException e) {
-		Thread.currentThread().interrupt();
 	    }
-	};
+	});
     }
-
+    
     protected int solveSmallBoard() {
 	solutionsSmallN = 0;
 	int mask = (1 << getN()) - 1;
