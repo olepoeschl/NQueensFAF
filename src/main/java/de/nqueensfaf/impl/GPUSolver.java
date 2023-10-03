@@ -143,14 +143,29 @@ public class GPUSolver extends Solver {
 
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
-
-	    // wait for execution of device kernels
-	    for (Device device : devices)
-		while (!device.finished)
-		    Thread.sleep(50);
 	    
-	} catch (InterruptedException e) {
-	    Thread.currentThread().interrupt();
+	    if(config.updateInterval > 0) {
+		while(true) {
+		    for(Device device : devices) {
+			if(device.status == 1)
+			    readResults(device);
+		    }
+		    if(devices.stream().allMatch(device -> device.status == 3))
+			break;
+		    try {
+			Thread.sleep(config.updateInterval);
+		    } catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		    }
+		}
+	    } else {
+		while(devices.stream().anyMatch(device -> device.status < 3))
+		    try {
+			Thread.sleep(200);
+		    } catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		    }
+	    }
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
 	}
@@ -268,6 +283,7 @@ public class GPUSolver extends Solver {
 		// create buffers once at the beginning and once at the end
 		// because their size the same for all workloads except for the last
 		createBuffers(errBuf, device);
+		device.status = 1;
 	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { 
 		// last workload -> recreate the buffers
 		deviceCurrentWorkloadSize = device.constellations.size() - ptr;
@@ -275,8 +291,11 @@ public class GPUSolver extends Solver {
 		ptr += deviceCurrentWorkloadSize;
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
 
-		releaseWorkloadCLObjects(device); // clean up memory from previous workload
-		createBuffers(errBuf, device);
+		// no result reading now because buffers are written
+		synchronized (device.readResultsMutex) {
+		    releaseWorkloadCLObjects(device); // clean up memory from previous workload
+		    createBuffers(errBuf, device);
+		}
 	    } else { // regular workload -> regular iteration, nothing special
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
@@ -294,9 +313,6 @@ public class GPUSolver extends Solver {
 
 	    // run
 	    enqueueKernel(errBuf, device);
-	    // start a thread continuously reading device data
-	    if(config.updateInterval > 0)
-		deviceReaderThread(device).start();
 
 	    // wait for kernel to finish
 	    clFinish(device.xqueue);
@@ -313,23 +329,20 @@ public class GPUSolver extends Solver {
 		}
 	    }
 
-	    if (config.updateInterval > 0) {
-		device.stopReaderThread = 1; // stop the devices reader thread
-		while (device.stopReaderThread != 0) { // wait until the thread has terminated
-		    try {
-			Thread.sleep(50);
-		    } catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		    }
-		}
-	    }
-
 	    // read results
 	    readResults(device);
 	}
+	device.status = 2;
+	while(!device.xCallbackDone) {
+	    try {
+		Thread.sleep(50);
+	    } catch (InterruptedException e) {
+		Thread.currentThread().interrupt();
+	    }
+	}
 	releaseWorkloadCLObjects(device);
 	releaseCLObjects(device);
-	device.finished = true;
+	device.status = 3;
     }
 
     private void createBuffers(IntBuffer errBuf, Device device) {
@@ -468,6 +481,7 @@ public class GPUSolver extends Solver {
 		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 		    checkCLError(err);
 		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
+		    device.xCallbackDone = true;
 		}), NULL));
 
 	// flush command to the device
@@ -476,15 +490,17 @@ public class GPUSolver extends Solver {
 
     private void readResults(Device device) {
 	// read result and progress memory buffers
-	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-		continue;
-	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-	    if (solutionsForConstellation >= 0)
-		// synchronize with the list of constellations on the RAM
-		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+	synchronized (device.readResultsMutex) {
+	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
+	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		    continue;
+		long solutionsForConstellation = device.resPtr.getLong(i * 8)
+			* utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		if (solutionsForConstellation >= 0)
+		    // synchronize with the list of constellations on the RAM
+		    device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+	    }
 	}
     }
 
@@ -506,20 +522,6 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseProgram(device.program));
 	checkCLError(clReleaseContext(device.context));
 	checkCLError(clReleaseDevice(device.id));
-    }
-
-    private Thread deviceReaderThread(Device device) {
-	return new Thread(() -> {
-	    while (device.stopReaderThread == 0) {
-		readResults(device);
-		try {
-		    Thread.sleep(config.updateInterval);
-		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
-		}
-	    }
-	    device.stopReaderThread = 0;
-	});
     }
 
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
@@ -814,8 +816,9 @@ public class GPUSolver extends Solver {
 	int workloadGlobalWorkSize;
 	long duration = 0;
 	// control flow
-	int stopReaderThread = 0;
-	boolean finished = false;
+	int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
+	final Object readResultsMutex = new Object();
+	boolean xCallbackDone = false;
 
 	public Device(long id, long platform, String vendor, String name) {
 	    this.id = id;
