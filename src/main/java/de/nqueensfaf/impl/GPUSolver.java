@@ -318,7 +318,7 @@ public class GPUSolver extends Solver {
 	    enqueueKernel(errBuf, device);
 
 	    // wait for kernel to finish
-	    clFinish(device.xqueue);
+//	    clFinish(device.xqueue);
 	    checkCLError(clWaitForEvents(device.xEvent));
 
 	    // stop timer when the last device is finished computing
