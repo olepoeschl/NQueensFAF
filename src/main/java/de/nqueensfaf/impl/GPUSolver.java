@@ -159,6 +159,11 @@ public class GPUSolver extends Solver {
 		while(devices.stream().anyMatch(device -> device.status < 3))
 		    Thread.sleep(200);
 	    }
+	    
+	    for(long context : contexts) {
+		checkCLError(clReleaseContext(context));
+	    }
+	    
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
 	} catch (InterruptedException e) {
@@ -233,11 +238,12 @@ public class GPUSolver extends Solver {
 	    PointerBuffer ctxPlatform = stack.mallocPointer(3);
 	    ctxPlatform.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
 
+	    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
+	    checkCLError(errBuf);
+	    contexts[idx] = context;
+	    
 	    for (Device device : devices) {
 		if (device.platform == platform) {
-		    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
-		    checkCLError(errBuf);
-		    contexts[idx] = context;
 		    long program;
 		    try {
 			program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
@@ -520,7 +526,6 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseCommandQueue(device.memqueue));
 	checkCLError(clReleaseKernel(device.kernel));
 	checkCLError(clReleaseProgram(device.program));
-	checkCLError(clReleaseContext(device.context));
 	checkCLError(clReleaseDevice(device.id));
     }
 
