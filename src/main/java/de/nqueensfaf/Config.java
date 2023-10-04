@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DatabindException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -69,7 +70,7 @@ public class Config {
 
     public <T extends Config> void from(File file) throws StreamReadException, DatabindException, IOException,
 	    IllegalArgumentException, IllegalAccessException {
-	ObjectMapper mapper = new ObjectMapper();
+	ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) ;
 	@SuppressWarnings("unchecked")
 	T config = (T) mapper.readValue(file, this.getClass());
 	config.validate();

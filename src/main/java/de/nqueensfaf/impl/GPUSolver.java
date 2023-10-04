@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -143,16 +145,31 @@ public class GPUSolver extends Solver {
 
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
-
-	    // wait for execution of device kernels
-	    for (Device device : devices)
-		while (!device.finished)
-		    Thread.sleep(50);
 	    
-	} catch (InterruptedException e) {
-	    Thread.currentThread().interrupt();
+	    if(config.updateInterval > 0) {
+		while(true) {
+		    for(Device device : devices) {
+			if(device.status == 1)
+			    readResults(device);
+		    }
+		    if(devices.stream().allMatch(device -> device.status == 3))
+			break;
+		    Thread.sleep(config.updateInterval);
+		}
+	    } else {
+		while(devices.stream().anyMatch(device -> device.status < 3))
+		    Thread.sleep(200);
+	    }
+	    
+	    for(long context : contexts) {
+		checkCLError(clReleaseContext(context));
+	    }
+	    
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
+	} catch (InterruptedException e) {
+	    throw new SolverException("unexpected error while executing solver", e);
+//	    Thread.currentThread().interrupt();
 	}
     }
 
@@ -223,11 +240,12 @@ public class GPUSolver extends Solver {
 	    PointerBuffer ctxPlatform = stack.mallocPointer(3);
 	    ctxPlatform.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
 
+	    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
+	    checkCLError(errBuf);
+	    contexts[idx] = context;
+	    
 	    for (Device device : devices) {
 		if (device.platform == platform) {
-		    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
-		    checkCLError(errBuf);
-		    contexts[idx] = context;
 		    long program;
 		    try {
 			program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
@@ -260,6 +278,7 @@ public class GPUSolver extends Solver {
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
+	device.readResultsLock.lock();
 	while (ptr < device.constellations.size()) {
 	    if (ptr == 0) { // first workload -> create buffers
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -275,6 +294,8 @@ public class GPUSolver extends Solver {
 		ptr += deviceCurrentWorkloadSize;
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
 
+		// no result reading now because buffers are written
+		device.readResultsLock.lock();
 		releaseWorkloadCLObjects(device); // clean up memory from previous workload
 		createBuffers(errBuf, device);
 	    } else { // regular workload -> regular iteration, nothing special
@@ -285,6 +306,9 @@ public class GPUSolver extends Solver {
 
 	    // transfer data to device
 	    fillBuffers(errBuf, device);
+	    device.status = 1;
+	    device.readResultsLock.unlock();
+	    
 	    // set kernel args
 	    setKernelArgs(stack, device);
 
@@ -294,12 +318,10 @@ public class GPUSolver extends Solver {
 
 	    // run
 	    enqueueKernel(errBuf, device);
-	    // start a thread continuously reading device data
-	    if(config.updateInterval > 0)
-		deviceReaderThread(device).start();
 
 	    // wait for kernel to finish
-	    clFinish(device.xqueue);
+//	    clFinish(device.xqueue);
+	    Thread.yield();
 	    checkCLError(clWaitForEvents(device.xEvent));
 
 	    // stop timer when the last device is finished computing
@@ -313,23 +335,21 @@ public class GPUSolver extends Solver {
 		}
 	    }
 
-	    if (config.updateInterval > 0) {
-		device.stopReaderThread = 1; // stop the devices reader thread
-		while (device.stopReaderThread != 0) { // wait until the thread has terminated
-		    try {
-			Thread.sleep(50);
-		    } catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		    }
-		}
-	    }
-
 	    // read results
 	    readResults(device);
 	}
+	device.status = 2;
+	device.readResultsLock.lock();
+	while(!device.xCallbackDone) {
+	    try {
+		Thread.sleep(50);
+	    } catch (InterruptedException e) {
+		throw new SolverException("unexpected error while waiting for kernel completion callback", e);
+	    }
+	}
 	releaseWorkloadCLObjects(device);
 	releaseCLObjects(device);
-	device.finished = true;
+	device.status = 3;
     }
 
     private void createBuffers(IntBuffer errBuf, Device device) {
@@ -468,14 +488,24 @@ public class GPUSolver extends Solver {
 		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 		    checkCLError(err);
 		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
+		    device.xCallbackDone = true;
 		}), NULL));
 
 	// flush command to the device
-	checkCLError(clFlush(device.xqueue));
+//	checkCLError(clFlush(device.xqueue));
     }
 
     private void readResults(Device device) {
 	// read result and progress memory buffers
+	try {
+	    device.readResultsLock.tryLock(100, TimeUnit.MILLISECONDS);
+	} catch (InterruptedException e) {
+	    // just ignore and leave this method
+	    return;
+//	    throw new SolverException("unexpected error while trying to acquire result reading lock", e);
+	}
+	if(device.status >= 2)
+	    return;
 	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
 	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
 	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
@@ -486,6 +516,7 @@ public class GPUSolver extends Solver {
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
 	}
+	device.readResultsLock.unlock();
     }
 
     private void releaseWorkloadCLObjects(Device device) {
@@ -504,22 +535,7 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseCommandQueue(device.memqueue));
 	checkCLError(clReleaseKernel(device.kernel));
 	checkCLError(clReleaseProgram(device.program));
-	checkCLError(clReleaseContext(device.context));
 	checkCLError(clReleaseDevice(device.id));
-    }
-
-    private Thread deviceReaderThread(Device device) {
-	return new Thread(() -> {
-	    while (device.stopReaderThread == 0) {
-		readResults(device);
-		try {
-		    Thread.sleep(config.updateInterval);
-		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
-		}
-	    }
-	    device.stopReaderThread = 0;
-	});
     }
 
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
@@ -814,8 +830,9 @@ public class GPUSolver extends Solver {
 	int workloadGlobalWorkSize;
 	long duration = 0;
 	// control flow
-	int stopReaderThread = 0;
-	boolean finished = false;
+	volatile int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
+	final ReentrantLock readResultsLock = new ReentrantLock();
+	volatile boolean xCallbackDone = false;
 
 	public Device(long id, long platform, String vendor, String name) {
 	    this.id = id;
