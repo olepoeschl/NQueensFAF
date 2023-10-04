@@ -41,8 +41,6 @@ Attention: Your graphics card may go into another power state when running the p
 
 # Usage
 
-<b> This section applies to version 2.0.0 and does currently work for the nightly release, not for the 1.5.0 release! </b>
-
 ## command line interface
 ```
 Usage: nqueensfaf [-dgh] [-c=FILE] [-N=INT] [-t=FILE]
