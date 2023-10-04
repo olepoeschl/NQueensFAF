@@ -168,7 +168,7 @@ An example config file would look something like this:
 "threadcount": 4,
 "deviceConfigs": [
     {"index": 0, "weight": 1, "workgroupSize": 64}
-]
+],
 "autoSaveEnabled": false
 }
 ```
