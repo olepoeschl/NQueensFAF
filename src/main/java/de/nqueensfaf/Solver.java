@@ -13,7 +13,7 @@ public abstract class Solver {
     
     protected int N;
     
-    private int state = IDLE;
+    private volatile int state = IDLE;
     private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;

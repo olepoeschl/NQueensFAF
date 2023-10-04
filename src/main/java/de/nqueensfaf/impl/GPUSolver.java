@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -275,6 +276,8 @@ public class GPUSolver extends Solver {
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
+	device.readResultsLock.lock();
+	device.status = 1;
 	while (ptr < device.constellations.size()) {
 	    if (ptr == 0) { // first workload -> create buffers
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -283,7 +286,6 @@ public class GPUSolver extends Solver {
 		// create buffers once at the beginning and once at the end
 		// because their size the same for all workloads except for the last
 		createBuffers(errBuf, device);
-		device.status = 1;
 	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { 
 		// last workload -> recreate the buffers
 		deviceCurrentWorkloadSize = device.constellations.size() - ptr;
@@ -292,10 +294,9 @@ public class GPUSolver extends Solver {
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
 
 		// no result reading now because buffers are written
-		synchronized (device.readResultsMutex) {
-		    releaseWorkloadCLObjects(device); // clean up memory from previous workload
-		    createBuffers(errBuf, device);
-		}
+		device.readResultsLock.lock();
+		releaseWorkloadCLObjects(device); // clean up memory from previous workload
+		createBuffers(errBuf, device);
 	    } else { // regular workload -> regular iteration, nothing special
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
@@ -304,6 +305,8 @@ public class GPUSolver extends Solver {
 
 	    // transfer data to device
 	    fillBuffers(errBuf, device);
+	    device.readResultsLock.unlock();
+	    
 	    // set kernel args
 	    setKernelArgs(stack, device);
 
@@ -333,7 +336,7 @@ public class GPUSolver extends Solver {
 	    readResults(device);
 	}
 	device.status = 2;
-	synchronized (device.readResultsMutex) {}
+	device.readResultsLock.lock();
 	while(!device.xCallbackDone) {
 	    try {
 		Thread.sleep(50);
@@ -491,20 +494,20 @@ public class GPUSolver extends Solver {
 
     private void readResults(Device device) {
 	// read result and progress memory buffers
-	synchronized (device.readResultsMutex) {
-	    if(device.status >= 2)
-		return;
-	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-		    continue;
-		long solutionsForConstellation = device.resPtr.getLong(i * 8)
-			* utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-		if (solutionsForConstellation >= 0)
-		    // synchronize with the list of constellations on the RAM
-		    device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
-	    }
+	device.readResultsLock.lock();
+	if(device.status >= 2)
+	    return;
+	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
+	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		continue;
+	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
+		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+	    if (solutionsForConstellation >= 0)
+		// synchronize with the list of constellations on the RAM
+		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
 	}
+	device.readResultsLock.unlock();
     }
 
     private void releaseWorkloadCLObjects(Device device) {
@@ -820,7 +823,7 @@ public class GPUSolver extends Solver {
 	long duration = 0;
 	// control flow
 	volatile int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
-	final Object readResultsMutex = new Object();
+	final ReentrantLock readResultsLock = new ReentrantLock();
 	volatile boolean xCallbackDone = false;
 
 	public Device(long id, long platform, String vendor, String name) {
