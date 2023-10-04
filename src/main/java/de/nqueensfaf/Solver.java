@@ -67,10 +67,12 @@ public abstract class Solver {
 	}
 
 	state = TERMINATING;
-	try {
-	    bgThread.join();
-	} catch (InterruptedException e) {
-	    throw new RuntimeException("unexpected error while waiting for background thread to die: " + e.getMessage());
+	if(getConfig().updateInterval > 0) {
+	    try {
+		bgThread.join();
+	    } catch (InterruptedException e) {
+		throw new RuntimeException("unexpected error while waiting for background thread to die: " + e.getMessage());
+	    }
 	}
 	if (finishCb != null)
 	    finishCb.accept(this);
