@@ -98,8 +98,6 @@ public class GPUSolver extends Solver {
 
 	    createContextsAndPrograms(stack, errBuf);
 	    int workloadBeginPtr = 0;
-	    Thread[] threads = new Thread[devices.size()];
-	    int threadId = 0;
 	    for (Device device : devices) {
 		// build program
 		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize + " -Werror";
@@ -144,8 +142,7 @@ public class GPUSolver extends Solver {
 		    throw new IllegalArgumentException("weight " + device.config.weight + " is too low");
 		}
 
-		threads[threadId] = new Thread(() -> runDevice(stack, errBuf, device));
-		threads[threadId++].start();
+		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
 	    
 	    if(config.updateInterval > 0) {
@@ -159,9 +156,8 @@ public class GPUSolver extends Solver {
 		    Thread.sleep(config.updateInterval);
 		}
 	    } else {
-		for(var thread : threads) {
-		    thread.join();
-		}
+		while(devices.stream().anyMatch(device -> device.status < 3))
+		    Thread.sleep(200);
 	    }
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
