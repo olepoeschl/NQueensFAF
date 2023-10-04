@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -167,7 +168,8 @@ public class GPUSolver extends Solver {
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
 	} catch (InterruptedException e) {
-		Thread.currentThread().interrupt();
+	    throw new SolverException("unexpected error while executing solver", e);
+//	    Thread.currentThread().interrupt();
 	}
     }
 
@@ -277,7 +279,6 @@ public class GPUSolver extends Solver {
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
 	device.readResultsLock.lock();
-	device.status = 1;
 	while (ptr < device.constellations.size()) {
 	    if (ptr == 0) { // first workload -> create buffers
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -305,6 +306,7 @@ public class GPUSolver extends Solver {
 
 	    // transfer data to device
 	    fillBuffers(errBuf, device);
+	    device.status = 1;
 	    device.readResultsLock.unlock();
 	    
 	    // set kernel args
@@ -319,6 +321,7 @@ public class GPUSolver extends Solver {
 
 	    // wait for kernel to finish
 //	    clFinish(device.xqueue);
+	    Thread.yield();
 	    checkCLError(clWaitForEvents(device.xEvent));
 
 	    // stop timer when the last device is finished computing
@@ -341,7 +344,7 @@ public class GPUSolver extends Solver {
 	    try {
 		Thread.sleep(50);
 	    } catch (InterruptedException e) {
-		Thread.currentThread().interrupt();
+		throw new SolverException("unexpected error while waiting for kernel completion callback", e);
 	    }
 	}
 	releaseWorkloadCLObjects(device);
@@ -494,7 +497,13 @@ public class GPUSolver extends Solver {
 
     private void readResults(Device device) {
 	// read result and progress memory buffers
-	device.readResultsLock.lock();
+	try {
+	    device.readResultsLock.tryLock(100, TimeUnit.MILLISECONDS);
+	} catch (InterruptedException e) {
+	    // just ignore and leave this method
+	    return;
+//	    throw new SolverException("unexpected error while trying to acquire result reading lock", e);
+	}
 	if(device.status >= 2)
 	    return;
 	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
