@@ -49,13 +49,15 @@ public abstract class Solver {
 	    initCb.accept(this);
 
 	state = RUNNING;
-	boolean updateConsumer = false, autoSaver = false;
-	if (onUpdateConsumer != null && getConfig().updateInterval > 0) // if updateInterval is 0, it means, disable progress updates
-	    updateConsumer = true;
-	if (getConfig().autoSaveEnabled)
-	    autoSaver = true;
-	bgThread = backgroundThread(updateConsumer, autoSaver);
-	bgThread.start();
+	if(getConfig().updateInterval > 0) {
+	    boolean updateConsumer = false, autoSaver = false;
+	    if (onUpdateConsumer != null) // if updateInterval is 0, it means, disable progress updates
+		updateConsumer = true;
+	    if (getConfig().autoSaveEnabled)
+		autoSaver = true;
+	    bgThread = backgroundThread(updateConsumer, autoSaver);
+	    bgThread.start();
+	}
 	
 	try {
 	    run();
