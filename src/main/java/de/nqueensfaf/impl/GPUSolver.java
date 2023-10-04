@@ -302,6 +302,7 @@ public class GPUSolver extends Solver {
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
+		device.readResultsLock.lock();
 	    }
 
 	    // transfer data to device
@@ -317,6 +318,7 @@ public class GPUSolver extends Solver {
 		start = System.currentTimeMillis();
 
 	    // run
+	    device.xCallbackDone = false;
 	    enqueueKernel(errBuf, device);
 
 	    // wait for kernel to finish
@@ -337,16 +339,17 @@ public class GPUSolver extends Solver {
 
 	    // read results
 	    readResults(device);
+	    
+	    while(!device.xCallbackDone) {
+		try {
+		    Thread.sleep(50);
+		} catch (InterruptedException e) {
+		    throw new SolverException("unexpected error while waiting for kernel completion callback", e);
+		}
+	    }
 	}
 	device.status = 2;
 	device.readResultsLock.lock();
-	while(!device.xCallbackDone) {
-	    try {
-		Thread.sleep(50);
-	    } catch (InterruptedException e) {
-		throw new SolverException("unexpected error while waiting for kernel completion callback", e);
-	    }
-	}
 	releaseWorkloadCLObjects(device);
 	releaseCLObjects(device);
 	device.status = 3;
@@ -490,7 +493,7 @@ public class GPUSolver extends Solver {
 		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
 		    device.xCallbackDone = true;
 		}), NULL));
-
+	
 	// flush command to the device
 //	checkCLError(clFlush(device.xqueue));
     }
