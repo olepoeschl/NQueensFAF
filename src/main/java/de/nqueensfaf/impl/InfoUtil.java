@@ -113,11 +113,6 @@ final class InfoUtil {
     static void checkCLError(int errcode) {
 	if (errcode != CL_SUCCESS) {
 	    String msg = String.format("OpenCL error [%d]", errcode);
-	    try (FileWriter fw = new FileWriter(new File("nqueensfaf-error.log"))) {
-		fw.write(msg + "\n");
-	    } catch (IOException e) {
-		e.printStackTrace();
-	    }
 	    throw new RuntimeException(msg);
 	}
     }
