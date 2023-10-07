@@ -14,8 +14,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -99,6 +100,7 @@ public class GPUSolver extends Solver {
 
 	    createContextsAndPrograms(stack, errBuf);
 	    int workloadBeginPtr = 0;
+	    ExecutorService executor = Executors.newFixedThreadPool(devices.size());
 	    for (Device device : devices) {
 		// build program
 		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
@@ -144,12 +146,12 @@ public class GPUSolver extends Solver {
 		    throw new IllegalArgumentException("weight " + device.config.weight + " is too low");
 		}
 
-		new Thread(() -> runDevice(stack, errBuf, device)).start();
+		executor.execute(() -> runDevice(stack, errBuf, device));
 	    }
 
 	    // wait for all devices to finish
-	    while (devices.stream().anyMatch(device -> device.status < 3))
-		Thread.sleep(200);
+	    executor.shutdown();
+	    executor.awaitTermination(3650, TimeUnit.DAYS);
 	    
 	    for (long context : contexts) {
 		checkCLError(clReleaseContext(context));
@@ -268,7 +270,6 @@ public class GPUSolver extends Solver {
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
-	device.readResultsLock.lock();
 	while (ptr < device.constellations.size()) {
 	    if (ptr == 0) { // first workload -> create buffers
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -285,20 +286,16 @@ public class GPUSolver extends Solver {
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
 
 		// no result reading now because buffers are written
-		device.readResultsLock.lock();
 		releaseWorkloadCLObjects(device); // clean up memory from previous workload
 		createBuffers(errBuf, device);
 	    } else { // regular workload -> regular iteration, nothing special
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
 		ptr += deviceCurrentWorkloadSize;
 		device.workloadGlobalWorkSize = device.workloadConstellations.size();
-		device.readResultsLock.lock();
 	    }
 
 	    // transfer data to device
 	    fillBuffers(errBuf, device);
-	    device.status = 1;
-	    device.readResultsLock.unlock();
 
 	    // set kernel args
 	    setKernelArgs(stack, device);
@@ -340,22 +337,21 @@ public class GPUSolver extends Solver {
 		}
 	    }
 
-//	    // read gpu kernel profiled time
-//	    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-//	    int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
-//	    checkCLError(err);
-//	    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
-//	    checkCLError(err);
-//	    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
+	    // read gpu kernel profiled time
+	    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
+	    int err = clGetEventProfilingInfo(device.xEvent, CL_PROFILING_COMMAND_START, startBuf, null);
+	    checkCLError(err);
+	    err = clGetEventProfilingInfo(device.xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
+	    checkCLError(err);
+	    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
 	    
 	    // read results
 	    readResults(device);
 	}
-	device.status = 2;
-	device.readResultsLock.lock();
+	if(devices.size() == 1)
+	    duration = device.duration;
 	releaseWorkloadCLObjects(device);
 	releaseCLObjects(device);
-	device.status = 3;
     }
 
     private void createBuffers(IntBuffer errBuf, Device device) {
@@ -492,30 +488,15 @@ public class GPUSolver extends Solver {
 
     private void readResults(Device device) {
 	// read result and progress memory buffers
-	try {
-	    device.readResultsLock.tryLock(100, TimeUnit.MILLISECONDS);
-
-	    if (device.status >= 2)
-		return;
-	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-		    continue;
-		long solutionsForConstellation = device.resPtr.getLong(i * 8)
-			* utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-		if (solutionsForConstellation >= 0)
-		    // synchronize with the list of constellations on the RAM
-		    device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
-	    }
-	} catch (InterruptedException e) {
-	    // just ignore and leave this method
-	    return;
-	} finally { // always release the lock, in case we locked it
-	    try {
-		device.readResultsLock.unlock();
-	    } catch(IllegalMonitorStateException e) {
-		// ignore
-	    }
+	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
+	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		continue;
+	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
+		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+	    if (solutionsForConstellation >= 0)
+		// synchronize with the list of constellations on the RAM
+		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
 	}
     }
 
@@ -869,9 +850,6 @@ public class GPUSolver extends Solver {
 	List<Constellation> constellations, workloadConstellations;
 	int workloadGlobalWorkSize;
 	long duration = 0;
-	// control flow
-	volatile int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
-	final ReentrantLock readResultsLock = new ReentrantLock();
 
 	public Device(long id, long platform, String vendor, String name) {
 	    this.id = id;
