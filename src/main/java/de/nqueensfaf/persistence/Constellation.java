@@ -69,4 +69,8 @@ public class Constellation {
     public void setSolutions(long solutions) {
 	this.solutions = solutions;
     }
+    
+    public int getIjkl() {
+	return startijkl & 0b11111111111111111111;
+    }
 }

@@ -5,10 +5,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -293,6 +295,19 @@ public class CPUSolver extends Solver {
 		setPreQueens((ld | bit) << 1, (rd | bit) >>> 1, col | bit, k, l, row + 1, queens + 1);
 	    }
 	}
+    }
+    
+    // debug info
+    public int getNumberOfConstellations() {
+	return constellations.size();
+    }
+
+    public LinkedHashMap<Integer, Long> getSolutionsPerIjkl() {
+	LinkedHashMap<Integer, Long> solutionsPerIjkl = new LinkedHashMap<Integer, Long>();
+	constellations.stream().collect(Collectors.groupingBy(Constellation::getIjkl)).values().stream()
+		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).getIjkl(),
+			cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
+	return solutionsPerIjkl;
     }
 
     public static class CPUSolverConfig extends Config {

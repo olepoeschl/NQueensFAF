@@ -182,6 +182,15 @@ public class CLI implements Runnable {
 		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
 	    symSolver.setN(solver.getN());
 	    symSolver.solve();
+	    
+	    // TODO: Log debug info if the user wishes so
+	    /*
+	     * var solPerIjkl = getSolutionsPerIjkl();
+	     * for (var key : solPerIjkl.keySet()) {
+	     *     System.out.printf("%d,%d,%d,%d: %d solutions\n", utils.geti(key),
+	     *         utils.getj(key), utils.getk(key), utils.getl(key), solPerIjkl.get(key));
+	     * }
+	     */
 	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException
 		| IllegalStateException e) {
 	    System.err.println("Unexpected error: " + e.getMessage());
