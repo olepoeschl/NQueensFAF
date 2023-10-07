@@ -12,6 +12,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,7 +55,7 @@ public class GPUSolver extends Solver {
     private int weightSum;
     private long duration, start, end, storedDuration;
     private boolean injected;
-    
+
     private GPUSolverConfig config;
     private SolverUtils utils;
 
@@ -68,11 +69,11 @@ public class GPUSolver extends Solver {
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	    setDeviceConfigs(config.deviceConfigs);
-	} catch(IllegalStateException e) {
+	} catch (IllegalStateException e) {
 	    throw new SolverException("gpu solver is not available", e);
 	}
     }
-    
+
     @Override
     protected void run() {
 	if (N <= 6) { // if N is very small, use the simple Solver from the parent class
@@ -83,8 +84,8 @@ public class GPUSolver extends Solver {
 	    end = System.currentTimeMillis();
 	    return;
 	}
-	
-	if(devices.size() == 0)
+
+	if (devices.size() == 0)
 	    throw new IllegalStateException("no devices selected");
 
 	try (MemoryStack stack = stackPush()) {
@@ -101,9 +102,10 @@ public class GPUSolver extends Solver {
 	    int workloadBeginPtr = 0;
 	    for (Device device : devices) {
 		// build program
-		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize + " -Werror";
+		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
+			+ " -Werror";
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
-		if(error != 0) {
+		if (error != 0) {
 		    String buildLog = getProgramBuildInfoStringASCII(device.program, device.id, CL_PROGRAM_BUILD_LOG);
 		    String msg = String.format("OpenCL error [%d]: failed to build program: %s", error, buildLog);
 		    throw new RuntimeException(msg);
@@ -145,26 +147,25 @@ public class GPUSolver extends Solver {
 
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
-	    
-	    if(config.updateInterval > 0) {
-		while(true) {
-		    for(Device device : devices) {
-			if(device.status == 1)
+
+	    if (config.updateInterval > 0) {
+		while (true) {
+		    for (Device device : devices) {
+			if (device.status == 1)
 			    readResults(device);
 		    }
-		    if(devices.stream().allMatch(device -> device.status == 3))
+		    if (devices.stream().allMatch(device -> device.status == 3))
 			break;
 		    Thread.sleep(config.updateInterval);
 		}
 	    } else {
-		while(devices.stream().anyMatch(device -> device.status < 3))
+		while (devices.stream().anyMatch(device -> device.status < 3))
 		    Thread.sleep(200);
 	    }
-	    
-	    for(long context : contexts) {
+
+	    for (long context : contexts) {
 		checkCLError(clReleaseContext(context));
 	    }
-	    
 	} catch (IOException e) {
 	    throw new SolverException("unexpected error while executing solver", e);
 	} catch (InterruptedException e) {
@@ -243,7 +244,7 @@ public class GPUSolver extends Solver {
 	    long context = clCreateContext(ctxPlatform, ctxDevices, null, NULL, errBuf);
 	    checkCLError(errBuf);
 	    contexts[idx] = context;
-	    
+
 	    for (Device device : devices) {
 		if (device.platform == platform) {
 		    long program;
@@ -254,7 +255,7 @@ public class GPUSolver extends Solver {
 		    }
 		    checkCLError(errBuf);
 		    programs[idx] = program;
-		    
+
 		    device.context = context;
 		    device.program = program;
 		}
@@ -270,11 +271,12 @@ public class GPUSolver extends Solver {
 
 	// make the max global work size be divisible by the devices workgroup size
 	int deviceCurrentWorkloadSize;
-	if(device.config.maxGlobalWorkSize == 0) // if no max global work size is specified, don't limit the global work size
+	if (device.config.maxGlobalWorkSize == 0) // if no max global work size is specified, don't limit the global
+						  // work size
 	    deviceCurrentWorkloadSize = device.constellations.size();
 	else
 	    deviceCurrentWorkloadSize = device.config.maxGlobalWorkSize / device.config.workgroupSize
-		* device.config.workgroupSize;
+		    * device.config.workgroupSize;
 	if (device.constellations.size() - deviceCurrentWorkloadSize < 0) // is it the one and only device workload?
 	    deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 
@@ -287,7 +289,7 @@ public class GPUSolver extends Solver {
 		// create buffers once at the beginning and once at the end
 		// because their size the same for all workloads except for the last
 		createBuffers(errBuf, device);
-	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) { 
+	    } else if (device.constellations.size() - deviceCurrentWorkloadSize < ptr) {
 		// last workload -> recreate the buffers
 		deviceCurrentWorkloadSize = device.constellations.size() - ptr;
 		device.workloadConstellations = device.constellations.subList(ptr, ptr + deviceCurrentWorkloadSize);
@@ -309,7 +311,7 @@ public class GPUSolver extends Solver {
 	    fillBuffers(errBuf, device);
 	    device.status = 1;
 	    device.readResultsLock.unlock();
-	    
+
 	    // set kernel args
 	    setKernelArgs(stack, device);
 
@@ -339,8 +341,8 @@ public class GPUSolver extends Solver {
 
 	    // read results
 	    readResults(device);
-	    
-	    while(!device.xCallbackDone) {
+
+	    while (!device.xCallbackDone) {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
@@ -467,7 +469,8 @@ public class GPUSolver extends Solver {
 	checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 		localWorkSize, null, xEventBuf));
 
-	// workaround for AMD GPUs returning not all results correctly: enqueue a no-operation kernel
+	// workaround for AMD GPUs returning not all results correctly: enqueue a
+	// no-operation kernel
 	// (without this, sometimes the program finishes with progrss = 0.999...)
 	if (device.vendor.toLowerCase().contains("advanced micro devices")
 		|| device.vendor.toLowerCase().contains("amd")) {
@@ -490,10 +493,11 @@ public class GPUSolver extends Solver {
 		    checkCLError(err);
 		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
 		    checkCLError(err);
-		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to milliseconds
+		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to
+										    // milliseconds
 		    device.xCallbackDone = true;
 		}), NULL));
-	
+
 	// flush command to the device
 //	checkCLError(clFlush(device.xqueue));
     }
@@ -502,24 +506,29 @@ public class GPUSolver extends Solver {
 	// read result and progress memory buffers
 	try {
 	    device.readResultsLock.tryLock(100, TimeUnit.MILLISECONDS);
+
+	    if (device.status >= 2)
+		return;
+	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
+	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		    continue;
+		long solutionsForConstellation = device.resPtr.getLong(i * 8)
+			* utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		if (solutionsForConstellation >= 0)
+		    // synchronize with the list of constellations on the RAM
+		    device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+	    }
 	} catch (InterruptedException e) {
 	    // just ignore and leave this method
 	    return;
-//	    throw new SolverException("unexpected error while trying to acquire result reading lock", e);
+	} finally { // always release the lock, in case we locked it
+	    try {
+		device.readResultsLock.unlock();
+	    } catch(IllegalMonitorStateException e) {
+		// ignore
+	    }
 	}
-	if(device.status >= 2)
-	    return;
-	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-		continue;
-	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-	    if (solutionsForConstellation >= 0)
-		// synchronize with the list of constellations on the RAM
-		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
-	}
-	device.readResultsLock.unlock();
     }
 
     private void releaseWorkloadCLObjects(Device device) {
@@ -544,32 +553,32 @@ public class GPUSolver extends Solver {
     public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
 	var tmp = new GPUSolverConfig();
 	tmp.from(config);
-	
+
 	configConsumer.accept(tmp);
 	try {
 	    tmp.validate();
-	} catch(IllegalArgumentException e) {
+	} catch (IllegalArgumentException e) {
 	    throw new IllegalArgumentException("invalid GPUSolverConfig", e);
 	}
-	
+
 	config.from(tmp);
 	setDeviceConfigs(config.deviceConfigs);
 	return this;
     }
-    
+
     @SuppressWarnings("unchecked")
     @Override
     public GPUSolverConfig getConfig() {
 	return config;
     }
-    
+
     @Override
     protected void store_(String filepath) throws IOException {
 	// if Solver was not even started yet or is already done, throw exception
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("nothing to be saved");
 	}
-	
+
 	Kryo kryo = Constants.kryo;
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
@@ -630,8 +639,8 @@ public class GPUSolver extends Solver {
 
     public long getDurationOfDevice(int deviceIndex) {
 	if (deviceIndex < 0 || deviceIndex >= availableDevices.size())
-	    throw new IllegalArgumentException(
-		    "invalid device index: must be a number >=0 and <" + availableDevices.size() + " (number of available devices)");
+	    throw new IllegalArgumentException("invalid device index: must be a number >=0 and <"
+		    + availableDevices.size() + " (number of available devices)");
 	return availableDevices.get(deviceIndex).duration;
     }
 
@@ -647,7 +656,7 @@ public class GPUSolver extends Solver {
 	for (int p = 0; p < platforms.capacity(); p++) {
 	    long platform = platforms.get(p);
 	    int error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, null, entityCountBuf);
-	    if(error == CL_DEVICE_NOT_FOUND) { // if no OpenCL GPUs are found for this platform, skip
+	    if (error == CL_DEVICE_NOT_FOUND) { // if no OpenCL GPUs are found for this platform, skip
 		continue;
 	    }
 	    PointerBuffer devicesBuf = stack.mallocPointer(entityCountBuf.get(0));
@@ -688,11 +697,12 @@ public class GPUSolver extends Solver {
 	for (DeviceConfig deviceConfig : deviceConfigsInput) {
 	    if (deviceConfig.weight == 0)
 		continue;
-	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
+	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for
+												  // duplicates
 		continue;
 	    try {
 		deviceConfig.validate();
-	    } catch(IllegalArgumentException e) {
+	    } catch (IllegalArgumentException e) {
 		throw new IllegalArgumentException("invalid device config", e);
 	    }
 	    if (deviceConfig.index < availableDevices.size()) {
@@ -708,9 +718,10 @@ public class GPUSolver extends Solver {
     public List<DeviceInfo> getDevices() {
 	return devices.stream().map(device -> new DeviceInfo(device.config.index, device.vendor, device.name)).toList();
     }
-    
-    public List<DeviceInfoWithConfig> getDevicesWithConfig(){
-	return devices.stream().map(device -> new DeviceInfoWithConfig(device.config, device.vendor, device.name)).toList();
+
+    public List<DeviceInfoWithConfig> getDevicesWithConfig() {
+	return devices.stream().map(device -> new DeviceInfoWithConfig(device.config, device.vendor, device.name))
+		.toList();
     }
 
     private String getKernelSourceAsString(String filepath) throws IOException {
@@ -730,27 +741,64 @@ public class GPUSolver extends Solver {
 	return resultString;
     }
 
+    // debug info
+    public int getNumberOfConstellations() {
+	return constellations.size();
+    }
+
+    public LinkedHashMap<Integer, Long> getSolutionsPerIjkl() {
+	LinkedHashMap<Integer, Long> solutionsPerIjkl = new LinkedHashMap<Integer, Long>();
+	constellations.stream().collect(Collectors.groupingBy(Constellation::getIjkl)).values().stream()
+		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).getIjkl(),
+			cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
+	return solutionsPerIjkl;
+    }
+
+    public int getDeviceGlobalWorkSize(int index) {
+	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
+	    throw new IllegalArgumentException("invalid device index: device is not used");
+	return availableDevices.get(index).constellations.size();
+    }
+
+    public int getDeviceWorkloadGlobalWorkSize(int index) {
+	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
+	    throw new IllegalArgumentException("invalid device index: device is not used");
+	return availableDevices.get(index).workloadGlobalWorkSize;
+    }
+
+    public int getDeviceTrashConstellations(int index) {
+	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
+	    throw new IllegalArgumentException("invalid device index: device is not used");
+	return (int) availableDevices.get(index).constellations.stream().filter(c -> c.getStartijkl() >> 20 == 69)
+		.count();
+    }
+
+    public int getDeviceWorkloadTrashConstellations(int index) {
+	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
+	    throw new IllegalArgumentException("invalid device index: device is not used");
+	return (int) availableDevices.get(index).workloadConstellations.stream()
+		.filter(c -> c.getStartijkl() >> 20 == 69).count();
+    }
+
     public static class GPUSolverConfig extends Config {
 	public DeviceConfig[] deviceConfigs;
 	public int presetQueens;
-	
+
 	public GPUSolverConfig() {
 	    // default values
 	    super();
-	    deviceConfigs = new DeviceConfig[] {
-		    new DeviceConfig()
-	    };
+	    deviceConfigs = new DeviceConfig[] { new DeviceConfig() };
 	    presetQueens = 6;
 	}
-	
+
 	@Override
 	public void validate() {
 	    super.validate();
 	    // if device configs are not specified, use default value
-	    if(deviceConfigs == null || deviceConfigs.length == 0)
+	    if (deviceConfigs == null || deviceConfigs.length == 0)
 		deviceConfigs = new GPUSolverConfig().deviceConfigs;
 	    else {
-		for(var dvcCfg : deviceConfigs) {
+		for (var dvcCfg : deviceConfigs) {
 		    dvcCfg.validate();
 		}
 	    }
@@ -766,7 +814,7 @@ public class GPUSolver extends Solver {
     }
 
     public static class DeviceConfig {
-	public static final DeviceConfig[] ALL_DEVICES = new DeviceConfig[] {new DeviceConfig(0, 9999, 1, 9999)};
+	public static final DeviceConfig[] ALL_DEVICES = new DeviceConfig[] { new DeviceConfig(0, 9999, 1, 9999) };
 	public int index;
 	public int workgroupSize;
 	public int weight;
@@ -797,7 +845,8 @@ public class GPUSolver extends Solver {
 	    if (workgroupSize <= 0)
 		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
 	    if (weight < 0)
-		throw new IllegalArgumentException("invalid value for weight: only numbers >0 or 0 (device disabled) are allowed");
+		throw new IllegalArgumentException(
+			"invalid value for weight: only numbers >0 or 0 (device disabled) are allowed");
 	    if (maxGlobalWorkSize != 0 && maxGlobalWorkSize < workgroupSize)
 		throw new IllegalArgumentException(
 			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (unlimited global work size) are allowed");
@@ -814,9 +863,12 @@ public class GPUSolver extends Solver {
 	}
     }
 
-    public record DeviceInfo(int index, String vendor, String name) {}
-    public record DeviceInfoWithConfig(DeviceConfig config, String vendor, String name) {}
-    
+    public record DeviceInfo(int index, String vendor, String name) {
+    }
+
+    public record DeviceInfoWithConfig(DeviceConfig config, String vendor, String name) {
+    }
+
     // a class holding all OpenCL bindings needed for an OpenCL device to operate
     private class Device {
 	long id;
