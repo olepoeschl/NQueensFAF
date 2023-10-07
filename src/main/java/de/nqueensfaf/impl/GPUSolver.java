@@ -506,24 +506,29 @@ public class GPUSolver extends Solver {
 	// read result and progress memory buffers
 	try {
 	    device.readResultsLock.tryLock(100, TimeUnit.MILLISECONDS);
+
+	    if (device.status >= 2)
+		return;
+	    checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
+	    for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
+		if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+		    continue;
+		long solutionsForConstellation = device.resPtr.getLong(i * 8)
+			* utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		if (solutionsForConstellation >= 0)
+		    // synchronize with the list of constellations on the RAM
+		    device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
+	    }
 	} catch (InterruptedException e) {
 	    // just ignore and leave this method
 	    return;
-//	    throw new SolverException("unexpected error while trying to acquire result reading lock", e);
+	} finally { // always release the lock, in case we locked it
+	    try {
+		device.readResultsLock.unlock();
+	    } catch(IllegalMonitorStateException e) {
+		// ignore
+	    }
 	}
-	if (device.status >= 2)
-	    return;
-	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
-	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
-		continue;
-	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
-	    if (solutionsForConstellation >= 0)
-		// synchronize with the list of constellations on the RAM
-		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
-	}
-	device.readResultsLock.unlock();
     }
 
     private void releaseWorkloadCLObjects(Device device) {
