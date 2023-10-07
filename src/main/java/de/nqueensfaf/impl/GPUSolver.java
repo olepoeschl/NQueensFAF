@@ -23,7 +23,6 @@ import java.util.zip.GZIPOutputStream;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opencl.CLEventCallback;
 import org.lwjgl.system.MemoryStack;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -34,7 +33,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
-import static org.lwjgl.opencl.CL12.clSetEventCallback;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
@@ -53,7 +51,8 @@ public class GPUSolver extends Solver {
     private ArrayList<Constellation> constellations;
     private int workloadSize;
     private int weightSum;
-    private long duration, start, end, storedDuration;
+    private long duration, start, storedDuration;
+    private volatile long end;
     private boolean injected;
 
     private GPUSolverConfig config;
@@ -148,21 +147,10 @@ public class GPUSolver extends Solver {
 		new Thread(() -> runDevice(stack, errBuf, device)).start();
 	    }
 
-	    if (config.updateInterval > 0) {
-		while (true) {
-		    for (Device device : devices) {
-			if (device.status == 1)
-			    readResults(device);
-		    }
-		    if (devices.stream().allMatch(device -> device.status == 3))
-			break;
-		    Thread.sleep(config.updateInterval);
-		}
-	    } else {
-		while (devices.stream().anyMatch(device -> device.status < 3))
-		    Thread.sleep(200);
-	    }
-
+	    // wait for all devices to finish
+	    while (devices.stream().anyMatch(device -> device.status < 3))
+		Thread.sleep(200);
+	    
 	    for (long context : contexts) {
 		checkCLError(clReleaseContext(context));
 	    }
@@ -320,35 +308,48 @@ public class GPUSolver extends Solver {
 		start = System.currentTimeMillis();
 
 	    // run
-	    device.xCallbackDone = false;
 	    enqueueKernel(errBuf, device);
 
 	    // wait for kernel to finish
 //	    clFinish(device.xqueue);
-	    Thread.yield();
-	    checkCLError(clWaitForEvents(device.xEvent));
-
-	    // stop timer when the last device is finished computing
-	    if (ptr >= device.constellations.size()) {
-		if (end != devices.size() - 1)
-		    end++;
-		else {
-		    // calculate needed time
-		    end = System.currentTimeMillis();
-		    duration = end - start + storedDuration;
+//	    Thread.yield();
+//	    checkCLError(clWaitForEvents(device.xEvent));
+	    
+	    IntBuffer eventStatusBuf = stack.mallocInt(1);
+	    while(true) {
+		readResults(device);
+		checkCLError(clGetEventInfo(device.xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
+		if(eventStatusBuf.get(0) == CL_COMPLETE) {
+		    if (ptr >= device.constellations.size()) {
+			// stop timer when the last device finished computing
+			if (end != devices.size() - 1)
+			    end++;
+			else {
+			    // calculate needed time
+			    end = System.currentTimeMillis();
+			    duration = end - start + storedDuration;
+			}
+		    }
+		    break;
 		}
-	    }
-
-	    // read results
-	    readResults(device);
-
-	    while (!device.xCallbackDone) {
+		Thread.yield();
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-		    throw new SolverException("unexpected error while waiting for kernel completion callback", e);
+		    Thread.currentThread().interrupt();
 		}
 	    }
+
+//	    // read gpu kernel profiled time
+//	    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
+//	    int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
+//	    checkCLError(err);
+//	    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
+//	    checkCLError(err);
+//	    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
+	    
+	    // read results
+	    readResults(device);
 	}
 	device.status = 2;
 	device.readResultsLock.lock();
@@ -468,6 +469,7 @@ public class GPUSolver extends Solver {
 	final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
 	checkCLError(clEnqueueNDRangeKernel(device.xqueue, device.kernel, dimensions, null, globalWorkSize,
 		localWorkSize, null, xEventBuf));
+	checkCLError(clFlush(device.xqueue));
 
 	// workaround for AMD GPUs returning not all results correctly: enqueue a
 	// no-operation kernel
@@ -486,20 +488,6 @@ public class GPUSolver extends Solver {
 
 	// get exact time values using CLEvent
 	device.xEvent = xEventBuf.get(0);
-	checkCLError(clSetEventCallback(device.xEvent, CL_COMPLETE,
-		device.profilingCB = CLEventCallback.create((event, event_command_exec_status, user_data) -> {
-		    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-		    int err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, startBuf, null);
-		    checkCLError(err);
-		    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, endBuf, null);
-		    checkCLError(err);
-		    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to
-										    // milliseconds
-		    device.xCallbackDone = true;
-		}), NULL));
-
-	// flush command to the device
-//	checkCLError(clFlush(device.xqueue));
     }
 
     private void readResults(Device device) {
@@ -537,8 +525,6 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseMemObject(device.colMem));
 	checkCLError(clReleaseMemObject(device.startijklMem));
 	checkCLError(clReleaseMemObject(device.resMem));
-
-	device.profilingCB.free();
 	checkCLError(clReleaseEvent(device.xEvent));
     }
 
@@ -879,7 +865,6 @@ public class GPUSolver extends Solver {
 	Long ldMem, rdMem, colMem, startijklMem, resMem;
 	ByteBuffer resPtr;
 	long xEvent;
-	CLEventCallback profilingCB;
 	// results
 	List<Constellation> constellations, workloadConstellations;
 	int workloadGlobalWorkSize;
@@ -887,7 +872,6 @@ public class GPUSolver extends Solver {
 	// control flow
 	volatile int status = 0; // 1: initialized, 2: computation done, 3: computation + cleanup done
 	final ReentrantLock readResultsLock = new ReentrantLock();
-	volatile boolean xCallbackDone = false;
 
 	public Device(long id, long platform, String vendor, String name) {
 	    this.id = id;
