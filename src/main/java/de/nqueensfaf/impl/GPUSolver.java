@@ -152,7 +152,7 @@ public class GPUSolver extends Solver {
 	    // wait for all devices to finish
 	    executor.shutdown();
 	    executor.awaitTermination(3650, TimeUnit.DAYS);
-	    
+
 	    for (long context : contexts) {
 		checkCLError(clReleaseContext(context));
 	    }
@@ -307,16 +307,12 @@ public class GPUSolver extends Solver {
 	    // run
 	    enqueueKernel(errBuf, device);
 
-	    // wait for kernel to finish
-//	    clFinish(device.xqueue);
-//	    Thread.yield();
-//	    checkCLError(clWaitForEvents(device.xEvent));
-	    
+	    // wait for kernel to finish and continuously read results from device
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
-	    while(true) {
+	    while (true) {
 		readResults(device);
 		checkCLError(clGetEventInfo(device.xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
-		if(eventStatusBuf.get(0) == CL_COMPLETE) {
+		if (eventStatusBuf.get(0) == CL_COMPLETE) {
 		    if (ptr >= device.constellations.size()) {
 			// stop timer when the last device finished computing
 			if (end != devices.size() - 1)
@@ -344,33 +340,22 @@ public class GPUSolver extends Solver {
 	    err = clGetEventProfilingInfo(device.xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
 	    checkCLError(err);
 	    device.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
-	    
+
 	    // read results
 	    readResults(device);
 	}
-	if(devices.size() == 1)
+	if (devices.size() == 1)
 	    duration = device.duration;
 	releaseWorkloadCLObjects(device);
 	releaseCLObjects(device);
     }
 
     private void createBuffers(IntBuffer errBuf, Device device) {
-	device.ldMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		device.workloadGlobalWorkSize * 4, errBuf);
+	// tasks
+	device.constellationMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+		device.workloadGlobalWorkSize * (4 + 4 + 4 + 4), errBuf);
 	checkCLError(errBuf);
-
-	device.rdMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		device.workloadGlobalWorkSize * 4, errBuf);
-	checkCLError(errBuf);
-
-	device.colMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		device.workloadGlobalWorkSize * 4, errBuf);
-	checkCLError(errBuf);
-
-	device.startijklMem = clCreateBuffer(device.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		device.workloadGlobalWorkSize * 4, errBuf);
-	checkCLError(errBuf);
-
+	// results
 	device.resMem = clCreateBuffer(device.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
 		device.workloadGlobalWorkSize * 8, errBuf);
 	checkCLError(errBuf);
@@ -379,44 +364,20 @@ public class GPUSolver extends Solver {
     private void fillBuffers(IntBuffer errBuf, Device device) {
 	List<Constellation> workloadConstellations = device.workloadConstellations;
 	int globalWorkSize = device.workloadGlobalWorkSize;
-
-	// ld
-	ByteBuffer ldPtr = clEnqueueMapBuffer(device.memqueue, device.ldMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4,
-		null, null, errBuf, null);
+	
+	// tasks
+	ByteBuffer constellationPtr = clEnqueueMapBuffer(device.memqueue, device.constellationMem, true, CL_MAP_WRITE,
+		0, globalWorkSize * (4 + 4 + 4 + 4), null, null, errBuf, null);
 	checkCLError(errBuf);
 	for (int i = 0; i < globalWorkSize; i++) {
-	    ldPtr.putInt(i * 4, workloadConstellations.get(i).getLd());
+	    constellationPtr.putInt(i*(4+4+4+4), workloadConstellations.get(i).getLd());
+	    constellationPtr.putInt(i*(4+4+4+4)+4, workloadConstellations.get(i).getRd());
+	    constellationPtr.putInt(i*(4+4+4+4)+4+4, workloadConstellations.get(i).getCol());
+	    constellationPtr.putInt(i*(4+4+4+4)+4+4+4, workloadConstellations.get(i).getStartijkl());
 	}
-	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.ldMem, ldPtr, null, null));
-
-	// rd
-	ByteBuffer rdPtr = clEnqueueMapBuffer(device.memqueue, device.rdMem, true, CL_MAP_WRITE, 0, globalWorkSize * 4,
-		null, null, errBuf, null);
-	checkCLError(errBuf);
-	for (int i = 0; i < globalWorkSize; i++) {
-	    rdPtr.putInt(i * 4, workloadConstellations.get(i).getRd());
-	}
-	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.rdMem, rdPtr, null, null));
-
-	// col
-	ByteBuffer colPtr = clEnqueueMapBuffer(device.memqueue, device.colMem, true, CL_MAP_WRITE, 0,
-		globalWorkSize * 4, null, null, errBuf, null);
-	checkCLError(errBuf);
-	for (int i = 0; i < globalWorkSize; i++) {
-	    colPtr.putInt(i * 4, workloadConstellations.get(i).getCol());
-	}
-	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.colMem, colPtr, null, null));
-
-	// startijkl
-	ByteBuffer startijklPtr = clEnqueueMapBuffer(device.memqueue, device.startijklMem, true, CL_MAP_WRITE, 0,
-		globalWorkSize * 4, null, null, errBuf, null);
-	checkCLError(errBuf);
-	for (int i = 0; i < globalWorkSize; i++) {
-	    startijklPtr.putInt(i * 4, workloadConstellations.get(i).getStartijkl());
-	}
-	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.startijklMem, startijklPtr, null, null));
-
-	// result memory
+	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.constellationMem, constellationPtr, null, null));
+	
+	// results
 	device.resPtr = clEnqueueMapBuffer(device.memqueue, device.resMem, true, CL_MAP_WRITE, 0, globalWorkSize * 8,
 		null, null, errBuf, null);
 	checkCLError(errBuf);
@@ -430,26 +391,14 @@ public class GPUSolver extends Solver {
     }
 
     private void setKernelArgs(MemoryStack stack, Device device) {
-	// ld
-	LongBuffer ldArg = stack.mallocLong(1);
-	ldArg.put(0, device.ldMem);
-	checkCLError(clSetKernelArg(device.kernel, 0, ldArg));
-	// rd
-	LongBuffer rdArg = stack.mallocLong(1);
-	rdArg.put(0, device.rdMem);
-	checkCLError(clSetKernelArg(device.kernel, 1, rdArg));
-	// col
-	LongBuffer colArg = stack.mallocLong(1);
-	colArg.put(0, device.colMem);
-	checkCLError(clSetKernelArg(device.kernel, 2, colArg));
-	// startijkl
-	LongBuffer startijklArg = stack.mallocLong(1);
-	startijklArg.put(0, device.startijklMem);
-	checkCLError(clSetKernelArg(device.kernel, 3, startijklArg));
-	// res
+	// tasks
+	LongBuffer constellationArg = stack.mallocLong(1);
+	constellationArg.put(0, device.constellationMem);
+	checkCLError(clSetKernelArg(device.kernel, 0, constellationArg));
+	// results
 	LongBuffer resArg = stack.mallocLong(1);
 	resArg.put(0, device.resMem);
-	checkCLError(clSetKernelArg(device.kernel, 4, resArg));
+	checkCLError(clSetKernelArg(device.kernel, 1, resArg));
     }
 
     private void enqueueKernel(IntBuffer errBuf, Device device) {
@@ -501,10 +450,7 @@ public class GPUSolver extends Solver {
     }
 
     private void releaseWorkloadCLObjects(Device device) {
-	checkCLError(clReleaseMemObject(device.ldMem));
-	checkCLError(clReleaseMemObject(device.rdMem));
-	checkCLError(clReleaseMemObject(device.colMem));
-	checkCLError(clReleaseMemObject(device.startijklMem));
+	checkCLError(clReleaseMemObject(device.constellationMem));
 	checkCLError(clReleaseMemObject(device.resMem));
 	checkCLError(clReleaseEvent(device.xEvent));
     }
@@ -843,7 +789,7 @@ public class GPUSolver extends Solver {
 	DeviceConfig config;
 	// OpenCL
 	long platform, context, program, kernel, xqueue, memqueue;
-	Long ldMem, rdMem, colMem, startijklMem, resMem;
+	Long constellationMem, resMem;
 	ByteBuffer resPtr;
 	long xEvent;
 	// results
