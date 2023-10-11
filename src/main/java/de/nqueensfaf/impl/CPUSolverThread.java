@@ -807,7 +807,7 @@ class CPUSolverThread extends Thread {
 		// if the queen j is more than 2 columns away from the corner but the rd from
 		// the
 		// j-queen can be set right at start
-		if (j < 2 * N - 34 - start) {
+		if (j > 2 * N - 34 - start) {
 		    // k < l
 		    if (k < l) {
 			mark1 = k - 1;
