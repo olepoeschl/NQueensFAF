@@ -1,12 +1,20 @@
-kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_arr, global int *start_jkl_arr, global long *result) {
-	// gpu intern indice
-	int g_id = get_global_id(0);			// global thread id
-	int l_id = get_local_id(0);  			// local thread id within workgroup
 
+struct constellation {
+    int ld;
+    int rd;
+    int col;
+    int start_ijkl;
+};
+
+kernel void nqfaf(global struct constellation *constellation_arr, global long *result) {
+        const int l_id = get_local_id(0);  			// local thread id within workgroup
+    
+        const struct constellation c = constellation_arr[get_global_id(0)];
+    
 	// variables
 	uint L = 1 << (N-1);				// queen at the left border of the board (right border is represented by 1)
 	// start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l]
-	int start_jkl = start_jkl_arr[g_id];
+	int start_jkl = c.start_ijkl;
 	int start = (start_jkl >> 20) & 31;
 	if(start == 69) {				// if we have a pseudo constellation we do nothing
 		return;
@@ -15,9 +23,9 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	int k = (start_jkl >> 5) & 31;	// in row k queen at left border, in row l queen at right border
 	int l = start_jkl & 31;
 
-	ulong ld = ld_arr[g_id];
-	ulong rd = rd_arr[g_id];
-	uint col = ~(L-2) ^ col_arr[g_id];
+	ulong ld = c.ld;
+	ulong rd = c.rd;
+	uint col = ~(L-2) ^ c.col;
 
 	// the part that is different from the default kernel
 	local uint jkl_queens[N];
@@ -39,8 +47,7 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	int row = start;
 	ulong solutions = 0;
 	uint free = ~(col | jkl_queens[row] | ld | rd);
-	ulong queen2 = -free & free;
-	uint queen = queen2;
+	ulong queen = -free & free;
 
 	rd <<= 32;
 
@@ -55,20 +62,21 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 	while(row >= start) {				// while we haven't tried everything
 		if(free) {					// if there are free slots in the current row
 			direction = 1;					// we are going forwards
-			queen2 = queen = -free & free;				// this is the next free slot for a queen (searching from the right border) in the current row
+			queen = -free & free;				// this is the next free slot for a queen (searching from the right border) in the current row
+			
 			queens[l_id][row] = queen;			// remember the queen
 			row++;						// increase row counter
 
-			ld = (ld | queen2) << 1;
-			rd = (rd | (queen2 << 32)) >> 1;
+			ld = (ld | queen) << 1;
+			rd = (rd | (queen << 32)) >> 1;
 		}
 		else {						// if the row is completely occupied
 			direction = 0;					// we are going backwards
 			row--;						// decrease row counter
-			queen2 = queen = queens[l_id][row];			// recover the queen in order to remove it
+			queen = queens[l_id][row];			// recover the queen in order to remove it
 
-			ld = (ld >> 1) ^ queen2;
-			rd = (rd << 1) ^ (queen2 << 32);
+			ld = (ld >> 1) ^ queen;
+			rd = (rd << 1) ^ (queen << 32);
 		}
 		free = ~(jkl_queens[row] | col | ld | (rd >> 32));	// calculate the occupancy of the next row
 		free &= ~(queen + direction-1);			// occupy all bits right from the last queen in order to not place the same queen again
@@ -77,5 +85,5 @@ kernel void nqfaf_intel(global int *ld_arr, global int *rd_arr, global int *col_
 		if(row == N-1)					// increase the solutions, if we are in the last row
 			solutions++;
 	}
-	result[g_id] = solutions;			// number of solutions of the work item
+	result[get_global_id(0)] = solutions;			// number of solutions of the work item
 }
