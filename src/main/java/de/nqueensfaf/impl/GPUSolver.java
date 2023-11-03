@@ -310,7 +310,8 @@ public class GPUSolver extends Solver {
 	    // wait for kernel to finish and continuously read results from device
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
 	    while (true) {
-		readResults(device);
+		if(config.updateInterval > 0)
+		    readResults(device);
 		checkCLError(clGetEventInfo(device.xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
 		if (eventStatusBuf.get(0) == CL_COMPLETE) {
 		    if (ptr >= device.constellations.size()) {
