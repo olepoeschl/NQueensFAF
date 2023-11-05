@@ -33,6 +33,8 @@ Especially the newer graphics cards show the potential of our program.
 |  i5 - 12600k multi    |      0.203s     |   0.79s   |   4.91s   |   37.1s   |     4:59m    |    42:20m    |     6:09h    |
 |   i5 - 9300h single   |      1.32s      |   8.95s   |   1:05m   |   8:20m   |     1:10h    | not measured | not measured |
 |   i5 - 9300h multi    |      0.25s      |   1.75s   |   12.5s   |   1:35m   |    13:05m    |     1:52h    |     16:18h   |
+|   Ryzen 5800X single  |      0.91s      |   6.09s   |   44.3s   |   5:38m   |    45:24m    | mot measured | not measured |
+|   Ryzen 5800X multi   |      0.28s      |   0.70s   |   4.06s   |   30.3s   |     4:04m    |    33:53m    | not measured |
 
 Single stands for single-threaded and multi for Multi-threaded. 
 The CPU's and the GPU's are used with stock settings. 
