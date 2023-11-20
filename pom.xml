@@ -12,7 +12,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<lwjgl.version>3.3.2</lwjgl.version>
-		<jackson.version>2.15.2</jackson.version>
+		<jackson.version>2.16.0</jackson.version>
 	</properties>
 	<profiles>
 		<profile>
