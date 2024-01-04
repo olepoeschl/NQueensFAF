@@ -1,4 +1,4 @@
-package de.nqueensfaf.persistence;
+package de.nqueensfaf.impl;
 
 public class Constellation {
 

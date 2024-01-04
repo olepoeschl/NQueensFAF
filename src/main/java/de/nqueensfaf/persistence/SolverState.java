@@ -2,6 +2,8 @@ package de.nqueensfaf.persistence;
 
 import java.util.ArrayList;
 
+import de.nqueensfaf.impl.Constellation;
+
 public class SolverState {
 
     private int N;

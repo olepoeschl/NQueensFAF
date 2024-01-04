@@ -41,7 +41,6 @@ import de.nqueensfaf.Config;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.SolverException;
-import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {

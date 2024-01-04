@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import com.esotericsoftware.kryo.Kryo;
 
-import de.nqueensfaf.persistence.Constellation;
+import de.nqueensfaf.impl.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
 public class Constants {

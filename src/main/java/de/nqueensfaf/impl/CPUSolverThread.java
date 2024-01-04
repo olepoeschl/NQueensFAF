@@ -2,8 +2,6 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 
-import de.nqueensfaf.persistence.Constellation;
-
 class CPUSolverThread extends Thread {
 
     private final int N, N3, N4, L, L3, L4; // boardsize

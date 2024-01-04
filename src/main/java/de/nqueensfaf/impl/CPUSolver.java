@@ -21,7 +21,6 @@ import com.esotericsoftware.kryo.io.Output;
 import de.nqueensfaf.Config;
 import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.persistence.Constellation;
 import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
