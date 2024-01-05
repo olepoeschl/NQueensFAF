@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,8 +21,6 @@ import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.persistence.SolverState;
 
-import static de.nqueensfaf.impl.SolverUtils.*;
-
 public class CPUSolver extends Solver {
 
     // for very small n it is overkill to use this method
@@ -32,9 +29,7 @@ public class CPUSolver extends Solver {
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
 
-    private int L, mask, LD, RD, counter;
     private long start, end;
-    private HashSet<Integer> ijklList;
     private ArrayList<Constellation> constellations;
     private ArrayList<CPUSolverThread> threads;
     private ArrayList<ArrayList<Constellation>> threadConstellations;
@@ -46,7 +41,6 @@ public class CPUSolver extends Solver {
 
     public CPUSolver() {
 	config = new CPUSolverConfig();
-	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
 	loaded = false;
@@ -63,7 +57,7 @@ public class CPUSolver extends Solver {
 	}
 
 	if (!loaded) {
-	    genConstellations();
+	    constellations = new ConstellationsGenerator(n, config.presetQueens).generate();
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
@@ -177,106 +171,6 @@ public class CPUSolver extends Solver {
 	    return tmpSolutions;
 	}
 	return solutions;
-    }
-
-    private void genConstellations() {
-	// halfN half of n rounded up
-	final int halfN = (n + 1) / 2;
-	L = 1 << (n - 1);
-	mask = (1 << n) - 1;
-
-	// calculate starting constellations for no Queens in corners
-	for (int k = 1; k < halfN; k++) { // go through first col
-	    for (int l = k + 1; l < n - 1; l++) { // go through last col
-		for (int i = k + 1; i < n - 1; i++) { // go through first row
-		    if (i == n - 1 - l) // skip if occupied
-			continue;
-		    for (int j = n - k - 2; j > 0; j--) { // go through last row
-			if (j == i || l == j)
-			    continue;
-
-			if (!checkRotations(n, ijklList, i, j, k, l)) { // if no rotation-symmetric starting
-							   // constellation already
-							   // found
-			    ijklList.add(toIjkl(i, j, k, l));
-			}
-		    }
-		}
-	    }
-	}
-	// calculating start constellations with the first Queen on the corner square
-	// (0,0)
-	for (int j = 1; j < n - 2; j++) { // j is idx of Queen in last row
-	    for (int l = j + 1; l < n - 1; l++) { // l is idx of Queen in last col
-		ijklList.add(toIjkl(0, j, 0, l));
-	    }
-	}
-
-	HashSet<Integer> ijklListJasmin = new HashSet<Integer>();
-	// rotate and mirror all start constellations, such that the queen in the last
-	// row is as close to the right border as possible
-	for (int startConstellation : ijklList) {
-	    ijklListJasmin.add(jAsMin(n, startConstellation));
-	}
-	ijklList = ijklListJasmin;
-
-	int i, j, k, l, ld, rd, col, currentSize = 0;
-	for (int sc : ijklList) {
-	    i = geti(sc);
-	    j = getj(sc);
-	    k = getk(sc);
-	    l = getl(sc);
-	    // fill up the board with preQueens queens and generate corresponding variables
-	    // ld, rd, col, start_queens_ijkl for each constellation
-	    // occupy the board corresponding to the queens on the borders of the board
-	    // we are starting in the first row that can be free, namely row 1
-	    ld = (L >>> (i - 1)) | (1 << (n - k));
-	    rd = (L >>> (i + 1)) | (1 << (l - 1));
-	    col = 1 | L | (L >>> i) | (L >>> j);
-	    // occupy diagonals of the queens j k l in the last row
-	    // later we are going to shift them upwards the board
-	    LD = (L >>> j) | (L >>> l);
-	    RD = (L >>> j) | (1 << k);
-
-	    // counts all subconstellations
-	    counter = 0;
-	    // generate all subconstellations
-	    setPreQueens(ld, rd, col, k, l, 1, j == n - 1 ? 3 : 4);
-	    currentSize = constellations.size();
-	    // jkl and sym and start are the same for all subconstellations
-	    for (int a = 0; a < counter; a++) {
-		constellations.get(currentSize - a - 1)
-			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | toIjkl(i, j, k, l));
-	    }
-	}
-    }
-
-    // generate subconstellations for each starting constellation with 3 or 4 queens
-    private void setPreQueens(int ld, int rd, int col, int k, int l, int row, int queens) {
-	// in row k and l just go further
-	if (row == k || row == l) {
-	    setPreQueens(ld << 1, rd >>> 1, col, k, l, row + 1, queens);
-	    return;
-	}
-	// add queens until we have preQueens queens
-	if (queens == config.presetQueens) {
-	    // add the subconstellations to the list
-	    constellations.add(new Constellation(-1, ld, rd, col, row << 20, -1));
-	    counter++;
-	    return;
-	}
-	// if not done or row k or l, just place queens and occupy the board and go
-	// further
-	else {
-	    int free = (~(ld | rd | col | (LD >>> (n - 1 - row)) | (RD << (n - 1 - row)))) & mask;
-	    int bit;
-
-	    while (free > 0) {
-		bit = free & (-free);
-		free -= bit;
-		setPreQueens((ld | bit) << 1, (rd | bit) >>> 1, col | bit, k, l, row + 1, queens + 1);
-	    }
-	}
     }
     
     // debug info

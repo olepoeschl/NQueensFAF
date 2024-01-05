@@ -33,10 +33,15 @@ public class ConstellationsGenerator {
 
 	int i, j, k, l, ld, rd, col, currentSize = 0;
 	for (int ijkl : ijklList) {
+	    ijkl = jAsMin(n, ijkl);
 	    i = geti(ijkl);
 	    j = getj(ijkl);
 	    k = getk(ijkl);
 	    l = getl(ijkl);
+
+	    // counts all subconstellations
+	    subConstellationsCounter = 0;
+
 	    // fill up the board with preQueens queens and generate corresponding variables
 	    // ld, rd, col, start_queens_ijkl for each constellation
 	    // occupy the board corresponding to the queens on the borders of the board
@@ -49,16 +54,15 @@ public class ConstellationsGenerator {
 	    LD = (L >>> j) | (L >>> l);
 	    RD = (L >>> j) | (1 << k);
 
-	    // counts all subconstellations
-	    subConstellationsCounter = 0;
 	    // generate all subconstellations
-	    placePresetQueens(ld, rd, col, k, l, 1, oneQueenInCorner(n, ijkl) ? 3 : 4);
+	    placePresetQueens(ld, rd, col, k, l, 1, j == n - 1 ? 3 : 4);
 	    currentSize = constellations.size();
+	    
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		constellations.get(currentSize - a - 1)
-			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | toIjkl(i, j, k, l));
-		
+			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | ijkl);
+
 		if(constellationConsumer != null)
 		    constellationConsumer.accept(constellations.get(currentSize - a - 1));
 	    }
@@ -73,7 +77,7 @@ public class ConstellationsGenerator {
     
     private void generateIjkls() {
 	ijklList = new HashSet<Integer>();
-	
+
 	// half of n rounded up
 	final int halfN = (n + 1) / 2;
 
@@ -87,18 +91,20 @@ public class ConstellationsGenerator {
 			if (j == i || l == j)
 			    continue;
 
-			if (!checkRotations(n, ijklList, i, j, k, l)) { // if no rotation-symmetric starting
-			    ijklList.add(jAsMin(n, toIjkl(i, j, k, l)));
+			if (!checkRotations(n, ijklList, i, j, k, l)) { 
+			    // if no rotation-symmetric starting constellation is found
+			    ijklList.add(toIjkl(i, j, k, l));
 			}
 		    }
 		}
 	    }
 	}
+	
 	// calculating start constellations with the first Queen on the corner square
 	// (0,0)
 	for (int j = 1; j < n - 2; j++) { // j is idx of Queen in last row
 	    for (int l = j + 1; l < n - 1; l++) { // l is idx of Queen in last col
-		ijklList.add(jAsMin(n, toIjkl(0, j, 0, l)));
+		ijklList.add(toIjkl(0, j, 0, l));
 	    }
 	}
     }
