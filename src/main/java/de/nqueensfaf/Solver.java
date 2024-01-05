@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public abstract class Solver implements Configurable {
+public abstract class Solver {
     
     protected int N;
     
@@ -30,6 +30,8 @@ public abstract class Solver implements Configurable {
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
+    
+    public abstract <T extends Config> T config();
     
     protected abstract void run();
     protected abstract void save_(String filepath) throws IOException;
