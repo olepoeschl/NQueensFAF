@@ -312,11 +312,5 @@ public class CPUSolver extends Solver {
 	    if (presetQueens < 4)
 		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
 	}
-
-	public void from(CPUSolverConfig config) {
-	    super.load(config);
-	    threadcount = config.threadcount;
-	    presetQueens = config.presetQueens;
-	}
     }
 }
