@@ -63,8 +63,8 @@ class GPUConstellationsGenerator {
 
 		// ijkl and sym are the same for all subconstellations
 		for (int a = 0; a < counter; a++) {
-		    int start = constellations.get(currentSize - a - 1).getStartijkl();
-		    constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
+		    int start = constellations.get(currentSize - a - 1).getStartIjkl();
+		    constellations.get(currentSize - a - 1).setStartIjkl(start | ijkl);
 		}
 	    }
 	}
@@ -104,8 +104,8 @@ class GPUConstellationsGenerator {
 
 			    // jkl and sym and start are the same for all subconstellations
 			    for (int a = 0; a < counter; a++) {
-				int start = constellations.get(currentSize - a - 1).getStartijkl();
-				constellations.get(currentSize - a - 1).setStartijkl(start | ijkl);
+				int start = constellations.get(currentSize - a - 1).getStartIjkl();
+				constellations.get(currentSize - a - 1).setStartIjkl(start | ijkl);
 			    }
 			}
 		    }

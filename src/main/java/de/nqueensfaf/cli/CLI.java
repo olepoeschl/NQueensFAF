@@ -102,14 +102,12 @@ public class CLI implements Runnable {
 	    if (!executeOnGpu) {
 		CPUSolver cpuSolver = new CPUSolver();
 		if (configFile != null) {
-		    cpuSolver.config(config -> {
-			try {
-			    config.from(configFile);
-			} catch (IllegalArgumentException | IllegalAccessException | IOException e) {
-			    System.err.println("Could not apply config: " + e.getMessage());
-			    System.exit(0);
-			}
-		    });
+		    try {
+			cpuSolver.config().load(configFile);
+		    } catch (IllegalArgumentException | IllegalAccessException | IOException e) {
+			System.err.println("Could not apply config: " + e.getMessage());
+			System.exit(0);
+		    }
 		} else {
 		    System.out.println("no config file provided, using default config...");
 		}
@@ -117,14 +115,12 @@ public class CLI implements Runnable {
 	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
 		if (configFile != null) {
-		    gpuSolver.config(config -> {
-			try {
-			    config.from(configFile);
-			} catch (IllegalArgumentException | IllegalAccessException | IOException e) {
-			    System.err.println("Could not apply config: " + e.getMessage());
-			    System.exit(0);
-			}
-		    });
+		    try {
+			gpuSolver.config().load(configFile);
+		    } catch (IllegalArgumentException | IllegalAccessException | IOException e) {
+			System.err.println("Could not apply config: " + e.getMessage());
+			System.exit(0);
+		    }
 		} else {
 		    System.out.println("no config file provided, using default config...");
 		}
@@ -147,10 +143,10 @@ public class CLI implements Runnable {
 				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
 					.dataAlign(HorizontalAlign.CENTER)
 					.with(device -> Integer.toString(device.config().maxGlobalWorkSize) + (device.config().maxGlobalWorkSize == 0 ? " (no limit)" : "")))));
-//		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
-//		    System.err.println(
-//				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
-//		}
+		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
+		    System.err.println(
+				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
+		}
 		solver = gpuSolver;
 	    }
 
@@ -162,7 +158,7 @@ public class CLI implements Runnable {
 			System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
 				getDurationPrettyString(duration));
 		    }).onFinish(self -> {
-			if(self.getConfig().updateInterval > 0)
+			if(self.config().updateInterval > 0)
 			    System.out.println();
 			System.out.println("found " + self.getSolutions() + " solutions in "
 				+ getDurationPrettyString(self.getDuration()));
@@ -170,7 +166,7 @@ public class CLI implements Runnable {
 
 	    // start
 	    if (taskFile != null) {
-		solver.inject(taskFile);
+		solver.load(taskFile);
 	    } else {
 		solver.setN(N);
 		solver.solve();

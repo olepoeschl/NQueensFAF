@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -53,7 +52,7 @@ public class GPUSolver extends Solver {
     private int weightSum;
     private long duration, start, storedDuration;
     private volatile long end;
-    private boolean injected;
+    private boolean loaded;
 
     private GPUSolverConfig config;
     private SolverUtils utils;
@@ -64,7 +63,7 @@ public class GPUSolver extends Solver {
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
-	injected = false;
+	loaded = false;
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
 	    setDeviceConfigs(config.deviceConfigs);
@@ -89,7 +88,7 @@ public class GPUSolver extends Solver {
 
 	try (MemoryStack stack = stackPush()) {
 	    utils.setN(N);
-	    if (!injected)
+	    if (!loaded)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		    .collect(Collectors.toList());
@@ -173,18 +172,18 @@ public class GPUSolver extends Solver {
     private ArrayList<Constellation> fillWithTrash(List<Constellation> subConstellations, int workgroupSize) {
 	sortConstellations(subConstellations);
 	ArrayList<Constellation> newConstellations = new ArrayList<Constellation>();
-	int currentJkl = subConstellations.get(0).getStartijkl() & ((1 << 15) - 1);
+	int currentJkl = subConstellations.get(0).getStartIjkl() & ((1 << 15) - 1);
 	for (var c : subConstellations) {
 	    // iterate through constellations, add each remaining constellations and fill up
 	    // each group of ijkl till its dividable by workgroup-size
 	    if (c.getSolutions() >= 0)
 		continue;
 
-	    if ((c.getStartijkl() & ((1 << 15) - 1)) != currentJkl) { // check if new ijkl is found
+	    if ((c.getStartIjkl() & ((1 << 15) - 1)) != currentJkl) { // check if new ijkl is found
 		while (newConstellations.size() % workgroupSize != 0) {
 		    addTrashConstellation(newConstellations, currentJkl);
 		}
-		currentJkl = c.getStartijkl() & ((1 << 15) - 1);
+		currentJkl = c.getStartIjkl() & ((1 << 15) - 1);
 	    }
 	    newConstellations.add(c);
 	}
@@ -202,8 +201,8 @@ public class GPUSolver extends Solver {
 	Collections.sort(constellations, new Comparator<Constellation>() {
 	    @Override
 	    public int compare(Constellation o1, Constellation o2) {
-		int o1ijkl = o1.getStartijkl() & ((1 << 20) - 1);
-		int o2ijkl = o2.getStartijkl() & ((1 << 20) - 1);
+		int o1ijkl = o1.getStartIjkl() & ((1 << 20) - 1);
+		int o2ijkl = o2.getStartIjkl() & ((1 << 20) - 1);
 		return Integer.compare(utils.getjkl(o1ijkl), utils.getjkl(o2ijkl));
 	    }
 	});
@@ -373,7 +372,7 @@ public class GPUSolver extends Solver {
 	    constellationPtr.putInt(i*(4+4+4+4), workloadConstellations.get(i).getLd());
 	    constellationPtr.putInt(i*(4+4+4+4)+4, workloadConstellations.get(i).getRd());
 	    constellationPtr.putInt(i*(4+4+4+4)+4+4, workloadConstellations.get(i).getCol());
-	    constellationPtr.putInt(i*(4+4+4+4)+4+4+4, workloadConstellations.get(i).getStartijkl());
+	    constellationPtr.putInt(i*(4+4+4+4)+4+4+4, workloadConstellations.get(i).getStartIjkl());
 	}
 	checkCLError(clEnqueueUnmapMemObject(device.memqueue, device.constellationMem, constellationPtr, null, null));
 	
@@ -439,10 +438,10 @@ public class GPUSolver extends Solver {
 	// read result and progress memory buffers
 	checkCLError(clEnqueueReadBuffer(device.memqueue, device.resMem, true, 0, device.resPtr, null, null));
 	for (int i = 0; i < device.workloadGlobalWorkSize; i++) {
-	    if (device.workloadConstellations.get(i).getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+	    if (device.workloadConstellations.get(i).getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * utils.symmetry(device.workloadConstellations.get(i).getStartijkl() & 0b11111111111111111111);
+		    * utils.symmetry(device.workloadConstellations.get(i).getStartIjkl() & 0b11111111111111111111);
 	    if (solutionsForConstellation >= 0)
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
@@ -463,30 +462,14 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseDevice(device.id));
     }
 
-    public GPUSolver config(Consumer<GPUSolverConfig> configConsumer) {
-	var tmp = new GPUSolverConfig();
-	tmp.from(config);
-
-	configConsumer.accept(tmp);
-	try {
-	    tmp.validate();
-	} catch (IllegalArgumentException e) {
-	    throw new IllegalArgumentException("invalid GPUSolverConfig", e);
-	}
-
-	config.from(tmp);
-	setDeviceConfigs(config.deviceConfigs);
-	return this;
-    }
-
     @SuppressWarnings("unchecked")
     @Override
-    public GPUSolverConfig getConfig() {
+    public GPUSolverConfig config() {
 	return config;
     }
 
     @Override
-    protected void store_(String filepath) throws IOException {
+    protected void save_(String filepath) throws IOException {
 	// if Solver was not even started yet or is already done, throw exception
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("nothing to be saved");
@@ -501,9 +484,9 @@ public class GPUSolver extends Solver {
     }
 
     @Override
-    protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 	if (!isIdle()) {
-	    throw new IllegalStateException("cannot inject while the solver is running");
+	    throw new IllegalStateException("Cannot load a state while the solver is running");
 	}
 	Kryo kryo = Constants.kryo;
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
@@ -511,7 +494,7 @@ public class GPUSolver extends Solver {
 	    setN(state.getN());
 	    storedDuration = state.getStoredDuration();
 	    constellations = state.getConstellations();
-	    injected = true;
+	    loaded = true;
 	}
     }
 
@@ -528,7 +511,7 @@ public class GPUSolver extends Solver {
     public float getProgress() {
 	int solvedConstellations = 0;
 	for (var c : constellations) {
-	    if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    if (c.getSolutions() >= 0) {
 		solvedConstellations++;
@@ -541,7 +524,7 @@ public class GPUSolver extends Solver {
     public long getSolutions() {
 	long tmpSolutions = 0;
 	for (var c : constellations) {
-	    if (c.getStartijkl() >> 20 == 69) // start=69 is for trash constellations
+	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    if (c.getSolutions() >= 0) {
 		tmpSolutions += c.getSolutions();
@@ -682,7 +665,7 @@ public class GPUSolver extends Solver {
     public int getDeviceTrashConstellations(int index) {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
 	    throw new IllegalArgumentException("invalid device index: device is not used");
-	return (int) availableDevices.get(index).constellations.stream().filter(c -> c.getStartijkl() >> 20 == 69)
+	return (int) availableDevices.get(index).constellations.stream().filter(c -> c.getStartIjkl() >> 20 == 69)
 		.count();
     }
 
@@ -690,7 +673,7 @@ public class GPUSolver extends Solver {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
 	    throw new IllegalArgumentException("invalid device index: device is not used");
 	return (int) availableDevices.get(index).workloadConstellations.stream()
-		.filter(c -> c.getStartijkl() >> 20 == 69).count();
+		.filter(c -> c.getStartIjkl() >> 20 == 69).count();
     }
 
     public static class GPUSolverConfig extends Config {
@@ -717,12 +700,6 @@ public class GPUSolver extends Solver {
 	    }
 	    if (presetQueens < 4)
 		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
-	}
-
-	public void from(GPUSolverConfig config) {
-	    super.from(config);
-	    deviceConfigs = config.deviceConfigs;
-	    presetQueens = config.presetQueens;
 	}
     }
 

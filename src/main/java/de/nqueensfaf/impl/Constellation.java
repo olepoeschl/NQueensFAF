@@ -6,7 +6,7 @@ public class Constellation {
     private int ld;
     private int rd;
     private int col;
-    private int startijkl;
+    private int startIjkl;
     private long solutions;
 
     public Constellation() {
@@ -18,7 +18,7 @@ public class Constellation {
 	this.ld = ld;
 	this.rd = rd;
 	this.col = col;
-	this.startijkl = startijkl;
+	this.startIjkl = startijkl;
 	this.solutions = solutions;
     }
 
@@ -54,12 +54,12 @@ public class Constellation {
 	this.col = col;
     }
 
-    public int getStartijkl() {
-	return startijkl;
+    public int getStartIjkl() {
+	return startIjkl;
     }
 
-    public void setStartijkl(int startijkl) {
-	this.startijkl = startijkl;
+    public void setStartIjkl(int startIjkl) {
+	this.startIjkl = startIjkl;
     }
 
     public long getSolutions() {
@@ -71,6 +71,6 @@ public class Constellation {
     }
     
     public int getIjkl() {
-	return startijkl & 0b11111111111111111111;
+	return startIjkl & 0b11111111111111111111;
     }
 }

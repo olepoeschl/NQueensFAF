@@ -4,16 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public abstract class Solver {
-
-    private static final int IDLE = 1;
-    private static final int INITIALIZING = 2;
-    private static final int RUNNING = 3;
-    private static final int TERMINATING = 4;
+public abstract class Solver implements Configurable {
     
     protected int N;
     
-    private volatile int state = IDLE;
+    private volatile Status state = Status.IDLE;
     private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
@@ -26,34 +21,34 @@ public abstract class Solver {
 		try {
 		    Thread.sleep(100);
 		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
+		    e.printStackTrace();
 		}
 	    }
 	}));
     }
-
-    public abstract <T extends Config> T getConfig();
+    
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
+    
     protected abstract void run();
-    protected abstract void store_(String filepath) throws IOException;
-    protected abstract void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+    protected abstract void save_(String filepath) throws IOException;
+    protected abstract void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
     
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solve() {
 	preconditions();
 	
-	state = INITIALIZING;
+	state = Status.INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
 
-	state = RUNNING;
-	if(getConfig().updateInterval > 0) {
+	state = Status.RUNNING;
+	if(config().updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
 	    boolean updateConsumer = false, autoSaver = false;
-	    if (onUpdateConsumer != null) // if updateInterval is 0, it means, disable progress updates
+	    if (onUpdateConsumer != null)
 		updateConsumer = true;
-	    if (getConfig().autoSaveEnabled)
+	    if (config().autoSaveEnabled)
 		autoSaver = true;
 	    bgThread = backgroundThread(updateConsumer, autoSaver);
 	    bgThread.start();
@@ -62,12 +57,12 @@ public abstract class Solver {
 	try {
 	    run();
 	} catch (Exception e) {
-	    state = TERMINATING;
+	    state = Status.TERMINATING;
 	    throw e;
 	}
 
-	state = TERMINATING;
-	if(getConfig().updateInterval > 0) {
+	state = Status.TERMINATING;
+	if(config().updateInterval > 0) {
 	    try {
 		bgThread.join();
 	    } catch (InterruptedException e) {
@@ -77,7 +72,7 @@ public abstract class Solver {
 	if (finishCb != null)
 	    finishCb.accept(this);
 
-	state = IDLE;
+	state = Status.IDLE;
 	return (T) this;
     }
 
@@ -102,15 +97,15 @@ public abstract class Solver {
     
     private void preconditions() {
 	if (N == 0) {
-	    state = IDLE;
+	    state = Status.IDLE;
 	    throw new IllegalStateException("board size was not set");
 	}
 	if (!isIdle()) {
-	    state = IDLE;
+	    state = Status.IDLE;
 	    throw new IllegalStateException("solver is already started");
 	}
 	if (getProgress() == 1.0f) {
-	    state = IDLE;
+	    state = Status.IDLE;
 	    throw new IllegalStateException("solver is already done, nothing to do here");
 	}
     }
@@ -118,7 +113,7 @@ public abstract class Solver {
     private Thread backgroundThread(boolean updateConsumer, boolean autoSaver) {
 	return new Thread(() -> {
 	    // for autoSaver
-	    String filePath = getConfig().autoSavePath;
+	    String filePath = config().autoSavePath;
 	    filePath = filePath.replaceAll("\\{N\\}", "" + N);
 	    float progress = getProgress() * 100;
 	    float tmpProgress = progress;
@@ -132,9 +127,9 @@ public abstract class Solver {
 		    progress = getProgress() * 100;
 		    if (progress >= 100)
 			break;
-		    else if (progress >= tmpProgress + getConfig().autoSavePercentageStep) {
+		    else if (progress >= tmpProgress + config().autoSavePercentageStep) {
 			try {
-			    store(filePath);
+			    save(filePath);
 			} catch (IllegalArgumentException | IOException e) {
 			    System.err.println("error in autosaver thread: " + e.getMessage());
 			}
@@ -143,7 +138,7 @@ public abstract class Solver {
 		}
 		
 		try {
-		    Thread.sleep(getConfig().updateInterval);
+		    Thread.sleep(config().updateInterval);
 		} catch (InterruptedException e) {
 		    Thread.currentThread().interrupt();
 		}
@@ -156,7 +151,7 @@ public abstract class Solver {
 	    if(autoSaver) {
 		progress = getProgress() * 100;
 		if (progress >= 100) {
-		    if (getConfig().autoDeleteEnabled) {
+		    if (config().autoDeleteEnabled) {
 			try {
 			    new File(filePath).delete();
 			} catch (SecurityException e) {
@@ -171,11 +166,11 @@ public abstract class Solver {
     protected int solveSmallBoard() {
 	solutionsSmallN = 0;
 	int mask = (1 << getN()) - 1;
-	nq(0, 0, 0, 0, mask, mask);
+	smallBoardNQ(0, 0, 0, 0, mask, mask);
 	return solutionsSmallN;
     }
 
-    private void nq(int ld, int rd, int col, int row, int free, int mask) {
+    private void smallBoardNQ(int ld, int rd, int col, int row, int free, int mask) {
 	if (row == getN() - 1) {
 	    solutionsSmallN++;
 	    return;
@@ -190,22 +185,22 @@ public abstract class Solver {
 	    nextfree = ~((ld | bit) << 1 | (rd | bit) >> 1 | col | bit) & mask;
 
 	    if (nextfree > 0)
-		nq((ld | bit) << 1, (rd | bit) >> 1, col | bit, row + 1, nextfree, mask);
+		smallBoardNQ((ld | bit) << 1, (rd | bit) >> 1, col | bit, row + 1, nextfree, mask);
 	}
     }
 
-    public final void store(String filepath) throws IOException, IllegalArgumentException {
+    public final void save(String filepath) throws IOException, IllegalArgumentException {
 	if(isStoring)
 	    return;
 	isStoring = true;
-	store_(filepath);
+	save_(filepath);
 	isStoring = false;
     }
 
-    public final synchronized void inject(File file)
+    public final synchronized void load(File file)
 	    throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
-	inject_(file.getAbsolutePath());
-	getConfig().autoSavePath = file.getAbsolutePath();
+	load_(file.getAbsolutePath());
+	config().autoSavePath = file.getAbsolutePath();
 	solve();
     }
 
@@ -255,19 +250,23 @@ public abstract class Solver {
     }
     
     public final boolean isIdle() {
-	return state == IDLE;
+	return state == Status.IDLE;
     }
 
     public final boolean isInitializing() {
-	return state == INITIALIZING;
+	return state == Status.INITIALIZING;
     }
 
     public final boolean isRunning() {
-	return state == RUNNING;
+	return state == Status.RUNNING;
     }
 
     public final boolean isTerminating() {
-	return state == TERMINATING;
+	return state == Status.TERMINATING;
+    }
+    
+    private static enum Status {
+	IDLE, INITIALIZING, RUNNING, TERMINATING
     }
     
     public interface OnUpdateConsumer {

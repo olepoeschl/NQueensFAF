@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -39,7 +38,7 @@ public class CPUSolver extends Solver {
     private ArrayList<ArrayList<Constellation>> threadConstellations;
     private long solutions, duration, storedDuration;
     private float progress;
-    private boolean injected;
+    private boolean loaded;
 
     private CPUSolverConfig config;
     private SolverUtils utils;
@@ -50,7 +49,7 @@ public class CPUSolver extends Solver {
 	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
-	injected = false;
+	loaded = false;
     }
 
     @Override
@@ -64,7 +63,7 @@ public class CPUSolver extends Solver {
 	}
 
 	utils.setN(N);
-	if (!injected) {
+	if (!loaded) {
 	    genConstellations();
 	}
 
@@ -76,7 +75,7 @@ public class CPUSolver extends Solver {
 	}
 	int i = constellations.size() - 1;
 	for (Constellation c : constellations) {
-	    if (c.getSolutions() >= 0) // ignore injected constellations that have already been solved
+	    if (c.getSolutions() >= 0) // ignore loaded constellations that have already been solved
 		continue;
 	    threadConstellations.get((i--) % config.threadcount).add(c);
 	}
@@ -109,32 +108,17 @@ public class CPUSolver extends Solver {
 //	    e.printStackTrace();
 	    Thread.currentThread().interrupt();
 	}
-	injected = false;
-    }
-
-    public CPUSolver config(Consumer<CPUSolverConfig> configConsumer) {
-	var tmp = new CPUSolverConfig();
-	tmp.from(config);
-	
-	configConsumer.accept(tmp);
-	try {
-	    tmp.validate();
-	} catch(IllegalArgumentException e) {
-	    throw new IllegalArgumentException("invalid CPUSolverConfig", e);
-	}
-	
-	config.from(tmp); // if given config is valid, apply it
-	return this;
+	loaded = false;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public CPUSolverConfig getConfig() {
+    public CPUSolverConfig config() {
 	return config;
     }
 
     @Override
-    protected void store_(String filepath) throws IOException {
+    protected void save_(String filepath) throws IOException {
 	// if Solver was not even started yet, throw exception
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("Nothing to be saved");
@@ -148,9 +132,9 @@ public class CPUSolver extends Solver {
     }
 
     @Override
-    protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
 	if (!isIdle()) {
-	    throw new IllegalStateException("Cannot inject while the Solver is running");
+	    throw new IllegalStateException("Cannot load a state while the Solver is running");
 	}
 	Kryo kryo = Constants.kryo;
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
@@ -158,7 +142,7 @@ public class CPUSolver extends Solver {
 	    setN(state.getN());
 	    storedDuration = state.getStoredDuration();
 	    constellations = state.getConstellations();
-	    injected = true;
+	    loaded = true;
 	}
     }
 
@@ -263,7 +247,7 @@ public class CPUSolver extends Solver {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < counter; a++) {
 		constellations.get(currentSize - a - 1)
-			.setStartijkl(constellations.get(currentSize - a - 1).getStartijkl() | utils.toijkl(i, j, k, l));
+			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | utils.toijkl(i, j, k, l));
 	    }
 	}
     }
@@ -330,7 +314,7 @@ public class CPUSolver extends Solver {
 	}
 
 	public void from(CPUSolverConfig config) {
-	    super.from(config);
+	    super.load(config);
 	    threadcount = config.threadcount;
 	    presetQueens = config.presetQueens;
 	}

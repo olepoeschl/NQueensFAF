@@ -59,7 +59,7 @@ public class Config {
 	}
     }
 
-    public void from(Config config) {
+    public void load(Config config) {
 	config.validate();
 	updateInterval = config.updateInterval;
 	autoSaveEnabled = config.autoSaveEnabled;
@@ -68,7 +68,7 @@ public class Config {
 	autoSavePath = config.autoSavePath;
     }
 
-    public <T extends Config> void from(File file) throws StreamReadException, DatabindException, IOException,
+    public <T extends Config> void load(File file) throws StreamReadException, DatabindException, IOException,
 	    IllegalArgumentException, IllegalAccessException {
 	ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) ;
 	@SuppressWarnings("unchecked")
@@ -79,7 +79,7 @@ public class Config {
 	}
     }
 
-    public final void writeTo(File file) throws StreamWriteException, DatabindException, IOException {
+    public final void save(File file) throws StreamWriteException, DatabindException, IOException {
 	validate();
 	ObjectWriter out = new ObjectMapper().writer(new DefaultPrettyPrinter());
 	out.writeValue(file, this);

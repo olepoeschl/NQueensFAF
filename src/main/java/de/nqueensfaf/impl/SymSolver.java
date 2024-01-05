@@ -135,16 +135,16 @@ public class SymSolver extends Solver {
     }
     
     @Override
-    protected void store_(String filepath) throws IOException {
+    protected void save_(String filepath) throws IOException {
     }
 
     @Override
-    protected void inject_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends Config> T getConfig() {
+    public <T extends Config> T config() {
 	return (T) new Config();
     }
 
