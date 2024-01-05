@@ -24,9 +24,9 @@ import de.nqueensfaf.persistence.SolverState;
 
 public class CPUSolver extends Solver {
 
-    // for very small N it is overkill to use this method
+    // for very small n it is overkill to use this method
     // thus we use a straightforward recursive implementation of Jeff Somers Bit
-    // method for such N
+    // method for such n
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
 
@@ -55,14 +55,14 @@ public class CPUSolver extends Solver {
     @Override
     protected void run() {
 	start = System.currentTimeMillis();
-	if (N <= smallestN) { // if N is very small, use the simple Solver from the parent class
+	if (n <= smallestN) { // if n is very small, use the simple Solver from the parent class
 	    solutions = solveSmallBoard();
 	    end = System.currentTimeMillis();
 	    progress = 1;
 	    return;
 	}
 
-	utils.setN(N);
+	utils.setN(n);
 	if (!loaded) {
 	    genConstellations();
 	}
@@ -83,7 +83,7 @@ public class CPUSolver extends Solver {
 	// start the threads and wait until they are all finished
 	ExecutorService executor = Executors.newFixedThreadPool(config.threadcount);
 	for (i = 0; i < config.threadcount; i++) {
-	    CPUSolverThread cpuSolverThread = new CPUSolverThread(utils, N, threadConstellations.get(i));
+	    CPUSolverThread cpuSolverThread = new CPUSolverThread(utils, n, threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
 	}
@@ -126,7 +126,7 @@ public class CPUSolver extends Solver {
 	Kryo kryo = Constants.kryo;
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
-		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
 	    output.flush();
 	}
     }
@@ -181,18 +181,18 @@ public class CPUSolver extends Solver {
     }
 
     private void genConstellations() {
-	// halfN half of N rounded up
-	final int halfN = (N + 1) / 2;
-	L = 1 << (N - 1);
-	mask = (1 << N) - 1;
+	// halfN half of n rounded up
+	final int halfN = (n + 1) / 2;
+	L = 1 << (n - 1);
+	mask = (1 << n) - 1;
 
 	// calculate starting constellations for no Queens in corners
 	for (int k = 1; k < halfN; k++) { // go through first col
-	    for (int l = k + 1; l < N - 1; l++) { // go through last col
-		for (int i = k + 1; i < N - 1; i++) { // go through first row
-		    if (i == N - 1 - l) // skip if occupied
+	    for (int l = k + 1; l < n - 1; l++) { // go through last col
+		for (int i = k + 1; i < n - 1; i++) { // go through first row
+		    if (i == n - 1 - l) // skip if occupied
 			continue;
-		    for (int j = N - k - 2; j > 0; j--) { // go through last row
+		    for (int j = n - k - 2; j > 0; j--) { // go through last row
 			if (j == i || l == j)
 			    continue;
 
@@ -207,8 +207,8 @@ public class CPUSolver extends Solver {
 	}
 	// calculating start constellations with the first Queen on the corner square
 	// (0,0)
-	for (int j = 1; j < N - 2; j++) { // j is idx of Queen in last row
-	    for (int l = j + 1; l < N - 1; l++) { // l is idx of Queen in last col
+	for (int j = 1; j < n - 2; j++) { // j is idx of Queen in last row
+	    for (int l = j + 1; l < n - 1; l++) { // l is idx of Queen in last col
 		ijklList.add(utils.toijkl(0, j, 0, l));
 	    }
 	}
@@ -231,7 +231,7 @@ public class CPUSolver extends Solver {
 	    // ld, rd, col, start_queens_ijkl for each constellation
 	    // occupy the board corresponding to the queens on the borders of the board
 	    // we are starting in the first row that can be free, namely row 1
-	    ld = (L >>> (i - 1)) | (1 << (N - k));
+	    ld = (L >>> (i - 1)) | (1 << (n - k));
 	    rd = (L >>> (i + 1)) | (1 << (l - 1));
 	    col = 1 | L | (L >>> i) | (L >>> j);
 	    // occupy diagonals of the queens j k l in the last row
@@ -242,7 +242,7 @@ public class CPUSolver extends Solver {
 	    // counts all subconstellations
 	    counter = 0;
 	    // generate all subconstellations
-	    setPreQueens(ld, rd, col, k, l, 1, j == N - 1 ? 3 : 4);
+	    setPreQueens(ld, rd, col, k, l, 1, j == n - 1 ? 3 : 4);
 	    currentSize = constellations.size();
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < counter; a++) {
@@ -269,7 +269,7 @@ public class CPUSolver extends Solver {
 	// if not done or row k or l, just place queens and occupy the board and go
 	// further
 	else {
-	    int free = (~(ld | rd | col | (LD >>> (N - 1 - row)) | (RD << (N - 1 - row)))) & mask;
+	    int free = (~(ld | rd | col | (LD >>> (n - 1 - row)) | (RD << (n - 1 - row)))) & mask;
 	    int bit;
 
 	    while (free > 0) {

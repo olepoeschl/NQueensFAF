@@ -6,21 +6,21 @@ import java.util.List;
 
 class GPUConstellationsGenerator {
 
-    private int N, preQueens, L, mask, LD, RD, counter;
+    private int n, preQueens, L, mask, LD, RD, counter;
     private HashSet<Integer> ijklList;
     private ArrayList<Constellation> constellations;
 
     // generates all tasks
-    public void genConstellations(int N, int preQueens) {
+    public void genConstellations(int n, int preQueens) {
 	int ld, rd, col, ijkl, currentSize;
 	// queen at left border
-	L = (1 << (N - 1));
+	L = (1 << (n - 1));
 	// marks the board
 	mask = (L << 1) - 1;
 
-	// set N, halfN half of N rounded up, collection of startConstellations
-	this.N = N;
-	final int halfN = (N + 1) / 2;
+	// set n, halfN half of n rounded up, collection of startConstellations
+	this.n = n;
+	final int halfN = (n + 1) / 2;
 	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 
@@ -28,11 +28,11 @@ class GPUConstellationsGenerator {
 	this.preQueens = preQueens;
 
 	// calculating start constellations with one Queen on the corner square
-	// (N-1,N-1)
-	for (int k = 1; k < N - 2; k++) { // j is idx of Queen in last row
-	    for (int i = k + 1; i < N - 1; i++) { // l is idx of Queen in last col
+	// (n-1,n-1)
+	for (int k = 1; k < n - 2; k++) { // j is idx of Queen in last row
+	    for (int i = k + 1; i < n - 1; i++) { // l is idx of Queen in last col
 		// always add the constellation, we can not accidently get symmetric ones
-		ijklList.add(toijkl(i, N - 1, k, N - 1));
+		ijklList.add(toijkl(i, n - 1, k, n - 1));
 
 		// occupation of ld, rd according to row 1
 		// queens i and k
@@ -57,7 +57,7 @@ class GPUConstellationsGenerator {
 		// generate all subconstellations with 5 queens
 		setPreQueens(ld, rd, col, k, 0, 1, 3);
 		// jam j and k and l together into one integer
-		ijkl = toijkl(i, N - 1, k, N - 1);
+		ijkl = toijkl(i, n - 1, k, n - 1);
 
 		currentSize = constellations.size();
 
@@ -72,12 +72,12 @@ class GPUConstellationsGenerator {
 	// calculate starting constellations for no Queens in corners
 	// have a look in the loop above for missing explanations
 	for (int j = 1; j < halfN; j++) { // go through last row
-	    for (int l = j + 1; l < N - 1; l++) { // go through last col
-		for (int k = N - j - 2; k > 0; k--) { // go through first col
+	    for (int l = j + 1; l < n - 1; l++) { // go through last col
+		for (int k = n - j - 2; k > 0; k--) { // go through first col
 		    if (k == l) // skip if occupied
 			continue;
-		    for (int i = j + 1; i < N - 1; i++) { // go through first row
-			if (i == N - 1 - l || i == k) // skip if occupied
+		    for (int i = j + 1; i < n - 1; i++) { // go through first row
+			if (i == n - 1 - l || i == k) // skip if occupied
 			    continue;
 			// check, if we already found a symmetric constellation
 			if (!checkRotations(i, j, k, l)) {
@@ -85,7 +85,7 @@ class GPUConstellationsGenerator {
 
 			    // occupy the board corresponding to the queens on the borders of the
 			    // board
-			    ld = (L >>> (i - 1)) | (1 << (N - k));
+			    ld = (L >>> (i - 1)) | (1 << (n - k));
 			    rd = (L >>> (i + 1)) | (1 << (l - 1));
 			    col = 1 | L | (L >>> j) | (L >>> i);
 			    // occupy diagonals of the queens j k l in the last row
@@ -136,7 +136,7 @@ class GPUConstellationsGenerator {
 	// if not done or row k or l, just place queens and occupy the board and go
 	// further
 	else {
-	    int free = ~(ld | rd | col | (LD >>> (N - 1 - row)) | (RD << (N - 1 - row))) & mask;
+	    int free = ~(ld | rd | col | (LD >>> (n - 1 - row)) | (RD << (n - 1 - row))) & mask;
 	    int bit;
 
 	    while (free > 0) {
@@ -151,15 +151,15 @@ class GPUConstellationsGenerator {
     // true, if starting constellation rotated by any angle has already been found
     private boolean checkRotations(int i, int j, int k, int l) {
 	// rot90
-	if (ijklList.contains(((N - 1 - k) << 15) + ((N - 1 - l) << 10) + (j << 5) + i))
+	if (ijklList.contains(((n - 1 - k) << 15) + ((n - 1 - l) << 10) + (j << 5) + i))
 	    return true;
 
 	// rot180
-	if (ijklList.contains(((N - 1 - j) << 15) + ((N - 1 - i) << 10) + ((N - 1 - l) << 5) + N - 1 - k))
+	if (ijklList.contains(((n - 1 - j) << 15) + ((n - 1 - i) << 10) + ((n - 1 - l) << 5) + n - 1 - k))
 	    return true;
 
 	// rot270
-	if (ijklList.contains((l << 15) + (k << 10) + ((N - 1 - i) << 5) + N - 1 - j))
+	if (ijklList.contains((l << 15) + (k << 10) + ((n - 1 - i) << 5) + n - 1 - j))
 	    return true;
 
 	return false;

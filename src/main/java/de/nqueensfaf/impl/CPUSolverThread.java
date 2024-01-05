@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 class CPUSolverThread extends Thread {
 
-    private final int N, N3, N4, L, L3, L4; // boardsize
+    private final int n, n3, n4, L, L3, L4; // boardsize
     private long tempcounter = 0; // tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
 
     // mark1 and mark2 mark the lines k-1 and l-1 (not necessarily in this order),
@@ -19,13 +19,13 @@ class CPUSolverThread extends Thread {
     
     private SolverUtils utils;
 
-    CPUSolverThread(SolverUtils utils, int N, ArrayList<Constellation> constellations) {
-	this.N = N;
-	N3 = N - 3;
-	N4 = N - 4;
-	L = 1 << (N - 1);
-	L3 = 1 << N3;
-	L4 = 1 << N4;
+    CPUSolverThread(SolverUtils utils, int n, ArrayList<Constellation> constellations) {
+	this.n = n;
+	n3 = n - 3;
+	n4 = n - 4;
+	L = 1 << (n - 1);
+	L3 = 1 << n3;
+	L4 = 1 << n4;
 	this.constellations = constellations;
 	this.utils = utils;
     }
@@ -35,7 +35,7 @@ class CPUSolverThread extends Thread {
     // IMPORTANT: since the left and right col are occupied by the
     // startConstalletaion, we only deal
     // with the bits in between,
-    // hence N-2 bits for a board of size N
+    // hence n-2 bits for a board of size n
     // the functions recursively call themselves and travel through the board
     // row-wise
     // the occupancy of each row is represented with integers in binary
@@ -394,9 +394,9 @@ class CPUSolverThread extends Thread {
 	    while (free > 0) {
 		bit = free & (-free);
 		free -= bit;
-		nextfree = ~(((ld | bit) << 2) | ((rd | bit) >> 2) | (col | bit) | (1 << (N3)));
+		nextfree = ~(((ld | bit) << 2) | ((rd | bit) >> 2) | (col | bit) | (1 << (n3)));
 		if (nextfree > 0)
-		    SQd2BlB(((ld | bit) << 2), ((rd | bit) >> 2) | (1 << (N3)), col | bit, row + 2, nextfree);
+		    SQd2BlB(((ld | bit) << 2), ((rd | bit) >> 2) | (1 << (n3)), col | bit, row + 2, nextfree);
 	    }
 	    return;
 	}
@@ -495,9 +495,9 @@ class CPUSolverThread extends Thread {
 	    while (free > 0) {
 		bit = free & (-free);
 		free -= bit;
-		nextfree = ~(((ld | bit) << 2) | ((rd | bit) >> 2) | (col | bit) | (1 << (N3)));
+		nextfree = ~(((ld | bit) << 2) | ((rd | bit) >> 2) | (col | bit) | (1 << (n3)));
 		if (nextfree > 0)
-		    SQBlBjrB(((ld | bit) << 2), ((rd | bit) >> 2) | (1 << (N3)), col | bit, row + 2, nextfree);
+		    SQBlBjrB(((ld | bit) << 2), ((rd | bit) >> 2) | (1 << (n3)), col | bit, row + 2, nextfree);
 	    }
 	    return;
 	}
@@ -686,7 +686,7 @@ class CPUSolverThread extends Thread {
 
     // for d <big>
     private void SQBjlBkBlBjrB(int ld, int rd, int col, int row, int free) {
-	if (row == N - 1 - jmark) {
+	if (row == n - 1 - jmark) {
 	    rd |= L;
 	    free &= ~L;
 	    SQBkBlBjrB(ld, rd, col, row, free);
@@ -706,7 +706,7 @@ class CPUSolverThread extends Thread {
     }
 
     private void SQBjlBlBkBjrB(int ld, int rd, int col, int row, int free) {
-	if (row == N - 1 - jmark) {
+	if (row == n - 1 - jmark) {
 	    rd |= L;
 	    free &= ~L;
 	    SQBlBkBjrB(ld, rd, col, row, free);
@@ -726,7 +726,7 @@ class CPUSolverThread extends Thread {
     }
 
     private void SQBjlBklBjrB(int ld, int rd, int col, int row, int free) {
-	if (row == N - 1 - jmark) {
+	if (row == n - 1 - jmark) {
 	    rd |= L;
 	    free &= ~L;
 	    SQBklBjrB(ld, rd, col, row, free);
@@ -746,7 +746,7 @@ class CPUSolverThread extends Thread {
     }
 
     private void SQBjlBlkBjrB(int ld, int rd, int col, int row, int free) {
-	if (row == N - 1 - jmark) {
+	if (row == n - 1 - jmark) {
 	    rd |= L;
 	    free &= ~L;
 	    SQBlkBjrB(ld, rd, col, row, free);
@@ -768,8 +768,8 @@ class CPUSolverThread extends Thread {
     @Override
     public void run() {
 	int j, k, l, ijkl, ld, rd, col, startIjkl, start, free, LD;
-	final int N = this.N;
-	final int smallmask = (1 << (N - 2)) - 1;
+	final int n = this.n;
+	final int smallmask = (1 << (n - 2)) - 1;
 
 	for (Constellation constellation : constellations) {
 	    startIjkl = constellation.getStartIjkl();
@@ -784,13 +784,13 @@ class CPUSolverThread extends Thread {
 	    // add occupation of ld from queens j and l from the bottom row upwards
 	    LD = (L >>> j) | (L >>> l);
 	    ld = constellation.getLd() >>> 1;
-	    ld |= LD >>> (N - start);
+	    ld |= LD >>> (n - start);
 	    // add occupation of rd from queens j and k from the bottom row upwards
 	    rd = constellation.getRd() >>> 1;
 	    if (start > k)
 		rd |= (L >>> (start - k + 1));
-	    if (j >= 2 * N - 33 - start) // only add the rd from queen j if it does not
-		rd |= (L >>> j) << (N - 2 - start); // occupy the sign bit!
+	    if (j >= 2 * n - 33 - start) // only add the rd from queen j if it does not
+		rd |= (L >>> j) << (n - 2 - start); // occupy the sign bit!
 
 	    // also occupy col and then calculate free
 	    col = (constellation.getCol() >>> 1) | (~smallmask);
@@ -799,13 +799,13 @@ class CPUSolverThread extends Thread {
 	    // big case distinction for deciding which soling algorithm to use
 
 	    // if queen j is more than 2 columns away from the corner
-	    if (j < N - 3) {
+	    if (j < n - 3) {
 		jmark = j + 1;
-		endmark = N - 2;
+		endmark = n - 2;
 		// if the queen j is more than 2 columns away from the corner but the rd from
 		// the
 		// j-queen can be set right at start
-		if (j > 2 * N - 34 - start) {
+		if (j > 2 * n - 34 - start) {
 		    // k < l
 		    if (k < l) {
 			mark1 = k - 1;
@@ -861,7 +861,7 @@ class CPUSolverThread extends Thread {
 			}
 		    }
 		}
-		// if we have to set some queens first in order to reach the row N-1-jmark where
+		// if we have to set some queens first in order to reach the row n-1-jmark where
 		// the
 		// rd from queen j
 		// can be set
@@ -895,9 +895,9 @@ class CPUSolverThread extends Thread {
 		}
 	    }
 	    // if the queen j is exactly 2 columns away from the corner
-	    else if (j == N - 3) {
-		// this means that the last row will always be row N-2
-		endmark = N - 2;
+	    else if (j == n - 3) {
+		// this means that the last row will always be row n-2
+		endmark = n - 2;
 		// k < l
 		if (k < l) {
 		    mark1 = k - 1;
@@ -928,7 +928,7 @@ class CPUSolverThread extends Thread {
 		else {
 		    mark1 = l - 1;
 		    mark2 = k - 1;
-		    endmark = N - 2;
+		    endmark = n - 2;
 		    // if at least k is yet to come
 		    if (start < k) {
 			// if also l is yet to come
@@ -955,12 +955,12 @@ class CPUSolverThread extends Thread {
 		}
 	    }
 	    // if the queen j is exactly 1 column away from the corner
-	    else if (j == N - 2) {
+	    else if (j == n - 2) {
 		// k < l
 		if (k < l) {
 		    // k can not be first, l can not be last due to queen placement
-		    // thus always end in line N-2
-		    endmark = N - 2;
+		    // thus always end in line n-2
+		    endmark = n - 2;
 		    // if at least l is yet to come
 		    if (start < l) {
 			// if k is yet to come too
@@ -994,9 +994,9 @@ class CPUSolverThread extends Thread {
 			// if also l is yet to come
 			if (start < l) {
 			    // if k is not at the end
-			    if (k < N - 2) {
+			    if (k < n - 2) {
 				mark1 = l - 1;
-				endmark = N - 2;
+				endmark = n - 2;
 				// if there are free rows between l and k
 				if (k != l + 1) {
 				    mark2 = k - 1;
@@ -1010,14 +1010,14 @@ class CPUSolverThread extends Thread {
 			    // if k is at the end
 			    else {
 				// if l is not right before k
-				if (l != N - 3) {
+				if (l != n - 3) {
 				    mark2 = l - 1;
-				    endmark = N - 3;
+				    endmark = n - 3;
 				    SQd1BlB(ld, rd, col, start, free);
 				}
 				// if l is right before k
 				else {
-				    endmark = N - 4;
+				    endmark = n - 4;
 				    SQd1B(ld, rd, col, start, free);
 				}
 			    }
@@ -1025,27 +1025,27 @@ class CPUSolverThread extends Thread {
 			// if only k is yet to come
 			else {
 			    // if k is not at the end
-			    if (k != N - 2) {
+			    if (k != n - 2) {
 				mark2 = k - 1;
-				endmark = N - 2;
+				endmark = n - 2;
 				SQd1BkB(ld, rd, col, start, free);
 			    } else {
 				// if k is at the end
-				endmark = N - 3;
+				endmark = n - 3;
 				SQd1B(ld, rd, col, start, free);
 			    }
 			}
 		    }
 		    // k and l came before start
 		    else {
-			endmark = N - 2;
+			endmark = n - 2;
 			SQd1B(ld, rd, col, start, free);
 		    }
 		}
 	    }
 	    // if the queen j is placed in the corner
 	    else {
-		endmark = N - 2;
+		endmark = n - 2;
 		if (start > k) {
 		    SQd0B(ld, rd, col, start, free);
 		}

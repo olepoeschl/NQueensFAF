@@ -56,8 +56,8 @@ public class CLI implements Runnable {
 	this.taskFile = taskFile;
     }
 
-    @Option(names = { "-N", "--board-size" }, paramLabel = "INT", required = false, description = "board size")
-    private int N = -69;
+    @Option(names = { "-n", "--board-size" }, paramLabel = "INT", required = false, description = "board size")
+    private int n = -69;
 
     @Option(names = { "-g", "--gpu" }, required = false, description = "execute on GPU('s)")
     private boolean executeOnGpu;
@@ -85,13 +85,13 @@ public class CLI implements Runnable {
 
 	// validate settings
 	if (taskFile == null) {
-	    if (N == -69) {
+	    if (n == -69) {
 		System.err.println("Missing required option: '--board-size=INT'");
 		CommandLine.usage(this, System.err);
 		return;
 	    }
-	    if (N <= 0 || N >= 32) {
-		System.err.println("Invalid board size! Must be a number N with N > 0 and N < 32.");
+	    if (n <= 0 || n >= 32) {
+		System.err.println("Invalid board size! Must be a number  with  > 0 and  < 32.");
 		return;
 	    }
 	}
@@ -168,7 +168,7 @@ public class CLI implements Runnable {
 	    if (taskFile != null) {
 		solver.load(taskFile);
 	    } else {
-		solver.setN(N);
+		solver.setN(n);
 		solver.solve();
 	    }
 

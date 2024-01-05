@@ -74,7 +74,7 @@ public class GPUSolver extends Solver {
 
     @Override
     protected void run() {
-	if (N <= 6) { // if N is very small, use the simple Solver from the parent class
+	if (n <= 6) { // if n is very small, use the simple Solver from the parent class
 	    start = System.currentTimeMillis();
 	    devices.add(new Device(0, 0, "", ""));
 	    constellations.add(new Constellation());
@@ -87,7 +87,7 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("no devices selected");
 
 	try (MemoryStack stack = stackPush()) {
-	    utils.setN(N);
+	    utils.setN(n);
 	    if (!loaded)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
@@ -101,7 +101,7 @@ public class GPUSolver extends Solver {
 	    ExecutorService executor = Executors.newFixedThreadPool(devices.size());
 	    for (Device device : devices) {
 		// build program
-		String options = "-cl-std=CL1.2 -D N=" + N + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
+		String options = "-cl-std=CL1.2 -D N=" + n + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
 			+ " -Werror";
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
 		if (error != 0) {
@@ -164,7 +164,7 @@ public class GPUSolver extends Solver {
 
     private void genConstellations() {
 	generator = new GPUConstellationsGenerator();
-	generator.genConstellations(N, config.presetQueens);
+	generator.genConstellations(n, config.presetQueens);
 
 	constellations = generator.getConstellations();
     }
@@ -194,7 +194,7 @@ public class GPUSolver extends Solver {
     }
 
     private void addTrashConstellation(ArrayList<Constellation> constellations, int ijkl) {
-	constellations.add(new Constellation(-1, (1 << N) - 1, (1 << N) - 1, (1 << N) - 1, (69 << 20) | ijkl, -2));
+	constellations.add(new Constellation(-1, (1 << n) - 1, (1 << n) - 1, (1 << n) - 1, (69 << 20) | ijkl, -2));
     }
 
     void sortConstellations(List<Constellation> constellations) {
@@ -478,7 +478,7 @@ public class GPUSolver extends Solver {
 	Kryo kryo = Constants.kryo;
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
-		    new SolverState(N, System.currentTimeMillis() - start + storedDuration, constellations));
+		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
 	    output.flush();
 	}
     }

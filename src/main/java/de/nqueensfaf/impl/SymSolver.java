@@ -14,16 +14,16 @@ public class SymSolver extends Solver {
     @Override
     protected void run() {
 	start = System.currentTimeMillis();
-	L = 1 << (N - 1);
+	L = 1 << (n - 1);
 	mask = (L - 1) | L;
 
 	// occupies the middle column, if the board has odd size
-	int mid = (N % 2) * (1 << (N / 2));
+	int mid = (n % 2) * (1 << (n / 2));
 
 	// the main diagonals can only be occupied, if the corresponding queen is in the
 	// middle of
 	// the board
-	// this can only be the case for odd N
+	// this can only be the case for odd n
 	// the queen in the middle of the board never has to be set - if we reach the
 	// middle row, we
 	// already found a solution
@@ -47,7 +47,7 @@ public class SymSolver extends Solver {
 
     private void rot90Solver(int ld, int rd, int col, int ldbot, int rdbot, int row, int rowidx, int queens) {
 	// in the mid row we are done
-	if (rowidx == N / 2) {
+	if (rowidx == n / 2) {
 	    solutions90++;
 	    return;
 	}
@@ -59,13 +59,13 @@ public class SymSolver extends Solver {
 	}
 
 	// revbit is reversed bit on the board
-	int bit, revbit, rowbit = (1 << rowidx), revrowbit = Integer.reverse(rowbit) >>> (32 - N);
-	int free = ~(ld | rd | col | (ldbot >>> (N - 1 - 2 * rowidx)) | (rdbot << (N - 1 - 2 * rowidx))) & mask;
+	int bit, revbit, rowbit = (1 << rowidx), revrowbit = Integer.reverse(rowbit) >>> (32 - n);
+	int free = ~(ld | rd | col | (ldbot >>> (n - 1 - 2 * rowidx)) | (rdbot << (n - 1 - 2 * rowidx))) & mask;
 
 	while ((free & mask) > 0) {
 
 	    bit = free & (-free);
-	    revbit = Integer.reverse(bit) >>> (32 - N);
+	    revbit = Integer.reverse(bit) >>> (32 - n);
 	    free &= ~bit;
 
 	    rot90Solver((ld | bit | revbit) << 1, (rd | bit | revbit) >>> 1, col | bit | revbit | rowbit | revrowbit,
@@ -81,16 +81,16 @@ public class SymSolver extends Solver {
     // realize occupation by solving board from top to bottom and vice versa
     // simultaneously
     private void rot180Solver(int ld, int rd, int col, int ldbot, int rdbot, int rowidx) {
-	if (rowidx == N / 2) {
+	if (rowidx == n / 2) {
 	    solutions180++;
 	    return;
 	}
-	int free = (~(ld | rd | col | (ldbot >>> (N - 1 - 2 * rowidx)) | (rdbot << (N - 1 - 2 * rowidx)))) & (int) mask;
+	int free = (~(ld | rd | col | (ldbot >>> (n - 1 - 2 * rowidx)) | (rdbot << (n - 1 - 2 * rowidx)))) & (int) mask;
 	int bit, revbit;
 
 	while ((free & mask) > 0) {
 	    bit = free & (-free);
-	    revbit = Integer.reverse(bit) >>> (32 - N);
+	    revbit = Integer.reverse(bit) >>> (32 - n);
 	    free &= ~bit;
 
 	    rot180Solver((ld | bit) << 1, (rd | bit) >>> 1, col | bit | revbit, (ldbot | revbit) >>> 1,

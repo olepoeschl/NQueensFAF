@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 
 public abstract class Solver {
     
-    protected int N;
+    protected int n;
     
     private volatile Status state = Status.IDLE;
     private Thread asyncSolverThread, bgThread;
@@ -98,7 +98,7 @@ public abstract class Solver {
     }
     
     private void preconditions() {
-	if (N == 0) {
+	if (n == 0) {
 	    state = Status.IDLE;
 	    throw new IllegalStateException("board size was not set");
 	}
@@ -116,7 +116,7 @@ public abstract class Solver {
 	return new Thread(() -> {
 	    // for autoSaver
 	    String filePath = config().autoSavePath;
-	    filePath = filePath.replaceAll("\\{N\\}", "" + N);
+	    filePath = filePath.replaceAll("\\{n\\}", "" + n);
 	    float progress = getProgress() * 100;
 	    float tmpProgress = progress;
 	    
@@ -167,13 +167,13 @@ public abstract class Solver {
     
     protected int solveSmallBoard() {
 	solutionsSmallN = 0;
-	int mask = (1 << getN()) - 1;
+	int mask = (1 << n) - 1;
 	smallBoardNQ(0, 0, 0, 0, mask, mask);
 	return solutionsSmallN;
     }
 
     private void smallBoardNQ(int ld, int rd, int col, int row, int free, int mask) {
-	if (row == getN() - 1) {
+	if (row == n - 1) {
 	    solutionsSmallN++;
 	    return;
 	}
@@ -242,13 +242,13 @@ public abstract class Solver {
 	if (n <= 0 || n > 31) {
 	    throw new IllegalArgumentException("board size must be a number between 0 and 32 (not inclusive)");
 	}
-	N = n;
+	this.n = n;
 	return (T) this;
     }
     
     // getters
     public final int getN() {
-	return N;
+	return n;
     }
     
     public final boolean isIdle() {
