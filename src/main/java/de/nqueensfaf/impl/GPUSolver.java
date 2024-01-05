@@ -31,6 +31,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static de.nqueensfaf.impl.SolverUtils.*;
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
 import static org.lwjgl.system.MemoryStack.*;
@@ -55,11 +56,9 @@ public class GPUSolver extends Solver {
     private boolean loaded;
 
     private GPUSolverConfig config;
-    private SolverUtils utils;
 
     public GPUSolver() {
 	config = new GPUSolverConfig();
-	utils = new SolverUtils();
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
@@ -87,7 +86,6 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("no devices selected");
 
 	try (MemoryStack stack = stackPush()) {
-	    utils.setN(n);
 	    if (!loaded)
 		genConstellations(); // generate constellations
 	    var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
@@ -203,7 +201,7 @@ public class GPUSolver extends Solver {
 	    public int compare(Constellation o1, Constellation o2) {
 		int o1ijkl = o1.getStartIjkl() & ((1 << 20) - 1);
 		int o2ijkl = o2.getStartIjkl() & ((1 << 20) - 1);
-		return Integer.compare(utils.getjkl(o1ijkl), utils.getjkl(o2ijkl));
+		return Integer.compare(getJkl(o1ijkl), getJkl(o2ijkl));
 	    }
 	});
     }
@@ -441,7 +439,7 @@ public class GPUSolver extends Solver {
 	    if (device.workloadConstellations.get(i).getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * utils.symmetry(device.workloadConstellations.get(i).getStartIjkl() & 0b11111111111111111111);
+		    * symmetry(n, device.workloadConstellations.get(i).getStartIjkl() & 0b11111111111111111111);
 	    if (solutionsForConstellation >= 0)
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);

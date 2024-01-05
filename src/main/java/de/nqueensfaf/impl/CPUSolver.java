@@ -22,6 +22,8 @@ import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.persistence.SolverState;
 
+import static de.nqueensfaf.impl.SolverUtils.*;
+
 public class CPUSolver extends Solver {
 
     // for very small n it is overkill to use this method
@@ -41,11 +43,9 @@ public class CPUSolver extends Solver {
     private boolean loaded;
 
     private CPUSolverConfig config;
-    private SolverUtils utils;
 
     public CPUSolver() {
 	config = new CPUSolverConfig();
-	utils = new SolverUtils();
 	ijklList = new HashSet<Integer>();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
@@ -62,7 +62,6 @@ public class CPUSolver extends Solver {
 	    return;
 	}
 
-	utils.setN(n);
 	if (!loaded) {
 	    genConstellations();
 	}
@@ -83,7 +82,7 @@ public class CPUSolver extends Solver {
 	// start the threads and wait until they are all finished
 	ExecutorService executor = Executors.newFixedThreadPool(config.threadcount);
 	for (i = 0; i < config.threadcount; i++) {
-	    CPUSolverThread cpuSolverThread = new CPUSolverThread(utils, n, threadConstellations.get(i));
+	    CPUSolverThread cpuSolverThread = new CPUSolverThread(n, threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
 	}
@@ -196,10 +195,10 @@ public class CPUSolver extends Solver {
 			if (j == i || l == j)
 			    continue;
 
-			if (!utils.checkRotations(ijklList, i, j, k, l)) { // if no rotation-symmetric starting
+			if (!checkRotations(n, ijklList, i, j, k, l)) { // if no rotation-symmetric starting
 							   // constellation already
 							   // found
-			    ijklList.add(utils.toijkl(i, j, k, l));
+			    ijklList.add(toIjkl(i, j, k, l));
 			}
 		    }
 		}
@@ -209,7 +208,7 @@ public class CPUSolver extends Solver {
 	// (0,0)
 	for (int j = 1; j < n - 2; j++) { // j is idx of Queen in last row
 	    for (int l = j + 1; l < n - 1; l++) { // l is idx of Queen in last col
-		ijklList.add(utils.toijkl(0, j, 0, l));
+		ijklList.add(toIjkl(0, j, 0, l));
 	    }
 	}
 
@@ -217,16 +216,16 @@ public class CPUSolver extends Solver {
 	// rotate and mirror all start constellations, such that the queen in the last
 	// row is as close to the right border as possible
 	for (int startConstellation : ijklList) {
-	    ijklListJasmin.add(utils.jasmin(startConstellation));
+	    ijklListJasmin.add(jasmin(n, startConstellation));
 	}
 	ijklList = ijklListJasmin;
 
 	int i, j, k, l, ld, rd, col, currentSize = 0;
 	for (int sc : ijklList) {
-	    i = utils.geti(sc);
-	    j = utils.getj(sc);
-	    k = utils.getk(sc);
-	    l = utils.getl(sc);
+	    i = geti(sc);
+	    j = getj(sc);
+	    k = getk(sc);
+	    l = getl(sc);
 	    // fill up the board with preQueens queens and generate corresponding variables
 	    // ld, rd, col, start_queens_ijkl for each constellation
 	    // occupy the board corresponding to the queens on the borders of the board
@@ -247,7 +246,7 @@ public class CPUSolver extends Solver {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < counter; a++) {
 		constellations.get(currentSize - a - 1)
-			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | utils.toijkl(i, j, k, l));
+			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | toIjkl(i, j, k, l));
 	    }
 	}
     }

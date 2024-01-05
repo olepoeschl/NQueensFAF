@@ -2,6 +2,8 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 
+import static de.nqueensfaf.impl.SolverUtils.*;
+
 class CPUSolverThread extends Thread {
 
     private final int n, n3, n4, L, L3, L4; // boardsize
@@ -16,10 +18,8 @@ class CPUSolverThread extends Thread {
 
     // list of uncalculated starting positions, their indices
     private ArrayList<Constellation> constellations;
-    
-    private SolverUtils utils;
 
-    CPUSolverThread(SolverUtils utils, int n, ArrayList<Constellation> constellations) {
+    CPUSolverThread(int n, ArrayList<Constellation> constellations) {
 	this.n = n;
 	n3 = n - 3;
 	n4 = n - 4;
@@ -27,7 +27,6 @@ class CPUSolverThread extends Thread {
 	L3 = 1 << n3;
 	L4 = 1 << n4;
 	this.constellations = constellations;
-	this.utils = utils;
     }
 
     // Recursive functions for Placing the Queens
@@ -775,9 +774,9 @@ class CPUSolverThread extends Thread {
 	    startIjkl = constellation.getStartIjkl();
 	    start = startIjkl >> 20;
 	    ijkl = startIjkl & ((1 << 20) - 1);
-	    j = utils.getj(ijkl);
-	    k = utils.getk(ijkl);
-	    l = utils.getl(ijkl);
+	    j = getj(ijkl);
+	    k = getk(ijkl);
+	    l = getl(ijkl);
 
 	    // IMPORTANT NOTE: we shift ld and rd one to the right, because the right
 	    // column does not matter (always occupied by queen l)
@@ -1059,7 +1058,7 @@ class CPUSolverThread extends Thread {
 	    }
 
 	    // for saving and loading progress remove the finished starting constellation
-	    constellation.setSolutions(tempcounter * utils.symmetry(ijkl));
+	    constellation.setSolutions(tempcounter * symmetry(n, ijkl));
 	    tempcounter = 0;
 	}
     }
