@@ -216,7 +216,7 @@ public class CPUSolver extends Solver {
 	// rotate and mirror all start constellations, such that the queen in the last
 	// row is as close to the right border as possible
 	for (int startConstellation : ijklList) {
-	    ijklListJasmin.add(jasmin(n, startConstellation));
+	    ijklListJasmin.add(jAsMin(n, startConstellation));
 	}
 	ijklList = ijklListJasmin;
 

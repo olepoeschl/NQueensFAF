@@ -52,7 +52,7 @@ class SolverUtils {
 
     // rotate and mirror board, so that the queen closest to a corner is on the
     // right side of the last row
-    static int jasmin(int n, int ijkl) {
+    static int jAsMin(int n, int ijkl) {
 	int min = Math.min(getj(ijkl), n - 1 - getj(ijkl)), arg = 0;
 
 	if (Math.min(geti(ijkl), n - 1 - geti(ijkl)) < min) {
