@@ -11,7 +11,6 @@ public class ConstellationsGenerator {
     private ArrayList<Constellation> constellations;
     private int n, presetQueens;
     private int L, mask, LD, RD, subConstellationsCounter;
-    private int currentConstellationId;
     private HashSet<Integer> ijklList;
     
     public ConstellationsGenerator(int n, int presetQueens) {
@@ -60,8 +59,9 @@ public class ConstellationsGenerator {
 	    
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
-		constellations.get(currentSize - a - 1)
-			.setStartIjkl(constellations.get(currentSize - a - 1).getStartIjkl() | ijkl);
+		var c = constellations.get(currentSize - a - 1);
+		c.setStartIjkl(c.getStartIjkl() | ijkl);
+		c.setId(currentSize - a - 1);
 
 		if(constellationConsumer != null)
 		    constellationConsumer.accept(constellations.get(currentSize - a - 1));
@@ -72,6 +72,26 @@ public class ConstellationsGenerator {
     }
 
     public ArrayList<Constellation> generateSubConstellations(ArrayList<Constellation> baseConstellations){
+	constellations = new ArrayList<Constellation>();
+	
+	int currentSize;
+	
+	for(var bc : baseConstellations) {
+	    // counts all subconstellations
+	    subConstellationsCounter = 0;
+	    
+	    placePresetQueens(bc.getLd(), bc.getRd(), bc.getCol(), getk(bc.getIjkl()), getl(bc.getIjkl()), 
+		    bc.getStartIjkl() >> 20, bc.getStartIjkl() >> 20); // from row start to row presetQueens
+	    currentSize = constellations.size();
+	    
+	    // jkl and sym and start are the same for all subconstellations
+	    for (int a = 0; a < subConstellationsCounter; a++) {
+		var c = constellations.get(currentSize - a - 1);
+		c.setStartIjkl(c.getStartIjkl() | bc.getIjkl());
+		c.setId(bc.getId());
+	    }
+	}
+	
 	return constellations;
     }
     
@@ -120,7 +140,7 @@ public class ConstellationsGenerator {
 	// add queens until we have preQueens queens
 	if (queens == presetQueens) {
 	    // add the subconstellations to the list
-	    constellations.add(new Constellation(-1, ld, rd, col, row << 20, -1));
+	    constellations.add(new Constellation(0, ld, rd, col, row << 20, -1));
 	    subConstellationsCounter++;
 	    return;
 	}

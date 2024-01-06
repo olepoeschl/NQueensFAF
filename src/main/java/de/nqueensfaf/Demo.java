@@ -6,7 +6,7 @@ import de.nqueensfaf.impl.GPUSolver;
 public class Demo {
 
     public static void main(String[] args) {
-	gpu();
+	cpu();
     }
     
     static void cpu() {
