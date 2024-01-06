@@ -82,13 +82,13 @@ public class ConstellationsGenerator {
 	final int halfN = (n + 1) / 2;
 
 	// calculate starting constellations for no Queens in corners
-	for (int k = 1; k < halfN; k++) { // go through first col
-	    for (int l = k + 1; l < n - 1; l++) { // go through last col
-		for (int i = k + 1; i < n - 1; i++) { // go through first row
-		    if (i == n - 1 - l) // skip if occupied
+	for (int j = 1; j < halfN; j++) { // go through last row
+	    for (int l = j + 1; l < n - 1; l++) { // go through last col
+		for (int k = n - j - 2; k > 0; k--) { // go through first col
+		    if (k == l) // skip if occupied
 			continue;
-		    for (int j = n - k - 2; j > 0; j--) { // go through last row
-			if (j == i || l == j)
+		    for (int i = j + 1; i < n - 1; i++) { // go through first row
+			if (i == n - 1 - l || i == k) // skip if occupied
 			    continue;
 
 			if (!checkRotations(n, ijklList, i, j, k, l)) { 
@@ -102,9 +102,10 @@ public class ConstellationsGenerator {
 	
 	// calculating start constellations with the first Queen on the corner square
 	// (0,0)
-	for (int j = 1; j < n - 2; j++) { // j is idx of Queen in last row
-	    for (int l = j + 1; l < n - 1; l++) { // l is idx of Queen in last col
-		ijklList.add(toIjkl(0, j, 0, l));
+	for (int k = 1; k < n - 2; k++) { // j is idx of Queen in last row
+	    for (int i = k + 1; i < n - 1; i++) { // l is idx of Queen in last col
+		// always add the constellation, we can not accidently get symmetric ones
+		ijklList.add(toIjkl(i, n - 1, k, n - 1));
 	    }
 	}
     }

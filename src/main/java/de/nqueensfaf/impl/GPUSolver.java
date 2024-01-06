@@ -47,7 +47,6 @@ public class GPUSolver extends Solver {
 
     private long[] contexts, programs;
     private ArrayList<Device> devices, availableDevices;
-    private GPUConstellationsGenerator generator;
     private ArrayList<Constellation> constellations;
     private int workloadSize;
     private int weightSum;
@@ -161,10 +160,7 @@ public class GPUSolver extends Solver {
     }
 
     private void genConstellations() {
-	generator = new GPUConstellationsGenerator();
-	generator.genConstellations(n, config.presetQueens);
-
-	constellations = generator.getConstellations();
+	constellations = new ConstellationsGenerator(n, config.presetQueens).generate();
     }
 
     private ArrayList<Constellation> fillWithTrash(List<Constellation> subConstellations, int workgroupSize) {
