@@ -25,7 +25,7 @@ public class Config {
 	autoSaveEnabled = false;
 	autoDeleteEnabled = false;
 	autoSavePercentageStep = 10;
-	autoSavePath = "nqueensfaf{N}.dat";
+	autoSavePath = "{n}-queens-problem.faf";
     }
 
     public void validate() {
