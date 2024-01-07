@@ -14,6 +14,7 @@ public abstract class Solver {
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
     private boolean isSaving = false;
+    private Config config = new Config();
     private final Thread shutdownHook = new Thread(() -> {
 	try {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -35,8 +36,6 @@ public abstract class Solver {
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
-    
-    public abstract <T extends Config> T config();
     
     protected abstract void run();
     protected abstract void save_(String filepath) throws IOException;
@@ -198,6 +197,11 @@ public abstract class Solver {
 	}
     }
 
+    @SuppressWarnings("unchecked")
+    public <T extends Config> T config() {
+	return (T) config;
+    }
+    
     public final void save(String filepath) throws IOException {
 	if(isSaving)
 	    return;
