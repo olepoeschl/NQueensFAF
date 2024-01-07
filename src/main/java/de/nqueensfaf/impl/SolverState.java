@@ -1,8 +1,6 @@
-package de.nqueensfaf.persistence;
+package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
-
-import de.nqueensfaf.impl.Constellation;
 
 public class SolverState {
 
