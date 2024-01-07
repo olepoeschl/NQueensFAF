@@ -14,8 +14,7 @@ public abstract class Solver {
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
     private boolean isSaving = false;
-    
-    protected Solver() {
+    private final Thread shutdownHook = new Thread(() -> {
 	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 	    while (isSaving) {
 		try {
@@ -26,7 +25,7 @@ public abstract class Solver {
 		}
 	    }
 	}));
-    }
+    });
     
     public abstract long getDuration();
     public abstract float getProgress();
@@ -120,6 +119,9 @@ public abstract class Solver {
 	    float progress = getProgress() * 100;
 	    float tmpProgress = progress;
 	    
+	    if(autoSaver)
+		Runtime.getRuntime().addShutdownHook(shutdownHook);
+	    
 	    while (isRunning() && getProgress() < 1f) {
 		if(updateConsumer)
 		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
@@ -151,6 +153,8 @@ public abstract class Solver {
 		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 		
 	    if(autoSaver) {
+		Runtime.getRuntime().removeShutdownHook(shutdownHook);
+		
 		progress = getProgress() * 100;
 		if (progress >= 100) {
 		    if (config().autoDeleteEnabled) {
