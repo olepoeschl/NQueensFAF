@@ -60,7 +60,7 @@ public class ConstellationsGenerator {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		var c = constellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStartIjkl() | ijkl);
+		c.setStartIjkl(c.getStart() | ijkl);
 		c.setId(currentSize - a - 1);
 
 		if(constellationConsumer != null)
@@ -81,13 +81,13 @@ public class ConstellationsGenerator {
 	    subConstellationsCounter = 0;
 	    
 	    placePresetQueens(bc.getLd(), bc.getRd(), bc.getCol(), getk(bc.getIjkl()), getl(bc.getIjkl()), 
-		    bc.getStartIjkl() >> 20, bc.getStartIjkl() >> 20); // from row start to row presetQueens
+		    bc.getStart(), bc.getStart()); // from row start to row presetQueens
 	    currentSize = constellations.size();
 	    
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		var c = constellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStartIjkl() | bc.getIjkl());
+		c.setStartIjkl(c.getStart() | bc.getIjkl());
 		c.setId(bc.getId());
 	    }
 	}

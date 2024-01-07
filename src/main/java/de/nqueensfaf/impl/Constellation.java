@@ -73,4 +73,8 @@ public class Constellation {
     public int getIjkl() {
 	return startIjkl & 0b11111111111111111111;
     }
+    
+    public int getStart() {
+	return startIjkl >> 20;
+    }
 }
