@@ -80,14 +80,14 @@ public class ConstellationsGenerator {
 	    // counts all subconstellations
 	    subConstellationsCounter = 0;
 	    
-	    placePresetQueens(bc.getLd(), bc.getRd(), bc.getCol(), getk(bc.getIjkl()), getl(bc.getIjkl()), 
-		    bc.getStart(), bc.getStart()); // from row start to row presetQueens
+	    placePresetQueens(bc.getLd(), bc.getRd(), bc.getCol(), getk(bc.extractIjkl()), getl(bc.extractIjkl()), 
+		    bc.extractStart(), bc.extractStart()); // from row start to row presetQueens
 	    currentSize = constellations.size();
 	    
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		var c = constellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStartIjkl() | bc.getIjkl());
+		c.setStartIjkl(c.getStartIjkl() | bc.extractIjkl());
 		c.setId(bc.getId());
 	    }
 	}

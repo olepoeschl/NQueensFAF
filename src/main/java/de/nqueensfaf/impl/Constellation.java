@@ -70,11 +70,11 @@ public class Constellation {
 	this.solutions = solutions;
     }
     
-    public int getIjkl() {
+    public int extractIjkl() {
 	return startIjkl & 0b11111111111111111111;
     }
     
-    public int getStart() {
+    public int extractStart() {
 	return startIjkl >> 20;
     }
 }

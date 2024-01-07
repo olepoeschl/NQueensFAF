@@ -175,8 +175,8 @@ public class CPUSolver extends Solver {
 
     public LinkedHashMap<Integer, Long> getSolutionsPerIjkl() {
 	LinkedHashMap<Integer, Long> solutionsPerIjkl = new LinkedHashMap<Integer, Long>();
-	constellations.stream().collect(Collectors.groupingBy(Constellation::getIjkl)).values().stream()
-		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).getIjkl(),
+	constellations.stream().collect(Collectors.groupingBy(Constellation::extractIjkl)).values().stream()
+		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).extractIjkl(),
 			cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
 	return solutionsPerIjkl;
     }
