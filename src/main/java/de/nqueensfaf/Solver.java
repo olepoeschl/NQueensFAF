@@ -15,16 +15,20 @@ public abstract class Solver {
     private int solutionsSmallN = 0;
     private boolean isSaving = false;
     private final Thread shutdownHook = new Thread(() -> {
-	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-	    while (isSaving) {
-		try {
-		    Thread.sleep(100);
-		} catch (InterruptedException e) {
-		    System.err.println("could not wait for auto save to finish: " + e.getMessage());
-		    break;
+	try {
+	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+		while (isSaving) {
+		    try {
+			Thread.sleep(100);
+		    } catch (InterruptedException e) {
+			System.err.println("could not wait for auto save to finish: " + e.getMessage());
+			break;
+		    }
 		}
-	    }
-	}));
+	    }));
+	} catch (IllegalStateException e) {
+	    System.err.println("could not register shutdown hook for completing auto save: " + e.getMessage());
+	}
     });
     
     public abstract long getDuration();
