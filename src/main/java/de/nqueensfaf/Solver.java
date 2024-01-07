@@ -46,6 +46,8 @@ public abstract class Solver {
     public final <T extends Solver> T solve() {
 	preconditions();
 	
+	config().validate();
+	
 	state = Status.INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
