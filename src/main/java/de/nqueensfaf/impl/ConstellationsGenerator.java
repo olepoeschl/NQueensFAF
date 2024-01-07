@@ -65,9 +65,13 @@ public class ConstellationsGenerator {
 		var c = constellations.get(currentSize - a - 1);
 		c.setStartIjkl(c.getStartIjkl() | ijkl);
 		c.setId(currentSize - a - 1);
-
+		
 		if(constellationConsumer != null)
-		    constellationConsumer.accept(constellations.get(currentSize - a - 1));
+		    try {
+			constellationConsumer.accept(constellations.get(currentSize - a - 1));
+		    } catch (Exception e) { // if the consumer throws an exception, stop generating and return
+			return null;
+		    }
 	    }
 	}
 
