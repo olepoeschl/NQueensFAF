@@ -102,9 +102,8 @@ public class CPUSolver extends Solver {
 		}
 		progress = (float) solvedConstellations / constellations.size();
 	    }
-	} catch (InterruptedException e1) {
-//	    e.printStackTrace();
-	    Thread.currentThread().interrupt();
+	} catch (InterruptedException e) {
+	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage());
 	}
 	loaded = false;
     }
@@ -117,10 +116,6 @@ public class CPUSolver extends Solver {
 
     @Override
     protected void save_(String filepath) throws IOException {
-	// if Solver was not even started yet, throw exception
-	if (constellations.size() == 0) {
-	    throw new IllegalStateException("Nothing to be saved");
-	}
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
@@ -129,10 +124,7 @@ public class CPUSolver extends Solver {
     }
 
     @Override
-    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
-	if (!isIdle()) {
-	    throw new IllegalStateException("Cannot load a state while the Solver is running");
-	}
+    protected void load_(String filepath) throws IOException {
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
@@ -204,9 +196,9 @@ public class CPUSolver extends Solver {
 	public void validate() {
 	    super.validate();
 	    if (threadcount < 1)
-		throw new IllegalArgumentException("invalid value for threadcount: only numbers >0 are allowed");
+		throw new IllegalArgumentException("invalid value for threadcount: not a number >0");
 	    if (presetQueens < 4)
-		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
+		throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
 	}
     }
 }

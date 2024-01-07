@@ -21,7 +21,8 @@ public abstract class Solver {
 		try {
 		    Thread.sleep(100);
 		} catch (InterruptedException e) {
-		    e.printStackTrace();
+		    System.err.println("could not wait for auto save to finish: " + e.getMessage());
+		    break;
 		}
 	    }
 	}));
@@ -35,7 +36,7 @@ public abstract class Solver {
     
     protected abstract void run();
     protected abstract void save_(String filepath) throws IOException;
-    protected abstract void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException;
+    protected abstract void load_(String filepath) throws IOException;
     
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solve() {
@@ -60,7 +61,7 @@ public abstract class Solver {
 	    run();
 	} catch (Exception e) {
 	    state = Status.TERMINATING;
-	    throw e;
+	    throw new RuntimeException("error while running solver: " + e.getMessage());
 	}
 
 	state = Status.TERMINATING;
@@ -68,7 +69,7 @@ public abstract class Solver {
 	    try {
 		bgThread.join();
 	    } catch (InterruptedException e) {
-		throw new RuntimeException("unexpected error while waiting for background thread to die: " + e.getMessage());
+		throw new RuntimeException("could not wait for background thread to terminate: " + e.getMessage());
 	    }
 	}
 	if (finishCb != null)
@@ -88,11 +89,11 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T waitFor() {
 	if(asyncSolverThread == null || !asyncSolverThread.isAlive())
-	    throw new IllegalStateException("waitFor() can not be called: solver is not running asynchronous at the moment");
+	    throw new IllegalStateException("could not wait for solver thread to terminate: solver is not running asynchronous");
 	try {
 	    asyncSolverThread.join();
 	} catch (InterruptedException e) {
-	    Thread.currentThread().interrupt();
+	    throw new RuntimeException("could not wait for solver thread to terminate: " + e.getMessage());
 	}
 	return (T) this;
     }
@@ -100,15 +101,15 @@ public abstract class Solver {
     private void preconditions() {
 	if (n == 0) {
 	    state = Status.IDLE;
-	    throw new IllegalStateException("board size was not set");
+	    throw new IllegalStateException("starting conditions not fullfilled: board size was not set");
 	}
 	if (!isIdle()) {
 	    state = Status.IDLE;
-	    throw new IllegalStateException("solver is already started");
+	    throw new IllegalStateException("starting conditions not fullfilled: solver is already started");
 	}
 	if (getProgress() == 1.0f) {
 	    state = Status.IDLE;
-	    throw new IllegalStateException("solver is already done, nothing to do here");
+	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
 	}
     }
 
@@ -132,34 +133,20 @@ public abstract class Solver {
 			new Thread(() -> {
 			    try {
 				save(filePath);
-			    } catch (IllegalArgumentException | IOException e) {
-				System.err.println("error in autosaver thread: " + e.getMessage());
+			    } catch (IOException e) {
+				System.err.println("could not save solver state: " + e.getMessage());
 			    }
 			}).start();
 			tmpProgress = progress;
 		    }
 		}
-		
-		try {
-		    Thread.sleep(config().updateInterval);
-		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
-		}
-	    }
-
-	    if(updateConsumer) {
-		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 	    }
 		
 	    if(autoSaver) {
 		progress = getProgress() * 100;
 		if (progress >= 100) {
 		    if (config().autoDeleteEnabled) {
-			try {
-			    new File(filePath).delete();
-			} catch (SecurityException e) {
-			    throw new SecurityException("unable to delete autosave file", e);
-			}
+			new File(filePath).delete();
 		    }
 		}
 	    }
@@ -192,16 +179,20 @@ public abstract class Solver {
 	}
     }
 
-    public final void save(String filepath) throws IOException, IllegalArgumentException {
+    public final void save(String filepath) throws IOException {
 	if(isSaving)
 	    return;
+	if(isIdle())
+	    throw new IllegalStateException("could not save solver state: solver is idle");
 	isSaving = true;
 	save_(filepath);
 	isSaving = false;
     }
 
-    public final synchronized void load(File file)
-	    throws IOException, ClassNotFoundException, ClassCastException, IllegalArgumentException {
+    public final synchronized void load(File file) throws IOException{
+	if(!isIdle())
+	    throw new IllegalStateException("could not load solver state: solver already running");
+	
 	load_(file.getAbsolutePath());
 	config().autoSavePath = file.getAbsolutePath();
 	solve();
@@ -210,7 +201,7 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
-	    throw new IllegalArgumentException("argument must not be null");
+	    throw new IllegalArgumentException("could not set initialization callback: callback must not be null");
 	}
 	initCb = c;
 	return (T) this;
@@ -219,7 +210,7 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T onFinish(Consumer<Solver> c) {
 	if (c == null) {
-	    throw new IllegalArgumentException("argument must not be null");
+	    throw new IllegalArgumentException("could not set finish callback: callback must not be null");
 	}
 	finishCb = c;
 	return (T) this;
@@ -238,10 +229,10 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T setN(int n) {
 	if (!isIdle()) {
-	    throw new IllegalStateException("cannot set board size while solving");
+	    throw new IllegalStateException("could not set board size: solver already running");
 	}
 	if (n <= 0 || n > 31) {
-	    throw new IllegalArgumentException("board size must be a number between 0 and 32 (not inclusive)");
+	    throw new IllegalArgumentException("could not set board size: must be a number between >0 and <32");
 	}
 	this.n = n;
 	return (T) this;

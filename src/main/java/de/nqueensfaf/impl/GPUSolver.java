@@ -39,7 +39,6 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
-import de.nqueensfaf.SolverException;
 import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {
@@ -70,9 +69,10 @@ public class GPUSolver extends Solver {
 	loaded = false;
 	try (MemoryStack stack = stackPush()) {
 	    fetchAvailableDevices(stack);
+	    if(availableDevices.size() == 0) {
+		throw new IllegalStateException("could not initialize GPUSolver: no available OpenCL devices");
+	    }
 	    setDeviceConfigs(config.deviceConfigs);
-	} catch (IllegalStateException e) {
-	    throw new SolverException("gpu solver is not available", e);
 	}
     }
 
@@ -88,7 +88,7 @@ public class GPUSolver extends Solver {
 	}
 
 	if (devices.size() == 0)
-	    throw new IllegalStateException("no devices selected");
+	    throw new IllegalStateException("could not run GPUSolver: no devices selected");
 
 	try (MemoryStack stack = stackPush()) {
 	    if (!loaded)
@@ -144,7 +144,7 @@ public class GPUSolver extends Solver {
 			device.config.workgroupSize);
 		workloadBeginPtr += deviceWorkloadSize;
 		if (device.constellations.size() == 0) {
-		    throw new IllegalArgumentException("weight " + device.config.weight + " is too low");
+		    continue; // skip this device, as it has nothing to do
 		}
 
 		executor.execute(() -> runDevice(stack, errBuf, device));
@@ -157,11 +157,10 @@ public class GPUSolver extends Solver {
 	    for (long context : contexts) {
 		checkCLError(clReleaseContext(context));
 	    }
-	} catch (IOException e) {
-	    throw new SolverException("unexpected error while executing solver", e);
 	} catch (InterruptedException e) {
-	    throw new SolverException("unexpected error while executing solver", e);
-//	    Thread.currentThread().interrupt();
+	    throw new RuntimeException("could not wait for GPU computation to terminate: " + e.getMessage());
+	} catch (IOException e) {
+	    throw new RuntimeException("could not create contexts or programs: " + e.getMessage());
 	}
     }
 
@@ -239,7 +238,7 @@ public class GPUSolver extends Solver {
 		    try {
 			program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
 		    } catch (IOException e) {
-			throw new IOException("error while creating program", e);
+			throw new IOException("could not create program: " + e.getMessage());
 		    }
 		    checkCLError(errBuf);
 		    programs[idx] = program;
@@ -328,7 +327,7 @@ public class GPUSolver extends Solver {
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
-		    Thread.currentThread().interrupt();
+		    // ignore
 		}
 	    }
 
@@ -470,11 +469,6 @@ public class GPUSolver extends Solver {
 
     @Override
     protected void save_(String filepath) throws IOException {
-	// if Solver was not even started yet or is already done, throw exception
-	if (constellations.size() == 0) {
-	    throw new IllegalStateException("nothing to be saved");
-	}
-
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
@@ -483,10 +477,7 @@ public class GPUSolver extends Solver {
     }
 
     @Override
-    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
-	if (!isIdle()) {
-	    throw new IllegalStateException("Cannot load a state while the solver is running");
-	}
+    protected void load_(String filepath) throws IOException {
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
@@ -538,12 +529,13 @@ public class GPUSolver extends Solver {
 	return availableDevices.get(deviceIndex).duration;
     }
 
-    private void fetchAvailableDevices(MemoryStack stack) throws IllegalStateException {
+    private void fetchAvailableDevices(MemoryStack stack) {
 	IntBuffer entityCountBuf = stack.mallocInt(1);
 	checkCLError(clGetPlatformIDs(null, entityCountBuf));
 	if (entityCountBuf.get(0) == 0) {
-	    throw new IllegalStateException("no OpenCL platforms found");
+	    return; // no OpenCL devices found
 	}
+	
 	PointerBuffer platforms = stack.mallocPointer(entityCountBuf.get(0));
 	checkCLError(clGetPlatformIDs(platforms, (IntBuffer) null));
 
@@ -591,14 +583,11 @@ public class GPUSolver extends Solver {
 	for (DeviceConfig deviceConfig : deviceConfigsInput) {
 	    if (deviceConfig.weight == 0)
 		continue;
-	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for
-												  // duplicates
+	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
 		continue;
-	    try {
-		deviceConfig.validate();
-	    } catch (IllegalArgumentException e) {
-		throw new IllegalArgumentException("invalid device config", e);
-	    }
+	    
+	    deviceConfig.validate();
+	    
 	    if (deviceConfig.index < availableDevices.size()) {
 		deviceConfigsTmp.add(deviceConfig);
 		Device device = availableDevices.get(deviceConfig.index);
@@ -630,7 +619,7 @@ public class GPUSolver extends Solver {
 	    }
 	    resultString = result.toString();
 	} catch (IOException e) {
-	    throw new IOException("unable to read kernel source file", e);
+	    throw new IOException("could not read kernel source file: " + e.getMessage()); // should not happen
 	}
 	return resultString;
     }
@@ -650,26 +639,26 @@ public class GPUSolver extends Solver {
 
     public int getDeviceGlobalWorkSize(int index) {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
-	    throw new IllegalArgumentException("invalid device index: device is not used");
+	    throw new IllegalArgumentException("invalid device index: device is not selected");
 	return availableDevices.get(index).constellations.size();
     }
 
     public int getDeviceWorkloadGlobalWorkSize(int index) {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
-	    throw new IllegalArgumentException("invalid device index: device is not used");
+	    throw new IllegalArgumentException("invalid device index: device is not selected");
 	return availableDevices.get(index).workloadGlobalWorkSize;
     }
 
     public int getDeviceTrashConstellations(int index) {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
-	    throw new IllegalArgumentException("invalid device index: device is not used");
+	    throw new IllegalArgumentException("invalid device index: device is not selected");
 	return (int) availableDevices.get(index).constellations.stream().filter(c -> c.getStartIjkl() >> 20 == 69)
 		.count();
     }
 
     public int getDeviceWorkloadTrashConstellations(int index) {
 	if (!devices.stream().anyMatch(device -> device.id == availableDevices.get(index).id))
-	    throw new IllegalArgumentException("invalid device index: device is not used");
+	    throw new IllegalArgumentException("invalid device index: device is not selected");
 	return (int) availableDevices.get(index).workloadConstellations.stream()
 		.filter(c -> c.getStartIjkl() >> 20 == 69).count();
     }
@@ -697,7 +686,7 @@ public class GPUSolver extends Solver {
 		}
 	    }
 	    if (presetQueens < 4)
-		throw new IllegalArgumentException("invalid value for presetQueens: only numbers >=4 are allowed");
+		throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
 	}
     }
 
@@ -729,15 +718,15 @@ public class GPUSolver extends Solver {
 
 	public void validate() {
 	    if (index < 0)
-		throw new IllegalArgumentException("invalid value for index: only numbers >=0 are allowed");
+		throw new IllegalArgumentException("invalid value for index: not a number >= 0");
 	    if (workgroupSize <= 0)
-		throw new IllegalArgumentException("invalid value for workgroup size: only numbers >0 are allowed");
+		throw new IllegalArgumentException("invalid value for workgroup size: not a number >= 0");
 	    if (weight < 0)
 		throw new IllegalArgumentException(
-			"invalid value for weight: only numbers >0 or 0 (device disabled) are allowed");
+			"invalid value for weight: not a number >= 0");
 	    if (maxGlobalWorkSize != 0 && maxGlobalWorkSize < workgroupSize)
 		throw new IllegalArgumentException(
-			"invalid value for max global work size: only numbers >=[workgroup size] or 0 (unlimited global work size) are allowed");
+			"invalid value for max global work size: not a number >=[workgroup size] or 0 (unlimited global work size)");
 	}
 
 	@Override

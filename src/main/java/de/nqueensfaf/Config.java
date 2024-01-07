@@ -30,12 +30,12 @@ public class Config {
 
     public void validate() {
 	if (updateInterval < 0)
-	    throw new IllegalArgumentException("invalid value for updateInterval: only numbers >0 or 0 (no updates) are allowed");
+	    throw new IllegalArgumentException("invalid value for updateInterval: must be a number >=0 (0 means disabling updates)");
 
 	if (autoSaveEnabled) {
 	    if (autoSavePercentageStep <= 0 || autoSavePercentageStep >= 100)
 		throw new IllegalArgumentException(
-			"invalid value for autoSavePercentageStep: only numbers >0 and <100 are allowed");
+			"invalid value for autoSavePercentageStep: must be a number >0 and <100");
 	    if (autoSavePath != null && autoSavePath.length() > 0) {
 		File file = new File(autoSavePath);
 		try {
@@ -44,18 +44,18 @@ public class Config {
 			file.createNewFile();
 			file.delete();
 		    }
-		} catch (Exception e) {
+		} catch (IOException e) {
 		    // if something goes wrong, the path is invalid
-		    throw new IllegalArgumentException("invalid value for autoSavePath: " + e.getMessage());
+		    throw new IllegalArgumentException("invalid value for autoSavePath: invalid path or filename");
 		}
 	    } else {
 		throw new IllegalArgumentException(
-			"invalid value for autoSavePath: must not be null or empty when autoSaveEnabled is true");
+			"invalid value for autoSavePath: must be specified when autoSaveEnabled is true");
 	    }
 	} else { // auto save is disabled
 	    if (autoDeleteEnabled)
 		throw new IllegalArgumentException(
-			"invalid value for autoDeleteEnabled: must not be true when autoSaveEnabled is true");
+			"invalid value for autoDeleteEnabled: must be false when autoSaveEnabled is false");
 	}
     }
 

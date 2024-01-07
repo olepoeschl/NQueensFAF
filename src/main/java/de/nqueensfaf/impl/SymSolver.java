@@ -139,7 +139,7 @@ public class SymSolver extends Solver {
     }
 
     @Override
-    protected void load_(String filepath) throws IOException, ClassNotFoundException, ClassCastException {
+    protected void load_(String filepath) throws IOException {
     }
 
     @SuppressWarnings("unchecked")

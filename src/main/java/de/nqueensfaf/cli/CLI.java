@@ -18,6 +18,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Spec;
+import picocli.CommandLine.TypeConversionException;
 
 @Command(name = "nqueensfaf")
 public class CLI implements Runnable {
@@ -38,8 +39,7 @@ public class CLI implements Runnable {
 	    "--config" }, paramLabel = "FILE", required = false, description = "absolute path to the configuration file")
     public void setConfigFile(File configFile) {
 	if (!configFile.exists()) {
-	    throw new ParameterException(spec.commandLine(),
-		    "Invalid value '" + configFile.getAbsolutePath() + "' for option '--config-file': file not found");
+	    throw new ParameterException(spec.commandLine(), "invalid config file: file not found");
 	}
 	this.configFile = configFile;
     }
@@ -50,8 +50,7 @@ public class CLI implements Runnable {
 	    "--task" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
     public void setTaskFile(File taskFile) {
 	if (!taskFile.exists()) {
-	    throw new ParameterException(spec.commandLine(),
-		    "Invalid value '" + taskFile.getAbsolutePath() + "' for option '--task-file': file not found");
+	    throw new ParameterException(spec.commandLine(), "invalid task file: file not found");
 	}
 	this.taskFile = taskFile;
     }
@@ -91,8 +90,7 @@ public class CLI implements Runnable {
 		return;
 	    }
 	    if (n <= 0 || n >= 32) {
-		System.err.println("Invalid board size! Must be a number  with  > 0 and  < 32.");
-		return;
+		throw new TypeConversionException("invalid board size: " + n + " is not >0 and <32");
 	    }
 	}
 
@@ -104,9 +102,8 @@ public class CLI implements Runnable {
 		if (configFile != null) {
 		    try {
 			cpuSolver.config().load(configFile);
-		    } catch (IllegalArgumentException | IllegalAccessException | IOException e) {
-			System.err.println("Could not apply config: " + e.getMessage());
-			System.exit(0);
+		    } catch (IllegalAccessException | IOException e) {
+			throw new IOException("could not apply config: " + e.getMessage());
 		    }
 		} else {
 		    System.out.println("no config file provided, using default config...");
@@ -118,8 +115,7 @@ public class CLI implements Runnable {
 		    try {
 			gpuSolver.config().load(configFile);
 		    } catch (IllegalArgumentException | IllegalAccessException | IOException e) {
-			System.err.println("Could not apply config: " + e.getMessage());
-			System.exit(0);
+			throw new IOException("could not apply config: " + e.getMessage());
 		    }
 		} else {
 		    System.out.println("no config file provided, using default config...");
@@ -187,10 +183,8 @@ public class CLI implements Runnable {
 	     *         utils.getj(key), utils.getk(key), utils.getl(key), solPerIjkl.get(key));
 	     * }
 	     */
-	} catch (IOException | ClassNotFoundException | ClassCastException | IllegalArgumentException
-		| IllegalStateException e) {
-	    System.err.println("Unexpected error: " + e.getMessage());
-//	    e.printStackTrace();
+	} catch (Exception e) {
+	    System.err.println("could not create or execute solver: " + e.getMessage());
 	}
     }
 
