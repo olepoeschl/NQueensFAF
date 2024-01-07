@@ -2,7 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static de.nqueensfaf.impl.SolverUtils.*;
 
@@ -28,7 +28,7 @@ public class ConstellationsGenerator {
 	return generate(null);
     }
     
-    public ArrayList<Constellation> generate(Consumer<Constellation> constellationConsumer){
+    public ArrayList<Constellation> generate(Predicate<Constellation> constellationConsumer){
 	generateIjkls();
 	
 	constellations = new ArrayList<Constellation>();
@@ -67,7 +67,8 @@ public class ConstellationsGenerator {
 		c.setId(currentSize - a - 1);
 
 		if(constellationConsumer != null)
-		    constellationConsumer.accept(constellations.get(currentSize - a - 1));
+		    if( ! constellationConsumer.test(constellations.get(currentSize - a - 1)))
+			return null; // stop generating if the something goes wrong in the callback
 	    }
 	}
 
