@@ -13,11 +13,11 @@ public abstract class Solver {
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
-    private boolean isStoring = false;
+    private boolean isSaving = false;
     
     protected Solver() {
 	Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-	    while (isStoring) {
+	    while (isSaving) {
 		try {
 		    Thread.sleep(100);
 		} catch (InterruptedException e) {
@@ -115,8 +115,7 @@ public abstract class Solver {
     private Thread backgroundThread(boolean updateConsumer, boolean autoSaver) {
 	return new Thread(() -> {
 	    // for autoSaver
-	    String filePath = config().autoSavePath;
-	    filePath = filePath.replaceAll("\\{n\\}", "" + n);
+	    final String filePath = config().autoSavePath.replaceAll("\\{n\\}", "" + n);
 	    float progress = getProgress() * 100;
 	    float tmpProgress = progress;
 	    
@@ -130,11 +129,13 @@ public abstract class Solver {
 		    if (progress >= 100)
 			break;
 		    else if (progress >= tmpProgress + config().autoSavePercentageStep) {
-			try {
-			    save(filePath);
-			} catch (IllegalArgumentException | IOException e) {
-			    System.err.println("error in autosaver thread: " + e.getMessage());
-			}
+			new Thread(() -> {
+			    try {
+				save(filePath);
+			    } catch (IllegalArgumentException | IOException e) {
+				System.err.println("error in autosaver thread: " + e.getMessage());
+			    }
+			}).start();
 			tmpProgress = progress;
 		    }
 		}
@@ -192,11 +193,11 @@ public abstract class Solver {
     }
 
     public final void save(String filepath) throws IOException, IllegalArgumentException {
-	if(isStoring)
+	if(isSaving)
 	    return;
-	isStoring = true;
+	isSaving = true;
 	save_(filepath);
-	isStoring = false;
+	isSaving = false;
     }
 
     public final synchronized void load(File file)
