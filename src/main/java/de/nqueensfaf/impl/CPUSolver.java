@@ -17,7 +17,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.Config;
-import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.persistence.SolverState;
 
@@ -28,6 +27,12 @@ public class CPUSolver extends Solver {
     // method for such n
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
+    private static final Kryo kryo = new Kryo();
+    static {
+	kryo.register(SolverState.class);
+	kryo.register(Constellation.class);
+	kryo.register(ArrayList.class);
+    }
 
     private long start, end;
     private ArrayList<Constellation> constellations;
@@ -116,7 +121,6 @@ public class CPUSolver extends Solver {
 	if (constellations.size() == 0) {
 	    throw new IllegalStateException("Nothing to be saved");
 	}
-	Kryo kryo = Constants.kryo;
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
@@ -129,7 +133,6 @@ public class CPUSolver extends Solver {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot load a state while the Solver is running");
 	}
-	Kryo kryo = Constants.kryo;
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());

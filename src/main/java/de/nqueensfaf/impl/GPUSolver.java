@@ -38,13 +38,19 @@ import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import de.nqueensfaf.Config;
-import de.nqueensfaf.Constants;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.SolverException;
 import de.nqueensfaf.persistence.SolverState;
 
 public class GPUSolver extends Solver {
 
+    private static final Kryo kryo = new Kryo();
+    static {
+	kryo.register(SolverState.class);
+	kryo.register(Constellation.class);
+	kryo.register(ArrayList.class);
+    }
+    
     private long[] contexts, programs;
     private ArrayList<Device> devices, availableDevices;
     private ArrayList<Constellation> constellations;
@@ -469,7 +475,6 @@ public class GPUSolver extends Solver {
 	    throw new IllegalStateException("nothing to be saved");
 	}
 
-	Kryo kryo = Constants.kryo;
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
 	    kryo.writeObject(output,
 		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
@@ -482,7 +487,6 @@ public class GPUSolver extends Solver {
 	if (!isIdle()) {
 	    throw new IllegalStateException("Cannot load a state while the solver is running");
 	}
-	Kryo kryo = Constants.kryo;
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
 	    SolverState state = kryo.readObject(input, SolverState.class);
 	    setN(state.getN());
