@@ -121,9 +121,8 @@ public abstract class Solver {
 	    float tmpProgress = progress;
 	    
 	    while (isRunning() && getProgress() < 1f) {
-		if(updateConsumer) {
+		if(updateConsumer)
 		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		}
 		
 		if(autoSaver) {
 		    progress = getProgress() * 100;
@@ -147,6 +146,9 @@ public abstract class Solver {
 		    // ignore
 		}
 	    }
+
+	    if(updateConsumer)
+		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 		
 	    if(autoSaver) {
 		progress = getProgress() * 100;

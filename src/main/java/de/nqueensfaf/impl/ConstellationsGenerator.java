@@ -60,7 +60,7 @@ public class ConstellationsGenerator {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		var c = constellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStart() | ijkl);
+		c.setStartIjkl(c.getStartIjkl() | ijkl);
 		c.setId(currentSize - a - 1);
 
 		if(constellationConsumer != null)
@@ -87,7 +87,7 @@ public class ConstellationsGenerator {
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellationsCounter; a++) {
 		var c = constellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStart() | bc.getIjkl());
+		c.setStartIjkl(c.getStartIjkl() | bc.getIjkl());
 		c.setId(bc.getId());
 	    }
 	}
