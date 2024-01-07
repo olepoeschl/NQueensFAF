@@ -14,6 +14,9 @@ public class ConstellationsGenerator {
     private HashSet<Integer> ijklList;
     
     public ConstellationsGenerator(int n, int presetQueens) {
+	if(presetQueens < 4)
+	    throw new IllegalArgumentException("could not initialize ConstellationsGenerator: presetQueens must be a number >=4");
+	
 	this.n = n;
 	this.presetQueens = presetQueens;
 	
