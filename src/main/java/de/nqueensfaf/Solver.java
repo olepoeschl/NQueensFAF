@@ -27,7 +27,8 @@ public abstract class Solver {
 		}
 	    }));
 	} catch (IllegalStateException e) {
-	    System.err.println("could not register shutdown hook for completing auto save: " + e.getMessage());
+	    // ignore
+	    // System.err.println("could not register shutdown hook for completing auto save: " + e.getMessage());
 	}
     });
     
