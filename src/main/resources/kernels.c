@@ -1,10 +1,5 @@
 // Explosion Boost 9000
 
-// null kernel as a workaround for AMD GPUs to ensure they return the correct results
-kernel void null() {
-
-}
-
 struct constellation {
     int ld;
     int rd;
