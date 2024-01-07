@@ -140,6 +140,12 @@ public abstract class Solver {
 			tmpProgress = progress;
 		    }
 		}
+		
+		try {
+		    Thread.sleep(config().updateInterval);
+		} catch (InterruptedException e) {
+		    // ignore
+		}
 	    }
 		
 	    if(autoSaver) {
