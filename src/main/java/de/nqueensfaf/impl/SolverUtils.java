@@ -28,6 +28,14 @@ class SolverUtils {
     static int getJkl(int ijkl) {
 	return ijkl & 0b111111111111111;
     }
+    
+    static int getLD(int ijkl, int L) {
+	return (L >>> getj(ijkl)) | (L >>> getl(ijkl));
+    }
+    
+    static int getRD(int ijkl, int L) {
+	return (L >>> getj(ijkl)) | (1 << getk(ijkl));
+    }
 
     static boolean oneQueenInCorner(int n, int ijkl) {
 	return getj(ijkl) == n-1 && getl(ijkl) == n-1;

@@ -10,7 +10,7 @@ public class ConstellationsGenerator {
 
     private ArrayList<Constellation> subConstellations;
     private int n, presetQueens;
-    private int L, mask, LD, RD;
+    private int L, mask;
     private HashSet<Integer> ijklList;
     
     public ConstellationsGenerator(int n) {
@@ -53,13 +53,13 @@ public class ConstellationsGenerator {
 	    ld = (L >>> (i - 1)) | (1 << (n - k));
 	    rd = (L >>> (i + 1)) | (1 << (l - 1));
 	    col = 1 | L | (L >>> i) | (L >>> j);
+	    
+	    // LD and RD (see placePresetQueens()) are used to
 	    // occupy diagonals of the queens j k l in the last row
 	    // later we are going to shift them upwards the board
-	    LD = (L >>> j) | (L >>> l);
-	    RD = (L >>> j) | (1 << k);
 
 	    // generate all subconstellations
-	    placePresetQueens(ld, rd, col, k, l, 1, j == n - 1 ? 3 : 4);
+	    placePresetQueens(ijkl, ld, rd, col, 1, j == n - 1 ? 3 : 4);
 	    
 	    // jkl and sym and start are the same for all subconstellations
 	    for (int a = 0; a < subConstellations.size(); a++) {
@@ -99,8 +99,7 @@ public class ConstellationsGenerator {
 	    if(getl(bc.getStartIjkl()) < bc.extractStart())
 		queens--;
 	    
-	    placePresetQueens(bc.getLd(), bc.getRd(), bc.getCol(), getk(bc.extractIjkl()), getl(bc.extractIjkl()), 
-		    bc.extractStart(), queens); // from row start to row presetQueens
+	    placePresetQueens(bc.extractIjkl(), bc.getLd(), bc.getRd(), bc.getCol(), bc.extractStart(), queens); // from row start to row presetQueens
 	    
 	    currentSize = subConstellations.size();
 	    
@@ -153,10 +152,10 @@ public class ConstellationsGenerator {
     }
 
     // generate sub constellations for each starting constellation
-    private void placePresetQueens(int ld, int rd, int col, int k, int l, int row, int queens) {
+    private void placePresetQueens(int ijkl, int ld, int rd, int col, int row, int queens) {
 	// in row k and l just go further
-	if (row == k || row == l) {
-	    placePresetQueens(ld << 1, rd >>> 1, col, k, l, row + 1, queens);
+	if (row == getk(ijkl) || row == getl(ijkl)) {
+	    placePresetQueens(ijkl, ld << 1, rd >>> 1, col, row + 1, queens);
 	    return;
 	}
 	// add queens until we have preQueens queens
@@ -168,13 +167,13 @@ public class ConstellationsGenerator {
 	// if not done or row k or l, just place queens and occupy the board and go
 	// further
 	else {
-	    int free = (~(ld | rd | col | (LD >>> (n - 1 - row)) | (RD << (n - 1 - row)))) & mask;
+	    int free = (~(ld | rd | col | (getLD(ijkl, L) >>> (n - 1 - row)) | (getRD(ijkl, L) << (n - 1 - row)))) & mask;
 	    int bit;
 
 	    while (free > 0) {
 		bit = free & (-free);
 		free -= bit;
-		placePresetQueens((ld | bit) << 1, (rd | bit) >>> 1, col | bit, k, l, row + 1, queens + 1);
+		placePresetQueens(ijkl, (ld | bit) << 1, (rd | bit) >>> 1, col | bit, row + 1, queens + 1);
 	    }
 	}
     }
