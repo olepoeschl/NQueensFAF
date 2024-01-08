@@ -520,6 +520,11 @@ public class GPUSolver extends Solver {
 	}
 	return tmpSolutions;
     }
+    
+    public void inject(ArrayList<Constellation> constellations) {
+	this.constellations = constellations;
+	loaded = true;
+    }
 
     public long getDurationOfDevice(int deviceIndex) {
 	if (deviceIndex < 0 || deviceIndex >= availableDevices.size())
