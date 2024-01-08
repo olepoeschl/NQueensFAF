@@ -10,7 +10,7 @@ class SolverUtils {
     }
 
     static int geti(int ijkl) {
-	return ijkl >> 15;
+	return ijkl >> 15 & 31;
     }
 
     static int getj(int ijkl) {
