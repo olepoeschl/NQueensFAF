@@ -61,7 +61,7 @@ public class CPUSolver extends Solver {
 	}
 
 	if (!loaded) {
-	    constellations = new ConstellationsGenerator(n, config.presetQueens).generate();
+	    constellations = new ConstellationsGenerator(n).generate(config.presetQueens);
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for

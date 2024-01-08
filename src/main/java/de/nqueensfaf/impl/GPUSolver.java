@@ -164,7 +164,7 @@ public class GPUSolver extends Solver {
     }
 
     private void genConstellations() {
-	constellations = new ConstellationsGenerator(n, config.presetQueens).generate();
+	constellations = new ConstellationsGenerator(n).generate(config.presetQueens);
     }
 
     private ArrayList<Constellation> fillWithTrash(List<Constellation> subConstellations, int workgroupSize) {
