@@ -1,8 +1,6 @@
 package de.nqueensfaf.impl;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,16 +16,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -466,24 +460,15 @@ public class GPUSolver extends Solver {
 	return config;
     }
 
-    @Override
-    protected void save_(String filepath) throws IOException {
-	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
-	    kryo.writeObject(output,
-		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
-	    output.flush();
-	}
+    public SolverState getState() {
+	return new SolverState(n, getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
 
-    @Override
-    protected void load_(String filepath) throws IOException {
-	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
-	    SolverState state = kryo.readObject(input, SolverState.class);
-	    setN(state.getN());
-	    storedDuration = state.getStoredDuration();
-	    constellations = state.getConstellations();
-	    loaded = true;
-	}
+    public void setState(SolverState state) {
+	setN(state.getN());
+	storedDuration = state.getStoredDuration();
+	constellations = state.getConstellations();
+	loaded = true;
     }
 
     @Override
@@ -519,11 +504,6 @@ public class GPUSolver extends Solver {
 	    }
 	}
 	return tmpSolutions;
-    }
-    
-    public void inject(ArrayList<Constellation> constellations) {
-	this.constellations = constellations;
-	loaded = true;
     }
 
     public long getDurationOfDevice(int deviceIndex) {

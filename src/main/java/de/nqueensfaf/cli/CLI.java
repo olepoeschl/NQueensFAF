@@ -11,6 +11,7 @@ import com.github.freva.asciitable.HorizontalAlign;
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.impl.CPUSolver;
 import de.nqueensfaf.impl.GPUSolver;
+import de.nqueensfaf.impl.SolverState;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -108,6 +109,10 @@ public class CLI implements Runnable {
 		} else {
 		    System.out.println("no config file provided, using default config...");
 		}
+		
+		if(taskFile != null)
+		    cpuSolver.setState(SolverState.load(taskFile.getAbsolutePath()));
+		
 		solver = cpuSolver;
 	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
@@ -143,6 +148,10 @@ public class CLI implements Runnable {
 		    System.err.println(
 				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
 		}
+		
+		if(taskFile != null)
+		    gpuSolver.setState(SolverState.load(taskFile.getAbsolutePath()));
+		
 		solver = gpuSolver;
 	    }
 
@@ -161,9 +170,7 @@ public class CLI implements Runnable {
 		    });
 
 	    // start
-	    if (taskFile != null) {
-		solver.load(taskFile);
-	    } else {
+	    if (taskFile == null) {
 		solver.setN(n);
 		solver.solve();
 	    }

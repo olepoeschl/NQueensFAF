@@ -1,7 +1,5 @@
 package de.nqueensfaf;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.function.Consumer;
 
 public abstract class Solver {
@@ -13,33 +11,13 @@ public abstract class Solver {
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
-    private boolean isSaving = false;
     private Config config = new Config();
-    private final Thread shutdownHook = new Thread(() -> {
-	try {
-	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-		while (isSaving) {
-		    try {
-			Thread.sleep(100);
-		    } catch (InterruptedException e) {
-			System.err.println("could not wait for auto save to finish: " + e.getMessage());
-			break;
-		    }
-		}
-	    }));
-	} catch (IllegalStateException e) {
-	    // ignore
-	    // System.err.println("could not register shutdown hook for completing auto save: " + e.getMessage());
-	}
-    });
     
     public abstract long getDuration();
     public abstract float getProgress();
     public abstract long getSolutions();
     
     protected abstract void run();
-    protected abstract void save_(String filepath) throws IOException;
-    protected abstract void load_(String filepath) throws IOException;
     
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solve() {
@@ -53,12 +31,10 @@ public abstract class Solver {
 
 	state = Status.RUNNING;
 	if(config().updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
-	    boolean updateConsumer = false, autoSaver = false;
+	    boolean updateConsumer = false;
 	    if (onUpdateConsumer != null)
 		updateConsumer = true;
-	    if (config().autoSaveEnabled)
-		autoSaver = true;
-	    bgThread = backgroundThread(updateConsumer, autoSaver);
+	    bgThread = backgroundThread(updateConsumer);
 	    bgThread.start();
 	}
 	
@@ -118,35 +94,11 @@ public abstract class Solver {
 	}
     }
 
-    private Thread backgroundThread(boolean updateConsumer, boolean autoSaver) {
+    private Thread backgroundThread(boolean updateConsumer) {
 	return new Thread(() -> {
-	    // for autoSaver
-	    final String filePath = config().autoSavePath.replaceAll("\\{n\\}", "" + n);
-	    float progress = getProgress() * 100;
-	    float tmpProgress = progress;
-	    
-	    if(autoSaver)
-		Runtime.getRuntime().addShutdownHook(shutdownHook);
-	    
 	    while (isRunning() && getProgress() < 1f) {
 		if(updateConsumer)
 		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		
-		if(autoSaver) {
-		    progress = getProgress() * 100;
-		    if (progress >= 100)
-			break;
-		    else if (progress >= tmpProgress + config().autoSavePercentageStep) {
-			new Thread(() -> {
-			    try {
-				save(filePath);
-			    } catch (IOException e) {
-				System.err.println("could not save solver state: " + e.getMessage());
-			    }
-			}).start();
-			tmpProgress = progress;
-		    }
-		}
 		
 		try {
 		    Thread.sleep(config().updateInterval);
@@ -157,17 +109,6 @@ public abstract class Solver {
 
 	    if(updateConsumer)
 		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		
-	    if(autoSaver) {
-		Runtime.getRuntime().removeShutdownHook(shutdownHook);
-		
-		progress = getProgress() * 100;
-		if (progress >= 100) {
-		    if (config().autoDeleteEnabled) {
-			new File(filePath).delete();
-		    }
-		}
-	    }
 	});
     }
     
@@ -202,25 +143,6 @@ public abstract class Solver {
 	return (T) config;
     }
     
-    public final void save(String filepath) throws IOException {
-	if(isSaving)
-	    return;
-	if(isIdle())
-	    throw new IllegalStateException("could not save solver state: solver is idle");
-	isSaving = true;
-	save_(filepath);
-	isSaving = false;
-    }
-
-    public final synchronized void load(File file) throws IOException{
-	if(!isIdle())
-	    throw new IllegalStateException("could not load solver state: solver already running");
-	
-	load_(file.getAbsolutePath());
-	config().autoSavePath = file.getAbsolutePath();
-	solve();
-    }
-
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T onInit(Consumer<Solver> c) {
 	if (c == null) {
@@ -261,7 +183,6 @@ public abstract class Solver {
 	return (T) this;
     }
     
-    // getters
     public final int getN() {
 	return n;
     }

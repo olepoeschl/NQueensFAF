@@ -1,7 +1,5 @@
 package de.nqueensfaf.impl;
 
-import java.io.IOException;
-
 import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
 
@@ -132,14 +130,6 @@ public class SymSolver extends Solver {
     @Override
     public long getSolutions() {
 	return 0;
-    }
-    
-    @Override
-    protected void save_(String filepath) throws IOException {
-    }
-
-    @Override
-    protected void load_(String filepath) throws IOException {
     }
 
     @SuppressWarnings("unchecked")

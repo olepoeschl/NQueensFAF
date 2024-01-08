@@ -1,20 +1,12 @@
 package de.nqueensfaf.impl;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
@@ -26,12 +18,6 @@ public class CPUSolver extends Solver {
     // method for such n
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
-    private static final Kryo kryo = new Kryo();
-    static {
-	kryo.register(SolverState.class);
-	kryo.register(Constellation.class);
-	kryo.register(ArrayList.class);
-    }
 
     private long start, end;
     private ArrayList<Constellation> constellations;
@@ -113,24 +99,15 @@ public class CPUSolver extends Solver {
 	return config;
     }
 
-    @Override
-    protected void save_(String filepath) throws IOException {
-	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(filepath)))) {
-	    kryo.writeObject(output,
-		    new SolverState(n, System.currentTimeMillis() - start + storedDuration, constellations));
-	    output.flush();
-	}
+    public SolverState getState() {
+	return new SolverState(n, getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
 
-    @Override
-    protected void load_(String filepath) throws IOException {
-	try (Input input = new Input(new GZIPInputStream(new FileInputStream(filepath)))) {
-	    SolverState state = kryo.readObject(input, SolverState.class);
-	    setN(state.getN());
-	    storedDuration = state.getStoredDuration();
-	    constellations = state.getConstellations();
-	    loaded = true;
-	}
+    public void setState(SolverState state) {
+	setN(state.getN());
+	storedDuration = state.getStoredDuration();
+	constellations = state.getConstellations();
+	loaded = true;
     }
 
     @Override
