@@ -1,6 +1,5 @@
 package de.nqueensfaf.impl;
 
-import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
 
 public class SymSolver extends Solver {
@@ -131,11 +130,4 @@ public class SymSolver extends Solver {
     public long getSolutions() {
 	return 0;
     }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends Config> T config() {
-	return (T) new Config();
-    }
-
 }

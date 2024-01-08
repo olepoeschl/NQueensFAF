@@ -6,15 +6,15 @@ import de.nqueensfaf.impl.GPUSolver;
 public class Demo {
 
     public static void main(String[] args) {
-	cpu();
+	gpu();
     }
     
     static void cpu() {
-	CPUSolver sc = new CPUSolver();
-	sc.config().threadcount = 1;
-	sc.config().updateInterval = 800;
-	sc.config().presetQueens = 5;
-	sc.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
+	new CPUSolver()
+        	.setPresetQueens(5)
+        	.setThreadCount(1)
+        	.setUpdateInterval(700)
+        	.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
         	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
         	.setN(16)
@@ -22,10 +22,10 @@ public class Demo {
     }
     
     static void gpu() {
-	GPUSolver sg = new GPUSolver();
-	sg.config().updateInterval = 200;
-	sg.config().presetQueens = 6;
-	sg.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
+	new GPUSolver()
+		.setPresetQueens(6)
+		.setUpdateInterval(200)
+		.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
 		.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
         	.setN(18)

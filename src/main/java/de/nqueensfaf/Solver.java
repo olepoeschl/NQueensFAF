@@ -5,13 +5,13 @@ import java.util.function.Consumer;
 public abstract class Solver {
     
     protected int n;
+    protected int updateInterval = 128;
     
     private volatile Status state = Status.IDLE;
     private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
-    private Config config = new Config();
     
     public abstract long getDuration();
     public abstract float getProgress();
@@ -23,14 +23,12 @@ public abstract class Solver {
     public final <T extends Solver> T solve() {
 	preconditions();
 	
-	config().validate();
-	
 	state = Status.INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
 
 	state = Status.RUNNING;
-	if(config().updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
+	if(updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
 	    boolean updateConsumer = false;
 	    if (onUpdateConsumer != null)
 		updateConsumer = true;
@@ -46,7 +44,7 @@ public abstract class Solver {
 	}
 
 	state = Status.TERMINATING;
-	if(config().updateInterval > 0) {
+	if(updateInterval > 0) {
 	    try {
 		bgThread.join();
 	    } catch (InterruptedException e) {
@@ -101,7 +99,7 @@ public abstract class Solver {
 		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
 		
 		try {
-		    Thread.sleep(config().updateInterval);
+		    Thread.sleep(updateInterval);
 		} catch (InterruptedException e) {
 		    // ignore
 		}
@@ -136,11 +134,6 @@ public abstract class Solver {
 	    if (nextfree > 0)
 		smallBoardNQ((ld | bit) << 1, (rd | bit) >> 1, col | bit, row + 1, nextfree, mask);
 	}
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends Config> T config() {
-	return (T) config;
     }
     
     @SuppressWarnings("unchecked")
@@ -185,6 +178,18 @@ public abstract class Solver {
     
     public final int getN() {
 	return n;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public final <T extends Solver> T setUpdateInterval(int updateInterval) {
+	if (updateInterval < 0)
+	    throw new IllegalArgumentException("invalid value for updateInterval: must be a number >=0 (0 means disabling updates)");
+	this.updateInterval = updateInterval;
+	return (T) this;
+    }
+    
+    public final int getUpdateInterval() {
+	return updateInterval;
     }
     
     public final boolean isIdle() {

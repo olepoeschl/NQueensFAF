@@ -31,7 +31,6 @@ import static org.lwjgl.opencl.CL12.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
-import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
 
 public class GPUSolver extends Solver {
@@ -51,11 +50,10 @@ public class GPUSolver extends Solver {
     private long duration, start, storedDuration;
     private volatile long end;
     private boolean loaded;
-
-    private GPUSolverConfig config;
+    private int presetQueens = 6;
+    private DeviceConfig[] deviceConfigs = new DeviceConfig[] {new DeviceConfig()};
 
     public GPUSolver() {
-	config = new GPUSolverConfig();
 	devices = new ArrayList<Device>();
 	availableDevices = new ArrayList<Device>();
 	constellations = new ArrayList<Constellation>();
@@ -65,7 +63,7 @@ public class GPUSolver extends Solver {
 	    if(availableDevices.size() == 0) {
 		throw new IllegalStateException("could not initialize GPUSolver: no available OpenCL devices");
 	    }
-	    setDeviceConfigs(config.deviceConfigs);
+	    setDeviceConfigs(deviceConfigs);
 	}
     }
 
@@ -158,7 +156,7 @@ public class GPUSolver extends Solver {
     }
 
     private void genConstellations() {
-	constellations = new ConstellationsGenerator(n).generate(config.presetQueens);
+	constellations = new ConstellationsGenerator(n).generate(presetQueens);
     }
 
     private ArrayList<Constellation> fillWithTrash(List<Constellation> subConstellations, int workgroupSize) {
@@ -300,8 +298,9 @@ public class GPUSolver extends Solver {
 	    // wait for kernel to finish and continuously read results from device
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
 	    while (true) {
-		if(config.updateInterval > 0)
+		if(updateInterval > 0)
 		    readResults(device);
+		
 		checkCLError(clGetEventInfo(device.xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
 		if (eventStatusBuf.get(0) == CL_COMPLETE) {
 		    if (ptr >= device.constellations.size()) {
@@ -454,12 +453,6 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseDevice(device.id));
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public GPUSolverConfig config() {
-	return config;
-    }
-
     public SolverState getState() {
 	return new SolverState(n, getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
@@ -548,40 +541,6 @@ public class GPUSolver extends Solver {
 	return deviceInfos;
     }
 
-    private void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
-	devices.clear();
-	weightSum = 0;
-
-	if (deviceConfigsInput.equals(DeviceConfig.ALL_DEVICES)) {
-	    int index = 0;
-	    for (Device device : availableDevices) {
-		devices.add(device);
-		device.config = new GPUSolverConfig().deviceConfigs[0];
-		device.config.index = index++;
-		weightSum += device.config.weight;
-	    }
-	    return;
-	}
-
-	ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
-	for (DeviceConfig deviceConfig : deviceConfigsInput) {
-	    if (deviceConfig.weight == 0)
-		continue;
-	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
-		continue;
-	    
-	    deviceConfig.validate();
-	    
-	    if (deviceConfig.index < availableDevices.size()) {
-		deviceConfigsTmp.add(deviceConfig);
-		Device device = availableDevices.get(deviceConfig.index);
-		device.config = deviceConfig;
-		devices.add(device);
-		weightSum += deviceConfig.weight;
-	    }
-	}
-    }
-
     public List<DeviceInfo> getDevices() {
 	return devices.stream().map(device -> new DeviceInfo(device.config.index, device.vendor, device.name)).toList();
     }
@@ -606,6 +565,51 @@ public class GPUSolver extends Solver {
 	    throw new IOException("could not read kernel source file: " + e.getMessage()); // should not happen
 	}
 	return resultString;
+    }
+    
+    public GPUSolver setPresetQueens(int presetQueens) {
+	if (presetQueens < 4)
+	    throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
+	this.presetQueens = presetQueens;
+	return this;
+    }
+    
+    public int getPresetQueens() {
+	return presetQueens;
+    }
+
+    public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
+	devices.clear();
+	weightSum = 0;
+
+	if (deviceConfigsInput.equals(DeviceConfig.ALL_DEVICES)) {
+	    int index = 0;
+	    for (Device device : availableDevices) {
+		devices.add(device);
+		device.config = new DeviceConfig();
+		device.config.index = index++;
+		weightSum += device.config.weight;
+	    }
+	    return;
+	}
+
+	ArrayList<DeviceConfig> deviceConfigsTmp = new ArrayList<DeviceConfig>();
+	for (DeviceConfig deviceConfig : deviceConfigsInput) {
+	    if (deviceConfig.weight == 0)
+		continue;
+	    if (deviceConfigsTmp.stream().anyMatch(dvcCfg -> deviceConfig.index == dvcCfg.index)) // check for duplicates
+		continue;
+	    
+	    deviceConfig.validate();
+	    
+	    if (deviceConfig.index < availableDevices.size()) {
+		deviceConfigsTmp.add(deviceConfig);
+		Device device = availableDevices.get(deviceConfig.index);
+		device.config = deviceConfig;
+		devices.add(device);
+		weightSum += deviceConfig.weight;
+	    }
+	}
     }
 
     // debug info
@@ -645,33 +649,6 @@ public class GPUSolver extends Solver {
 	    throw new IllegalArgumentException("invalid device index: device is not selected");
 	return (int) availableDevices.get(index).workloadConstellations.stream()
 		.filter(c -> c.getStartIjkl() >> 20 == 69).count();
-    }
-
-    public static class GPUSolverConfig extends Config {
-	public DeviceConfig[] deviceConfigs;
-	public int presetQueens;
-
-	public GPUSolverConfig() {
-	    // default values
-	    super();
-	    deviceConfigs = new DeviceConfig[] { new DeviceConfig() };
-	    presetQueens = 6;
-	}
-
-	@Override
-	public void validate() {
-	    super.validate();
-	    // if device configs are not specified, use default value
-	    if (deviceConfigs == null || deviceConfigs.length == 0)
-		deviceConfigs = new GPUSolverConfig().deviceConfigs;
-	    else {
-		for (var dvcCfg : deviceConfigs) {
-		    dvcCfg.validate();
-		}
-	    }
-	    if (presetQueens < 4)
-		throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
-	}
     }
 
     public static class DeviceConfig {

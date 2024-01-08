@@ -1,7 +1,6 @@
 package de.nqueensfaf.cli;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
 import com.github.freva.asciitable.AsciiTable;
@@ -34,19 +33,7 @@ public class CLI implements Runnable {
 	    "--show-devices" }, required = false, description = "show a list of all available OpenCL devices")
     private boolean showAvailableDevices;
 
-    private File configFile;
-
-    @Option(names = { "-c",
-	    "--config" }, paramLabel = "FILE", required = false, description = "absolute path to the configuration file")
-    public void setConfigFile(File configFile) {
-	if (!configFile.exists()) {
-	    throw new ParameterException(spec.commandLine(), "invalid config file: file not found");
-	}
-	this.configFile = configFile;
-    }
-
     private File taskFile;
-
     @Option(names = { "-t",
 	    "--task" }, paramLabel = "FILE", required = false, description = "absolute path to the file containing the task")
     public void setTaskFile(File taskFile) {
@@ -100,15 +87,7 @@ public class CLI implements Runnable {
 	    Solver solver;
 	    if (!executeOnGpu) {
 		CPUSolver cpuSolver = new CPUSolver();
-		if (configFile != null) {
-		    try {
-			cpuSolver.config().load(configFile);
-		    } catch (IllegalAccessException | IOException e) {
-			throw new IOException("could not apply config: " + e.getMessage());
-		    }
-		} else {
-		    System.out.println("no config file provided, using default config...");
-		}
+		// config
 		
 		if(taskFile != null)
 		    cpuSolver.setState(SolverState.load(taskFile.getAbsolutePath()));
@@ -116,15 +95,8 @@ public class CLI implements Runnable {
 		solver = cpuSolver;
 	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
-		if (configFile != null) {
-		    try {
-			gpuSolver.config().load(configFile);
-		    } catch (IllegalArgumentException | IllegalAccessException | IOException e) {
-			throw new IOException("could not apply config: " + e.getMessage());
-		    }
-		} else {
-		    System.out.println("no config file provided, using default config...");
-		}
+		// config
+		
 		// print used devices
 		var devices = gpuSolver.getDevicesWithConfig();
 		System.out.println("following GPU's will be used:");
@@ -163,7 +135,7 @@ public class CLI implements Runnable {
 			System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
 				getDurationPrettyString(duration));
 		    }).onFinish(self -> {
-			if(self.config().updateInterval > 0)
+			if(self.getUpdateInterval() > 0)
 			    System.out.println();
 			System.out.println("found " + self.getSolutions() + " solutions in "
 				+ getDurationPrettyString(self.getDuration()));

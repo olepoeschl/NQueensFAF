@@ -8,7 +8,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import de.nqueensfaf.Config;
 import de.nqueensfaf.Solver;
 
 public class CPUSolver extends Solver {
@@ -26,11 +25,9 @@ public class CPUSolver extends Solver {
     private long solutions, duration, storedDuration;
     private float progress;
     private boolean loaded;
-
-    private CPUSolverConfig config;
+    private int presetQueens = 5, threadCount = 1;
 
     public CPUSolver() {
-	config = new CPUSolverConfig();
 	constellations = new ArrayList<Constellation>();
 	threads = new ArrayList<CPUSolverThread>();
 	loaded = false;
@@ -47,25 +44,25 @@ public class CPUSolver extends Solver {
 	}
 
 	if (!loaded) {
-	    constellations = new ConstellationsGenerator(n).generate(config.presetQueens);
+	    constellations = new ConstellationsGenerator(n).generate(presetQueens);
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
 	// the threads)
 	threadConstellations = new ArrayList<ArrayList<Constellation>>();
-	for (int i = 0; i < config.threadcount; i++) {
+	for (int i = 0; i < threadCount; i++) {
 	    threadConstellations.add(new ArrayList<Constellation>());
 	}
 	int i = constellations.size() - 1;
 	for (Constellation c : constellations) {
 	    if (c.getSolutions() >= 0) // ignore loaded constellations that have already been solved
 		continue;
-	    threadConstellations.get((i--) % config.threadcount).add(c);
+	    threadConstellations.get((i--) % threadCount).add(c);
 	}
 
 	// start the threads and wait until they are all finished
-	ExecutorService executor = Executors.newFixedThreadPool(config.threadcount);
-	for (i = 0; i < config.threadcount; i++) {
+	ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+	for (i = 0; i < threadCount; i++) {
 	    CPUSolverThread cpuSolverThread = new CPUSolverThread(n, threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
@@ -91,12 +88,6 @@ public class CPUSolver extends Solver {
 	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage());
 	}
 	loaded = false;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public CPUSolverConfig config() {
-	return config;
     }
 
     public SolverState getState() {
@@ -144,6 +135,28 @@ public class CPUSolver extends Solver {
 	return solutions;
     }
     
+    public CPUSolver setPresetQueens(int presetQueens) {
+	if (presetQueens < 4)
+	    throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
+	this.presetQueens = presetQueens;
+	return this;
+    }
+    
+    public int getPresetQueens() {
+	return presetQueens;
+    }
+    
+    public CPUSolver setThreadCount(int threadCount) {
+	if (threadCount < 1)
+	    throw new IllegalArgumentException("invalid value for thread count: not a number >0");
+	this.threadCount = threadCount;
+	return this;
+    }
+    
+    public int getThreadCount() {
+	return threadCount;
+    }
+    
     // debug info
     public int getNumberOfConstellations() {
 	return constellations.size();
@@ -155,26 +168,5 @@ public class CPUSolver extends Solver {
 		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).extractIjkl(),
 			cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
 	return solutionsPerIjkl;
-    }
-
-    public static class CPUSolverConfig extends Config {
-	public int threadcount;
-	public int presetQueens;
-
-	public CPUSolverConfig() {
-	    // default values
-	    super();
-	    threadcount = 1;
-	    presetQueens = 4;
-	}
-
-	@Override
-	public void validate() {
-	    super.validate();
-	    if (threadcount < 1)
-		throw new IllegalArgumentException("invalid value for threadcount: not a number >0");
-	    if (presetQueens < 4)
-		throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
-	}
     }
 }
