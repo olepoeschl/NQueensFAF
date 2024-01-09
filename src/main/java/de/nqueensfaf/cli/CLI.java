@@ -23,25 +23,33 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.TypeConversionException;
 
-@Command(name = "nqueensfaf")
+@Command(name = "nqueensfaf", mixinStandardHelpOptions = true)
 public class CLI implements Runnable {
 
     @Spec
     CommandSpec spec;
+
+    @Option(names = { "-l", "--list-gpus" }, required = false, description = "show a list of all available GPUs")
+    public void listGpus() {
+	var devices = new GPUSolver().getAvailableGpus();
+	System.out.println(
+		AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
+			Arrays.asList(
+				new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
+				.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
+				new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
+				.dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
+				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
+				.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
+	System.exit(0);
+    }
     
     @ArgGroup(exclusive = true, multiplicity = "1")
-    private NorTask nOrTask;
+    private NOrState nOrState;
 
-    private static class NorTask {
-	private int n;
+    private static class NOrState {
 	@Parameters(description = "size of the chess board")
-	public void sizeOfBoard(String input) {
-	    try {
-		n = Integer.parseInt(input);
-	    } catch(NumberFormatException e) {
-		throw new TypeConversionException("invalid board size: '" + input + "' is not an integer");
-	    }
-	}
+	private int n;
 
 	private SolverState state;
 	@Parameters(description = "path to the solver state file")
@@ -53,25 +61,19 @@ public class CLI implements Runnable {
 	    }
 	}
     }
-    
-    @Option(names = { "-l", "--list-gpus" }, required = false, description = "show a list of all available GPUs")
-    public void listGpus() {
-	// TODO
-    }
-    
-    int updateInterval;
+
     @Option(names = { "-u", "--update-interval" }, required = false, description = "delay between progress updates")
-    public void updateInterval() {
-	// TODO
-    }
+    private int updateInterval;
 
     private String[] gpus;
     private int[] workgroupSizes;
-    @Option(names = { "-g", "--gpus" }, required = false, description = "choose and configure GPUs for copmuting")
-    public void gpuConfigs(String input) {
+    @Option(names = { "-g", "--gpus" }, split = ",", required = false, description = "choose and configure GPUs for copmuting")
+    public void gpuConfigs(String[] input) {
 	// TODO
     }
 
+    
+    
     // for printing the progress in the progress callback
     private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation in the progress callback
@@ -80,31 +82,6 @@ public class CLI implements Runnable {
 
     @Override
     public void run() {
-	if (showAvailableDevices) {
-	    var devices = new GPUSolver().getAvailableDevices();
-	    System.out
-		    .println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
-			    Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
-				    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-					    .dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
-				    new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
-					    .dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
-	    return;
-	}
-
-	// validate settings
-	if (taskFile == null) {
-	    if (n == -69) {
-		System.err.println("Missing required option: '--board-size=INT'");
-		CommandLine.usage(this, System.err);
-		return;
-	    }
-	    if (n <= 0 || n >= 32) {
-		throw new TypeConversionException("invalid board size: " + n + " is not >0 and <32");
-	    }
-	}
-
 	try {
 	    // initialize solver
 	    Solver solver;
