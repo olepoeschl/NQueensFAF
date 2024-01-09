@@ -1,8 +1,8 @@
 package de.nqueensfaf.cli;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
@@ -13,12 +13,10 @@ import de.nqueensfaf.impl.CPUSolver;
 import de.nqueensfaf.impl.GPUSolver;
 import de.nqueensfaf.impl.SolverState;
 import de.nqueensfaf.impl.SymSolver;
-import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.TypeConversionException;
@@ -29,20 +27,8 @@ public class CLI implements Runnable {
     @Spec
     CommandSpec spec;
 
-    @Option(names = { "-l", "--list-gpus" }, required = false, description = "show a list of all available GPUs")
-    public void listGpus() {
-	var devices = new GPUSolver().getAvailableGpus();
-	System.out.println(
-		AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
-			Arrays.asList(
-				new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-				.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
-				new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-				.dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
-				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
-				.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
-	System.exit(0);
-    }
+    @Option(names = { "-g", "--gpus" }, required = false, description = "execute on GPUs")
+    private boolean gpu;
     
     @ArgGroup(exclusive = true, multiplicity = "1")
     private NOrState nOrState;
@@ -65,15 +51,6 @@ public class CLI implements Runnable {
     @Option(names = { "-u", "--update-interval" }, required = false, description = "delay between progress updates")
     private int updateInterval;
 
-    private String[] gpus;
-    private int[] workgroupSizes;
-    @Option(names = { "-g", "--gpus" }, split = ",", required = false, description = "choose and configure GPUs for copmuting")
-    public void gpuConfigs(String[] input) {
-	// TODO
-    }
-
-    
-    
     // for printing the progress in the progress callback
     private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation in the progress callback
@@ -85,65 +62,59 @@ public class CLI implements Runnable {
 	try {
 	    // initialize solver
 	    Solver solver;
-	    if (!executeOnGpu) {
+	    if (!gpu) {
 		CPUSolver cpuSolver = new CPUSolver();
 		// config
 		
-		if(taskFile != null)
-		    cpuSolver.setState(SolverState.load(taskFile.getAbsolutePath()));
+		if(nOrState.state != null)
+		    cpuSolver.setState(nOrState.state);
 		
 		solver = cpuSolver;
+		
 	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
-		// config
 		
-		// print used devices
-		var devices = gpuSolver.getDevicesWithConfig();
-		System.out.println("following GPU's will be used:");
-		System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
-			Arrays.asList(
-				new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.config().index)),
-				new Column().header("Device Name").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()),
-				new Column().header("Weight").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER)
-					.with(device -> Integer
-						.toString(device.config().weight)),
-				new Column().header("Workgroup Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER)
-					.with(device -> Integer.toString(device.config().workgroupSize)),
-				new Column().header("Max Global Work Size").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER)
-					.with(device -> Integer.toString(device.config().maxGlobalWorkSize) + (device.config().maxGlobalWorkSize == 0 ? " (no limit)" : "")))));
-		if(devices.stream().anyMatch(device -> device.vendor().toLowerCase().contains("advanced micro devices"))) {
-		    System.err.println(
-				"warning: you are using one or more AMD GPU's - those are not fully supported by nqueensfaf. \nexpect the program to crash at higher board sizes");
-		}
+		// print available devices
+		var devices = new GPUSolver().getAvailableDevices();
+		System.out.println(
+			AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
+				Arrays.asList(
+					new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
+					new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
+					new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
+					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
+		// let user select devices
+		System.out.println("GPUs that should be used (indexes separated by ','):");
+		Scanner s = new Scanner(System.in);
+		String[] gpuIndexList = s.nextLine().trim().split(",");
 		
-		if(taskFile != null)
-		    gpuSolver.setState(SolverState.load(taskFile.getAbsolutePath()));
+		if(nOrState.state != null)
+		    gpuSolver.setState(nOrState.state);
 		
 		solver = gpuSolver;
 	    }
 
 	    // set callbacks
-	    solver.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
-		    .onUpdate((self, progress, solutions, duration) -> {
-			if (loadingCharIdx == loadingChars.length)
-			    loadingCharIdx = 0;
-			System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
-				getDurationPrettyString(duration));
-		    }).onFinish(self -> {
-			if(self.getUpdateInterval() > 0)
-			    System.out.println();
-			System.out.println("found " + self.getSolutions() + " solutions in "
-				+ getDurationPrettyString(self.getDuration()));
-		    });
+	    solver
+        	    .onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
+        	    .onUpdate((self, progress, solutions, duration) -> {
+        		if (loadingCharIdx == loadingChars.length)
+        		    loadingCharIdx = 0;
+        		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
+        			getDurationPrettyString(duration));
+        	    })
+        	    .onFinish(self -> {
+        		if(self.getUpdateInterval() > 0)
+        		    System.out.println();
+        		System.out.println("found " + self.getSolutions() + " solutions in "
+        			+ getDurationPrettyString(self.getDuration()));
+        	    });
 
 	    // start
-	    if (taskFile == null) {
-		solver.setN(n);
+	    if (nOrState.state == null) {
+		solver.setN(nOrState.n);
 		solver.solve();
 	    }
 
