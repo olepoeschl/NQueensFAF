@@ -71,7 +71,7 @@ public class SolverState {
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 	    return kryo.readObject(input, SolverState.class);
 	} catch (Exception e) {
-	    throw new IOException("could not laod solver state form file: " + e.getMessage());
+	    throw new IOException("could not load solver state from file: " + e.getMessage());
 	}
     }
 }
