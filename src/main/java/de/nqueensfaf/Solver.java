@@ -6,7 +6,7 @@ public abstract class Solver {
     
     private int n;
     private int updateInterval = 128;
-    private volatile Status state = Status.IDLE;
+    private volatile Status status = Status.IDLE;
     private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
     private Consumer<Solver> initCb, finishCb;
@@ -22,11 +22,10 @@ public abstract class Solver {
     public final <T extends Solver> T solve() {
 	preconditions();
 	
-	state = Status.INITIALIZING;
 	if (initCb != null)
 	    initCb.accept(this);
 
-	state = Status.RUNNING;
+	status = Status.RUNNING;
 	if(updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
 	    boolean updateConsumer = false;
 	    if (onUpdateConsumer != null)
@@ -38,11 +37,11 @@ public abstract class Solver {
 	try {
 	    run();
 	} catch (Exception e) {
-	    state = Status.TERMINATING;
+	    status = Status.IDLE;
 	    throw new RuntimeException("error while running solver: " + e.getMessage());
 	}
 
-	state = Status.TERMINATING;
+	status = Status.IDLE;
 	if(updateInterval > 0) {
 	    try {
 		bgThread.join();
@@ -53,7 +52,6 @@ public abstract class Solver {
 	if (finishCb != null)
 	    finishCb.accept(this);
 
-	state = Status.IDLE;
 	return (T) this;
     }
 
@@ -192,23 +190,15 @@ public abstract class Solver {
     }
     
     public final boolean isIdle() {
-	return state == Status.IDLE;
-    }
-
-    public final boolean isInitializing() {
-	return state == Status.INITIALIZING;
+	return status == Status.IDLE;
     }
 
     public final boolean isRunning() {
-	return state == Status.RUNNING;
-    }
-
-    public final boolean isTerminating() {
-	return state == Status.TERMINATING;
+	return status == Status.RUNNING;
     }
     
     private static enum Status {
-	IDLE, INITIALIZING, RUNNING, TERMINATING
+	IDLE, RUNNING
     }
     
     public interface OnUpdateConsumer {
