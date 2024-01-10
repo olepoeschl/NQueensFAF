@@ -26,7 +26,7 @@ public class Demo {
 	GPUSolverNew g = new GPUSolverNew();
 	GPUInfo[] availableGpus = g.getAvailableGpus();
 	for(var gpu : availableGpus) {
-	    g.gpuSelection().add(gpu.id(), 64);
+	    g.gpuSelection().add(gpu.id());
 	}
 	
 //	new GPUSolver()
