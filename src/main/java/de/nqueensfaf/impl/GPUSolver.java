@@ -103,6 +103,7 @@ public class GPUSolver extends Solver {
 		    String msg = String.format("OpenCL error [%d]: failed to build program: %s", error, buildLog);
 		    throw new RuntimeException(msg);
 		}
+		
 		// create kernel
 		long kernel;
 		if (device.vendor.toLowerCase().contains("intel")) {
@@ -117,6 +118,7 @@ public class GPUSolver extends Solver {
 		}
 		checkCLError(errBuf);
 		device.kernel = kernel;
+		
 		// create command queues
 		long xqueue = clCreateCommandQueue(device.context, device.id, CL_QUEUE_PROFILING_ENABLE, errBuf);
 		checkCLError(errBuf);
@@ -125,6 +127,7 @@ public class GPUSolver extends Solver {
 			errBuf);
 		checkCLError(errBuf);
 		device.memqueue = memqueue;
+		
 		// calculate workload size for device
 		int deviceWorkloadSize = (device.config.weight * workloadSize) / weightSum;
 		if (devices.indexOf(device) == devices.size() - 1) {
@@ -578,6 +581,10 @@ public class GPUSolver extends Solver {
 	return presetQueens;
     }
 
+    public void selectGPU(String gpuNameRegex, int workgroupSize) {
+	
+    }
+    
     public void setDeviceConfigs(DeviceConfig... deviceConfigsInput) {
 	devices.clear();
 	weightSum = 0;

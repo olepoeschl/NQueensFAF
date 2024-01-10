@@ -36,16 +36,15 @@ public class CPUSolver extends Solver {
     @Override
     protected void run() {
 	start = System.currentTimeMillis();
-	if (n <= smallestN) { // if n is very small, use the simple Solver from the parent class
+	if (getN() <= smallestN) { // if n is very small, use the simple Solver from the parent class
 	    solutions = solveSmallBoard();
 	    end = System.currentTimeMillis();
 	    progress = 1;
 	    return;
 	}
 
-	if (!loaded) {
-	    constellations = new ConstellationsGenerator(n).generate(presetQueens);
-	}
+	if (!loaded)
+	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 
 	// split starting constellations in [threadcount] lists (splitting the work for
 	// the threads)
@@ -63,7 +62,7 @@ public class CPUSolver extends Solver {
 	// start the threads and wait until they are all finished
 	ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 	for (i = 0; i < threadCount; i++) {
-	    CPUSolverThread cpuSolverThread = new CPUSolverThread(n, threadConstellations.get(i));
+	    CPUSolverThread cpuSolverThread = new CPUSolverThread(getN(), threadConstellations.get(i));
 	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
 	}
@@ -91,7 +90,7 @@ public class CPUSolver extends Solver {
     }
 
     public SolverState getState() {
-	return new SolverState(n, getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
 
     public void setState(SolverState state) {
@@ -136,8 +135,6 @@ public class CPUSolver extends Solver {
     }
     
     public CPUSolver setPresetQueens(int presetQueens) {
-	if (presetQueens < 4)
-	    throw new IllegalArgumentException("invalid value for presetQueens: not a number >= 4");
 	this.presetQueens = presetQueens;
 	return this;
     }

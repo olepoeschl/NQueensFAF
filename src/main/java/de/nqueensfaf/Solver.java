@@ -4,9 +4,8 @@ import java.util.function.Consumer;
 
 public abstract class Solver {
     
-    protected int n;
-    protected int updateInterval = 128;
-    
+    private int n;
+    private int updateInterval = 128;
     private volatile Status state = Status.IDLE;
     private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
