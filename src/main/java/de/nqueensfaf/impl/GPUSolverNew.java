@@ -29,6 +29,7 @@ public class GPUSolverNew extends Solver {
     private GPUSelection gpuSelection;
     private ArrayList<Constellation> constellations;
     private int presetQueens = 6;
+    private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.DYNAMIC;
     
     private long start, duration, storedDuration;
     private boolean stateLoaded;
@@ -127,23 +128,48 @@ public class GPUSolverNew extends Solver {
 	var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		.collect(Collectors.toList());
 	
+	if(gpuSelection.get().size() == 1) {
+	    singleGpu(remainingConstellations);
+	} else {
+	    switch(multiGpuLoadBalancingMode) {
+	    case STATIC:
+		multiGpuStaticLoadBalancing(remainingConstellations);
+		break;
+	    case DYNAMIC:
+		multiGpuDynamicLoadBalancing(remainingConstellations);
+		break;
+	    }
+	}
+	
+	
+	// set duration when solver is finished
+	duration = 1;
+    }
+    
+    private void singleGpu(List<Constellation> remainingConstellations) {
+	
+    }
+    
+    private void multiGpuStaticLoadBalancing(List<Constellation> remainingConstellations) {
+	
+    }
+    
+    private void multiGpuDynamicLoadBalancing(List<Constellation> remainingConstellations) {
 	final int minConstellationsPerIterationPerGpu = 10_000;
 	final int minConstellationsPerIteration = gpuSelection.get().size() * minConstellationsPerIterationPerGpu;
 	int constellationPtr = 0;
-	
+
 	ExecutorService executor = Executors.newFixedThreadPool(gpuSelection.get().size());
 	while(constellationPtr < remainingConstellations.size()) {
 	    int endOfConstellationRange = findNextIjklChangeIndex(remainingConstellations, constellationPtr + minConstellationsPerIteration - 1);
 	    if(endOfConstellationRange == 0) // ijkl does not change anymore from this index on
 		endOfConstellationRange = remainingConstellations.size() - 1; // so solve all remaining constellations
+
 	    var constellationsForIteration = remainingConstellations.subList(constellationPtr, endOfConstellationRange);
-	    
+
+	    // now distribute those constellations to all selected GPUs
+
 	}
-	
-	
-	
-	// set duration when solver is finished
-	duration = 1;
     }
     
     private int findNextIjklChangeIndex(List<Constellation> constellations, int fromIndex) {
@@ -171,6 +197,19 @@ public class GPUSolverNew extends Solver {
     
     public int getPresetQueens() {
 	return presetQueens;
+    }
+    
+    public GPUSolverNew setMultiGpuLoadBalancingMode(MultiGPULoadBalancing mode) {
+	this.multiGpuLoadBalancingMode = mode;
+	return this;
+    }
+    
+    public MultiGPULoadBalancing getMultiGpuLoadBalancingMode() {
+	return multiGpuLoadBalancingMode;
+    }
+    
+    public static enum MultiGPULoadBalancing {
+	STATIC, DYNAMIC
     }
     
     public class GPUSelection {
