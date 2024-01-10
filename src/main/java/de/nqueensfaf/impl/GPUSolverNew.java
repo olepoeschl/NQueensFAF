@@ -159,6 +159,14 @@ public class GPUSolverNew extends Solver {
 	final int minConstellationsPerIteration = gpuSelection.get().size() * minConstellationsPerIterationPerGpu;
 	int constellationPtr = 0;
 
+	// create contexts, compile programs, create kernels
+	// TODO
+	
+	// initialize: distribute gpu weights equally if one or more gpu's weights are set to 0
+	if(gpuSelection.get().stream().anyMatch(gpu -> gpu.weightPercentage == 0f))
+	    for(var gpu : gpuSelection.get())
+		gpu.weightPercentage = 1f / gpuSelection.get().size();
+	
 	ExecutorService executor = Executors.newFixedThreadPool(gpuSelection.get().size());
 	while(constellationPtr < remainingConstellations.size()) {
 	    int endOfConstellationRange = findNextIjklChangeIndex(remainingConstellations, constellationPtr + minConstellationsPerIteration - 1);
@@ -166,9 +174,13 @@ public class GPUSolverNew extends Solver {
 		endOfConstellationRange = remainingConstellations.size() - 1; // so solve all remaining constellations
 
 	    var constellationsForIteration = remainingConstellations.subList(constellationPtr, endOfConstellationRange);
-
+	    
 	    // now distribute those constellations to all selected GPUs
-
+	    gpuSelection.get().parallelStream().forEach(gpu -> {
+		// TODO
+	    });
+	    
+	    // TODO
 	}
     }
     
@@ -220,7 +232,7 @@ public class GPUSolverNew extends Solver {
 	}
 	
 	public void add(long gpuId) {
-	    add(gpuId, 0, 64);
+	    add(gpuId, 0f, 64);
 	}
 	
 	public void add(long gpuId, float weightPercentage, int workgroupSize) {
