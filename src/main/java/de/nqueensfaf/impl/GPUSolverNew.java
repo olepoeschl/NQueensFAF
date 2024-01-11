@@ -162,9 +162,9 @@ public class GPUSolverNew extends Solver {
 	// TODO
 	
 	// initialize: distribute gpu weights equally if one or more gpu's weights are set to 0
-	if(gpuSelection.get().stream().anyMatch(gpu -> gpu.weightPercentage == 0f))
+	if(gpuSelection.get().stream().anyMatch(gpu -> gpu.weight == 0f))
 	    for(var gpu : gpuSelection.get())
-		gpu.weightPercentage = 1f / gpuSelection.get().size();
+		gpu.weight = 1f / gpuSelection.get().size();
 	
 	ExecutorService executor = Executors.newFixedThreadPool(gpuSelection.get().size());
 	while(constellationPtr < remainingConstellations.size()) {
@@ -196,7 +196,7 @@ public class GPUSolverNew extends Solver {
 	gpuSelection = new GPUSelection();
 	constellations = null;
 	start = 0;
-	duration = 0;
+	end = 0;
 	storedDuration = 0;
 	presetQueens = 6;
     }
@@ -236,10 +236,10 @@ public class GPUSolverNew extends Solver {
 	    add(gpuId, 0f, 64);
 	}
 	
-	public void add(long gpuId, float weightPercentage, int workgroupSize) {
+	public void add(long gpuId, float weight, int workgroupSize) {
 	    try {
 		GPU gpu = availableGpus.stream().filter(g -> g.info.id == gpuId).findFirst().get();
-		gpu.weightPercentage = weightPercentage;
+		gpu.weight = weight;
 		gpu.workgroupSize = workgroupSize;
 		selectedGpus.add(gpu);
 	    } catch (NoSuchElementException e) {
@@ -247,7 +247,7 @@ public class GPUSolverNew extends Solver {
 	    }
 	}
 	
-	public ArrayList<GPU> get(){
+	private ArrayList<GPU> get(){
 	    return selectedGpus;
 	}
     }
@@ -255,17 +255,17 @@ public class GPUSolverNew extends Solver {
     public static record GPUInfo(long id, String vendor, String name) {}
     
     private class GPU {
-	GPUInfo info;
-	float weightPercentage;
-	int workgroupSize;
+	private GPUInfo info;
+	private float weight;
+	private int workgroupSize;
 	
 	// related opencl objects
-	long platform, context, program, kernel, xQueue, memQueue;
-	Long constellationsMem, resMem;
-	ByteBuffer resPtr;
-	long xEvent;
+	private long platform, context, program, kernel, xQueue, memQueue;
+	private Long constellationsMem, resMem;
+	private ByteBuffer resPtr;
+	private long xEvent;
 	
-	GPU(){
+	private GPU(){
 	}
     }
 
