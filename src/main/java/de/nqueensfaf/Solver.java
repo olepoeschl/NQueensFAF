@@ -25,7 +25,6 @@ public abstract class Solver {
 	if (initCb != null)
 	    initCb.accept(this);
 
-	status = Status.RUNNING;
 	if(updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
 	    boolean updateConsumer = false;
 	    if (onUpdateConsumer != null)
@@ -33,15 +32,16 @@ public abstract class Solver {
 	    bgThread = backgroundThread(updateConsumer);
 	    bgThread.start();
 	}
-	
+  
+	status = Status.RUNNING;
 	try {
 	    run();
 	} catch (Exception e) {
-	    status = Status.IDLE;
 	    throw new RuntimeException("error while running solver: " + e.getMessage());
+	} finally {
+	  status = Status.IDLE;
 	}
-
-	status = Status.IDLE;
+	
 	if(updateInterval > 0) {
 	    try {
 		bgThread.join();
