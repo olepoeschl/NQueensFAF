@@ -75,18 +75,14 @@ public abstract class Solver {
     }
     
     private void preconditions() {
-	if (n == 0) {
-	    state = Status.IDLE;
+	if (n == 0)
 	    throw new IllegalStateException("starting conditions not fullfilled: board size was not set");
-	}
-	if (!isIdle()) {
-	    state = Status.IDLE;
+	
+	if (!isIdle())
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already started");
-	}
-	if (getProgress() == 1.0f) {
-	    state = Status.IDLE;
+	
+	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
-	}
     }
 
     private Thread backgroundThread(boolean updateConsumer) {
