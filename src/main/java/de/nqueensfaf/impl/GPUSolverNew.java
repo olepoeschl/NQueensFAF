@@ -29,9 +29,9 @@ public class GPUSolverNew extends Solver {
     private GPUSelection gpuSelection;
     private ArrayList<Constellation> constellations;
     private int presetQueens = 6;
-    private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.DYNAMIC;
+    private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.STATIC;
     
-    private long start, duration, storedDuration;
+    private long start, end, storedDuration;
     private boolean stateLoaded;
     
     public GPUSolverNew() {
@@ -94,7 +94,7 @@ public class GPUSolverNew extends Solver {
 	if (isRunning() && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
-	return duration;
+	return end - start;
     }
 
     @Override
@@ -115,7 +115,7 @@ public class GPUSolverNew extends Solver {
 	    start = System.currentTimeMillis();
 	    constellations.add(new Constellation());
 	    constellations.get(0).setSolutions(solveSmallBoard());
-	    duration = System.currentTimeMillis() - start;
+	    end = System.currentTimeMillis();
 	    return;
 	}
 
@@ -128,6 +128,7 @@ public class GPUSolverNew extends Solver {
 	var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		.collect(Collectors.toList());
 	
+	start = System.currentTimeMillis();
 	if(gpuSelection.get().size() == 1) {
 	    singleGpu(remainingConstellations);
 	} else {
@@ -141,9 +142,7 @@ public class GPUSolverNew extends Solver {
 	    }
 	}
 	
-	
-	// set duration when solver is finished
-	duration = 1;
+	end = System.currentTimeMillis();
     }
     
     private void singleGpu(List<Constellation> remainingConstellations) {
@@ -212,6 +211,8 @@ public class GPUSolverNew extends Solver {
     }
     
     public GPUSolverNew setMultiGpuLoadBalancingMode(MultiGPULoadBalancing mode) {
+	if(mode == MultiGPULoadBalancing.DYNAMIC)
+	    throw new IllegalStateException("could not apply dynamic multi gpu load balancing: not implemented yet");
 	this.multiGpuLoadBalancingMode = mode;
 	return this;
     }
