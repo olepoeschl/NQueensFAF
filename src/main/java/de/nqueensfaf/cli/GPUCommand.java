@@ -8,7 +8,6 @@ import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.impl.GPUSolver;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
@@ -20,13 +19,13 @@ public class GPUCommand implements Runnable {
 
     public GPUCommand() {}
 
-    @Option(names = { "-p", "--preset-queens" }, required = false, description = "how many queens should be placed as starting positions")
+    @Option(names = { "-p", "--preset-queens" }, required = false, description = "How many queens should be placed for a start positions")
     int presetQueens;
 
     @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, description = "GPUs that should be used and their workgroup sizes")
     GPU[] gpus;
 
-    @Option(names = { "-l", "--list-gpus" }, required = false, description = "print a list of all available GPUs")
+    @Option(names = { "-l", "--list-gpus" }, required = false, description = "Print a list of all available GPUs")
     boolean printGpuList;
     
     @Override
@@ -48,7 +47,7 @@ public class GPUCommand implements Runnable {
 	// TODO: create and execute solver
     }
 
-    public class GPU {
+    static class GPU {
 	
 	public GPU() {}
 	
@@ -58,27 +57,5 @@ public class GPUCommand implements Runnable {
 	int workgroupSize;
     }
 
-    public class GPUConverter implements ITypeConverter<GPU> {
-	@Override
-	public GPU convert(String input) throws Exception {
-	    String[] props = input.split(input);
-
-	    GPU gpu = new GPU();
-
-	    for(var prop : props) {
-		var key = prop.substring(0, 2);
-		var value = prop.substring(2);
-
-		switch(key) {
-		case GPU.workgroupSizeKey:
-		    gpu.workgroupSize = Integer.parseInt(value);
-		    break;
-		default: // GPU name has no key
-		    gpu.nameContains = prop;
-		}
-	    }
-
-	    return gpu;
-	}
-    }
+    
 }

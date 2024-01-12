@@ -12,10 +12,10 @@ public class CPUCommand implements Runnable {
     
     public CPUCommand() {}
 
-    @Option(names = { "-p", "--preset-queens" }, required = false, description = "how many queens should be placed as starting positions")
+    @Option(names = { "-p", "--preset-queens" }, required = false, description = "How many queens should be placed for a start constellation")
     int presetQueens;
 
-    @Option(names = { "-t", "--threads" }, required = false, description = "how many CPU threads should be used")
+    @Option(names = { "-t", "--threads" }, required = false, description = "How many CPU threads should be used")
     int threads;
 
     @Override

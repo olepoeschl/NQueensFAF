@@ -20,12 +20,12 @@ public class BaseCommand {
     @ArgGroup(exclusive = true, multiplicity = "1")
     NOrState nOrState;
 
-    class NOrState {
-	@Parameters(description = "size of the chess board")
+    static class NOrState {
+	@Parameters(description = "Size of the chess board")
 	int n;
 
 	SolverState state;
-	@Parameters(description = "path to the solver state file")
+	@Parameters(description = "Path to the solver state file")
 	public void pathToSolverStateFile(String input) {
 	    try {
 		state = SolverState.load(input);
@@ -39,7 +39,7 @@ public class BaseCommand {
     int updateInterval;
 
     @Option(names = { "-s", "--auto-save" }, required = false, 
-	    description = "how much progress should be made each time until the solver state is saved into a file")
+	    description = "How much progress should be made each time until the solver state is saved into a file")
     int autoSavePercentageStep;
 
     // for printing the progress in the progress callback
