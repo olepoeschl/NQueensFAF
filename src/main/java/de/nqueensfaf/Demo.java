@@ -1,8 +1,8 @@
 package de.nqueensfaf;
 
 import de.nqueensfaf.impl.CPUSolver;
-import de.nqueensfaf.impl.GPUSolverNew;
-import de.nqueensfaf.impl.GPUSolverNew.GPUInfo;
+import de.nqueensfaf.impl.GPUSolver;
+import de.nqueensfaf.impl.GPUSolver.GPUInfo;
 
 public class Demo {
 
@@ -23,7 +23,7 @@ public class Demo {
     }
     
     static void gpu() {
-	GPUSolverNew g = new GPUSolverNew();
+	GPUSolver g = new GPUSolver();
 	GPUInfo[] availableGpus = g.getAvailableGpus();
 	for(var gpu : availableGpus) {
 	    if(gpu.vendor().toLowerCase().contains("nvidia")) {

@@ -2,7 +2,6 @@ package de.nqueensfaf.cli;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Scanner;
 
 import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
@@ -51,6 +50,17 @@ public class CLI implements Runnable {
     @Option(names = { "-u", "--update-interval" }, required = false, description = "delay between progress updates")
     private int updateInterval;
 
+    @Option(names = { "-s", "--auto-save" }, required = false, 
+	    description = "how much progress should be made each time until the solver state is saved into a file")
+    private int autoSavePercentageStep;
+
+
+    @Option(names = { "-l", "--list-gpus" }, required = false, description = "print a list of all available GPUs")
+    boolean printGpuList;
+
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    private SolverCommand solverCommand;
+    
     // for printing the progress in the progress callback
     private final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation in the progress callback
@@ -59,6 +69,20 @@ public class CLI implements Runnable {
 
     @Override
     public void run() {
+	if(printGpuList) {
+	    var gpus = Arrays.asList(new GPUSolver().getAvailableGpus());
+	    System.out.println(
+		    AsciiTable.getTable(AsciiTable.BASIC_ASCII, gpus,
+			    Arrays.asList(
+				    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
+				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.vendor()),
+				    new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
+				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.name()))));
+	    return;
+	}
+
+
+
 	try {
 	    // initialize solver
 	    Solver solver;
@@ -74,22 +98,6 @@ public class CLI implements Runnable {
 	    } else {
 		GPUSolver gpuSolver = new GPUSolver();
 		
-		// print available devices
-		var devices = new GPUSolver().getAvailableDevices();
-		System.out.println(
-			AsciiTable.getTable(AsciiTable.BASIC_ASCII, devices,
-				Arrays.asList(
-					new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> Integer.toString(device.index())),
-					new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> device.vendor()),
-					new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
-					.dataAlign(HorizontalAlign.CENTER).with(device -> device.name()))));
-		// let user select devices
-		System.out.println("GPUs that should be used (indexes separated by ','):");
-		Scanner s = new Scanner(System.in);
-		String[] gpuIndexList = s.nextLine().trim().split(",");
-		
 		if(nOrState.state != null)
 		    gpuSolver.setState(nOrState.state);
 		
@@ -97,8 +105,7 @@ public class CLI implements Runnable {
 	    }
 
 	    // set callbacks
-	    solver
-        	    .onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
+	    solver.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
         	    .onUpdate((self, progress, solutions, duration) -> {
         		if (loadingCharIdx == loadingChars.length)
         		    loadingCharIdx = 0;
@@ -112,11 +119,7 @@ public class CLI implements Runnable {
         			+ getDurationPrettyString(self.getDuration()));
         	    });
 
-	    // start
-	    if (nOrState.state == null) {
-		solver.setN(nOrState.n);
-		solver.solve();
-	    }
+	    // TODO: start solver, with state or with board size
 
 	    // calculate unique solutions
 	    SymSolver symSolver = new SymSolver();
@@ -125,14 +128,6 @@ public class CLI implements Runnable {
 	    symSolver.setN(solver.getN());
 	    symSolver.solve();
 	    
-	    // TODO: Log debug info if the user wishes so
-	    /*
-	     * var solPerIjkl = getSolutionsPerIjkl();
-	     * for (var key : solPerIjkl.keySet()) {
-	     *     System.out.printf("%d,%d,%d,%d: %d solutions\n", utils.geti(key),
-	     *         utils.getj(key), utils.getk(key), utils.getl(key), solPerIjkl.get(key));
-	     * }
-	     */
 	} catch (Exception e) {
 	    System.err.println("could not create or execute solver: " + e.getMessage());
 	}
