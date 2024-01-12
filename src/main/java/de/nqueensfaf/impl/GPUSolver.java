@@ -46,13 +46,13 @@ import static org.lwjgl.opencl.CL10.clReleaseProgram;
 import static org.lwjgl.opencl.CL10.clSetKernelArg;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -243,10 +243,9 @@ public class GPUSolver extends Solver implements Stateful {
 		// create program
 		long program;
 		try {
-		    program = clCreateProgramWithSource(context, Files.readString(
-			    Path.of(getClass().getClassLoader().getResource("kernels.c").toURI())), errBuf);
+		    program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
 		    checkCLError(errBuf);
-		} catch (IOException | URISyntaxException e) {
+		} catch (IOException e) {
 		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage());
 		}
 		
@@ -478,6 +477,23 @@ public class GPUSolver extends Solver implements Stateful {
     }
     
     // utils
+    private String readKernelSource(String filepath) throws IOException {
+	String resultString = null;
+	try (InputStream clSourceFile = GPUSolverOld.class.getClassLoader().getResourceAsStream(filepath);
+		BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
+	    String line = null;
+	    StringBuilder result = new StringBuilder();
+	    while ((line = br.readLine()) != null) {
+		result.append(line);
+		result.append("\n");
+	    }
+	    resultString = result.toString();
+	} catch (IOException e) {
+	    throw new IOException("could not read kernel source file: " + e.getMessage()); // should not happen
+	}
+	return resultString;
+    }
+    
     private int findNextIjklChangeIndex(List<Constellation> constellations, int fromIndex) {
 	int currentIjkl = constellations.get(fromIndex).extractIjkl();
 	for(int i = fromIndex; i < constellations.size(); i++) {
