@@ -186,9 +186,9 @@ public class GPUSolverNew extends Solver {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 	
-	// sort selected GPUs by descending weight (the ones with higher weight come first)
+	// sort selected GPUs by descending benchmark (the ones with higher scores come first)
 	Collections.sort(gpuSelection.get(), (g1, g2) -> {
-	    return Integer.compare(g2.weight, g1.weight);
+	    return Integer.compare(g2.benchmark, g1.benchmark);
 	});
 	
 	if(!stateLoaded)
@@ -423,13 +423,13 @@ public class GPUSolverNew extends Solver {
     }
 
     private void multiGpuStaticLoadBalancing(List<Constellation> constellations) {
-	int weightSum = gpuSelection.get().stream().map(gpu -> gpu.weight()).reduce(0, (wAcc, weight) -> wAcc + weight);
+	int benchmarkSum = gpuSelection.get().stream().map(gpu -> gpu.benchmark()).reduce(0, (wAcc, benchmark) -> wAcc + benchmark);
 	int fromIndex = 0;
 	HashMap<GPU, List<Constellation>> gpuConstellations = new HashMap<GPU, List<Constellation>>();
 	var iterator = gpuSelection.get().iterator();
 	while(iterator.hasNext()) {
 	    var gpu = iterator.next();
-	    int toIndex = fromIndex + (gpu.weight * constellations.size()) / weightSum;
+	    int toIndex = fromIndex + (gpu.benchmark * constellations.size()) / benchmarkSum;
 	    if(toIndex < constellations.size() && iterator.hasNext())
 		toIndex = findNextIjklChangeIndex(constellations, toIndex);
 	    else
@@ -452,9 +452,9 @@ public class GPUSolverNew extends Solver {
 	 * 
 	 * // create contexts, compile programs, create kernels // TODO
 	 * 
-	 * // initialize: distribute gpu weights equally if one or more gpu's weights
-	 * are set to 0 if(gpuSelection.get().stream().anyMatch(gpu -> gpu.weight ==
-	 * 0f)) for(var gpu : gpuSelection.get()) gpu.weight = 1f /
+	 * // initialize: distribute gpu benchmarks equally if one or more gpu's benchmarks
+	 * are set to 0 if(gpuSelection.get().stream().anyMatch(gpu -> gpu.benchmark ==
+	 * 0f)) for(var gpu : gpuSelection.get()) gpu.benchmark = 1f /
 	 * gpuSelection.get().size();
 	 * 
 	 * ExecutorService executor =
@@ -561,10 +561,10 @@ public class GPUSolverNew extends Solver {
 	    add(gpuId, 0, 64);
 	}
 	
-	public void add(long gpuId, int weight, int workgroupSize) {
+	public void add(long gpuId, int benchmark, int workgroupSize) {
 	    try {
 		GPU gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
-		gpu.weight = weight;
+		gpu.benchmark = benchmark;
 		gpu.workgroupSize = workgroupSize;
 		selectedGpus.add(gpu);
 	    } catch (NoSuchElementException e) {
@@ -581,7 +581,7 @@ public class GPUSolverNew extends Solver {
     
     private class GPU {
 	private GPUInfo info;
-	private int weight;
+	private int benchmark;
 	private int workgroupSize;
 	
 	// measured kernel duration
@@ -593,8 +593,8 @@ public class GPUSolverNew extends Solver {
 	private GPU(){
 	}
 	
-	private int weight() {
-	    return weight;
+	private int benchmark() {
+	    return benchmark;
 	}
 	
 	private long platform() {
