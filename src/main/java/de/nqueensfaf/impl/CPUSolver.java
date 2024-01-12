@@ -18,32 +18,67 @@ public class CPUSolver extends Solver {
     // smallestN marks the border, when to use this simpler solver
     private static final int smallestN = 6;
 
-    private long start, end;
-    private ArrayList<Constellation> constellations;
-    private ArrayList<CPUSolverThread> threads;
+    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations;
-    private long solutions, duration, storedDuration;
-    private float progress;
-    private boolean loaded;
+    private long start, duration, storedDuration;
+    private boolean stateLoaded;
     private int presetQueens = 5, threadCount = 1;
 
-    public CPUSolver() {
-	constellations = new ArrayList<Constellation>();
-	threads = new ArrayList<CPUSolverThread>();
-	loaded = false;
+    public SolverState getState() {
+	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+    }
+
+    public void setState(SolverState state) {
+	setN(state.getN());
+	storedDuration = state.getStoredDuration();
+	constellations = state.getConstellations();
+	stateLoaded = true;
+    }
+
+    @Override
+    public long getDuration() {
+	if (isRunning()) {
+	    return System.currentTimeMillis() - start + storedDuration;
+	}
+	return duration;
+    }
+
+    @Override
+    public float getProgress() {
+	if(constellations.size() == 0)
+	    return 0;
+	
+	int solvedConstellations = 0;
+	for (var c : constellations) {
+	    if (c.extractStart() == 69) // start=69 is for pseudo constellations
+		continue;
+	    if (c.getSolutions() >= 0) {
+		solvedConstellations++;
+	    }
+	}
+	return (float) solvedConstellations / constellations.size();
+    }
+
+    @Override
+    public long getSolutions() {
+	if(constellations.size() == 0)
+	    return 0;
+	
+	return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions())
+		.reduce(0l, (cAcc, c) -> cAcc + c);
     }
 
     @Override
     protected void run() {
 	start = System.currentTimeMillis();
 	if (getN() <= smallestN) { // if n is very small, use the simple Solver from the parent class
-	    solutions = solveSmallBoard();
-	    end = System.currentTimeMillis();
-	    progress = 1;
+	    int solutions = solveSmallBoard();
+	    duration = System.currentTimeMillis() - start;
+	    constellations.add(new Constellation(0, 0, 0, 0, 0, solutions));
 	    return;
 	}
 
-	if (!loaded)
+	if (!stateLoaded)
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 
 	// split starting constellations in [threadcount] lists (splitting the work for
@@ -63,7 +98,6 @@ public class CPUSolver extends Solver {
 	ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 	for (i = 0; i < threadCount; i++) {
 	    CPUSolverThread cpuSolverThread = new CPUSolverThread(getN(), threadConstellations.get(i));
-	    threads.add(cpuSolverThread);
 	    executor.submit(cpuSolverThread);
 	}
 
@@ -72,68 +106,15 @@ public class CPUSolver extends Solver {
 	try {
 	    if (executor.awaitTermination(365, TimeUnit.DAYS)) {
 		// finished
-		end = System.currentTimeMillis();
-		duration = end - start + storedDuration;
-		int solvedConstellations = 0;
-		for (var c : constellations) {
-		    if (c.getSolutions() >= 0) {
-			solutions += c.getSolutions();
-			solvedConstellations++;
-		    }
-		}
-		progress = (float) solvedConstellations / constellations.size();
+		duration = System.currentTimeMillis() - start + storedDuration;
 	    }
 	} catch (InterruptedException e) {
 	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage());
 	}
-	loaded = false;
-    }
-
-    public SolverState getState() {
-	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
-    }
-
-    public void setState(SolverState state) {
-	setN(state.getN());
-	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
-	loaded = true;
-    }
-
-    @Override
-    public long getDuration() {
-	if (isRunning()) {
-	    return System.currentTimeMillis() - start + storedDuration;
-	}
-	return duration;
-    }
-
-    @Override
-    public float getProgress() {
-	if (isRunning()) {
-	    int solvedConstellations = 0;
-	    for (var c : constellations) {
-		if (c.getSolutions() >= 0)
-		    solvedConstellations++;
-	    }
-	    return constellations.size() > 0 ? (float) solvedConstellations / constellations.size() : 0f;
-	}
-	return progress;
-    }
-
-    @Override
-    public long getSolutions() {
-	if (isRunning()) {
-	    long tmpSolutions = 0;
-	    for (var c : constellations) {
-		if (c.getSolutions() >= 0)
-		    tmpSolutions += c.getSolutions();
-	    }
-	    return tmpSolutions;
-	}
-	return solutions;
+	stateLoaded = false;
     }
     
+    // setters and getters
     public CPUSolver setPresetQueens(int presetQueens) {
 	this.presetQueens = presetQueens;
 	return this;

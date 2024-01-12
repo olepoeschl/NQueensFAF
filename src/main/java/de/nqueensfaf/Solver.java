@@ -38,9 +38,8 @@ public abstract class Solver {
 	    run();
 	} catch (Exception e) {
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
-	} finally {
-	  status = Status.IDLE;
 	}
+	status = Status.FINISHED;
 	
 	if(updateInterval > 0) {
 	    try {
@@ -79,7 +78,7 @@ public abstract class Solver {
 	    throw new IllegalStateException("starting conditions not fullfilled: board size was not set");
 	
 	if (!isIdle())
-	    throw new IllegalStateException("starting conditions not fullfilled: solver is already started");
+	    throw new IllegalStateException("starting conditions not fullfilled: solver was already started");
 	
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
@@ -192,9 +191,13 @@ public abstract class Solver {
     public final boolean isRunning() {
 	return status == Status.RUNNING;
     }
+
+    public final boolean isFinished() {
+	return status == Status.FINISHED;
+    }
     
     private static enum Status {
-	IDLE, RUNNING
+	IDLE, RUNNING, FINISHED
     }
     
     public interface OnUpdateConsumer {

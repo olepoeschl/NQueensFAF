@@ -7,14 +7,14 @@ import de.nqueensfaf.impl.GPUSolverNew.GPUInfo;
 public class Demo {
 
     public static void main(String[] args) {
-	gpu();
+	cpu();
     }
     
     static void cpu() {
 	new CPUSolver()
         	.setPresetQueens(5)
         	.setThreadCount(1)
-        	.setUpdateInterval(700)
+        	.setUpdateInterval(800)
         	.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
         	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))

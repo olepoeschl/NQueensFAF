@@ -70,9 +70,9 @@ import de.nqueensfaf.Solver;
 
 public class GPUSolverNew extends Solver {
 
-    private ArrayList<GPU> availableGpus;
-    private GPUSelection gpuSelection;
-    private ArrayList<Constellation> constellations;
+    private ArrayList<GPU> availableGpus = new ArrayList<GPU>();
+    private GPUSelection gpuSelection = new GPUSelection();
+    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
     private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.STATIC;
     
@@ -80,15 +80,54 @@ public class GPUSolverNew extends Solver {
     private boolean stateLoaded;
     
     public GPUSolverNew() {
-	availableGpus = new ArrayList<GPU>();
-	
 	fetchAvailableGpus();
-	gpuSelection = new GPUSelection();
     }
     
-    private void fetchAvailableGpus() {
-	availableGpus.clear();
+    public SolverState getState() {
+	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+    }
+
+    public void setState(SolverState state) {
+	setN(state.getN());
+	storedDuration = state.getStoredDuration();
+	constellations = state.getConstellations();
+	stateLoaded = true;
+    }
+    
+    @Override
+    public long getDuration() {
+	if (isRunning() && start != 0) {
+	    return System.currentTimeMillis() - start + storedDuration;
+	}
+	return duration;
+    }
+
+    @Override
+    public float getProgress() {
+	if(constellations.size() == 0)
+	    return 0;
 	
+	int solvedConstellations = 0;
+	for (var c : constellations) {
+	    if (c.extractStart() == 69) // start=69 is for pseudo constellations
+		continue;
+	    if (c.getSolutions() >= 0) {
+		solvedConstellations++;
+	    }
+	}
+	return (float) solvedConstellations / constellations.size();
+    }
+
+    @Override
+    public long getSolutions() {
+	if(constellations.size() == 0)
+	    return 0;
+	
+	return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions())
+		.reduce(0l, (cAcc, c) -> cAcc + c);
+    }
+
+    private void fetchAvailableGpus() {
 	try (MemoryStack stack = MemoryStack.stackPush()) {
 	    IntBuffer clCountBuf = stack.mallocInt(1);
 	    checkCLError(clGetPlatformIDs(null, clCountBuf));
@@ -132,46 +171,6 @@ public class GPUSolverNew extends Solver {
 
     public GPUSelection gpuSelection() {
 	return gpuSelection;
-    }
-
-    public void reset() {
-	gpuSelection = new GPUSelection();
-	constellations = null;
-	start = 0;
-	duration = 0;
-	storedDuration = 0;
-	presetQueens = 6;
-    }
-    
-    @Override
-    public long getDuration() {
-	if (isRunning() && start != 0) {
-	    return System.currentTimeMillis() - start + storedDuration;
-	}
-	return duration;
-    }
-
-    @Override
-    public float getProgress() {
-	if(constellations == null)
-	    return 0;
-	int solvedConstellations = 0;
-	for (var c : constellations) {
-	    if (c.extractStart() == 69) // start=69 is for pseudo constellations
-		continue;
-	    if (c.getSolutions() >= 0) {
-		solvedConstellations++;
-	    }
-	}
-	return (float) solvedConstellations / constellations.size();
-    }
-
-    @Override
-    public long getSolutions() {
-	if(constellations == null)
-	    return 0;
-	return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions())
-		.reduce(0l, (cAcc, c) -> cAcc + c);
     }
 
     @Override

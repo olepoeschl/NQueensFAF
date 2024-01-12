@@ -67,6 +67,52 @@ public class GPUSolver extends Solver {
 	}
     }
 
+    public SolverState getState() {
+	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+    }
+
+    public void setState(SolverState state) {
+	setN(state.getN());
+	storedDuration = state.getStoredDuration();
+	constellations = state.getConstellations();
+	loaded = true;
+    }
+
+    @Override
+    public long getDuration() {
+	if (duration == 0)
+	    if (isRunning() && start != 0) {
+		return System.currentTimeMillis() - start + storedDuration;
+	    }
+	return duration;
+    }
+
+    @Override
+    public float getProgress() {
+	int solvedConstellations = 0;
+	for (var c : constellations) {
+	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
+		continue;
+	    if (c.getSolutions() >= 0) {
+		solvedConstellations++;
+	    }
+	}
+	return constellations.size() > 0 ? (float) solvedConstellations / constellations.size() : 0f;
+    }
+
+    @Override
+    public long getSolutions() {
+	long tmpSolutions = 0;
+	for (var c : constellations) {
+	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
+		continue;
+	    if (c.getSolutions() >= 0) {
+		tmpSolutions += c.getSolutions();
+	    }
+	}
+	return tmpSolutions;
+    }
+
     @Override
     protected void run() {
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
@@ -455,53 +501,7 @@ public class GPUSolver extends Solver {
 	checkCLError(clReleaseProgram(device.program));
 	checkCLError(clReleaseDevice(device.id));
     }
-
-    public SolverState getState() {
-	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
-    }
-
-    public void setState(SolverState state) {
-	setN(state.getN());
-	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
-	loaded = true;
-    }
-
-    @Override
-    public long getDuration() {
-	if (duration == 0)
-	    if (isRunning() && start != 0) {
-		return System.currentTimeMillis() - start + storedDuration;
-	    }
-	return duration;
-    }
-
-    @Override
-    public float getProgress() {
-	int solvedConstellations = 0;
-	for (var c : constellations) {
-	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
-		continue;
-	    if (c.getSolutions() >= 0) {
-		solvedConstellations++;
-	    }
-	}
-	return constellations.size() > 0 ? (float) solvedConstellations / constellations.size() : 0f;
-    }
-
-    @Override
-    public long getSolutions() {
-	long tmpSolutions = 0;
-	for (var c : constellations) {
-	    if (c.getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
-		continue;
-	    if (c.getSolutions() >= 0) {
-		tmpSolutions += c.getSolutions();
-	    }
-	}
-	return tmpSolutions;
-    }
-
+    
     public long getDurationOfDevice(int deviceIndex) {
 	if (deviceIndex < 0 || deviceIndex >= availableDevices.size())
 	    throw new IllegalArgumentException("invalid device index: must be a number >=0 and <"
