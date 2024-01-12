@@ -12,11 +12,11 @@ import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
-@Command(name = "gpu")
+@Command(name = "gpu", description = "use one or more GPUs")
 public class GPUCommand implements Runnable {
     
     @ParentCommand
-    private BaseCommand cli;
+    BaseCommand cli;
 
     public GPUCommand() {}
 
@@ -50,9 +50,7 @@ public class GPUCommand implements Runnable {
 
     public class GPU {
 	
-	public GPU() {
-	    super();
-	}
+	public GPU() {}
 	
 	static final String workgroupSizeKey = "wg";
 
@@ -61,11 +59,6 @@ public class GPUCommand implements Runnable {
     }
 
     public class GPUConverter implements ITypeConverter<GPU> {
-	
-	public GPUConverter() {
-	    super();
-	}
-	
 	@Override
 	public GPU convert(String input) throws Exception {
 	    String[] props = input.split(input);

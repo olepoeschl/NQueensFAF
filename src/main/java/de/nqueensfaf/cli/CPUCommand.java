@@ -4,11 +4,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
-@Command(name = "cpu")
+@Command(name = "cpu", description = "use CPU")
 public class CPUCommand implements Runnable {
     
     @ParentCommand
-    private BaseCommand cli;
+    BaseCommand cli;
     
     public CPUCommand() {}
 

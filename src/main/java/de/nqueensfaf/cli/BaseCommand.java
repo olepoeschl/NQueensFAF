@@ -13,14 +13,14 @@ import picocli.CommandLine.TypeConversionException;
 
 @Command(name = "nqueensfaf", mixinStandardHelpOptions = true, subcommands = {CPUCommand.class, GPUCommand.class})
 public class BaseCommand {
-
+    
     @Spec
     CommandSpec spec;
     
     @ArgGroup(exclusive = true, multiplicity = "1")
     NOrState nOrState;
 
-    static class NOrState {
+    class NOrState {
 	@Parameters(description = "size of the chess board")
 	int n;
 
@@ -48,7 +48,9 @@ public class BaseCommand {
     static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
     
     char loadingCharIdx = 0;
-
+    
+    public BaseCommand() {}
+    
     public void run() {
 //	try {
 //	    // set callbacks
