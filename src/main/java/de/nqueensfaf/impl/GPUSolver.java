@@ -68,7 +68,7 @@ import org.lwjgl.system.MemoryStack;
 
 import de.nqueensfaf.Solver;
 
-public class GPUSolver extends Solver {
+public class GPUSolver extends Solver implements Stateful {
 
     private ArrayList<GPU> availableGpus = new ArrayList<GPU>();
     private GPUSelection gpuSelection = new GPUSelection();
@@ -83,14 +83,16 @@ public class GPUSolver extends Solver {
 	fetchAvailableGpus();
     }
     
+    @Override
     public SolverState getState() {
-	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), List.copyOf(constellations));
     }
 
+    @Override
     public void setState(SolverState state) {
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
+	constellations = new ArrayList<Constellation>(state.getConstellations());
 	stateLoaded = true;
     }
     
@@ -162,10 +164,10 @@ public class GPUSolver extends Solver {
 	}
     }
     
-    public GPUInfo[] getAvailableGpus() {
-	GPUInfo[] infos = new GPUInfo[availableGpus.size()];
+    public List<GPUInfo> getAvailableGpus() {
+	ArrayList<GPUInfo> infos = new ArrayList<GPUInfo>(availableGpus.size());
 	for(int i = 0; i < availableGpus.size(); i++)
-	    infos[i] = availableGpus.get(i).info;
+	    infos.add(availableGpus.get(i).info);
 	return infos;
     }
 

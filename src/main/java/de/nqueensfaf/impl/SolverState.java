@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -22,13 +23,13 @@ public class SolverState {
     
     private int N;
     private long storedDuration;
-    private ArrayList<Constellation> constellations;
+    private List<Constellation> constellations;
 
     public SolverState() {
 	super();
     }
 
-    public SolverState(int n, long storedDuration, ArrayList<Constellation> constellations) {
+    public SolverState(int n, long storedDuration, List<Constellation> constellations) {
 	N = n;
 	this.storedDuration = storedDuration;
 	this.constellations = constellations;
@@ -50,11 +51,11 @@ public class SolverState {
 	this.storedDuration = storedDuration;
     }
 
-    public ArrayList<Constellation> getConstellations() {
+    public List<Constellation> getConstellations() {
 	return constellations;
     }
 
-    public void setConstellations(ArrayList<Constellation> constellations) {
+    public void setConstellations(List<Constellation> constellations) {
 	this.constellations = constellations;
     }
     

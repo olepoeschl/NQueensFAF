@@ -10,13 +10,7 @@ import java.util.stream.Collectors;
 
 import de.nqueensfaf.Solver;
 
-public class CPUSolver extends Solver {
-
-    // for very small n it is overkill to use this method
-    // thus we use a straightforward recursive implementation of Jeff Somers Bit
-    // method for such n
-    // smallestN marks the border, when to use this simpler solver
-    private static final int smallestN = 6;
+public class CPUSolver extends Solver implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations;
@@ -24,14 +18,16 @@ public class CPUSolver extends Solver {
     private boolean stateLoaded;
     private int presetQueens = 5, threadCount = 1;
 
+    @Override
     public SolverState getState() {
 	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
 
+    @Override
     public void setState(SolverState state) {
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
+	constellations = new ArrayList<Constellation>(state.getConstellations());
 	stateLoaded = true;
     }
 
@@ -71,7 +67,7 @@ public class CPUSolver extends Solver {
     @Override
     protected void run() {
 	start = System.currentTimeMillis();
-	if (getN() <= smallestN) { // if n is very small, use the simple Solver from the parent class
+	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    int solutions = solveSmallBoard();
 	    duration = System.currentTimeMillis() - start;
 	    constellations.add(new Constellation(0, 0, 0, 0, 0, solutions));

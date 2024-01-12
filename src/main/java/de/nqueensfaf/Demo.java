@@ -1,5 +1,7 @@
 package de.nqueensfaf;
 
+import java.util.List;
+
 import de.nqueensfaf.impl.CPUSolver;
 import de.nqueensfaf.impl.GPUSolver;
 import de.nqueensfaf.impl.GPUSolver.GPUInfo;
@@ -24,7 +26,7 @@ public class Demo {
     
     static void gpu() {
 	GPUSolver g = new GPUSolver();
-	GPUInfo[] availableGpus = g.getAvailableGpus();
+	List<GPUInfo> availableGpus = g.getAvailableGpus();
 	for(var gpu : availableGpus) {
 	    if(gpu.vendor().toLowerCase().contains("nvidia")) {
 		g.gpuSelection().add(gpu.id(), 50, 64);

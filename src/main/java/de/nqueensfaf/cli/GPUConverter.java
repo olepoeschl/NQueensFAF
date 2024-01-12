@@ -11,6 +11,11 @@ public class GPUConverter implements ITypeConverter<GPU> {
 	GPU gpu = new GPU();
 
 	for(var prop : props) {
+	    if(prop.length() < 3) {
+		gpu.nameContains = prop;
+		continue;
+	    }
+	    
 	    var key = prop.substring(0, 2);
 	    var value = prop.substring(2);
 

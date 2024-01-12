@@ -1,8 +1,12 @@
 package de.nqueensfaf.cli;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
+import de.nqueensfaf.Solver;
+import de.nqueensfaf.Solver.OnUpdateConsumer;
 import de.nqueensfaf.impl.SolverState;
+import de.nqueensfaf.impl.Stateful;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -40,34 +44,73 @@ public class BaseCommand {
 
     @Option(names = { "-s", "--auto-save" }, required = false, 
 	    description = "How much progress should be made each time until the solver state is saved into a file")
-    int autoSavePercentageStep;
+    float autoSaveProgressStep;
 
-    // for printing the progress in the progress callback
+    // define solver callbacks
+    // for printing the progress
     static final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
-    // for showing the loading animation in the progress callback
+    // for showing the loading animation
     static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
+
+    static final Consumer<Solver> onInit = (solver) -> {
+	System.out.println("starting solver for board size " + solver.getN() + "...");
+    };
     
+    static final Consumer<Solver> onFinish = (solver) -> {
+	if(solver.getUpdateInterval() > 0)
+	    System.out.println();
+	System.out.println("found " + solver.getSolutions() + " solutions in "
+		+ getDurationPrettyString(solver.getDuration()));
+    };
+
     char loadingCharIdx = 0;
+    float lastProgress;
     
     public BaseCommand() {}
     
+    private OnUpdateConsumer onUpdate(Solver solver) {
+	if(solver instanceof Stateful) {
+	    return (self, progress, solutions, duration) -> {
+		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		    loadingCharIdx = 0;
+		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
+			BaseCommand.getDurationPrettyString(duration));
+
+		if (progress - lastProgress >= autoSaveProgressStep)
+		    try {
+			((Stateful) solver).getState().save("");
+		    } catch (IOException e) {
+			System.err.println("could not save solver state: " + e.getMessage());
+		    }
+	    };
+	} else {
+	    return (self, progress, solutions, duration) -> {
+		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		    loadingCharIdx = 0;
+		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
+			BaseCommand.getDurationPrettyString(duration));
+
+	    };
+	}
+	
+    }
+    
+    void applySolverConfig(Solver solver){
+	solver.onInit(onInit);
+	solver.onFinish(onFinish);
+	solver.onUpdate(onUpdate(solver));
+	
+	if(updateInterval != 0)
+	    solver.setUpdateInterval(updateInterval);
+	
+	if(solver instanceof Stateful && nOrState.state != null) {
+	    ((Stateful) solver).setState(nOrState.state);
+	} else {
+	    solver.setN(nOrState.n);
+	}
+    }
+    
     public void run() {
-//	try {
-//	    // set callbacks
-//	    solver.onInit(self -> System.out.println("starting solver for board size " + self.getN() + "..."))
-//	    .onUpdate((self, progress, solutions, duration) -> {
-//		if (loadingCharIdx == loadingChars.length)
-//		    loadingCharIdx = 0;
-//		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, solutions,
-//			getDurationPrettyString(duration));
-//	    })
-//	    .onFinish(self -> {
-//		if(self.getUpdateInterval() > 0)
-//		    System.out.println();
-//		System.out.println("found " + self.getSolutions() + " solutions in "
-//			+ getDurationPrettyString(self.getDuration()));
-//	    });
-//
 //	    // TODO: start solver, with state or with board size
 //
 //	    // calculate unique solutions
