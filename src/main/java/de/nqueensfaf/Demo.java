@@ -26,8 +26,17 @@ public class Demo {
 	GPUSolverNew g = new GPUSolverNew();
 	GPUInfo[] availableGpus = g.getAvailableGpus();
 	for(var gpu : availableGpus) {
-	    g.gpuSelection().add(gpu.id());
+	    if(gpu.vendor().toLowerCase().contains("nvidia")) {
+		g.gpuSelection().add(gpu.id(), 70, 64);
+	    } else {
+		g.gpuSelection().add(gpu.id(), 0, 64);
+	    }
 	}
+	g.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
+        	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
+        	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
+		.setN(19)
+		.solve();
 	
 //	new GPUSolver()
 //		.setPresetQueens(6)

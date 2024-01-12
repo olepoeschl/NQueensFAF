@@ -69,7 +69,7 @@ public class GPUSolver extends Solver {
 
     @Override
     protected void run() {
-	if (n <= 6) { // if n is very small, use the simple Solver from the parent class
+	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    start = System.currentTimeMillis();
 	    devices.add(new Device(0, 0, "", ""));
 	    constellations.add(new Constellation());
@@ -95,7 +95,7 @@ public class GPUSolver extends Solver {
 	    ExecutorService executor = Executors.newFixedThreadPool(devices.size());
 	    for (Device device : devices) {
 		// build program
-		String options = "-cl-std=CL1.2 -D N=" + n + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
+		String options = "-cl-std=CL1.2 -D N=" + getN() + " -D WORKGROUP_SIZE=" + device.config.workgroupSize
 			+ " -Werror";
 		int error = clBuildProgram(device.program, device.id, options, null, 0);
 		if (error != 0) {
@@ -159,7 +159,7 @@ public class GPUSolver extends Solver {
     }
 
     private void genConstellations() {
-	constellations = new ConstellationsGenerator(n).generate(presetQueens);
+	constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
     }
 
     private ArrayList<Constellation> fillWithTrash(List<Constellation> subConstellations, int workgroupSize) {
@@ -187,7 +187,7 @@ public class GPUSolver extends Solver {
     }
 
     private void addTrashConstellation(ArrayList<Constellation> constellations, int ijkl) {
-	constellations.add(new Constellation(-1, (1 << n) - 1, (1 << n) - 1, (1 << n) - 1, (69 << 20) | ijkl, -2));
+	constellations.add(new Constellation(-1, (1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20) | ijkl, -2));
     }
 
     void sortConstellations(List<Constellation> constellations) {
@@ -301,7 +301,7 @@ public class GPUSolver extends Solver {
 	    // wait for kernel to finish and continuously read results from device
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
 	    while (true) {
-		if(updateInterval > 0)
+		if(getUpdateInterval()> 0)
 		    readResults(device);
 		
 		checkCLError(clGetEventInfo(device.xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
@@ -435,7 +435,7 @@ public class GPUSolver extends Solver {
 	    if (device.workloadConstellations.get(i).getStartIjkl() >> 20 == 69) // start=69 is for trash constellations
 		continue;
 	    long solutionsForConstellation = device.resPtr.getLong(i * 8)
-		    * symmetry(n, device.workloadConstellations.get(i).getStartIjkl() & 0b11111111111111111111);
+		    * symmetry(getN(), device.workloadConstellations.get(i).getStartIjkl() & 0b11111111111111111111);
 	    if (solutionsForConstellation >= 0)
 		// synchronize with the list of constellations on the RAM
 		device.workloadConstellations.get(i).setSolutions(solutionsForConstellation);
@@ -457,7 +457,7 @@ public class GPUSolver extends Solver {
     }
 
     public SolverState getState() {
-	return new SolverState(n, getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
     }
 
     public void setState(SolverState state) {

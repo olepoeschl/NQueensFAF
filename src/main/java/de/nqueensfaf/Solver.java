@@ -37,7 +37,7 @@ public abstract class Solver {
 	try {
 	    run();
 	} catch (Exception e) {
-	    throw new RuntimeException("error while running solver: " + e.getMessage());
+	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	} finally {
 	  status = Status.IDLE;
 	}
