@@ -5,7 +5,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
-@Command(name = "cpu", description = "use CPU")
+@Command(name = "cpu", description = "use CPU", mixinStandardHelpOptions = true)
 public class CPUCommand implements Runnable {
     
     @ParentCommand

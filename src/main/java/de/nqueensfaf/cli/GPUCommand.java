@@ -13,7 +13,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
-@Command(name = "gpu", description = "use one or more GPUs")
+@Command(name = "gpu", description = "use one or more GPUs", mixinStandardHelpOptions = true)
 public class GPUCommand implements Runnable {
     
     @ParentCommand
