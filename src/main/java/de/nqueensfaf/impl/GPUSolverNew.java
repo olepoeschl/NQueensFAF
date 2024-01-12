@@ -187,6 +187,11 @@ public class GPUSolverNew extends Solver {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 	
+	// sort selected GPUs by descending weight (the ones with higher weight come first)
+	Collections.sort(gpuSelection.get(), (g1, g2) -> {
+	    return Integer.compare(g2.weight, g1.weight);
+	});
+	
 	if(!stateLoaded)
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 	
@@ -426,7 +431,9 @@ public class GPUSolverNew extends Solver {
 	while(iterator.hasNext()) {
 	    var gpu = iterator.next();
 	    int toIndex = fromIndex + (gpu.weight * constellations.size()) / weightSum;
-	    if(!iterator.hasNext())
+	    if(toIndex < constellations.size() && iterator.hasNext())
+		toIndex = findNextIjklChangeIndex(constellations, toIndex);
+	    else
 		toIndex = constellations.size();
 	    gpuConstellations.put(gpu, constellations.subList(fromIndex, toIndex));
 	    fromIndex = toIndex;
