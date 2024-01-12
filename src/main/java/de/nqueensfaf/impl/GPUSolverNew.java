@@ -382,7 +382,6 @@ public class GPUSolverNew extends Solver {
 		if (eventStatusBuf.get(0) == CL_COMPLETE)
 		    break;
 		
-		Thread.yield();
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
