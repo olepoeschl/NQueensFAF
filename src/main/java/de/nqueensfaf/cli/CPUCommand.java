@@ -33,5 +33,6 @@ public class CPUCommand implements Runnable {
 	    solver.setThreadCount(threads);
 	
 	solver.solve();
+	System.out.println("(" + base.getUniqueSolutions(solver.getN()) + " unique solutions)");
     }
 }

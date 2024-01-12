@@ -7,6 +7,7 @@ import de.nqueensfaf.Solver;
 import de.nqueensfaf.Solver.OnUpdateConsumer;
 import de.nqueensfaf.impl.SolverState;
 import de.nqueensfaf.impl.Stateful;
+import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -69,7 +70,7 @@ public class BaseCommand {
     public BaseCommand() {}
     
     private OnUpdateConsumer onUpdate(Solver solver) {
-	if(solver instanceof Stateful) {
+	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    return (self, progress, solutions, duration) -> {
 		if (loadingCharIdx == BaseCommand.loadingChars.length)
 		    loadingCharIdx = 0;
@@ -78,7 +79,7 @@ public class BaseCommand {
 
 		if (progress - lastProgress >= autoSaveProgressStep)
 		    try {
-			((Stateful) solver).getState().save("");
+			((Stateful) solver).getState().save(solver.getN() + "-queens.faf");
 		    } catch (IOException e) {
 			System.err.println("could not save solver state: " + e.getMessage());
 		    }
@@ -110,19 +111,11 @@ public class BaseCommand {
 	}
     }
     
-    public void run() {
-//	    // TODO: start solver, with state or with board size
-//
-//	    // calculate unique solutions
-//	    SymSolver symSolver = new SymSolver();
-//	    symSolver.onFinish(self -> System.out
-//		    .println("(" + symSolver.getUniqueSolutionsTotal(solver.getSolutions()) + " unique solutions)"));
-//	    symSolver.setN(solver.getN());
-//	    symSolver.solve();
-//
-//	} catch (Exception e) {
-//	    System.err.println("could not create or execute solver: " + e.getMessage());
-//	}
+    long getUniqueSolutions(int n) {
+	SymSolver symSolver = new SymSolver();
+	symSolver.setN(n);
+	symSolver.solve();
+	return symSolver.getSolutions();
     }
 
     static String getDurationPrettyString(long time) {

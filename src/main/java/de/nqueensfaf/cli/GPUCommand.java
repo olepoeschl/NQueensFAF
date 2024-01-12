@@ -65,6 +65,7 @@ public class GPUCommand implements Runnable {
 	}
 	
 	solver.solve();
+	System.out.println("(" + base.getUniqueSolutions(solver.getN()) + " unique solutions)");
     }
 
     static class GPU {
