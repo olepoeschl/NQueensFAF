@@ -111,11 +111,11 @@ public class BaseCommand {
 	}
     }
     
-    long getUniqueSolutions(int n) {
+    long getUniqueSolutions(Solver solver) {
 	SymSolver symSolver = new SymSolver();
-	symSolver.setN(n);
+	symSolver.setN(solver.getN());
 	symSolver.solve();
-	return symSolver.getSolutions();
+	return symSolver.getUniqueSolutionsTotal(solver.getSolutions());
     }
 
     static String getDurationPrettyString(long time) {
