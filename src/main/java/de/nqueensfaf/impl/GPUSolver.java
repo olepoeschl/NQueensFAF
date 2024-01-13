@@ -257,7 +257,7 @@ public class GPUSolver extends Solver implements Stateful {
 			    + " -D N=" + getN()
 			    + " -D WORKGROUP_SIZE=" + gpu.workgroupSize
 			    + " -Werror";
-		    int error = clBuildProgram(program, platformGpus, options, null, NULL);
+		    int error = clBuildProgram(program, gpu.info.id(), options, null, NULL);
 		    if (error != 0) {
 			String buildLog = getProgramBuildInfoStringASCII(program, gpu.info.id(), CL_PROGRAM_BUILD_LOG);
 			String msg = String.format("could not build OpenCL program: %s", error, buildLog);
