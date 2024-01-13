@@ -135,6 +135,8 @@ public class BaseCommand {
 	} else {
 	    solver.setN(nOrState.n);
 	}
+	
+	lastProgress = solver.getProgress();
     }
     
     long getUniqueSolutions(Solver solver) {
