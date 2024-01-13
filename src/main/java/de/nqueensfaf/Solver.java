@@ -7,8 +7,19 @@ public abstract class Solver {
     private int n;
     private int updateInterval = 128;
     private volatile Status status = Status.IDLE;
-    private Thread asyncSolverThread, bgThread;
     private OnUpdateConsumer onUpdateConsumer;
+    private Thread asyncSolverThread = new Thread(() -> solve()),
+	    bgThread = new Thread(() -> {
+		while (isRunning() && getProgress() < 1f) {
+		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
+		    try {
+			Thread.sleep(updateInterval);
+		    } catch (InterruptedException e) {
+			// ignore
+		    }
+		}
+		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
+	    });
     private Consumer<Solver> initCb, finishCb;
     private int solutionsSmallN = 0;
     
@@ -25,13 +36,8 @@ public abstract class Solver {
 	if (initCb != null)
 	    initCb.accept(this);
 
-	if(updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
-	    boolean updateConsumer = false;
-	    if (onUpdateConsumer != null)
-		updateConsumer = true;
-	    bgThread = backgroundThread(updateConsumer);
+	if(updateInterval > 0 && onUpdateConsumer != null) // if updateInterval is 0, it means disable progress updates
 	    bgThread.start();
-	}
   
 	status = Status.RUNNING;
 	try {
@@ -56,15 +62,14 @@ public abstract class Solver {
 
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solveAsync() {
-	asyncSolverThread = new Thread(() -> solve());
 	asyncSolverThread.start();
 	return (T) this;
     }
 
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T waitFor() {
-	if(asyncSolverThread == null || !asyncSolverThread.isAlive())
-	    throw new IllegalStateException("could not wait for solver thread to terminate: solver is not running asynchronous");
+	if(!asyncSolverThread.isAlive())
+	    throw new IllegalStateException("could not wait for solver thread to terminate: solver thread is not running");
 	try {
 	    asyncSolverThread.join();
 	} catch (InterruptedException e) {
@@ -82,24 +87,6 @@ public abstract class Solver {
 	
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
-    }
-
-    private Thread backgroundThread(boolean updateConsumer) {
-	return new Thread(() -> {
-	    while (isRunning() && getProgress() < 1f) {
-		if(updateConsumer)
-		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		
-		try {
-		    Thread.sleep(updateInterval);
-		} catch (InterruptedException e) {
-		    // ignore
-		}
-	    }
-
-	    if(updateConsumer)
-		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-	});
     }
     
     protected int solveSmallBoard() {
