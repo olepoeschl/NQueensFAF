@@ -43,6 +43,7 @@ public abstract class Solver {
 	try {
 	    run();
 	} catch (Exception e) {
+	    status = Status.IDLE;
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
 	status = Status.FINISHED;
