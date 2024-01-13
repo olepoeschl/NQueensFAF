@@ -239,19 +239,17 @@ public class GPUSolver extends Solver implements Stateful {
 		long context = clCreateContext(ctxProps, platformGpus, null, NULL, errBuf);
 		checkCLError(errBuf);
 		
-		// create program
-		long program;
-		try {
-		    program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
-		    checkCLError(errBuf);
-		} catch (IOException e) {
-		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);
-		}
-		
 		for(var gpu : platformGpusList) {
 		    gpu.context = context;
-		    gpu.program = program;
-		    
+			
+		    // create program
+		    long program;
+		    try {
+			program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
+			checkCLError(errBuf);
+		    } catch (IOException e) {
+			throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);
+		    }
 		    // build program
 		    String options = "" // "-cl-std=CL1.2"
 			    + " -D N=" + getN()
@@ -263,6 +261,8 @@ public class GPUSolver extends Solver implements Stateful {
 			String msg = String.format("could not build OpenCL program: %s", error, buildLog);
 			throw new RuntimeException(msg);
 		    }
+		    gpu.program = program;
+
 		    // create kernel
 		    long kernel;
 		    if (gpu.info.vendor().toLowerCase().contains("intel")) {
