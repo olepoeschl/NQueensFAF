@@ -2,6 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.function.Predicate;
 
 import static de.nqueensfaf.impl.SolverUtils.*;
@@ -76,7 +77,7 @@ public class ConstellationsGenerator {
 	}
     }
 
-    public ArrayList<Constellation> generateSubConstellations(ArrayList<Constellation> baseConstellations, int extraQueens){
+    public ArrayList<Constellation> generateSubConstellations(List<Constellation> baseConstellations, int extraQueens){
 	if(extraQueens <= 0)
 	    throw new IllegalArgumentException("could not initialize ConstellationsGenerator: extraQueens must be >0");
 	
