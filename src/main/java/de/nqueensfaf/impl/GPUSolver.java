@@ -246,7 +246,7 @@ public class GPUSolver extends Solver implements Stateful {
 		    program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
 		    checkCLError(errBuf);
 		} catch (IOException e) {
-		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage());
+		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);
 		}
 		
 		for(var gpu : platformGpusList) {
@@ -491,7 +491,7 @@ public class GPUSolver extends Solver implements Stateful {
 	    }
 	    resultString = result.toString();
 	} catch (IOException e) {
-	    throw new IOException("could not read kernel source file: " + e.getMessage()); // should not happen
+	    throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
 	}
 	return resultString;
     }

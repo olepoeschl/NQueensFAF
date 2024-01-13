@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -64,7 +63,7 @@ public class SolverState {
 	    kryo.writeObject(output, this);
 	    output.flush();
 	} catch (IOException e) {
-	    throw new IOException("could not write solver state to file: " + e.getMessage());
+	    throw new IOException("could not write solver state to file: " + e.getMessage(), e);
 	}
     }
     
@@ -72,7 +71,7 @@ public class SolverState {
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 	    return kryo.readObject(input, SolverState.class);
 	} catch (Exception e) {
-	    throw new IOException("could not load solver state from file: " + e.getMessage());
+	    throw new IOException("could not load solver state from file: " + e.getMessage(), e);
 	}
     }
 }

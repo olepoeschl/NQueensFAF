@@ -104,7 +104,7 @@ public class CPUSolver extends Solver implements Stateful {
 		duration = System.currentTimeMillis() - start + storedDuration;
 	    }
 	} catch (InterruptedException e) {
-	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage());
+	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage(), e);
 	}
 	stateLoaded = false;
     }

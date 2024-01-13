@@ -22,7 +22,7 @@ public class ExceptionHandler implements IParameterExceptionHandler, IExecutionE
         else
             cause = ex;
         
-        err.println(cmd.getColorScheme().errorText(cause.getMessage())); // bold red
+        err.println(cmd.getColorScheme().errorText(cause.toString())); // bold red
         err.printf("Try '%s --help' for more information.%n", spec.qualifiedName());
         
         return cmd.getExitCodeExceptionMapper() != null
@@ -42,7 +42,7 @@ public class ExceptionHandler implements IParameterExceptionHandler, IExecutionE
         else
             cause = ex;
         
-        err.println(cmd.getColorScheme().errorText(cause.getMessage())); // bold red
+        err.println(cmd.getColorScheme().errorText(cause.toString())); // bold red
         err.printf("Try '%s --help' for more information.%n", spec.qualifiedName());
         
         return cmd.getExitCodeExceptionMapper() != null

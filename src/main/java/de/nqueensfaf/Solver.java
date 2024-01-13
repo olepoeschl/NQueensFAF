@@ -52,7 +52,7 @@ public abstract class Solver {
 	    try {
 		bgThread.join();
 	    } catch (InterruptedException e) {
-		throw new RuntimeException("could not wait for background thread to terminate: " + e.getMessage());
+		throw new RuntimeException("could not wait for background thread to terminate: " + e.getMessage(), e);
 	    }
 	}
 	if (finishCb != null)
@@ -74,7 +74,7 @@ public abstract class Solver {
 	try {
 	    asyncSolverThread.join();
 	} catch (InterruptedException e) {
-	    throw new RuntimeException("could not wait for solver thread to terminate: " + e.getMessage());
+	    throw new RuntimeException("could not wait for solver thread to terminate: " + e.getMessage(), e);
 	}
 	return (T) this;
     }

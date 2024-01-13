@@ -198,9 +198,9 @@ public class GPUSolverOld extends Solver {
 		checkCLError(clReleaseContext(context));
 	    }
 	} catch (InterruptedException e) {
-	    throw new RuntimeException("could not wait for GPU computation to terminate: " + e.getMessage());
+	    throw new RuntimeException("could not wait for GPU computation to terminate: " + e.getMessage(), e);
 	} catch (IOException e) {
-	    throw new RuntimeException("could not create contexts or programs: " + e.getMessage());
+	    throw new RuntimeException("could not create contexts or programs: " + e.getMessage(), e);
 	}
     }
 
@@ -278,7 +278,7 @@ public class GPUSolverOld extends Solver {
 		    try {
 			program = clCreateProgramWithSource(context, getKernelSourceAsString("kernels.c"), errBuf);
 		    } catch (IOException e) {
-			throw new IOException("could not create program: " + e.getMessage());
+			throw new IOException("could not create program: " + e.getMessage(), e);
 		    }
 		    checkCLError(errBuf);
 		    programs[idx] = program;
@@ -565,7 +565,7 @@ public class GPUSolverOld extends Solver {
 	    }
 	    resultString = result.toString();
 	} catch (IOException e) {
-	    throw new IOException("could not read kernel source file: " + e.getMessage()); // should not happen
+	    throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
 	}
 	return resultString;
     }
