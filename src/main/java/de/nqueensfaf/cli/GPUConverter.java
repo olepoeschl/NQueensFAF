@@ -17,13 +17,14 @@ public class GPUConverter implements ITypeConverter<GPURequest> {
 	    
 	    var key = props[i].substring(0, 2);
 	    var value = props[i].substring(2);
-
+	    
 	    switch(key) {
 	    case GPURequest.workgroupSizeKey:
 		gpu.workgroupSize = Integer.parseInt(value);
 		break;
 	    case GPURequest.benchmarkScoreKey:
 		gpu.benchmarkScore = Integer.parseInt(value);
+		break;
 	    default:
 		throw new IllegalArgumentException("invalid gpu property: '" + props[i] + "'");
 	    }
