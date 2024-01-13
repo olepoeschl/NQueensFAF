@@ -424,12 +424,14 @@ public class GPUSolver extends Solver implements Stateful {
 
     private void multiGpuStaticLoadBalancing(List<Constellation> constellations) {
 	int benchmarkSum = gpuSelection.get().stream().map(gpu -> gpu.benchmark()).reduce(0, (wAcc, benchmark) -> wAcc + benchmark);
+	
 	int fromIndex = 0;
 	HashMap<GPU, List<Constellation>> gpuConstellations = new HashMap<GPU, List<Constellation>>();
 	var iterator = gpuSelection.get().iterator();
 	while(iterator.hasNext()) {
 	    var gpu = iterator.next();
-	    int toIndex = fromIndex + (gpu.benchmark * constellations.size()) / benchmarkSum;
+	    int portionPercentage = (gpu.benchmark * 100) / benchmarkSum;
+	    int toIndex = fromIndex + (portionPercentage * constellations.size()) / 100;
 	    if(toIndex < constellations.size() && iterator.hasNext())
 		toIndex = findNextIjklChangeIndex(constellations, toIndex);
 	    else
