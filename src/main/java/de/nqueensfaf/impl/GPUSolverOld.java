@@ -74,7 +74,7 @@ public class GPUSolverOld extends Solver {
     public void setState(SolverState state) {
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
+	constellations = new ArrayList<Constellation>(state.getConstellations());
 	loaded = true;
     }
 
