@@ -55,7 +55,7 @@ public class GPUCommand implements Runnable {
 	List<GPUInfo> availableGpus = solver.getAvailableGpus();
 	if(gpu != null) {
 	    for(var requestedGpu : gpu) {
-		var matchingGpus = availableGpus.stream().filter(gi -> gi.name().contains(requestedGpu.nameContains)).toList();
+		var matchingGpus = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).toList();
 		for(var matchingGpu : matchingGpus) {
 		    solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
 		}
