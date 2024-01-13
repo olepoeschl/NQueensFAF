@@ -24,8 +24,8 @@ public class GPUCommand implements Runnable {
 
     @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, 
 	    description = "GPUs that should be used in the format of <string_contained_in_name>[:<attr><val>[,:<attr><val>]]"
-	    	+ "\n<attr> can be one of the following: wg, bm"
-	    	+ "\n<val> is the value that should be assigned to the attribute")
+	    	+ "\n<attr> can be one of the following: wg, bm, al"
+	    	+ "\n<val> is the value that should be assigned to the attribute, if the attribute expects one")
     GPURequest[] gpu;
 
     @Option(names = { "-l", "--list-gpus" }, required = false, description = "Print a list of all available GPUs")
@@ -58,8 +58,13 @@ public class GPUCommand implements Runnable {
 	List<GPUInfo> availableGpus = solver.getAvailableGpus();
 	if(gpu != null) {
 	    for(var requestedGpu : gpu) {
-		var matchingGpus = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).toList();
-		for(var matchingGpu : matchingGpus) {
+		if(requestedGpu.useAllMatchingGpus) {
+		    var matchingGpus = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).toList();
+		    for(var matchingGpu : matchingGpus) {
+			solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
+		    }
+		} else {
+		    var matchingGpu = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).findFirst().get();
 		    solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
 		}
 	    }
@@ -74,11 +79,13 @@ public class GPUCommand implements Runnable {
     static class GPURequest {
 	
 	static final String workgroupSizeKey = "wg", 
-		benchmarkScoreKey = "bm";
+		benchmarkScoreKey = "bm",
+		useAllMatchingGpusKey = "al";
 
 	String nameContains;
 	int workgroupSize;
 	int benchmarkScore;
+	boolean useAllMatchingGpus;
 	
 	public GPURequest() {}
     }

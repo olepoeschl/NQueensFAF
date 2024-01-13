@@ -25,6 +25,9 @@ public class GPUConverter implements ITypeConverter<GPURequest> {
 	    case GPURequest.benchmarkScoreKey:
 		gpu.benchmarkScore = Integer.parseInt(value);
 		break;
+	    case GPURequest.useAllMatchingGpusKey:
+		gpu.useAllMatchingGpus = true;
+		break;
 	    default:
 		throw new IllegalArgumentException("invalid gpu property: '" + props[i] + "'");
 	    }
