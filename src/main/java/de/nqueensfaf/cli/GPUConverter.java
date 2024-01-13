@@ -12,7 +12,7 @@ public class GPUConverter implements ITypeConverter<GPURequest> {
 	gpu.nameContains = props[0];
 	
 	for(int i = 1; i < props.length; i++) {
-	    if(props[i].length() < 3)
+	    if(props[i].length() < 2)
 		throw new IllegalArgumentException("invalid gpu property: '" + props[i] + "'");
 	    
 	    var key = props[i].substring(0, 2);
