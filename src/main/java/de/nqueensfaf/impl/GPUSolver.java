@@ -407,20 +407,6 @@ public class GPUSolver extends Solver implements Stateful {
 	}
     }
     
-    private void readResults(long memQueue, long resMem, ByteBuffer resPtr, List<Constellation> constellations) {
-	// read result and progress memory buffers
-	checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
-	for (int i = 0; i < constellations.size(); i++) {
-	    if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
-		continue;
-	    long solutionsForConstellation = resPtr.getLong(i * 8)
-		    * symmetry(getN(), constellations.get(i).extractIjkl());
-	    if (solutionsForConstellation >= 0)
-		// synchronize with the list of constellations on the RAM
-		constellations.get(i).setSolutions(solutionsForConstellation);
-	}
-    }
-
     private void multiGpuStaticLoadBalancing(List<Constellation> constellations) {
 	int benchmarkSum = gpuSelection.get().stream().map(gpu -> gpu.benchmark()).reduce(0, (wAcc, benchmark) -> wAcc + benchmark);
 	
@@ -478,6 +464,20 @@ public class GPUSolver extends Solver implements Stateful {
     }
     
     // utils
+    private void readResults(long memQueue, long resMem, ByteBuffer resPtr, List<Constellation> constellations) {
+	// read result and progress memory buffers
+	checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
+	for (int i = 0; i < constellations.size(); i++) {
+	    if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
+		continue;
+	    long solutionsForConstellation = resPtr.getLong(i * 8)
+		    * symmetry(getN(), constellations.get(i).extractIjkl());
+	    if (solutionsForConstellation >= 0)
+		// synchronize with the list of constellations on the RAM
+		constellations.get(i).setSolutions(solutionsForConstellation);
+	}
+    }
+
     private String readKernelSource(String filepath) throws IOException {
 	String resultString = null;
 	try (InputStream clSourceFile = GPUSolverOld.class.getClassLoader().getResourceAsStream(filepath);
