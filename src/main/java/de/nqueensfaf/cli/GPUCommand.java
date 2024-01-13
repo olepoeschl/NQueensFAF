@@ -22,7 +22,10 @@ public class GPUCommand implements Runnable {
     @Option(names = { "-p", "--preset-queens" }, required = false, defaultValue = "6", description = "How many queens should be placed for a start positions")
     int presetQueens;
 
-    @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, description = "GPUs that should be used and their workgroup sizes")
+    @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, 
+	    description = "GPUs that should be used in the format of <string_contained_in_name>[:<attr><val>[,:<attr><val>]]"
+	    	+ "\n<attr> can be one of the following: wg, bm"
+	    	+ "\n<val> is the value that should be assigned to the attribute")
     GPURequest[] gpu;
 
     @Option(names = { "-l", "--list-gpus" }, required = false, description = "Print a list of all available GPUs")
