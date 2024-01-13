@@ -225,8 +225,7 @@ public class GPUSolver extends Solver implements Stateful {
     private void createOpenClObjects() {
 	try (MemoryStack stack = MemoryStack.stackPush()) {
 	    IntBuffer errBuf = stack.callocInt(1);
-	    gpuSelection.get().stream().mapToLong(g1 -> g1.platform()).forEach(platform -> {
-		var platformGpusList = gpuSelection.get().stream().filter(g2 -> g2.platform == platform).toList();
+	    gpuSelection.get().stream().mapToLong(g1 -> g1.platform()).distinct().forEach(platform -> {		var platformGpusList = gpuSelection.get().stream().filter(g2 -> g2.platform == platform).toList();
 		PointerBuffer platformGpus = MemoryStack.stackPush().mallocPointer(platformGpusList.size());
 		for (int i = 0; i < platformGpus.capacity(); i++) {
 		    platformGpus.put(i, platformGpusList.get(i).info.id());
@@ -254,7 +253,7 @@ public class GPUSolver extends Solver implements Stateful {
 		    gpu.program = program;
 		    
 		    // build program
-		    String options = "-cl-std=CL1.2"
+		    String options = "" // "-cl-std=CL1.2"
 			    + " -D N=" + getN()
 			    + " -D WORKGROUP_SIZE=" + gpu.workgroupSize
 			    + " -Werror";
@@ -577,6 +576,9 @@ public class GPUSolver extends Solver implements Stateful {
 	}
 	
 	public void add(long gpuId, int benchmark, int workgroupSize) {
+	    if(selectedGpus.stream().anyMatch(gpu -> gpu.info.id() == gpuId))
+		throw new IllegalArgumentException("the GPU with id '" + gpuId + "' was already added");
+		
 	    try {
 		GPU gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
 		
@@ -588,7 +590,7 @@ public class GPUSolver extends Solver implements Stateful {
 		
 		selectedGpus.add(gpu);
 	    } catch (NoSuchElementException e) {
-		throw new IllegalArgumentException("invalid gpu id");
+		throw new IllegalArgumentException("no GPU found for this id ('" + gpuId + "')");
 	    }
 	}
 	
