@@ -23,7 +23,7 @@ public class GPUCommand implements Runnable {
     int presetQueens;
 
     @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, description = "GPUs that should be used and their workgroup sizes")
-    GPU[] gpu;
+    GPURequest[] gpu;
 
     @Option(names = { "-l", "--list-gpus" }, required = false, description = "Print a list of all available GPUs")
     boolean printGpuList;
@@ -49,32 +49,34 @@ public class GPUCommand implements Runnable {
 	solver = new GPUSolver();
 	base.applySolverConfig(solver);
 	
-	
 	if(presetQueens != 0)
 	    solver.setPresetQueens(presetQueens);
 	
 	List<GPUInfo> availableGpus = solver.getAvailableGpus();
 	if(gpu != null) {
-	    // TODO: benchmarks for every gpu ?
-	    for(var g : gpu) {
-		long id = availableGpus.stream().filter(gi -> gi.name().contains(g.nameContains)).findFirst().get().id();
-		solver.gpuSelection().add(id, 1, g.workgroupSize);
+	    for(var requestedGpu : gpu) {
+		var matchingGpus = availableGpus.stream().filter(gi -> gi.name().contains(requestedGpu.nameContains)).toList();
+		for(var matchingGpu : matchingGpus) {
+		    solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
+		}
 	    }
 	} else {
-	    solver.gpuSelection().add(availableGpus.get(0).id());
+	    solver.gpuSelection().add(availableGpus.get(0).id(), 0, 0);
 	}
 	
 	solver.solve();
 	System.out.println("(" + base.getUniqueSolutions(solver) + " unique solutions)");
     }
 
-    static class GPU {
+    static class GPURequest {
 	
-	public GPU() {}
-	
-	static final String workgroupSizeKey = "wg";
+	static final String workgroupSizeKey = "wg", 
+		benchmarkScoreKey = "bm";
 
 	String nameContains;
 	int workgroupSize;
+	int benchmarkScore;
+	
+	public GPURequest() {}
     }
 }

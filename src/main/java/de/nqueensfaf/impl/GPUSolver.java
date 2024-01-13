@@ -574,15 +574,16 @@ public class GPUSolver extends Solver implements Stateful {
 	    selectedGpus = new ArrayList<GPU>();
 	}
 	
-	public void add(long gpuId) {
-	    add(gpuId, 0, 64);
-	}
-	
 	public void add(long gpuId, int benchmark, int workgroupSize) {
 	    try {
 		GPU gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
-		gpu.benchmark = benchmark;
-		gpu.workgroupSize = workgroupSize;
+		
+		if(benchmark != 0)
+		    gpu.benchmark = benchmark;
+		
+		if(workgroupSize != 0)
+		    gpu.workgroupSize = workgroupSize;
+		
 		selectedGpus.add(gpu);
 	    } catch (NoSuchElementException e) {
 		throw new IllegalArgumentException("invalid gpu id");
@@ -598,8 +599,8 @@ public class GPUSolver extends Solver implements Stateful {
     
     private class GPU {
 	private GPUInfo info;
-	private int benchmark;
-	private int workgroupSize;
+	private int benchmark = 1;
+	private int workgroupSize = 64;
 	
 	// measured kernel duration
 	private long duration;
