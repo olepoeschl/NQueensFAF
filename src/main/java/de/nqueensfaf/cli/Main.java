@@ -5,7 +5,11 @@ import picocli.CommandLine;
 public class Main {
 
     public static void main(String[] args) {
-	new CommandLine(new BaseCommand()).execute(args);
+	ExceptionHandler exceptionHandler = new ExceptionHandler();
+	CommandLine commandLine = new CommandLine(new BaseCommand())
+		.setParameterExceptionHandler(exceptionHandler)
+		.setExecutionExceptionHandler(exceptionHandler);
+	commandLine.execute(args);
     }
 
 }

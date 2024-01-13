@@ -85,14 +85,14 @@ public class GPUSolver extends Solver implements Stateful {
     
     @Override
     public SolverState getState() {
-	return new SolverState(getN(), getDuration(), List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), constellations);
     }
 
     @Override
     public void setState(SolverState state) {
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = new ArrayList<Constellation>(state.getConstellations());
+	constellations = state.getConstellations();
 	stateLoaded = true;
     }
     

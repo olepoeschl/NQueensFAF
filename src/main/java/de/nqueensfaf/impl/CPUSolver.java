@@ -2,7 +2,6 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,14 +19,14 @@ public class CPUSolver extends Solver implements Stateful {
 
     @Override
     public SolverState getState() {
-	return new SolverState(getN(), getDuration(), List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), constellations);
     }
 
     @Override
     public void setState(SolverState state) {
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = new ArrayList<Constellation>(state.getConstellations());
+	constellations = state.getConstellations();
 	stateLoaded = true;
     }
 

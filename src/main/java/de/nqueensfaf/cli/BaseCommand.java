@@ -26,10 +26,21 @@ public class BaseCommand {
     NOrState nOrState;
 
     static class NOrState {
-	@Parameters(description = "Size of the chess board")
 	int n;
-
 	SolverState state;
+	
+	@Parameters(description = "Size of the chess board")
+	public void n(String input) {
+	    try {
+		n = Integer.parseInt(input);
+	    } catch (NumberFormatException e) {
+		pathToSolverStateFile(input);
+	    }
+	}
+
+	// picocli always calls n() and never this method
+	// therefore, the functionality is implemented in the n() method 
+	// and the following method is just for the picocli help message
 	@Parameters(description = "Path to the solver state file")
 	public void pathToSolverStateFile(String input) {
 	    try {
@@ -66,11 +77,22 @@ public class BaseCommand {
 
     char loadingCharIdx = 0;
     float lastProgress;
+    boolean isSaving;
     
     public BaseCommand() {}
     
     private OnUpdateConsumer onUpdate(Solver solver) {
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
+	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+		while(isSaving)
+		    try {
+			Thread.sleep(100);
+		    } catch (InterruptedException e) {
+			System.err.println("could not wait for solver state to be saved: " + e.getMessage());
+			break;
+		    }
+	    }));
+	    
 	    return (self, progress, solutions, duration) -> {
 		if (loadingCharIdx == BaseCommand.loadingChars.length)
 		    loadingCharIdx = 0;
@@ -79,7 +101,11 @@ public class BaseCommand {
 
 		if (progress - lastProgress >= autoSaveProgressStep)
 		    try {
+			isSaving = true;
 			((Stateful) solver).getState().save(solver.getN() + "-queens.faf");
+			isSaving = false;
+			
+			lastProgress = progress;
 		    } catch (IOException e) {
 			System.err.println("could not save solver state: " + e.getMessage());
 		    }
