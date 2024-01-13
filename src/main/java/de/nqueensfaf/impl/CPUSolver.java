@@ -20,7 +20,7 @@ public class CPUSolver extends Solver implements Stateful {
 
     @Override
     public SolverState getState() {
-	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), List.copyOf(constellations));
     }
 
     @Override
