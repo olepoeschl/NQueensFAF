@@ -1,8 +1,13 @@
 package de.nqueensfaf.impl;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-class SolverUtils {
+class Utils {
     
     // functions for ijkl manipulation
     static int toIjkl(int i, int j, int k, int l) {
@@ -115,5 +120,16 @@ class SolverUtils {
 		+ ((n - 1 - getl(ijkl)) << 10) + (getj(ijkl) << 5) + geti(ijkl)))
 	    return true;
 	return false;
+    }
+    
+    public static HashMap<Integer, Long> groupSolutionsByConstellationId(List<Constellation> subConstellations){
+	var solutionsByConstellationId = new HashMap<Integer, Long>();
+	
+	for(var c : subConstellations) {
+	    Long subSolutions = solutionsByConstellationId.get(c.getId());
+	    solutionsByConstellationId.put(c.getId(), subSolutions == null ? c.getSolutions() : subSolutions + c.getSolutions());
+	}
+	
+	return solutionsByConstellationId;
     }
 }

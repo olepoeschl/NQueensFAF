@@ -2,7 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 
-import static de.nqueensfaf.impl.SolverUtils.*;
+import static de.nqueensfaf.impl.Utils.*;
 
 class CPUSolverThread extends Thread {
 

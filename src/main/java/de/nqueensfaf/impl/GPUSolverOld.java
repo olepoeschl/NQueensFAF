@@ -25,7 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static de.nqueensfaf.impl.SolverUtils.*;
+import static de.nqueensfaf.impl.Utils.*;
 import static de.nqueensfaf.impl.InfoUtil.*;
 import static org.lwjgl.opencl.CL12.*;
 import static org.lwjgl.system.MemoryStack.*;
