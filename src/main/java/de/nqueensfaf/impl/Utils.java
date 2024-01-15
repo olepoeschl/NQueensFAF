@@ -3,9 +3,6 @@ package de.nqueensfaf.impl;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 class Utils {
     
