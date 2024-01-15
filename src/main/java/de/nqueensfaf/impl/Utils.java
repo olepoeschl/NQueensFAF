@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-class Utils {
+public class Utils {
     
     // functions for ijkl manipulation
     static int toIjkl(int i, int j, int k, int l) {

@@ -68,7 +68,7 @@ public class GPUSolverOld extends Solver {
     }
 
     public SolverState getState() {
-	return new SolverState(getN(), getDuration(), (ArrayList<Constellation>) List.copyOf(constellations));
+	return new SolverState(getN(), getDuration(), new ArrayList<Constellation>(constellations));
     }
 
     public void setState(SolverState state) {
