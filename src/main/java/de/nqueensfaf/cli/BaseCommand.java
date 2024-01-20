@@ -163,7 +163,7 @@ public class BaseCommand {
 	return symSolver.getUniqueSolutionsTotal(solver.getSolutions());
     }
 
-    static String getDurationPrettyString(long time) {
+    private static String getDurationPrettyString(long time) {
 	long h = time / 1000 / 60 / 60;
 	long m = time / 1000 / 60 % 60;
 	long s = time / 1000 % 60;
