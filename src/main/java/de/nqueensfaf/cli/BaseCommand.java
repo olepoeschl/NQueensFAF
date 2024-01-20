@@ -1,6 +1,9 @@
 package de.nqueensfaf.cli;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import de.nqueensfaf.Solver;
@@ -58,39 +61,29 @@ public class BaseCommand {
 	    description = "How much progress should be made each time until the solver state is saved into a file")
     float autoSaveProgressStep;
 
-    // define solver callbacks
     // for printing the progress
-    static final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
+    private static final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
     // for showing the loading animation
-    static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
+    private static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
+    private char loadingCharIdx = 0;
+    private float lastProgress;
+    private final ExecutorService autoSaveExecutorService = Executors.newFixedThreadPool(1);
 
-    static final Consumer<Solver> onInit = (solver) -> {
+    private static final Consumer<Solver> onInit = (solver) -> {
 	System.out.println("starting solver for board size " + solver.getN() + "...");
     };
-    
-    static final Consumer<Solver> onFinish = (solver) -> {
-	if(solver.getUpdateInterval() > 0)
-	    System.out.println();
-	System.out.println("found " + solver.getSolutions() + " solutions in "
-		+ getDurationPrettyString(solver.getDuration()));
-    };
-
-    char loadingCharIdx = 0;
-    float lastProgress;
-    boolean isSaving;
     
     public BaseCommand() {}
     
     private OnUpdateConsumer onUpdate(Solver solver) {
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-		while(isSaving)
-		    try {
-			Thread.sleep(100);
-		    } catch (InterruptedException e) {
-			System.err.println("could not wait for solver state to be saved: " + e.getMessage());
-			break;
-		    }
+		try {
+		    autoSaveExecutorService.shutdown();
+		    autoSaveExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+		    System.err.println("could not wait for completion of saving solver state: " + e.getMessage());
+		}
 	    }));
 	    
 	    return (self, progress, solutions, duration) -> {
@@ -99,16 +92,16 @@ public class BaseCommand {
 		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
 			BaseCommand.getDurationPrettyString(duration));
 
-		if (progress - lastProgress >= autoSaveProgressStep)
-		    try {
-			isSaving = true;
-			((Stateful) solver).getState().save(solver.getN() + "-queens.faf");
-			isSaving = false;
-			
-			lastProgress = progress;
-		    } catch (IOException e) {
-			System.err.println("could not save solver state: " + e.getMessage());
-		    }
+		if (progress - lastProgress >= autoSaveProgressStep) {
+		    autoSaveExecutorService.submit(() -> {
+			try {
+			    ((Stateful) solver).getState().save(solver.getN() + "-queens.faf");
+			} catch (IOException e) {
+			    System.err.println("could not save solver state: " + e.getMessage());
+			}
+		    });
+		    lastProgress = progress;
+		}
 	    };
 	} else {
 	    return (self, progress, solutions, duration) -> {
@@ -122,9 +115,34 @@ public class BaseCommand {
 	
     }
     
+    private Consumer<Solver> onFinish(Solver solver){
+	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
+	    return (s) -> {
+		if(s.getUpdateInterval() > 0)
+		    System.out.println();
+		System.out.println("found " + s.getSolutions() + " solutions in "
+			+ getDurationPrettyString(s.getDuration()));
+		
+		autoSaveExecutorService.shutdown();
+		try {
+		    autoSaveExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+		    System.err.println("could not wait for completion of saving solver state");
+		}
+	    };
+	} else {
+	    return (s) -> {
+		if(s.getUpdateInterval() > 0)
+		    System.out.println();
+		System.out.println("found " + s.getSolutions() + " solutions in "
+			+ getDurationPrettyString(s.getDuration()));
+	    };
+	}
+    }
+    
     void applySolverConfig(Solver solver){
 	solver.onInit(onInit);
-	solver.onFinish(onFinish);
+	solver.onFinish(onFinish(solver));
 	solver.onUpdate(onUpdate(solver));
 	
 	if(updateInterval != 0)
@@ -132,11 +150,10 @@ public class BaseCommand {
 	
 	if(solver instanceof Stateful && nOrState.state != null) {
 	    ((Stateful) solver).setState(nOrState.state);
+	    lastProgress = solver.getProgress();
 	} else {
 	    solver.setN(nOrState.n);
 	}
-	
-	lastProgress = solver.getProgress();
     }
     
     long getUniqueSolutions(Solver solver) {
