@@ -12,7 +12,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<lwjgl.version>3.3.2</lwjgl.version>
-		<jackson.version>2.15.2</jackson.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -137,6 +136,7 @@
 	</dependencyManagement>
 
 	<dependencies>
+		<!-- lwjgl -->
 		<dependency>
 			<groupId>org.lwjgl</groupId>
 			<artifactId>lwjgl</artifactId>
@@ -150,26 +150,13 @@
 			<artifactId>lwjgl</artifactId>
 			<classifier>${lwjgl.natives}</classifier>
 		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
+		<!-- picocli -->
 		<dependency>
 	  		<groupId>info.picocli</groupId>
 	  		<artifactId>picocli</artifactId>
 	  		<version>4.7.5</version>
 		</dependency>
+		<!-- show ascii tables in console -->
 		<dependency>
 			<groupId>com.github.freva</groupId>
 			<artifactId>ascii-table</artifactId>

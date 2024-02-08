@@ -480,7 +480,7 @@ public class GPUSolver extends Solver implements Stateful {
 
     private String readKernelSource(String filepath) throws IOException {
 	String resultString = null;
-	try (InputStream clSourceFile = GPUSolverOld.class.getClassLoader().getResourceAsStream(filepath);
+	try (InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
 		BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
 	    String line = null;
 	    StringBuilder result = new StringBuilder();
