@@ -583,13 +583,20 @@ public class GPUSolver extends Solver implements Stateful {
     }
     
     public class GPUSelection {
-	private ArrayList<GPU> selectedGpus;
+	private ArrayList<GPU> selectedGpus = new ArrayList<GPU>();
+	private boolean chosen = false;
 	
-	public GPUSelection() {
-	    selectedGpus = new ArrayList<GPU>();
+	private GPUSelection() {}
+	
+	public void choose(long gpuId) {
+	    add(gpuId, 1, 64);
+	    chosen = true;
 	}
 	
 	public void add(long gpuId, int benchmark, int workgroupSize) {
+	    if(chosen)
+		throw new IllegalStateException("unable to add more GPU's after choosing one");
+	    
 	    if(benchmark <= 0)
 		throw new IllegalArgumentException("benchmark must not be <= 0");
 	    
@@ -629,12 +636,7 @@ public class GPUSolver extends Solver implements Stateful {
 	// related opencl objects
 	private long platform, context, program, kernel, xQueue, memQueue;
 	
-	private GPU(){
-	}
-	
-	private int benchmark() {
-	    return benchmark;
-	}
+	private GPU(){}
 	
 	private long platform() {
 	    return platform;
