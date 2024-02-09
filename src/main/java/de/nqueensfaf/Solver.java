@@ -32,6 +32,8 @@ public abstract class Solver {
     @SuppressWarnings("unchecked")
     public final <T extends Solver> T solve() {
 	preconditions();
+
+	status = Status.INITIALIZING;
 	
 	if (initCb != null)
 	    initCb.accept(this);
@@ -43,10 +45,11 @@ public abstract class Solver {
 	try {
 	    run();
 	} catch (Exception e) {
-	    status = Status.IDLE;
+	    status = Status.CANCELED;
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
-	status = Status.FINISHED;
+	
+	status = Status.TERMINATING;
 	
 	if(updateInterval > 0) {
 	    try {
@@ -57,6 +60,8 @@ public abstract class Solver {
 	}
 	if (finishCb != null)
 	    finishCb.accept(this);
+	
+	status = Status.FINISHED;
 
 	return (T) this;
     }
@@ -68,13 +73,13 @@ public abstract class Solver {
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T waitFor() {
+    public final <T extends Solver> T waitFor() throws InterruptedException {
 	if(!asyncSolverThread.isAlive())
 	    throw new IllegalStateException("could not wait for solver thread to terminate: solver thread is not running");
 	try {
 	    asyncSolverThread.join();
 	} catch (InterruptedException e) {
-	    throw new RuntimeException("could not wait for solver thread to terminate: " + e.getMessage(), e);
+	    throw new InterruptedException("could not wait for solver thread to terminate: " + e.getMessage());
 	}
 	return (T) this;
     }
@@ -176,16 +181,28 @@ public abstract class Solver {
 	return status == Status.IDLE;
     }
 
+    public final boolean isInitializing() {
+	return status == Status.INITIALIZING;
+    }
+
     public final boolean isRunning() {
 	return status == Status.RUNNING;
+    }
+
+    public final boolean isTerminating() {
+	return status == Status.TERMINATING;
     }
 
     public final boolean isFinished() {
 	return status == Status.FINISHED;
     }
+
+    public final boolean isCanceled() {
+	return status == Status.CANCELED;
+    }
     
     private static enum Status {
-	IDLE, RUNNING, FINISHED
+	IDLE, INITIALIZING, RUNNING, TERMINATING, FINISHED, CANCELED;
     }
     
     public interface OnUpdateConsumer {
