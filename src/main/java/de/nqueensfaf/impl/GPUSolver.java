@@ -408,20 +408,34 @@ public class GPUSolver extends Solver implements Stateful {
     }
     
     private void multiGpuStaticLoadBalancing(List<Constellation> constellations) {
-	int benchmarkSum = gpuSelection.get().stream().map(gpu -> gpu.benchmark()).reduce(0, (wAcc, benchmark) -> wAcc + benchmark);
+	var selectedGpus = gpuSelection.get();
+	
+	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
+	float factor = 0; // for solving c1 + c2 + c... + cx = total number of constellations
+	// c1 (constellations for gpu 1) is calculated using this formula
+	// then the other c's are calculated based on c1 and its ratio to them
+	
+	for(int i = 0; i < selectedGpus.size(); i++) {
+	    benchmarkRatioFromFirstGpu[i] = (float) selectedGpus.get(0).benchmark / selectedGpus.get(i).benchmark;
+	    factor += benchmarkRatioFromFirstGpu[i];
+	}
+	int numConstellationsFirstGpu = (int) (constellations.size() / factor);
 	
 	int fromIndex = 0;
 	HashMap<GPU, List<Constellation>> gpuConstellations = new HashMap<GPU, List<Constellation>>();
-	var iterator = gpuSelection.get().iterator();
-	while(iterator.hasNext()) {
-	    var gpu = iterator.next();
-	    int portionPercentage = (gpu.benchmark * 100) / benchmarkSum;
-	    int toIndex = fromIndex + (portionPercentage * constellations.size()) / 100;
-	    if(toIndex < constellations.size() && iterator.hasNext())
+	
+	for(int i = 0; i < selectedGpus.size(); i++) {
+	    var gpu = selectedGpus.get(i);
+	    
+	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
+	    
+	    if(toIndex < constellations.size() && i < selectedGpus.size() - 1)
 		toIndex = findNextIjklChangeIndex(constellations, toIndex);
 	    else
 		toIndex = constellations.size();
+	    
 	    gpuConstellations.put(gpu, constellations.subList(fromIndex, toIndex));
+	    
 	    fromIndex = toIndex;
 	}
 	
@@ -576,8 +590,11 @@ public class GPUSolver extends Solver implements Stateful {
 	}
 	
 	public void add(long gpuId, int benchmark, int workgroupSize) {
+	    if(benchmark <= 0)
+		throw new IllegalArgumentException("benchmark must not be <= 0");
+	    
 	    if(selectedGpus.stream().anyMatch(gpu -> gpu.info.id() == gpuId))
-		throw new IllegalArgumentException("the GPU with id '" + gpuId + "' was already added");
+		throw new IllegalArgumentException("GPU with id " + gpuId + " was already added");
 		
 	    try {
 		GPU gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
@@ -590,7 +607,7 @@ public class GPUSolver extends Solver implements Stateful {
 		
 		selectedGpus.add(gpu);
 	    } catch (NoSuchElementException e) {
-		throw new IllegalArgumentException("no GPU found for this id ('" + gpuId + "')");
+		throw new IllegalArgumentException("no GPU found for id " + gpuId);
 	    }
 	}
 	
