@@ -78,8 +78,10 @@ public class ConstellationsGenerator {
     }
 
     public ArrayList<Constellation> generateSubConstellations(List<Constellation> baseConstellations, int extraQueens){
+	if(baseConstellations.size() == 0)
+	    throw new IllegalArgumentException("could not generate sub constellations: base constellations must contain min 1 constellation");
 	if(extraQueens <= 0)
-	    throw new IllegalArgumentException("could not initialize ConstellationsGenerator: extraQueens must be >0");
+	    throw new IllegalArgumentException("could not generate sub constellations: extraQueens must be >0");
 	
 	// number of currently placed queens is the same for all base constellations
 	var c0 = baseConstellations.get(0);
