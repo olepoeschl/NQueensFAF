@@ -153,7 +153,7 @@ public abstract class Solver<T extends Solver<T>> {
 
     @SuppressWarnings("unchecked")
     public final T setN(int n) {
-	if (!isIdle()) {
+	if (isInitializing() || isRunning() || isTerminating()) {
 	    throw new IllegalStateException("could not set board size: solver already running");
 	}
 	if (n <= 0 || n > 31) {
