@@ -77,7 +77,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.STATIC;
     
     private long start, duration, storedDuration;
-    private boolean stateLoaded;
+    private boolean stateLoaded, ready = true;
     
     public GpuSolver() {
 	fetchAvailableGpus();
@@ -89,6 +89,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	for(var gpu : gpuSelection.get())
 	    gpu.duration = 0;
 	stateLoaded = false;
+	ready = true;
     }
     
     @Override
@@ -98,8 +99,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
     @Override
     public void setState(SolverState state) {
-	if(!isIdle() && !isFinished())
-	    throw new IllegalStateException("could not set solver state: solver is currently running");
+	if(!ready)
+	    throw new IllegalStateException("could not set solver state: solver was already used and must be reset first");
 	reset();
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
@@ -188,6 +189,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
     @Override
     protected void run() {
+	ready = false;
+	
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    start = System.currentTimeMillis();
 	    constellations.add(new Constellation());

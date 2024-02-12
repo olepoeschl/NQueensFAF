@@ -52,7 +52,7 @@ public abstract class Solver<T extends Solver<T>> {
 	
 	status = Status.TERMINATING;
 	
-	if(updateInterval > 0) {
+	if(bgThread != null) {
 	    try {
 		bgThread.join();
 	    } catch (InterruptedException e) {
@@ -76,7 +76,7 @@ public abstract class Solver<T extends Solver<T>> {
 
     @SuppressWarnings("unchecked")
     public final T waitFor() throws InterruptedException {
-	if(!asyncSolverThread.isAlive())
+	if(asyncSolverThread == null || !asyncSolverThread.isAlive())
 	    throw new IllegalStateException("could not wait for solver thread to terminate: solver thread is not running");
 	try {
 	    asyncSolverThread.join();

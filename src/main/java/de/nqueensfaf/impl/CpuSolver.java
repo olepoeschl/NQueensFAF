@@ -14,7 +14,7 @@ public class CpuSolver extends Solver<CpuSolver> implements Stateful {
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
     private long start, duration, storedDuration;
-    private boolean stateLoaded;
+    private boolean stateLoaded, ready = true;
     private int presetQueens = 5, threadCount = 1;
 
     public void reset() {
@@ -22,6 +22,7 @@ public class CpuSolver extends Solver<CpuSolver> implements Stateful {
 	threadConstellations.clear();
 	start = duration = storedDuration = 0;
 	stateLoaded = false;
+	ready = true;
     }
     
     @Override
@@ -31,9 +32,8 @@ public class CpuSolver extends Solver<CpuSolver> implements Stateful {
 
     @Override
     public void setState(SolverState state) {
-	if(!isIdle() && !isFinished())
-	    throw new IllegalStateException("could not set solver state: solver is currently running");
-	reset();
+	if(!ready)
+	    throw new IllegalStateException("could not set solver state: solver was already used and must be reset first");
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
 	constellations = state.getConstellations();
@@ -75,6 +75,8 @@ public class CpuSolver extends Solver<CpuSolver> implements Stateful {
 
     @Override
     protected void run() {
+	ready = false;
+	
 	start = System.currentTimeMillis();
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    int solutions = solveSmallBoard();
