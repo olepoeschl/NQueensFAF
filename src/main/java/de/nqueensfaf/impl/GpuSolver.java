@@ -68,9 +68,9 @@ import org.lwjgl.system.MemoryStack;
 
 import de.nqueensfaf.Solver;
 
-public class GpuSolver extends Solver implements Stateful {
+public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
-    private ArrayList<GPU> availableGpus = new ArrayList<GPU>();
+    private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
     private GPUSelection gpuSelection = new GPUSelection();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
@@ -82,6 +82,14 @@ public class GpuSolver extends Solver implements Stateful {
     public GpuSolver() {
 	fetchAvailableGpus();
     }
+
+    public void reset() {
+	constellations.clear();
+	start = duration = storedDuration = 0;
+	for(var gpu : gpuSelection.get())
+	    gpu.duration = 0;
+	stateLoaded = false;
+    }
     
     @Override
     public SolverState getState() {
@@ -90,6 +98,9 @@ public class GpuSolver extends Solver implements Stateful {
 
     @Override
     public void setState(SolverState state) {
+	if(!isIdle() && !isFinished())
+	    throw new IllegalStateException("could not set solver state: solver is currently running");
+	reset();
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
 	constellations = state.getConstellations();
@@ -151,10 +162,10 @@ public class GpuSolver extends Solver implements Stateful {
 		checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, gpusBuf, (IntBuffer) null));
 		for (int g = 0; g < gpusBuf.capacity(); g++) {
 		    long gpuId = gpusBuf.get(g);
-		    GPUInfo gpuInfo = new GPUInfo(gpuId, getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR), 
+		    GpuInfo gpuInfo = new GpuInfo(gpuId, getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR), 
 			    getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME));
 			    
-		    GPU gpu = new GPU();
+		    Gpu gpu = new Gpu();
 		    gpu.info = gpuInfo;
 		    gpu.platform = platform;
 		    
@@ -164,8 +175,8 @@ public class GpuSolver extends Solver implements Stateful {
 	}
     }
     
-    public List<GPUInfo> getAvailableGpus() {
-	ArrayList<GPUInfo> infos = new ArrayList<GPUInfo>(availableGpus.size());
+    public List<GpuInfo> getAvailableGpus() {
+	ArrayList<GpuInfo> infos = new ArrayList<GpuInfo>(availableGpus.size());
 	for(int i = 0; i < availableGpus.size(); i++)
 	    infos.add(availableGpus.get(i).info);
 	return infos;
@@ -310,7 +321,7 @@ public class GpuSolver extends Solver implements Stateful {
 	}
     }
     
-    private void singleGpu(GPU gpu, List<Constellation> constellations) {
+    private void singleGpu(Gpu gpu, List<Constellation> constellations) {
 	sortConstellationsByJkl(constellations);
 	constellations = fillWithPseudoConstellations(constellations, gpu.workgroupSize);
 	
@@ -422,7 +433,7 @@ public class GpuSolver extends Solver implements Stateful {
 	int numConstellationsFirstGpu = (int) (constellations.size() / factor);
 	
 	int fromIndex = 0;
-	HashMap<GPU, List<Constellation>> gpuConstellations = new HashMap<GPU, List<Constellation>>();
+	HashMap<Gpu, List<Constellation>> gpuConstellations = new HashMap<Gpu, List<Constellation>>();
 	
 	for(int i = 0; i < selectedGpus.size(); i++) {
 	    var gpu = selectedGpus.get(i);
@@ -583,7 +594,7 @@ public class GpuSolver extends Solver implements Stateful {
     }
     
     public class GPUSelection {
-	private ArrayList<GPU> selectedGpus = new ArrayList<GPU>();
+	private ArrayList<Gpu> selectedGpus = new ArrayList<Gpu>();
 	private boolean chosen = false;
 	
 	private GPUSelection() {}
@@ -604,7 +615,7 @@ public class GpuSolver extends Solver implements Stateful {
 		throw new IllegalArgumentException("GPU with id " + gpuId + " was already added");
 		
 	    try {
-		GPU gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
+		Gpu gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
 		
 		if(benchmark != 0)
 		    gpu.benchmark = benchmark;
@@ -618,15 +629,15 @@ public class GpuSolver extends Solver implements Stateful {
 	    }
 	}
 	
-	private ArrayList<GPU> get(){
+	private ArrayList<Gpu> get(){
 	    return selectedGpus;
 	}
     }
     
-    public static record GPUInfo(long id, String vendor, String name) {}
+    public static record GpuInfo(long id, String vendor, String name) {}
     
-    private class GPU {
-	private GPUInfo info;
+    private class Gpu {
+	private GpuInfo info;
 	private int benchmark = 1;
 	private int workgroupSize = 64;
 	
@@ -636,7 +647,7 @@ public class GpuSolver extends Solver implements Stateful {
 	// related opencl objects
 	private long platform, context, program, kernel, xQueue, memQueue;
 	
-	private GPU(){}
+	private Gpu(){}
 	
 	private long platform() {
 	    return platform;

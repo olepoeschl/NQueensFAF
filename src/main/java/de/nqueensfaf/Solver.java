@@ -2,25 +2,14 @@ package de.nqueensfaf;
 
 import java.util.function.Consumer;
 
-public abstract class Solver {
+public abstract class Solver<T extends Solver<T>> {
     
     private int n;
     private int updateInterval = 128;
     private volatile Status status = Status.IDLE;
-    private OnUpdateConsumer onUpdateConsumer;
-    private Thread asyncSolverThread = new Thread(() -> solve()),
-	    bgThread = new Thread(() -> {
-		while (isRunning() && getProgress() < 1f) {
-		    onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-		    try {
-			Thread.sleep(updateInterval);
-		    } catch (InterruptedException e) {
-			// ignore
-		    }
-		}
-		onUpdateConsumer.accept(this, getProgress(), getSolutions(), getDuration());
-	    });
-    private Consumer<Solver> initCb, finishCb;
+    private OnUpdateConsumer<T> onUpdateConsumer;
+    private Thread asyncSolverThread, bgThread;
+    private Consumer<T> initCb, finishCb;
     private int solutionsSmallN = 0;
     
     public abstract long getDuration();
@@ -30,16 +19,28 @@ public abstract class Solver {
     protected abstract void run();
     
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T solve() {
+    public final T solve() {
 	preconditions();
 
 	status = Status.INITIALIZING;
 	
 	if (initCb != null)
-	    initCb.accept(this);
+	    initCb.accept((T) this);
 
-	if(updateInterval > 0 && onUpdateConsumer != null) // if updateInterval is 0, it means disable progress updates
+	if(updateInterval > 0 && onUpdateConsumer != null) { // if updateInterval is 0, it means disable progress updates
+	    bgThread = new Thread(() -> {
+		while (isRunning() && getProgress() < 1f) {
+		    onUpdateConsumer.accept((T) this, getProgress(), getSolutions(), getDuration());
+		    try {
+			Thread.sleep(updateInterval);
+		    } catch (InterruptedException e) {
+			// ignore
+		    }
+		}
+		onUpdateConsumer.accept((T) this, getProgress(), getSolutions(), getDuration());
+	    });
 	    bgThread.start();
+	}
   
 	status = Status.RUNNING;
 	try {
@@ -59,7 +60,7 @@ public abstract class Solver {
 	    }
 	}
 	if (finishCb != null)
-	    finishCb.accept(this);
+	    finishCb.accept((T) this);
 	
 	status = Status.FINISHED;
 
@@ -67,13 +68,14 @@ public abstract class Solver {
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T solveAsync() {
+    public final T solveAsync() {
+	asyncSolverThread = new Thread(() -> solve());
 	asyncSolverThread.start();
 	return (T) this;
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T waitFor() throws InterruptedException {
+    public final T waitFor() throws InterruptedException {
 	if(!asyncSolverThread.isAlive())
 	    throw new IllegalStateException("could not wait for solver thread to terminate: solver thread is not running");
 	try {
@@ -88,8 +90,8 @@ public abstract class Solver {
 	if (n == 0)
 	    throw new IllegalStateException("starting conditions not fullfilled: board size was not set");
 	
-	if (!isIdle())
-	    throw new IllegalStateException("starting conditions not fullfilled: solver was already started");
+	if (isInitializing() || isRunning() || isTerminating())
+	    throw new IllegalStateException("starting conditions not fullfilled: solver is neither idle nor finished, nor canceled");
 	
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
@@ -122,7 +124,7 @@ public abstract class Solver {
     }
     
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T onInit(Consumer<Solver> c) {
+    public final T onInit(Consumer<T> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("could not set initialization callback: callback must not be null");
 	}
@@ -131,7 +133,7 @@ public abstract class Solver {
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T onFinish(Consumer<Solver> c) {
+    public final T onFinish(Consumer<T> c) {
 	if (c == null) {
 	    throw new IllegalArgumentException("could not set finish callback: callback must not be null");
 	}
@@ -140,7 +142,7 @@ public abstract class Solver {
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T onUpdate(OnUpdateConsumer onUpdateConsumer) {
+    public final T onUpdate(OnUpdateConsumer<T> onUpdateConsumer) {
 	if (onUpdateConsumer == null) {
 	    this.onUpdateConsumer = (self, progress, solutions, duration) -> {};
 	} else {
@@ -150,7 +152,7 @@ public abstract class Solver {
     }
 
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T setN(int n) {
+    public final T setN(int n) {
 	if (!isIdle()) {
 	    throw new IllegalStateException("could not set board size: solver already running");
 	}
@@ -166,7 +168,7 @@ public abstract class Solver {
     }
     
     @SuppressWarnings("unchecked")
-    public final <T extends Solver> T setUpdateInterval(int updateInterval) {
+    public final T setUpdateInterval(int updateInterval) {
 	if (updateInterval < 0)
 	    throw new IllegalArgumentException("invalid value for updateInterval: must be a number >=0 (0 means disabling updates)");
 	this.updateInterval = updateInterval;
@@ -205,7 +207,7 @@ public abstract class Solver {
 	IDLE, INITIALIZING, RUNNING, TERMINATING, FINISHED, CANCELED;
     }
     
-    public interface OnUpdateConsumer {
-	void accept(Solver self, float progress, long solutions, long duration);
+    public interface OnUpdateConsumer<T extends Solver<T>> {
+	void accept(T self, float progress, long solutions, long duration);
     }
 }

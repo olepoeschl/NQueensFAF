@@ -2,7 +2,7 @@ package de.nqueensfaf.impl;
 
 import de.nqueensfaf.Solver;
 
-public class SymSolver extends Solver {
+public class SymSolver extends Solver<SymSolver> {
 
     private long start, end;
     private long solutions90, solutions180;

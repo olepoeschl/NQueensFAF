@@ -8,7 +8,7 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.impl.GpuSolver;
-import de.nqueensfaf.impl.GpuSolver.GPUInfo;
+import de.nqueensfaf.impl.GpuSolver.GpuInfo;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -55,7 +55,7 @@ public class GpuCommand implements Runnable {
 	if(presetQueens != 0)
 	    solver.setPresetQueens(presetQueens);
 	
-	List<GPUInfo> availableGpus = solver.getAvailableGpus();
+	List<GpuInfo> availableGpus = solver.getAvailableGpus();
 	if(gpu != null) {
 	    for(var requestedGpu : gpu) {
 		if(requestedGpu.useAllMatchingGpus) {

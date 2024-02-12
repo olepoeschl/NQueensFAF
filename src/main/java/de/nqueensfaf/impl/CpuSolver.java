@@ -9,14 +9,21 @@ import java.util.stream.Collectors;
 
 import de.nqueensfaf.Solver;
 
-public class CpuSolver extends Solver implements Stateful {
+public class CpuSolver extends Solver<CpuSolver> implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
-    private ArrayList<ArrayList<Constellation>> threadConstellations;
+    private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
     private long start, duration, storedDuration;
     private boolean stateLoaded;
     private int presetQueens = 5, threadCount = 1;
 
+    public void reset() {
+	constellations.clear();
+	threadConstellations.clear();
+	start = duration = storedDuration = 0;
+	stateLoaded = false;
+    }
+    
     @Override
     public SolverState getState() {
 	return new SolverState(getN(), getDuration(), constellations);
@@ -24,6 +31,9 @@ public class CpuSolver extends Solver implements Stateful {
 
     @Override
     public void setState(SolverState state) {
+	if(!isIdle() && !isFinished())
+	    throw new IllegalStateException("could not set solver state: solver is currently running");
+	reset();
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
 	constellations = state.getConstellations();
@@ -78,7 +88,6 @@ public class CpuSolver extends Solver implements Stateful {
 
 	// split starting constellations in [threadcount] lists (splitting the work for
 	// the threads)
-	threadConstellations = new ArrayList<ArrayList<Constellation>>();
 	for (int i = 0; i < threadCount; i++) {
 	    threadConstellations.add(new ArrayList<Constellation>());
 	}

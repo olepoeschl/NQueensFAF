@@ -68,14 +68,10 @@ public class BaseCommand {
     private char loadingCharIdx = 0;
     private float lastProgress;
     private final ExecutorService autoSaveExecutorService = Executors.newFixedThreadPool(1);
-
-    private static final Consumer<Solver> onInit = (solver) -> {
-	System.out.println("starting solver for board size " + solver.getN() + "...");
-    };
     
     public BaseCommand() {}
     
-    private OnUpdateConsumer onUpdate(Solver solver) {
+    private <T extends Solver<T>> OnUpdateConsumer<T> onUpdate(T solver) {
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 		try {
@@ -115,7 +111,7 @@ public class BaseCommand {
 	
     }
     
-    private Consumer<Solver> onFinish(Solver solver){
+    private <T extends Solver<T>> Consumer<T> onFinish(T solver){
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    return (s) -> {
 		if(s.getUpdateInterval() > 0)
@@ -140,8 +136,8 @@ public class BaseCommand {
 	}
     }
     
-    void applySolverConfig(Solver solver){
-	solver.onInit(onInit);
+    <T extends Solver<T>> void applySolverConfig(T solver){
+	solver.onInit(s -> System.out.println("starting solver for board size " + s.getN() + "..."));
 	solver.onFinish(onFinish(solver));
 	solver.onUpdate(onUpdate(solver));
 	
@@ -156,7 +152,7 @@ public class BaseCommand {
 	}
     }
     
-    long getUniqueSolutions(Solver solver) {
+    <T extends Solver<T>> long getUniqueSolutions(T solver) {
 	SymSolver symSolver = new SymSolver();
 	symSolver.setN(solver.getN());
 	symSolver.solve();
