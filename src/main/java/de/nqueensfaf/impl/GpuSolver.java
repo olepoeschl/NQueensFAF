@@ -60,6 +60,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.lwjgl.BufferUtils;
@@ -453,10 +455,19 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    fromIndex = toIndex;
 	}
 	
-	gpuSelection.get().stream().parallel().forEach(gpu -> {
-	    if(gpuConstellations.get(gpu).size() != 0)
-		singleGpu(gpu, gpuConstellations.get(gpu));
+	var executor = Executors.newFixedThreadPool(selectedGpus.size());
+	selectedGpus.stream().parallel().forEach(gpu -> {
+	    executor.submit(() -> {
+		if(gpuConstellations.get(gpu).size() > 0)
+		    singleGpu(gpu, gpuConstellations.get(gpu));
+	    });
 	});
+	executor.shutdown();
+	try {
+	    executor.awaitTermination(10000, TimeUnit.DAYS);
+	} catch (InterruptedException e) {
+	    throw new RuntimeException("could not wait for termination of GpuSolver: " + e.getMessage());
+	}
     }
     
     private void multiGpuDynamicLoadBalancing(List<Constellation> constellations) {
