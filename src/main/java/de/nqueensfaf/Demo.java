@@ -13,7 +13,7 @@ public class Demo {
     }
     
     static void cpu() {
-	var c = new CpuSolver()
+	new CpuSolver()
         	.setPresetQueens(5)
         	.setThreadCount(1)
         	.setUpdateInterval(800)
@@ -22,8 +22,6 @@ public class Demo {
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
         	.setN(16)
         	.solve();
-	c.reset();
-	c.solve();
     }
     
     static void gpu() {
@@ -42,10 +40,6 @@ public class Demo {
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
 		.setN(18)
 		.solve();
-	g.reset();
-	g.solve();
-	g.reset();
-	g.solve();
 	
 //	new GPUSolver()
 //		.setPresetQueens(6)
