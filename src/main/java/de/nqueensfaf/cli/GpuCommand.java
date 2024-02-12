@@ -7,14 +7,14 @@ import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
-import de.nqueensfaf.impl.GPUSolver;
-import de.nqueensfaf.impl.GPUSolver.GPUInfo;
+import de.nqueensfaf.impl.GpuSolver;
+import de.nqueensfaf.impl.GpuSolver.GPUInfo;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(name = "gpu", description = "use one or more GPUs", mixinStandardHelpOptions = true)
-public class GPUCommand implements Runnable {
+public class GpuCommand implements Runnable {
     
     @ParentCommand
     BaseCommand base;
@@ -22,7 +22,7 @@ public class GPUCommand implements Runnable {
     @Option(names = { "-p", "--preset-queens" }, required = false, defaultValue = "6", description = "How many queens should be placed for a start positions")
     int presetQueens;
 
-    @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GPUConverter.class, 
+    @Option(names = { "-g", "--gpus" }, required = false, split = ",", converter = GpuConverter.class, 
 	    description = "GPUs that should be used in the format of <string_contained_in_name>[:<attr><val>[,:<attr><val>]]"
 	    	+ "\n<attr> can be one of the following: wg, bm, al"
 	    	+ "\n<val> is the value that should be assigned to the attribute, if the attribute expects one")
@@ -31,14 +31,14 @@ public class GPUCommand implements Runnable {
     @Option(names = { "-l", "--list-gpus" }, required = false, description = "Print a list of all available GPUs")
     boolean printGpuList;
 
-    private GPUSolver solver;
+    private GpuSolver solver;
     
-    public GPUCommand() {}
+    public GpuCommand() {}
     
     @Override
     public void run() {
 	if(printGpuList) {
-	    var gpus = new GPUSolver().getAvailableGpus();
+	    var gpus = new GpuSolver().getAvailableGpus();
 	    System.out.println(
 		    AsciiTable.getTable(AsciiTable.BASIC_ASCII, gpus,
 			    Arrays.asList(
@@ -49,7 +49,7 @@ public class GPUCommand implements Runnable {
 	    return;
 	}
 
-	solver = new GPUSolver();
+	solver = new GpuSolver();
 	base.applySolverConfig(solver);
 	
 	if(presetQueens != 0)

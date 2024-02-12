@@ -1,9 +1,9 @@
 package de.nqueensfaf.cli;
 
-import de.nqueensfaf.cli.GPUCommand.GPURequest;
+import de.nqueensfaf.cli.GpuCommand.GPURequest;
 import picocli.CommandLine.ITypeConverter;
 
-public class GPUConverter implements ITypeConverter<GPURequest> {
+public class GpuConverter implements ITypeConverter<GPURequest> {
     @Override
     public GPURequest convert(String input) throws Exception {
 	String[] props = input.split(":");

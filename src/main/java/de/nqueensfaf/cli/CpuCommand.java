@@ -1,12 +1,12 @@
 package de.nqueensfaf.cli;
 
-import de.nqueensfaf.impl.CPUSolver;
+import de.nqueensfaf.impl.CpuSolver;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(name = "cpu", description = "use CPU", mixinStandardHelpOptions = true)
-public class CPUCommand implements Runnable {
+public class CpuCommand implements Runnable {
     
     @ParentCommand
     BaseCommand base;
@@ -17,13 +17,13 @@ public class CPUCommand implements Runnable {
     @Option(names = { "-t", "--threads" }, required = false, description = "How many CPU threads should be used")
     int threads;
     
-    private CPUSolver solver;
+    private CpuSolver solver;
     
-    public CPUCommand() {}
+    public CpuCommand() {}
 
     @Override
     public void run() {
-	solver = new CPUSolver();
+	solver = new CpuSolver();
 	
 	base.applySolverConfig(solver);
 	

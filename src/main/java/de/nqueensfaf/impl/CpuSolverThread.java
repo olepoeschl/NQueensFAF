@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import static de.nqueensfaf.impl.Utils.*;
 
-class CPUSolverThread extends Thread {
+class CpuSolverThread extends Thread {
 
     private final int n, n3, n4, L, L3, L4; // boardsize
     private long tempcounter = 0; // tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
@@ -19,7 +19,7 @@ class CPUSolverThread extends Thread {
     // list of uncalculated starting positions, their indices
     private ArrayList<Constellation> constellations;
 
-    CPUSolverThread(int n, ArrayList<Constellation> constellations) {
+    CpuSolverThread(int n, ArrayList<Constellation> constellations) {
 	this.n = n;
 	n3 = n - 3;
 	n4 = n - 4;

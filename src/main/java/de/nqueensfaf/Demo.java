@@ -2,9 +2,9 @@ package de.nqueensfaf;
 
 import java.util.List;
 
-import de.nqueensfaf.impl.CPUSolver;
-import de.nqueensfaf.impl.GPUSolver;
-import de.nqueensfaf.impl.GPUSolver.GPUInfo;
+import de.nqueensfaf.impl.CpuSolver;
+import de.nqueensfaf.impl.GpuSolver;
+import de.nqueensfaf.impl.GpuSolver.GPUInfo;
 
 public class Demo {
 
@@ -13,7 +13,7 @@ public class Demo {
     }
     
     static void cpu() {
-	new CPUSolver()
+	new CpuSolver()
         	.setPresetQueens(5)
         	.setThreadCount(1)
         	.setUpdateInterval(800)
@@ -25,7 +25,7 @@ public class Demo {
     }
     
     static void gpu() {
-	GPUSolver g = new GPUSolver();
+	GpuSolver g = new GpuSolver();
 	List<GPUInfo> availableGpus = g.getAvailableGpus();
 	for(var gpu : availableGpus) {
 	    if(gpu.vendor().toLowerCase().contains("nvidia")) {

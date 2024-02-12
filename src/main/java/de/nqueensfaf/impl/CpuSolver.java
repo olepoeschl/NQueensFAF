@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import de.nqueensfaf.Solver;
 
-public class CPUSolver extends Solver implements Stateful {
+public class CpuSolver extends Solver implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations;
@@ -92,7 +92,7 @@ public class CPUSolver extends Solver implements Stateful {
 	// start the threads and wait until they are all finished
 	ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 	for (i = 0; i < threadCount; i++) {
-	    CPUSolverThread cpuSolverThread = new CPUSolverThread(getN(), threadConstellations.get(i));
+	    CpuSolverThread cpuSolverThread = new CpuSolverThread(getN(), threadConstellations.get(i));
 	    executor.submit(cpuSolverThread);
 	}
 
@@ -110,7 +110,7 @@ public class CPUSolver extends Solver implements Stateful {
     }
     
     // setters and getters
-    public CPUSolver setPresetQueens(int presetQueens) {
+    public CpuSolver setPresetQueens(int presetQueens) {
 	this.presetQueens = presetQueens;
 	return this;
     }
@@ -119,7 +119,7 @@ public class CPUSolver extends Solver implements Stateful {
 	return presetQueens;
     }
     
-    public CPUSolver setThreadCount(int threadCount) {
+    public CpuSolver setThreadCount(int threadCount) {
 	if (threadCount < 1)
 	    throw new IllegalArgumentException("invalid value for thread count: not a number >0");
 	this.threadCount = threadCount;

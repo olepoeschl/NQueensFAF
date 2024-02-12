@@ -68,7 +68,7 @@ import org.lwjgl.system.MemoryStack;
 
 import de.nqueensfaf.Solver;
 
-public class GPUSolver extends Solver implements Stateful {
+public class GpuSolver extends Solver implements Stateful {
 
     private ArrayList<GPU> availableGpus = new ArrayList<GPU>();
     private GPUSelection gpuSelection = new GPUSelection();
@@ -79,7 +79,7 @@ public class GPUSolver extends Solver implements Stateful {
     private long start, duration, storedDuration;
     private boolean stateLoaded;
     
-    public GPUSolver() {
+    public GpuSolver() {
 	fetchAvailableGpus();
     }
     
@@ -494,7 +494,7 @@ public class GPUSolver extends Solver implements Stateful {
 
     private String readKernelSource(String filepath) throws IOException {
 	String resultString = null;
-	try (InputStream clSourceFile = GPUSolver.class.getClassLoader().getResourceAsStream(filepath);
+	try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
 		BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
 	    String line = null;
 	    StringBuilder result = new StringBuilder();
@@ -558,7 +558,7 @@ public class GPUSolver extends Solver implements Stateful {
     }
     
     // setters and getters
-    public GPUSolver setPresetQueens(int presetQueens) {
+    public GpuSolver setPresetQueens(int presetQueens) {
 	this.presetQueens = presetQueens;
 	return this;
     }
@@ -567,7 +567,7 @@ public class GPUSolver extends Solver implements Stateful {
 	return presetQueens;
     }
     
-    public GPUSolver setMultiGpuLoadBalancingMode(MultiGPULoadBalancing mode) {
+    public GpuSolver setMultiGpuLoadBalancingMode(MultiGPULoadBalancing mode) {
 	if(mode == MultiGPULoadBalancing.DYNAMIC)
 	    throw new IllegalStateException("could not apply dynamic multi gpu load balancing: not implemented yet");
 	this.multiGpuLoadBalancingMode = mode;

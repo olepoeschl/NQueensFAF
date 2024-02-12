@@ -19,7 +19,7 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.TypeConversionException;
 
-@Command(name = "nqueensfaf", mixinStandardHelpOptions = true, subcommands = {CPUCommand.class, GPUCommand.class})
+@Command(name = "nqueensfaf", mixinStandardHelpOptions = true, subcommands = {CpuCommand.class, GpuCommand.class})
 public class BaseCommand {
     
     @Spec
