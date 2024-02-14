@@ -510,11 +510,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 		int remaining;
 		while((remaining = queue.size()) > 0) {
+		    // make the last jobs a bit smaller for better load balancing
 		    int workloadSize = (int) (remaining / finalFactor * benchmarkRatioFromFirstGpu[finalGpuIdx]);
-		    if(workloadSize < 5_000)
-			workloadSize = 5_000;
-		    else if(workloadSize > 50_000)
-			workloadSize = 50_000;
+		    if(workloadSize < 32)
+			workloadSize = 32;
 		    
 		    for(int i = 0; i < workloadSize; i++) {
 			synchronized(queue) {
@@ -529,8 +528,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 			singleGpu(gpu, workload);
 		    }
 		}
-		
-		releaseBuffers(gpu);
 	    });
 	}
 	
@@ -539,6 +536,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    executor.awaitTermination(10000, TimeUnit.DAYS);
 	} catch (InterruptedException e) {
 	    throw new RuntimeException("could not wait for termination of GpuSolver: " + e.getMessage());
+	}
+	
+	for(var gpu : selectedGpus) {
+	    releaseBuffers(gpu);
 	}
     }
     
