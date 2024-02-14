@@ -255,7 +255,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    ctxProps.put(CL_CONTEXT_PLATFORM)
         		    .put(platform)
         		    .put(NULL).flip();
-		    long context = clCreateContext(ctxProps, platformGpus, null, NULL, errBuf);
+		    long context = clCreateContext(ctxProps, gpu.info.id, null, NULL, errBuf);
 		    checkCLError(errBuf);
 		    gpu.context = context;
 			
@@ -430,7 +430,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	var selectedGpus = gpuSelection.get();
 	
 	int toIndex = (int) (constellations.size() * 0.8);
-	if(constellations.size() < 5000 * selectedGpus.size())
+	if(constellations.size() < 50000 * selectedGpus.size())
 	    toIndex = constellations.size();
 	var firstWorkload = constellations.subList(0, findNextIjklChangeIndex(constellations, toIndex));
 	
