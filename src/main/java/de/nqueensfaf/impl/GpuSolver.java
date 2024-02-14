@@ -5,45 +5,44 @@ import static de.nqueensfaf.impl.InfoUtil.getDeviceInfoStringUTF8;
 import static de.nqueensfaf.impl.InfoUtil.getProgramBuildInfoStringASCII;
 import static de.nqueensfaf.impl.Utils.getJkl;
 import static de.nqueensfaf.impl.Utils.symmetry;
-import static org.lwjgl.opencl.CL10.CL_COMPLETE;
-import static org.lwjgl.opencl.CL10.CL_CONTEXT_PLATFORM;
-import static org.lwjgl.opencl.CL10.CL_DEVICE_NAME;
-import static org.lwjgl.opencl.CL10.CL_DEVICE_NOT_FOUND;
-import static org.lwjgl.opencl.CL10.CL_DEVICE_TYPE_GPU;
-import static org.lwjgl.opencl.CL10.CL_DEVICE_VENDOR;
-import static org.lwjgl.opencl.CL10.CL_EVENT_COMMAND_EXECUTION_STATUS;
-import static org.lwjgl.opencl.CL10.CL_MAP_WRITE;
-import static org.lwjgl.opencl.CL10.CL_MEM_ALLOC_HOST_PTR;
-import static org.lwjgl.opencl.CL10.CL_MEM_READ_ONLY;
-import static org.lwjgl.opencl.CL10.CL_MEM_WRITE_ONLY;
-import static org.lwjgl.opencl.CL10.CL_PROFILING_COMMAND_END;
-import static org.lwjgl.opencl.CL10.CL_PROFILING_COMMAND_START;
-import static org.lwjgl.opencl.CL10.CL_PROGRAM_BUILD_LOG;
-import static org.lwjgl.opencl.CL10.CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
-import static org.lwjgl.opencl.CL10.CL_QUEUE_PROFILING_ENABLE;
-import static org.lwjgl.opencl.CL10.clBuildProgram;
-import static org.lwjgl.opencl.CL10.clCreateBuffer;
-import static org.lwjgl.opencl.CL10.clCreateCommandQueue;
-import static org.lwjgl.opencl.CL10.clCreateContext;
-import static org.lwjgl.opencl.CL10.clCreateKernel;
-import static org.lwjgl.opencl.CL10.clCreateProgramWithSource;
-import static org.lwjgl.opencl.CL10.clEnqueueMapBuffer;
-import static org.lwjgl.opencl.CL10.clEnqueueNDRangeKernel;
-import static org.lwjgl.opencl.CL10.clEnqueueReadBuffer;
-import static org.lwjgl.opencl.CL10.clEnqueueUnmapMemObject;
-import static org.lwjgl.opencl.CL10.clFinish;
-import static org.lwjgl.opencl.CL10.clFlush;
-import static org.lwjgl.opencl.CL10.clGetDeviceIDs;
-import static org.lwjgl.opencl.CL10.clGetEventInfo;
-import static org.lwjgl.opencl.CL10.clGetEventProfilingInfo;
-import static org.lwjgl.opencl.CL10.clGetPlatformIDs;
-import static org.lwjgl.opencl.CL10.clReleaseCommandQueue;
-import static org.lwjgl.opencl.CL10.clReleaseContext;
-import static org.lwjgl.opencl.CL10.clReleaseEvent;
-import static org.lwjgl.opencl.CL10.clReleaseKernel;
-import static org.lwjgl.opencl.CL10.clReleaseMemObject;
-import static org.lwjgl.opencl.CL10.clReleaseProgram;
-import static org.lwjgl.opencl.CL10.clSetKernelArg;
+import static org.lwjgl.opencl.CL12.CL_COMPLETE;
+import static org.lwjgl.opencl.CL12.CL_CONTEXT_PLATFORM;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_NAME;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_NOT_FOUND;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_TYPE_GPU;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_VENDOR;
+import static org.lwjgl.opencl.CL12.CL_EVENT_COMMAND_EXECUTION_STATUS;
+import static org.lwjgl.opencl.CL12.CL_MAP_WRITE;
+import static org.lwjgl.opencl.CL12.CL_MEM_ALLOC_HOST_PTR;
+import static org.lwjgl.opencl.CL12.CL_MEM_READ_ONLY;
+import static org.lwjgl.opencl.CL12.CL_MEM_WRITE_ONLY;
+import static org.lwjgl.opencl.CL12.CL_PROFILING_COMMAND_END;
+import static org.lwjgl.opencl.CL12.CL_PROFILING_COMMAND_START;
+import static org.lwjgl.opencl.CL12.CL_PROGRAM_BUILD_LOG;
+import static org.lwjgl.opencl.CL12.CL_QUEUE_PROFILING_ENABLE;
+import static org.lwjgl.opencl.CL12.clBuildProgram;
+import static org.lwjgl.opencl.CL12.clCreateBuffer;
+import static org.lwjgl.opencl.CL12.clCreateCommandQueue;
+import static org.lwjgl.opencl.CL12.clCreateContext;
+import static org.lwjgl.opencl.CL12.clCreateKernel;
+import static org.lwjgl.opencl.CL12.clCreateProgramWithSource;
+import static org.lwjgl.opencl.CL12.clEnqueueMapBuffer;
+import static org.lwjgl.opencl.CL12.clEnqueueNDRangeKernel;
+import static org.lwjgl.opencl.CL12.clEnqueueReadBuffer;
+import static org.lwjgl.opencl.CL12.clEnqueueUnmapMemObject;
+import static org.lwjgl.opencl.CL12.clFinish;
+import static org.lwjgl.opencl.CL12.clFlush;
+import static org.lwjgl.opencl.CL12.clGetDeviceIDs;
+import static org.lwjgl.opencl.CL12.clGetEventInfo;
+import static org.lwjgl.opencl.CL12.clGetEventProfilingInfo;
+import static org.lwjgl.opencl.CL12.clGetPlatformIDs;
+import static org.lwjgl.opencl.CL12.clReleaseCommandQueue;
+import static org.lwjgl.opencl.CL12.clReleaseContext;
+import static org.lwjgl.opencl.CL12.clReleaseEvent;
+import static org.lwjgl.opencl.CL12.clReleaseKernel;
+import static org.lwjgl.opencl.CL12.clReleaseMemObject;
+import static org.lwjgl.opencl.CL12.clReleaseProgram;
+import static org.lwjgl.opencl.CL12.clSetKernelArg;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.io.BufferedReader;
@@ -249,16 +248,15 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		for (int i = 0; i < platformGpus.capacity(); i++) {
 		    platformGpus.put(i, platformGpusList.get(i).info.id());
 		}
-		
-		// create context
-		PointerBuffer ctxProps = stack.mallocPointer(3);
-		ctxProps.put(CL_CONTEXT_PLATFORM)
-        		.put(platform)
-        		.put(NULL).flip();
-		long context = clCreateContext(ctxProps, platformGpus, null, NULL, errBuf);
-		checkCLError(errBuf);
-		
+
 		for(var gpu : platformGpusList) {
+		    // create context
+		    PointerBuffer ctxProps = stack.mallocPointer(3);
+		    ctxProps.put(CL_CONTEXT_PLATFORM)
+        		    .put(platform)
+        		    .put(NULL).flip();
+		    long context = clCreateContext(ctxProps, platformGpus, null, NULL, errBuf);
+		    checkCLError(errBuf);
 		    gpu.context = context;
 			
 		    // create program
@@ -301,7 +299,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    long xQueue = clCreateCommandQueue(context, gpu.info.id(), CL_QUEUE_PROFILING_ENABLE, errBuf);
 		    checkCLError(errBuf);
 		    gpu.xQueue = xQueue;
-		    long memQueue = clCreateCommandQueue(context, gpu.info.id(), CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
+		    long memQueue = clCreateCommandQueue(context, gpu.info.id(), 0,
 			    errBuf);
 		    checkCLError(errBuf);
 		    gpu.memQueue = memQueue;
@@ -421,16 +419,20 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    gpu.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
 	    
 	    // release memory and event
-	    checkCLError(clReleaseMemObject(constellationsMem));
-	    checkCLError(clReleaseMemObject(resMem));
 	    checkCLError(clReleaseEvent(xEvent));
+	    checkCLError(clReleaseMemObject(resMem));
+	    checkCLError(clReleaseMemObject(constellationsMem));
 	}
     }
     
     private void multiGpu(List<Constellation> constellations) {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
-	var firstWorkload = constellations.subList(0, findNextIjklChangeIndex(constellations, (int) (constellations.size() * 0.8)));
+	
+	int toIndex = (int) (constellations.size() * 0.8);
+	if(constellations.size() < 5000 * selectedGpus.size())
+	    toIndex = constellations.size();
+	var firstWorkload = constellations.subList(0, findNextIjklChangeIndex(constellations, toIndex));
 	
 	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
 	float factor = 0; // for solving c1 + c2 + c... + cx = total number of constellations
@@ -449,7 +451,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	for(int i = 0; i < selectedGpus.size(); i++) {
 	    var gpu = selectedGpus.get(i);
 	    
-	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
+	    toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
 	    
 	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1)
 		toIndex = findNextIjklChangeIndex(firstWorkload, toIndex);
@@ -464,8 +466,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	var queue = new ConcurrentLinkedQueue<>(constellations.subList(fromIndex, constellations.size()));
 	
 	var executor = Executors.newFixedThreadPool(selectedGpus.size());
-	selectedGpus.stream().parallel().forEach(gpu -> {
-	    executor.submit(() -> {
+	for(var gpu : selectedGpus) {
+	    executor.execute(() -> {
 		if(gpuConstellations.get(gpu).size() > 0)
 		    singleGpu(gpu, gpuConstellations.get(gpu), true);
 		
@@ -473,9 +475,11 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		var workload = new ArrayList<Constellation>();
 		
 		while((remaining = queue.size()) > 0) {
-		    int workloadSize = remaining / selectedGpus.size();
+		    int workloadSize = remaining;
 		    if(workloadSize < 5000)
 			workloadSize = 5000;
+		    else if(workloadSize > 20_000 && workloadSize - 20_000 >= 5000)
+			workloadSize = 20_000;
 		    
 		    for(int i = 0; i < workloadSize && !queue.isEmpty(); i++) {
 			workload.add(queue.remove());
@@ -483,7 +487,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    singleGpu(gpu, workload, true);
 		}
 	    });
-	});
+	}
 	
 	executor.shutdown();
 	try {
