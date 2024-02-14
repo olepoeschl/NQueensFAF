@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -76,7 +77,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     private GPUSelection gpuSelection = new GPUSelection();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
-    private MultiGPULoadBalancing multiGpuLoadBalancingMode = MultiGPULoadBalancing.STATIC;
     
     private long start, duration, storedDuration;
     private boolean stateLoaded, ready = true;
@@ -85,6 +85,16 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	fetchAvailableGpus();
     }
 
+    // getters and setters
+    public int getPresetQueens() {
+	return presetQueens;
+    }
+    
+    public GpuSolver setPresetQueens(int presetQueens) {
+	this.presetQueens = presetQueens;
+	return this;
+    }
+    
     public void reset() {
 	constellations.clear();
 	start = duration = storedDuration = 0;
@@ -219,16 +229,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	start = System.currentTimeMillis();
 	
 	if(gpuSelection.get().size() == 1) {
-	    singleGpu(gpuSelection.get().get(0), remainingConstellations);
+	    singleGpu(gpuSelection.get().get(0), remainingConstellations, false);
 	} else {
-	    switch(multiGpuLoadBalancingMode) {
-	    case STATIC:
-		multiGpuStaticLoadBalancing(remainingConstellations);
-		break;
-	    case DYNAMIC:
-		multiGpuDynamicLoadBalancing(remainingConstellations);
-		break;
-	    }
+	    multiGpu(remainingConstellations);
 	}
 	
 	if(gpuSelection.get().size() == 1)
@@ -326,8 +329,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
     }
     
-    private void singleGpu(Gpu gpu, List<Constellation> constellations) {
-	sortConstellationsByJkl(constellations);
+    private void singleGpu(Gpu gpu, List<Constellation> constellations, boolean sorted) {
+	if(!sorted)
+	    sortConstellationsByJkl(constellations);
 	constellations = fillWithPseudoConstellations(constellations, gpu.workgroupSize);
 	
 	try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -423,8 +427,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
     }
     
-    private void multiGpuStaticLoadBalancing(List<Constellation> constellations) {
+    private void multiGpu(List<Constellation> constellations) {
+	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
+	var firstWorkload = constellations.subList(0, findNextIjklChangeIndex(constellations, (int) (constellations.size() * 0.8)));
 	
 	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
 	float factor = 0; // for solving c1 + c2 + c... + cx = total number of constellations
@@ -435,7 +441,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    benchmarkRatioFromFirstGpu[i] = (float) selectedGpus.get(0).benchmark / selectedGpus.get(i).benchmark;
 	    factor += benchmarkRatioFromFirstGpu[i];
 	}
-	int numConstellationsFirstGpu = (int) (constellations.size() / factor);
+	int numConstellationsFirstGpu = (int) (firstWorkload.size() / factor);
 	
 	int fromIndex = 0;
 	HashMap<Gpu, List<Constellation>> gpuConstellations = new HashMap<Gpu, List<Constellation>>();
@@ -445,61 +451,46 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    
 	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
 	    
-	    if(toIndex < constellations.size() && i < selectedGpus.size() - 1)
-		toIndex = findNextIjklChangeIndex(constellations, toIndex);
+	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1)
+		toIndex = findNextIjklChangeIndex(firstWorkload, toIndex);
 	    else
-		toIndex = constellations.size();
+		toIndex = firstWorkload.size();
 	    
-	    gpuConstellations.put(gpu, constellations.subList(fromIndex, toIndex));
+	    gpuConstellations.put(gpu, firstWorkload.subList(fromIndex, toIndex));
 	    
 	    fromIndex = toIndex;
 	}
+	
+	var queue = new ConcurrentLinkedQueue<>(constellations.subList(fromIndex, constellations.size()));
 	
 	var executor = Executors.newFixedThreadPool(selectedGpus.size());
 	selectedGpus.stream().parallel().forEach(gpu -> {
 	    executor.submit(() -> {
 		if(gpuConstellations.get(gpu).size() > 0)
-		    singleGpu(gpu, gpuConstellations.get(gpu));
+		    singleGpu(gpu, gpuConstellations.get(gpu), true);
+		
+		int remaining;
+		var workload = new ArrayList<Constellation>();
+		
+		while((remaining = queue.size()) > 0) {
+		    int workloadSize = remaining / selectedGpus.size();
+		    if(workloadSize < 5000)
+			workloadSize = 5000;
+		    
+		    for(int i = 0; i < workloadSize && !queue.isEmpty(); i++) {
+			workload.add(queue.remove());
+		    }
+		    singleGpu(gpu, workload, true);
+		}
 	    });
 	});
+	
 	executor.shutdown();
 	try {
 	    executor.awaitTermination(10000, TimeUnit.DAYS);
 	} catch (InterruptedException e) {
 	    throw new RuntimeException("could not wait for termination of GpuSolver: " + e.getMessage());
 	}
-    }
-    
-    private void multiGpuDynamicLoadBalancing(List<Constellation> constellations) {
-	/*
-	 * final int minConstellationsPerIterationPerGpu = 10_000; final int
-	 * minConstellationsPerIteration = gpuSelection.get().size() *
-	 * minConstellationsPerIterationPerGpu; int constellationPtr = 0;
-	 * 
-	 * // create contexts, compile programs, create kernels // TODO
-	 * 
-	 * // initialize: distribute gpu benchmarks equally if one or more gpu's benchmarks
-	 * are set to 0 if(gpuSelection.get().stream().anyMatch(gpu -> gpu.benchmark ==
-	 * 0f)) for(var gpu : gpuSelection.get()) gpu.benchmark = 1f /
-	 * gpuSelection.get().size();
-	 * 
-	 * ExecutorService executor =
-	 * Executors.newFixedThreadPool(gpuSelection.get().size());
-	 * while(constellationPtr < constellations.size()) { int
-	 * endOfConstellationRange = findNextIjklChangeIndex(constellations,
-	 * constellationPtr + minConstellationsPerIteration - 1);
-	 * if(endOfConstellationRange == 0) // ijkl does not change anymore from this
-	 * index on endOfConstellationRange = constellations.size() - 1; // so
-	 * solve all constellations
-	 * 
-	 * var constellationsForIteration =
-	 * constellations.subList(constellationPtr, endOfConstellationRange);
-	 * 
-	 * // now distribute those constellations to all selected GPUs
-	 * gpuSelection.get().parallelStream().forEach(gpu -> { // TODO });
-	 * 
-	 * // TODO }
-	 */
     }
     
     // utils
@@ -580,31 +571,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
     private void addPseudoConstellation(List<Constellation> constellations) {
 	constellations.add(new Constellation(-1, (1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
-    }
-    
-    // setters and getters
-    public GpuSolver setPresetQueens(int presetQueens) {
-	this.presetQueens = presetQueens;
-	return this;
-    }
-    
-    public int getPresetQueens() {
-	return presetQueens;
-    }
-    
-    public GpuSolver setMultiGpuLoadBalancingMode(MultiGPULoadBalancing mode) {
-	if(mode == MultiGPULoadBalancing.DYNAMIC)
-	    throw new IllegalStateException("could not apply dynamic multi gpu load balancing: not implemented yet");
-	this.multiGpuLoadBalancingMode = mode;
-	return this;
-    }
-    
-    public MultiGPULoadBalancing getMultiGpuLoadBalancingMode() {
-	return multiGpuLoadBalancingMode;
-    }
-    
-    public static enum MultiGPULoadBalancing {
-	STATIC, DYNAMIC
     }
     
     public class GPUSelection {
