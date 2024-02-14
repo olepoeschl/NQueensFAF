@@ -44,6 +44,8 @@ import static org.lwjgl.opencl.CL12.clReleaseMemObject;
 import static org.lwjgl.opencl.CL12.clReleaseProgram;
 import static org.lwjgl.opencl.CL12.clSetKernelArg;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.opencl.NVCreateBuffer.clCreateBufferNV;
+import static org.lwjgl.opencl.NVCreateBuffer.CL_MEM_PINNED_NV;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -228,7 +230,12 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	start = System.currentTimeMillis();
 	
 	if(gpuSelection.get().size() == 1) {
-	    singleGpu(gpuSelection.get().get(0), remainingConstellations, false);
+	    sortConstellationsByJkl(remainingConstellations);
+	    remainingConstellations = new ArrayList<>(fillWithPseudoConstellations(remainingConstellations, gpuSelection.get().get(0).workgroupSize));
+	    
+	    createBuffers(gpuSelection.get().get(0), remainingConstellations.size());
+	    singleGpu(gpuSelection.get().get(0), remainingConstellations);
+	    releaseBuffers(gpuSelection.get().get(0));
 	} else {
 	    multiGpu(remainingConstellations);
 	}
@@ -327,20 +334,42 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
     }
     
-    private void singleGpu(Gpu gpu, List<Constellation> constellations, boolean sorted) {
-	if(!sorted)
-	    sortConstellationsByJkl(constellations);
-	constellations = fillWithPseudoConstellations(constellations, gpu.workgroupSize);
-	
+    private void createBuffers(Gpu gpu, int maxNumOfConstellations) {
 	try (MemoryStack stack = MemoryStack.stackPush()) {
 	    IntBuffer errBuf = stack.callocInt(1);
 	    
-	    // create buffers and write them to the GPU
-	    long constellationsMem = clCreateBuffer(gpu.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		    constellations.size() * (4 + 4 + 4 + 4), errBuf);
+	    if(gpu.info.vendor.toLowerCase().contains("nvidia"))
+		gpu.constellationsMem = clCreateBufferNV(gpu.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
+			CL_MEM_PINNED_NV, maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
+	    else
+		gpu.constellationsMem = clCreateBuffer(gpu.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
+			maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
+	    checkCLError(errBuf);
+	    
+	    if(gpu.info.vendor.toLowerCase().contains("nvidia"))
+		gpu.resMem = clCreateBufferNV(gpu.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			CL_MEM_PINNED_NV, maxNumOfConstellations * 8, errBuf);
+	    else
+		gpu.resMem = clCreateBuffer(gpu.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			maxNumOfConstellations * 8, errBuf);
 	    checkCLError(errBuf);
 
-	    ByteBuffer constellationPtr = clEnqueueMapBuffer(gpu.memQueue, constellationsMem, true, CL_MAP_WRITE,
+	    checkCLError(clFlush(gpu.memQueue));
+	    checkCLError(clFinish(gpu.memQueue));
+	}
+    }
+    
+    private void releaseBuffers(Gpu gpu) {
+	checkCLError(clReleaseMemObject(gpu.constellationsMem));
+	checkCLError(clReleaseMemObject(gpu.resMem));
+    }
+    
+    private void singleGpu(Gpu gpu, List<Constellation> constellations) {
+	try (MemoryStack stack = MemoryStack.stackPush()) {
+	    IntBuffer errBuf = stack.callocInt(1);
+	    
+	    // write data GPU buffers
+	    ByteBuffer constellationPtr = clEnqueueMapBuffer(gpu.memQueue, gpu.constellationsMem, true, CL_MAP_WRITE,
 		    0, constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
 	    checkCLError(errBuf);
 	    for (int i = 0; i < constellations.size(); i++) {
@@ -349,29 +378,26 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		constellationPtr.putInt(i*(4+4+4+4)+4+4, constellations.get(i).getCol());
 		constellationPtr.putInt(i*(4+4+4+4)+4+4+4, constellations.get(i).getStartIjkl());
 	    }
-	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, constellationsMem, constellationPtr, null, null));
+	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, gpu.constellationsMem, constellationPtr, null, null));
 
-	    long resMem = clCreateBuffer(gpu.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-		    constellations.size() * 8, errBuf);
-	    checkCLError(errBuf);
-	    ByteBuffer resPtr = clEnqueueMapBuffer(gpu.memQueue, resMem, true, CL_MAP_WRITE, 0, constellations.size() * 8,
+	    ByteBuffer resPtr = clEnqueueMapBuffer(gpu.memQueue, gpu.resMem, true, CL_MAP_WRITE, 0, constellations.size() * 8,
 		    null, null, errBuf, null);
 	    checkCLError(errBuf);
 	    for (int i = 0; i < constellations.size(); i++) {
 		resPtr.putLong(i * 8, constellations.get(i).getSolutions());
 	    }
-	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, resMem, resPtr, null, null));
+	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, gpu.resMem, resPtr, null, null));
 
 	    checkCLError(clFlush(gpu.memQueue));
 	    checkCLError(clFinish(gpu.memQueue));
 
 	    // set kernel args
 	    LongBuffer constellationsArg = stack.mallocLong(1);
-	    constellationsArg.put(0, constellationsMem);
+	    constellationsArg.put(0, gpu.constellationsMem);
 	    checkCLError(clSetKernelArg(gpu.kernel, 0, constellationsArg));
 
 	    LongBuffer resArg = stack.mallocLong(1);
-	    resArg.put(0, resMem);
+	    resArg.put(0, gpu.resMem);
 	    checkCLError(clSetKernelArg(gpu.kernel, 1, resArg));
 
 	    // define kernel dimensions
@@ -394,7 +420,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
 	    while (true) {
 		if(getUpdateInterval() > 0)
-		    readResults(gpu.memQueue, resMem, resPtr, constellations);
+		    readResults(gpu.memQueue, gpu.resMem, resPtr, constellations);
 
 		checkCLError(clGetEventInfo(xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
 		if (eventStatusBuf.get(0) == CL_COMPLETE)
@@ -408,7 +434,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    }
 	    
 	    // read final results
-	    readResults(gpu.memQueue, resMem, resPtr, constellations);
+	    readResults(gpu.memQueue, gpu.resMem, resPtr, constellations);
 
 	    // read gpu kernel profiled time
 	    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
@@ -420,8 +446,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    
 	    // release memory and event
 	    checkCLError(clReleaseEvent(xEvent));
-	    checkCLError(clReleaseMemObject(resMem));
-	    checkCLError(clReleaseMemObject(constellationsMem));
 	}
     }
     
@@ -429,10 +453,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 	
-	int toIndex = (int) (constellations.size() * 0.8);
-	if(constellations.size() < 50000 * selectedGpus.size())
-	    toIndex = constellations.size();
-	var firstWorkload = constellations.subList(0, findNextIjklChangeIndex(constellations, toIndex));
+	int firstWorkloadToIndex = (int) (constellations.size() * 0.8);
+	if(constellations.size() < 20_000 * selectedGpus.size())
+	    firstWorkloadToIndex = constellations.size();
+	var firstWorkload = constellations.subList(0, findNextJklChangeIndex(constellations, firstWorkloadToIndex));
 	
 	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
 	float factor = 0; // for solving c1 + c2 + c... + cx = total number of constellations
@@ -451,14 +475,19 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	for(int i = 0; i < selectedGpus.size(); i++) {
 	    var gpu = selectedGpus.get(i);
 	    
-	    toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
+	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
 	    
 	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1)
-		toIndex = findNextIjklChangeIndex(firstWorkload, toIndex);
+		toIndex = findNextJklChangeIndex(firstWorkload, toIndex);
 	    else
 		toIndex = firstWorkload.size();
 	    
-	    gpuConstellations.put(gpu, firstWorkload.subList(fromIndex, toIndex));
+	    var gpuWorkload = firstWorkload.subList(fromIndex, toIndex);
+	    gpuWorkload = fillWithPseudoConstellations(gpuWorkload, gpu.workgroupSize);
+		    
+	    gpuConstellations.put(gpu, gpuWorkload);
+	    
+	    createBuffers(gpu, gpuWorkload.size());
 	    
 	    fromIndex = toIndex;
 	}
@@ -468,24 +497,37 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	var executor = Executors.newFixedThreadPool(selectedGpus.size());
 	for(var gpu : selectedGpus) {
 	    executor.execute(() -> {
+		// first workload (the biggest one)
 		if(gpuConstellations.get(gpu).size() > 0)
-		    singleGpu(gpu, gpuConstellations.get(gpu), true);
+		    singleGpu(gpu, gpuConstellations.get(gpu));
 		
-		int remaining;
 		var workload = new ArrayList<Constellation>();
-		
+
+		int remaining;
 		while((remaining = queue.size()) > 0) {
-		    int workloadSize = remaining;
-		    if(workloadSize < 5000)
-			workloadSize = 5000;
-		    else if(workloadSize > 20_000 && workloadSize - 20_000 >= 5000)
-			workloadSize = 20_000;
+		    int workloadSize = remaining / selectedGpus.size();
+		    if(workloadSize < 10_000)
+			workloadSize = 10_000;
+		    else if(workloadSize > 50_000)
+			workloadSize = 50_000;
+
+		    System.out.println("[" + gpu.info.name + "] workload size: " + workloadSize);
 		    
-		    for(int i = 0; i < workloadSize && !queue.isEmpty(); i++) {
-			workload.add(queue.remove());
+		    for(int i = 0; i < workloadSize; i++) {
+			synchronized(queue) {
+			    if(queue.isEmpty())
+				break;
+			    workload.add(queue.remove());
+			}
 		    }
-		    singleGpu(gpu, workload, true);
+
+		    if(workload.size() > 0) {
+			workload = new ArrayList<>(fillWithPseudoConstellations(workload, gpu.workgroupSize));
+			singleGpu(gpu, workload);
+		    }
 		}
+		
+		releaseBuffers(gpu);
 	    });
 	}
 	
@@ -529,10 +571,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	return resultString;
     }
     
-    private int findNextIjklChangeIndex(List<Constellation> constellations, int fromIndex) {
-	int currentIjkl = constellations.get(fromIndex).extractIjkl();
+    private int findNextJklChangeIndex(List<Constellation> constellations, int fromIndex) {
+	int currentIjkl = getJkl(constellations.get(fromIndex).extractIjkl());
 	for(int i = fromIndex; i < constellations.size(); i++) {
-	    if(constellations.get(i).extractIjkl() != currentIjkl)
+	    if(getJkl(constellations.get(i).extractIjkl()) != currentIjkl)
 		return i;
 	}
 	return 0;
@@ -629,7 +671,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	private long duration;
 	
 	// related opencl objects
-	private long platform, context, program, kernel, xQueue, memQueue;
+	private long platform, context, program, kernel, xQueue, memQueue, constellationsMem, resMem;
 	
 	private Gpu(){}
 	
