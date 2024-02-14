@@ -469,6 +469,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
 	int numConstellationsFirstGpu = (int) (firstWorkload.size() / factor);
 	
+	final float finalFactor = factor;
+	
 	int fromIndex = 0;
 	HashMap<Gpu, List<Constellation>> gpuConstellations = new HashMap<Gpu, List<Constellation>>();
 	
@@ -493,9 +495,12 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
 	
 	var queue = new ConcurrentLinkedQueue<>(constellations.subList(fromIndex, constellations.size()));
-	
 	var executor = Executors.newFixedThreadPool(selectedGpus.size());
-	for(var gpu : selectedGpus) {
+	
+	for(int gpuIdx = 0; gpuIdx < selectedGpus.size(); gpuIdx++) {
+	    final int finalGpuIdx = gpuIdx;
+	    final var gpu = selectedGpus.get(gpuIdx);
+	    
 	    executor.execute(() -> {
 		// first workload (the biggest one)
 		if(gpuConstellations.get(gpu).size() > 0)
@@ -505,13 +510,11 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 		int remaining;
 		while((remaining = queue.size()) > 0) {
-		    int workloadSize = remaining / selectedGpus.size();
-		    if(workloadSize < 10_000)
-			workloadSize = 10_000;
+		    int workloadSize = (int) (remaining / finalFactor * benchmarkRatioFromFirstGpu[finalGpuIdx]);
+		    if(workloadSize < 5_000)
+			workloadSize = 5_000;
 		    else if(workloadSize > 50_000)
 			workloadSize = 50_000;
-
-		    System.out.println("[" + gpu.info.name + "] workload size: " + workloadSize);
 		    
 		    for(int i = 0; i < workloadSize; i++) {
 			synchronized(queue) {
