@@ -454,8 +454,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	var selectedGpus = gpuSelection.get();
 	
 	int firstWorkloadToIndex = (int) (constellations.size() * 0.7);
-	if(constellations.size() < 20_000 * selectedGpus.size())
-	    firstWorkloadToIndex = constellations.size();
+	
 	var firstWorkload = constellations.subList(0, findNextJklChangeIndex(constellations, firstWorkloadToIndex));
 	
 	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
