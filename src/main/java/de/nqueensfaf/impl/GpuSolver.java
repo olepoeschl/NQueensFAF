@@ -356,6 +356,15 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 	    checkCLError(clFlush(gpu.memQueue));
 	    checkCLError(clFinish(gpu.memQueue));
+	    
+	    // set kernel args
+	    LongBuffer constellationsArg = stack.mallocLong(1);
+	    constellationsArg.put(0, gpu.constellationsMem);
+	    checkCLError(clSetKernelArg(gpu.kernel, 0, constellationsArg));
+
+	    LongBuffer resArg = stack.mallocLong(1);
+	    resArg.put(0, gpu.resMem);
+	    checkCLError(clSetKernelArg(gpu.kernel, 1, resArg));
 	}
     }
     
@@ -390,15 +399,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 	    checkCLError(clFlush(gpu.memQueue));
 	    checkCLError(clFinish(gpu.memQueue));
-
-	    // set kernel args
-	    LongBuffer constellationsArg = stack.mallocLong(1);
-	    constellationsArg.put(0, gpu.constellationsMem);
-	    checkCLError(clSetKernelArg(gpu.kernel, 0, constellationsArg));
-
-	    LongBuffer resArg = stack.mallocLong(1);
-	    resArg.put(0, gpu.resMem);
-	    checkCLError(clSetKernelArg(gpu.kernel, 1, resArg));
 
 	    // define kernel dimensions
 	    final int dimensions = 1;
@@ -512,8 +512,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		int remaining;
 		while((remaining = queue.size()) > 0) {
 		    int workloadSize = (int) (remaining / finalFactor * benchmarkRatioFromFirstGpu[finalGpuIdx]);
-		    if(workloadSize < 512)
-			workloadSize = 512;
+		    if(workloadSize < 4096)
+			workloadSize = 4096;
 		    
 		    for(int i = 0; i < workloadSize; i++) {
 			synchronized(queue) {
