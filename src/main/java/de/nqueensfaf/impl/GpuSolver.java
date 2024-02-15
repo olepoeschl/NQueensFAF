@@ -478,9 +478,11 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    
 	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
 	    
-	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1)
-		toIndex = findNextJklChangeIndex(firstWorkload, toIndex);
-	    else
+	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1) {
+		int nextIjklChangeIndex = findNextJklChangeIndex(firstWorkload, toIndex);
+		if(nextIjklChangeIndex > 0)
+		    toIndex = nextIjklChangeIndex;
+	    } else
 		toIndex = firstWorkload.size();
 	    
 	    var gpuWorkload = firstWorkload.subList(fromIndex, toIndex);
@@ -574,9 +576,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     }
     
     private int findNextJklChangeIndex(List<Constellation> constellations, int fromIndex) {
-	int currentIjkl = getJkl(constellations.get(fromIndex).extractIjkl());
+	int currentJkl = getJkl(constellations.get(fromIndex).extractIjkl());
 	for(int i = fromIndex; i < constellations.size(); i++) {
-	    if(getJkl(constellations.get(i).extractIjkl()) != currentIjkl)
+	    if(getJkl(constellations.get(i).extractIjkl()) != currentJkl)
 		return i;
 	}
 	return 0;
