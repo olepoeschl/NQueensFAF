@@ -225,6 +225,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	
 	var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		.collect(Collectors.toList());
+	if(remainingConstellations.size() == 0)
+	    return; // nothing to do
 	
 	createOpenClObjects();
 	start = System.currentTimeMillis();
