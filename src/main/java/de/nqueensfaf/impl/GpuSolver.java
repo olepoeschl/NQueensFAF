@@ -453,7 +453,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 	
-	int firstWorkloadToIndex = (int) (constellations.size() * 0.7);
+	int firstWorkloadToIndex = (int) (constellations.size() * 0.6);
 	
 	var firstWorkload = constellations.subList(0, findNextJklChangeIndex(constellations, firstWorkloadToIndex));
 	
@@ -509,10 +509,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 		int remaining;
 		while((remaining = queue.size()) > 0) {
-		    // make the last jobs a bit smaller for better load balancing
 		    int workloadSize = (int) (remaining / finalFactor * benchmarkRatioFromFirstGpu[finalGpuIdx]);
-		    if(workloadSize < 64)
-			workloadSize = 64;
+		    if(workloadSize < 512)
+			workloadSize = 512;
 		    
 		    for(int i = 0; i < workloadSize; i++) {
 			synchronized(queue) {
