@@ -455,26 +455,25 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     }
     
     private void multiGpu(List<Constellation> constellations) {
-	// TODO: skip a GPU if there are no more remaining constellations
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
+
+	float benchmarkSum = selectedGpus.stream().map(Gpu::benchmark).reduce(0f, Float::sum);
+	float[] gpuPortions = new float[selectedGpus.size()];
+	float portionSum = 0f;
+	for(int i = 0; i < selectedGpus.size(); i++) {
+	    gpuPortions[i] = (benchmarkSum / selectedGpus.get(i).benchmark);
+	    portionSum += gpuPortions[i];
+	}
+	for(int i = 0; i < selectedGpus.size(); i++) {
+	    gpuPortions[i] /= portionSum;
+	}
 	
 	int firstWorkloadToIndex = (int) (constellations.size() * 0.6);
+	if(constellations.size() < 10_000 * selectedGpus.size())
+	    firstWorkloadToIndex = constellations.size();
 	
 	var firstWorkload = constellations.subList(0, findNextJklChangeIndex(constellations, firstWorkloadToIndex));
-	
-	var benchmarkRatioFromFirstGpu = new float[selectedGpus.size()];
-	float factor = 0; // for solving c1 + c2 + c... + cx = total number of constellations
-	// c1 (constellations for gpu 1) is calculated using this formula
-	// then the other c's are calculated based on c1 and its ratio to them
-	
-	for(int i = 0; i < selectedGpus.size(); i++) {
-	    benchmarkRatioFromFirstGpu[i] = (float) selectedGpus.get(0).benchmark / selectedGpus.get(i).benchmark;
-	    factor += benchmarkRatioFromFirstGpu[i];
-	}
-	int numConstellationsFirstGpu = (int) (firstWorkload.size() / factor);
-	
-	final float finalFactor = factor;
 	
 	int fromIndex = 0;
 	HashMap<Gpu, List<Constellation>> gpuConstellations = new HashMap<Gpu, List<Constellation>>();
@@ -482,12 +481,12 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	for(int i = 0; i < selectedGpus.size(); i++) {
 	    var gpu = selectedGpus.get(i);
 	    
-	    int toIndex = (int) (fromIndex + numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[i]);
+	    int toIndex = (int) (fromIndex + firstWorkload.size() * gpuPortions[i]);
 	    
 	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1) {
-		int nextIjklChangeIndex = findNextJklChangeIndex(firstWorkload, toIndex);
-		if(nextIjklChangeIndex > 0)
-		    toIndex = nextIjklChangeIndex;
+		int nextJklChangeIndex = findNextJklChangeIndex(firstWorkload, toIndex);
+		if(nextJklChangeIndex - toIndex <= (int) firstWorkload.size() * 0.1)
+		    toIndex = nextJklChangeIndex;
 	    } else
 		toIndex = firstWorkload.size();
 	    
@@ -499,6 +498,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    createBuffers(gpu, gpuWorkload.size());
 	    
 	    fromIndex = toIndex;
+	    if(fromIndex >= firstWorkload.size())
+		break;
 	}
 	
 	var queue = new ConcurrentLinkedQueue<>(constellations.subList(fromIndex, constellations.size()));
@@ -508,16 +509,19 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    final int finalGpuIdx = gpuIdx;
 	    final var gpu = selectedGpus.get(gpuIdx);
 	    
+	    if(gpuConstellations.get(gpu) == null)
+		continue;
+	    
 	    executor.execute(() -> {
 		// first workload (the biggest one)
 		if(gpuConstellations.get(gpu).size() > 0)
-		    singleGpu(gpu, gpuConstellations.get(gpu));
+		    runGpu(gpu, gpuConstellations.get(gpu));
 		
 		var workload = new ArrayList<Constellation>();
 
 		int remaining;
 		while((remaining = queue.size()) > 0) {
-		    int workloadSize = (int) (remaining / finalFactor * benchmarkRatioFromFirstGpu[finalGpuIdx]);
+		    int workloadSize = (int) (remaining / gpuPortions[finalGpuIdx]);
 		    if(workloadSize < 4096)
 			workloadSize = 4096;
 		    
@@ -531,7 +535,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 		    if(workload.size() > 0) {
 			workload = new ArrayList<>(fillWithPseudoConstellations(workload, gpu.workgroupSize));
-			singleGpu(gpu, workload);
+			runGpu(gpu, workload);
 		    }
 		}
 	    });
@@ -545,6 +549,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
 	
 	for(var gpu : selectedGpus) {
+	    if(gpuConstellations.get(gpu) == null)
+		continue;
 	    releaseBuffers(gpu);
 	}
     }
@@ -587,7 +593,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    if(getJkl(constellations.get(i).extractIjkl()) != currentJkl)
 		return i;
 	}
-	return 0;
+	return constellations.size();
     }
 
     private void sortConstellationsByJkl(List<Constellation> constellations) {
@@ -674,7 +680,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     
     private class Gpu {
 	private GpuInfo info;
-	private int benchmark = 1;
+	private float benchmark = 1;
 	private int workgroupSize = 64;
 	
 	// measured kernel duration
@@ -687,6 +693,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	
 	private long platform() {
 	    return platform;
+	}
+	
+	private float benchmark() {
+	    return benchmark;
 	}
     }
 }
