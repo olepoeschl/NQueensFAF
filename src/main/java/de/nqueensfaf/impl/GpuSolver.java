@@ -215,9 +215,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 	
-	// sort selected GPUs by descending benchmark (the ones with higher scores come first)
+	// sort selected GPUs by descending benchmark (the ones with better benchmarks come first)
 	Collections.sort(gpuSelection.get(), (g1, g2) -> {
-	    return Integer.compare(g2.benchmark, g1.benchmark);
+	    return Float.compare(g1.benchmark, g2.benchmark);
 	});
 	
 	if(!stateLoaded)
