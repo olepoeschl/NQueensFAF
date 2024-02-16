@@ -517,28 +517,16 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    if(workloadSize < 4096)
 			workloadSize = 4096;
 		    
-		    while(workload.size() < workloadSize) {
+		    for(int i = 0; i < workloadSize; i++) {
 			synchronized(queue) {
-			    for(int i = 0; i < gpu.workgroupSize; i++) {
-				if(queue.isEmpty() || workload.size() == workloadSize)
-				    break;
-				workload.add(queue.remove());
-			    }
+			    if(queue.isEmpty())
+				break;
+			    workload.add(queue.remove());
 			}
 		    }
 
 		    if(workload.size() > 0) {
 			workload = new ArrayList<>(fillWithPseudoConstellations(workload, gpu.workgroupSize));
-			
-			// new workload may not exceed buffer size which was defined by first workload
-			while(workload.size() > numConstellationsFirstGpu * benchmarkRatioFromFirstGpu[finalGpuIdx]){
-			    // but the workload size must stay divisible by workgroup size
-			    for(int i = 0; i < gpu.workgroupSize; i++) {
-				var c = workload.remove(workload.size() - 1);
-				queue.add(c);
-			    }
-			}
-			
 			singleGpu(gpu, workload);
 		    }
 		}
@@ -611,18 +599,18 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	sortConstellationsByJkl(constellations);
 	
 	ArrayList<Constellation> newConstellations = new ArrayList<Constellation>();
-	int currentJkl = getJkl(constellations.get(0).extractIjkl());
+	int currentJkl = constellations.get(0).getStartIjkl() & ((1 << 15) - 1);
 	for (var c : constellations) {
 	    // iterate through constellations, add each remaining constellations and fill up
 	    // each group of ijkl till its dividable by workgroup-size
 	    if (c.getSolutions() >= 0)
 		continue;
 
-	    if (getJkl(c.extractIjkl()) != currentJkl) { // check if new ijkl is found
+	    if ((c.getStartIjkl() & ((1 << 15) - 1)) != currentJkl) { // check if new ijkl is found
 		while (newConstellations.size() % workgroupSize != 0) {
 		    addPseudoConstellation(newConstellations);
 		}
-		currentJkl = getJkl(c.extractIjkl());
+		currentJkl = c.getStartIjkl() & ((1 << 15) - 1);
 	    }
 	    newConstellations.add(c);
 	}
