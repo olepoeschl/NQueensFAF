@@ -524,16 +524,19 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    int workloadSize = (int) (remaining / gpuPortions[finalGpuIdx]);
 		    if(workloadSize < 4096)
 			workloadSize = 4096;
-		    
-		    for(int i = 0; i < workloadSize; i++) {
-			synchronized(queue) {
-			    if(queue.isEmpty())
+
+		    synchronized(queue) {
+			for(int i = 0; i < workloadSize; i++) {
+			    if(queue.isEmpty() || workload.size() == workloadSize)
 				break;
 			    workload.add(queue.remove());
 			}
 		    }
 
 		    if(workload.size() > 0) {
+			while(workload.size() > firstWorkload.size() * gpuPortions[finalGpuIdx])
+			    workload.remove(workload.size() - 1);
+			    
 			workload = new ArrayList<>(fillWithPseudoConstellations(workload, gpu.workgroupSize));
 			runGpu(gpu, workload);
 		    }
