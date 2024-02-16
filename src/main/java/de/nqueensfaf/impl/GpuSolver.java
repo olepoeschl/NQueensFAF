@@ -470,10 +470,13 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
 	
 	int firstWorkloadToIndex = (int) (constellations.size() * 0.6);
+	int firstWorkloadJklChangeIndex = findNextJklChangeIndex(constellations, firstWorkloadToIndex);
+	if(firstWorkloadJklChangeIndex - firstWorkloadToIndex <= (int) (constellations.size() * 0.2))
+	    firstWorkloadToIndex = firstWorkloadJklChangeIndex;
 	if(constellations.size() < 10_000 * selectedGpus.size())
 	    firstWorkloadToIndex = constellations.size();
 	
-	var firstWorkload = constellations.subList(0, findNextJklChangeIndex(constellations, firstWorkloadToIndex));
+	var firstWorkload = constellations.subList(0, firstWorkloadToIndex);
 	
 	int fromIndex = 0;
 	HashMap<Gpu, List<Constellation>> gpuConstellations = new HashMap<Gpu, List<Constellation>>();
@@ -485,13 +488,15 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    
 	    if(toIndex < firstWorkload.size() && i < selectedGpus.size() - 1) {
 		int nextJklChangeIndex = findNextJklChangeIndex(firstWorkload, toIndex);
-		if(nextJklChangeIndex - toIndex <= (int) firstWorkload.size() * 0.1)
+		if(nextJklChangeIndex - toIndex <= (int) (firstWorkload.size() * 0.2 / selectedGpus.size()))
 		    toIndex = nextJklChangeIndex;
 	    } else
 		toIndex = firstWorkload.size();
 	    
 	    var gpuWorkload = firstWorkload.subList(fromIndex, toIndex);
 	    gpuWorkload = fillWithPseudoConstellations(gpuWorkload, gpu.workgroupSize);
+	    
+	    gpu.bufferSize = gpuWorkload.size();
 		    
 	    gpuConstellations.put(gpu, gpuWorkload);
 	    
@@ -521,7 +526,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 		int remaining;
 		while((remaining = queue.size()) > 0) {
-		    int workloadSize = (int) (remaining / gpuPortions[finalGpuIdx]);
+		    int workloadSize = (int) (remaining * gpuPortions[finalGpuIdx]);
 		    if(workloadSize < 4096)
 			workloadSize = 4096;
 
@@ -534,10 +539,16 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    }
 
 		    if(workload.size() > 0) {
-			while(workload.size() > firstWorkload.size() * gpuPortions[finalGpuIdx])
-			    workload.remove(workload.size() - 1);
-			    
 			workload = new ArrayList<>(fillWithPseudoConstellations(workload, gpu.workgroupSize));
+			
+			while(workload.size() > gpu.bufferSize) {
+			    for(int i = 0; i < gpu.workgroupSize; i++) {
+				var c = workload.remove(workload.size() - 1);
+				if(c.extractStart() != 69)
+				    queue.add(c);
+			    }
+			}
+			    
 			runGpu(gpu, workload);
 		    }
 		}
@@ -688,6 +699,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	
 	// measured kernel duration
 	private long duration;
+	private int bufferSize;
 	
 	// related opencl objects
 	private long platform, context, program, kernel, xQueue, memQueue, constellationsMem, resMem;
