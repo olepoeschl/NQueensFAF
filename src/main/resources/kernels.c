@@ -196,7 +196,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 }
 
 // AMD kernel
-kernel void nqfaf_amd(global struct constellation *constellation_arr, global long *result) {
+kernel void nqfaf_amd(constant struct constellation *constellation_arr, global long *result) {
     const struct constellation c = constellation_arr[get_global_id(0)]; // task for this work item									
     
     // start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
