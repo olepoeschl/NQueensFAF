@@ -232,12 +232,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	start = System.currentTimeMillis();
 	
 	if(gpuSelection.get().size() == 1) {
-	    sortConstellationsByJkl(remainingConstellations);
-	    remainingConstellations = new ArrayList<>(fillWithPseudoConstellations(remainingConstellations, gpuSelection.get().get(0).workgroupSize));
-	    
-	    createBuffers(gpuSelection.get().get(0), remainingConstellations.size());
 	    singleGpu(gpuSelection.get().get(0), remainingConstellations);
-	    releaseBuffers(gpuSelection.get().get(0));
 	} else {
 	    multiGpu(remainingConstellations);
 	}
@@ -375,10 +370,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	checkCLError(clReleaseMemObject(gpu.resMem));
     }
     
-    private void singleGpu(Gpu gpu, List<Constellation> constellations) {
+    private void runGpu(Gpu gpu, List<Constellation> constellations) {
 	try (MemoryStack stack = MemoryStack.stackPush()) {
 	    IntBuffer errBuf = stack.callocInt(1);
-	    
+
 	    // write data GPU buffers
 	    ByteBuffer constellationPtr = clEnqueueMapBuffer(gpu.memQueue, gpu.constellationsMem, true, CL_MAP_WRITE,
 		    0, constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
@@ -417,7 +412,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
 	    // read start and end times using an event
 	    long xEvent = xEventBuf.get(0);
-	    
+
 	    // wait for kernel to finish and continuously read results from gpu
 	    IntBuffer eventStatusBuf = stack.mallocInt(1);
 	    while (true) {
@@ -427,14 +422,14 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		checkCLError(clGetEventInfo(xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
 		if (eventStatusBuf.get(0) == CL_COMPLETE)
 		    break;
-		
+
 		try {
 		    Thread.sleep(50);
 		} catch (InterruptedException e) {
 		    // ignore
 		}
 	    }
-	    
+
 	    // read final results
 	    readResults(gpu.memQueue, gpu.resMem, resPtr, constellations);
 
@@ -445,10 +440,18 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
 	    checkCLError(err);
 	    gpu.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
-	    
+
 	    // release memory and event
 	    checkCLError(clReleaseEvent(xEvent));
 	}
+    }
+    
+    private void singleGpu(Gpu gpu, List<Constellation> constellations) {
+	constellations = new ArrayList<>(fillWithPseudoConstellations(constellations, gpuSelection.get().get(0).workgroupSize));
+
+	createBuffers(gpuSelection.get().get(0), constellations.size());
+	runGpu(gpuSelection.get().get(0), constellations);
+	releaseBuffers(gpuSelection.get().get(0));
     }
     
     private void multiGpu(List<Constellation> constellations) {
