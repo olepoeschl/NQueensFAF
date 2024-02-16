@@ -452,6 +452,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
     }
     
     private void multiGpu(List<Constellation> constellations) {
+	// TODO: skip a GPU if there are no more remaining constellations
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 	
