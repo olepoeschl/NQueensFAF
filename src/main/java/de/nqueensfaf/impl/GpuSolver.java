@@ -58,7 +58,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -75,7 +74,7 @@ import de.nqueensfaf.Solver;
 public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 
     private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
-    private GPUSelection gpuSelection = new GPUSelection();
+    private GpuSelection gpuSelection = new GpuSelection();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
     
@@ -196,7 +195,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	return infos;
     }
 
-    public GPUSelection gpuSelection() {
+    public GpuSelection gpuSelection() {
 	return gpuSelection;
     }
 
@@ -228,7 +227,9 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	if(remainingConstellations.size() == 0)
 	    return; // nothing to do
 	
-	createOpenClObjects();
+	for(var gpu : gpuSelection.get())
+	    gpu.createOpenClObjects();
+	
 	start = System.currentTimeMillis();
 	
 	if(gpuSelection.get().size() == 1) {
@@ -241,224 +242,24 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    duration = gpuSelection.get().get(0).duration;
 	else
 	    duration = System.currentTimeMillis() - start;
-	releaseOpenClObjects();
-    }
-    
-    private void createOpenClObjects() {
-	try (MemoryStack stack = MemoryStack.stackPush()) {
-	    IntBuffer errBuf = stack.callocInt(1);
-	    gpuSelection.get().stream().mapToLong(g1 -> g1.platform()).distinct().forEach(platform -> {		var platformGpusList = gpuSelection.get().stream().filter(g2 -> g2.platform == platform).toList();
-		PointerBuffer platformGpus = MemoryStack.stackPush().mallocPointer(platformGpusList.size());
-		for (int i = 0; i < platformGpus.capacity(); i++) {
-		    platformGpus.put(i, platformGpusList.get(i).info.id());
-		}
 
-		for(var gpu : platformGpusList) {
-		    // create context
-		    PointerBuffer ctxProps = stack.mallocPointer(3);
-		    ctxProps.put(CL_CONTEXT_PLATFORM)
-        		    .put(platform)
-        		    .put(NULL).flip();
-		    long context = clCreateContext(ctxProps, gpu.info.id, null, NULL, errBuf);
-		    checkCLError(errBuf);
-		    gpu.context = context;
-			
-		    // create program
-		    long program;
-		    try {
-			program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
-			checkCLError(errBuf);
-		    } catch (IOException e) {
-			throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);
-		    }
-		    // build program
-		    String options = "" // "-cl-std=CL1.2"
-			    + " -D N=" + getN()
-			    + " -D WORKGROUP_SIZE=" + gpu.workgroupSize
-			    + " -Werror";
-		    int error = clBuildProgram(program, gpu.info.id(), options, null, NULL);
-		    if (error != 0) {
-			String buildLog = getProgramBuildInfoStringASCII(program, gpu.info.id(), CL_PROGRAM_BUILD_LOG);
-			String msg = String.format("could not build OpenCL program: %s", error, buildLog);
-			throw new RuntimeException(msg);
-		    }
-		    gpu.program = program;
-
-		    // create kernel
-		    long kernel;
-		    if (gpu.info.vendor().toLowerCase().contains("intel")) {
-			kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
-		    } else if (gpu.info.vendor().toLowerCase().contains("nvidia")) {
-			kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
-		    } else if (gpu.info.vendor().toLowerCase().contains("amd")
-			    || gpu.info.vendor().toLowerCase().contains("advanced micro devices")) {
-			kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
-		    } else {
-			kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
-		    }
-		    checkCLError(errBuf);
-		    gpu.kernel = kernel;
-		    
-		    // create command queues
-		    long xQueue = clCreateCommandQueue(context, gpu.info.id(), CL_QUEUE_PROFILING_ENABLE, errBuf);
-		    checkCLError(errBuf);
-		    gpu.xQueue = xQueue;
-		    long memQueue = clCreateCommandQueue(context, gpu.info.id(), 0,
-			    errBuf);
-		    checkCLError(errBuf);
-		    gpu.memQueue = memQueue;
-		}
-	    });
-	}
-    }
-    
-    private void releaseOpenClObjects() {
-	var released = new HashSet<Long>();
-	for(var gpu : gpuSelection.get()) {
-	    checkCLError(clReleaseCommandQueue(gpu.xQueue));
-	    checkCLError(clReleaseCommandQueue(gpu.memQueue));
-	    checkCLError(clReleaseKernel(gpu.kernel));
-	    
-	    if(!released.contains(gpu.program)) {
-		checkCLError(clReleaseProgram(gpu.program));
-		released.add(gpu.program);
-	    }
-	    
-	    if(!released.contains(gpu.context)) {
-		checkCLError(clReleaseContext(gpu.context));
-		released.add(gpu.context);
-	    }
-	}
-    }
-    
-    private void createBuffers(Gpu gpu, int maxNumOfConstellations) {
-	try (MemoryStack stack = MemoryStack.stackPush()) {
-	    IntBuffer errBuf = stack.callocInt(1);
-	    
-	    if(gpu.info.vendor.toLowerCase().contains("nvidia"))
-		gpu.constellationsMem = clCreateBufferNV(gpu.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
-			CL_MEM_PINNED_NV, maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
-	    else
-		gpu.constellationsMem = clCreateBuffer(gpu.context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
-			maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
-	    checkCLError(errBuf);
-	    
-	    if(gpu.info.vendor.toLowerCase().contains("nvidia"))
-		gpu.resMem = clCreateBufferNV(gpu.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			CL_MEM_PINNED_NV, maxNumOfConstellations * 8, errBuf);
-	    else
-		gpu.resMem = clCreateBuffer(gpu.context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			maxNumOfConstellations * 8, errBuf);
-	    checkCLError(errBuf);
-
-	    checkCLError(clFlush(gpu.memQueue));
-	    checkCLError(clFinish(gpu.memQueue));
-	    
-	    // set kernel args
-	    LongBuffer constellationsArg = stack.mallocLong(1);
-	    constellationsArg.put(0, gpu.constellationsMem);
-	    checkCLError(clSetKernelArg(gpu.kernel, 0, constellationsArg));
-
-	    LongBuffer resArg = stack.mallocLong(1);
-	    resArg.put(0, gpu.resMem);
-	    checkCLError(clSetKernelArg(gpu.kernel, 1, resArg));
-	}
-    }
-    
-    private void releaseBuffers(Gpu gpu) {
-	checkCLError(clReleaseMemObject(gpu.constellationsMem));
-	checkCLError(clReleaseMemObject(gpu.resMem));
-    }
-    
-    private void runGpu(Gpu gpu, List<Constellation> constellations) {
-	try (MemoryStack stack = MemoryStack.stackPush()) {
-	    IntBuffer errBuf = stack.callocInt(1);
-
-	    // write data GPU buffers
-	    ByteBuffer constellationPtr = clEnqueueMapBuffer(gpu.memQueue, gpu.constellationsMem, true, CL_MAP_WRITE,
-		    0, constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
-	    checkCLError(errBuf);
-	    for (int i = 0; i < constellations.size(); i++) {
-		constellationPtr.putInt(i*(4+4+4+4), constellations.get(i).getLd());
-		constellationPtr.putInt(i*(4+4+4+4)+4, constellations.get(i).getRd());
-		constellationPtr.putInt(i*(4+4+4+4)+4+4, constellations.get(i).getCol());
-		constellationPtr.putInt(i*(4+4+4+4)+4+4+4, constellations.get(i).getStartIjkl());
-	    }
-	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, gpu.constellationsMem, constellationPtr, null, null));
-
-	    ByteBuffer resPtr = clEnqueueMapBuffer(gpu.memQueue, gpu.resMem, true, CL_MAP_WRITE, 0, constellations.size() * 8,
-		    null, null, errBuf, null);
-	    checkCLError(errBuf);
-	    for (int i = 0; i < constellations.size(); i++) {
-		resPtr.putLong(i * 8, constellations.get(i).getSolutions());
-	    }
-	    checkCLError(clEnqueueUnmapMemObject(gpu.memQueue, gpu.resMem, resPtr, null, null));
-
-	    checkCLError(clFlush(gpu.memQueue));
-	    checkCLError(clFinish(gpu.memQueue));
-
-	    // define kernel dimensions
-	    final int dimensions = 1;
-	    PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
-	    globalWorkSize.put(0, constellations.size());
-	    PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
-	    localWorkSize.put(0, gpu.workgroupSize);
-
-	    // run kernel
-	    final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
-	    checkCLError(clEnqueueNDRangeKernel(gpu.xQueue, gpu.kernel, dimensions, null, globalWorkSize,
-		    localWorkSize, null, xEventBuf));
-	    checkCLError(clFlush(gpu.xQueue));
-
-	    // read start and end times using an event
-	    long xEvent = xEventBuf.get(0);
-
-	    // wait for kernel to finish and continuously read results from gpu
-	    IntBuffer eventStatusBuf = stack.mallocInt(1);
-	    while (true) {
-		if(getUpdateInterval() > 0)
-		    readResults(gpu.memQueue, gpu.resMem, resPtr, constellations);
-
-		checkCLError(clGetEventInfo(xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
-		if (eventStatusBuf.get(0) == CL_COMPLETE)
-		    break;
-
-		try {
-		    Thread.sleep(50);
-		} catch (InterruptedException e) {
-		    // ignore
-		}
-	    }
-
-	    // read final results
-	    readResults(gpu.memQueue, gpu.resMem, resPtr, constellations);
-
-	    // read gpu kernel profiled time
-	    LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-	    int err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_START, startBuf, null);
-	    checkCLError(err);
-	    err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
-	    checkCLError(err);
-	    gpu.duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
-
-	    // release memory and event
-	    checkCLError(clReleaseEvent(xEvent));
-	}
+	for(var gpu : gpuSelection.get())
+	    gpu.releaseOpenClObjects();
     }
     
     private void singleGpu(Gpu gpu, List<Constellation> constellations) {
 	constellations = new ArrayList<>(fillWithPseudoConstellations(constellations, gpuSelection.get().get(0).workgroupSize));
 
-	createBuffers(gpuSelection.get().get(0), constellations.size());
-	runGpu(gpuSelection.get().get(0), constellations);
-	releaseBuffers(gpuSelection.get().get(0));
+	gpu.createBuffers(constellations.size(), 0);
+	gpu.executeWorkload(constellations);
+	gpu.releaseBuffers();
     }
     
     private void multiGpu(List<Constellation> constellations) {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 
-	float benchmarkSum = selectedGpus.stream().map(Gpu::benchmark).reduce(0f, Float::sum);
+	float benchmarkSum = selectedGpus.stream().map(Gpu::getBenchmark).reduce(0f, Float::sum);
 	float[] gpuPortions = new float[selectedGpus.size()];
 	float portionSum = 0f;
 	for(int i = 0; i < selectedGpus.size(); i++) {
@@ -500,7 +301,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    
 	    gpuConstellations.put(gpu, gpuWorkload);
 	    
-	    createBuffers(gpu, gpuWorkload.size());
+	    gpu.createBuffers(gpuWorkload.size(), 0);
 	    
 	    fromIndex = toIndex;
 	    if(fromIndex >= firstWorkload.size())
@@ -520,7 +321,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    executor.execute(() -> {
 		// first workload (the biggest one)
 		if(gpuConstellations.get(gpu).size() > 0)
-		    runGpu(gpu, gpuConstellations.get(gpu));
+		    gpu.executeWorkload(gpuConstellations.get(gpu));
 		
 		var workload = new ArrayList<Constellation>();
 
@@ -549,7 +350,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 			    }
 			}
 			    
-			runGpu(gpu, workload);
+			gpu.executeWorkload(workload);
 		    }
 		}
 	    });
@@ -565,25 +366,11 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	for(var gpu : selectedGpus) {
 	    if(gpuConstellations.get(gpu) == null)
 		continue;
-	    releaseBuffers(gpu);
-	}
-    }
-    
-    // utils
-    private void readResults(long memQueue, long resMem, ByteBuffer resPtr, List<Constellation> constellations) {
-	// read result and progress memory buffers
-	checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
-	for (int i = 0; i < constellations.size(); i++) {
-	    if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
-		continue;
-	    long solutionsForConstellation = resPtr.getLong(i * 8)
-		    * symmetry(getN(), constellations.get(i).extractIjkl());
-	    if (solutionsForConstellation >= 0)
-		// synchronize with the list of constellations on the RAM
-		constellations.get(i).setSolutions(solutionsForConstellation);
+	    gpu.releaseBuffers();
 	}
     }
 
+    // utils
     private String readKernelSource(String filepath) throws IOException {
 	String resultString = null;
 	try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
@@ -649,18 +436,18 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	constellations.add(new Constellation(-1, (1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
     }
     
-    public class GPUSelection {
+    public class GpuSelection {
 	private ArrayList<Gpu> selectedGpus = new ArrayList<Gpu>();
 	private boolean chosen = false;
 	
-	private GPUSelection() {}
+	private GpuSelection() {}
 	
 	public void choose(long gpuId) {
 	    add(gpuId, 1, 64);
 	    chosen = true;
 	}
 	
-	public void add(long gpuId, int benchmark, int workgroupSize) {
+	public GpuSelection add(long gpuId, int benchmark, int workgroupSize) {
 	    if(chosen)
 		throw new IllegalStateException("unable to add more GPU's after choosing one");
 	    
@@ -680,6 +467,8 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    gpu.workgroupSize = workgroupSize;
 		
 		selectedGpus.add(gpu);
+		
+		return this;
 	    } catch (NoSuchElementException e) {
 		throw new IllegalArgumentException("no GPU found for id " + gpuId);
 	    }
@@ -702,16 +491,229 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	private int bufferSize;
 	
 	// related opencl objects
-	private long platform, context, program, kernel, xQueue, memQueue, constellationsMem, resMem;
-	
-	private Gpu(){}
-	
-	private long platform() {
-	    return platform;
-	}
-	
-	private float benchmark() {
+	private long platform;
+	private long context;
+	private long program;
+	private long kernel;
+	private long xQueue, memQueue;
+	private long constellationsMem, resMem; // , jklQueensMem;
+
+	private Gpu() {}
+
+	private float getBenchmark() {
 	    return benchmark;
+	}
+
+	private void createOpenClObjects() {
+	    try (MemoryStack stack = MemoryStack.stackPush()) {
+		IntBuffer errBuf = stack.callocInt(1);
+
+		// create context
+		PointerBuffer ctxProps = stack.mallocPointer(3);
+		ctxProps.put(CL_CONTEXT_PLATFORM)
+		.put(platform)
+		.put(NULL).flip();
+		long context = clCreateContext(ctxProps, info.id, null, NULL, errBuf);
+		checkCLError(errBuf);
+		this.context = context;
+
+		// create program
+		long program;
+		try {
+		    program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
+		    checkCLError(errBuf);
+		} catch (IOException e) {
+		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);
+		}
+		// build program
+		String options = "" // "-cl-std=CL1.2"
+			+ " -D N=" + getN()
+			+ " -D WORKGROUP_SIZE=" + workgroupSize
+			+ " -Werror";
+		int error = clBuildProgram(program, info.id(), options, null, NULL);
+		if (error != 0) {
+		    String buildLog = getProgramBuildInfoStringASCII(program, info.id(), CL_PROGRAM_BUILD_LOG);
+		    String msg = String.format("could not build OpenCL program: %s", error, buildLog);
+		    throw new RuntimeException(msg);
+		}
+		this.program = program;
+
+		// create kernel
+		long kernel;
+		if (info.vendor().toLowerCase().contains("intel")) {
+		    kernel = clCreateKernel(program, "nqfaf_intel", errBuf);
+		} else if (info.vendor().toLowerCase().contains("nvidia")) {
+		    kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
+		} else if (info.vendor().toLowerCase().contains("amd")
+			|| info.vendor().toLowerCase().contains("advanced micro devices")) {
+		    kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
+		} else {
+		    kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
+		}
+		checkCLError(errBuf);
+		this.kernel = kernel;
+
+		// create command queues
+		long xQueue = clCreateCommandQueue(context, info.id(), CL_QUEUE_PROFILING_ENABLE, errBuf);
+		checkCLError(errBuf);
+		this.xQueue = xQueue;
+		long memQueue = clCreateCommandQueue(context, info.id(), 0,
+			errBuf);
+		checkCLError(errBuf);
+		this.memQueue = memQueue;
+	    }
+	}
+
+	private void releaseOpenClObjects() {
+	    checkCLError(clReleaseCommandQueue(xQueue));
+	    checkCLError(clReleaseCommandQueue(memQueue));
+	    checkCLError(clReleaseKernel(kernel));
+	    checkCLError(clReleaseProgram(program));
+	    checkCLError(clReleaseContext(context));
+	}
+
+	private void createBuffers(int maxNumOfConstellations, int maxNumOfDistinctJkl) {
+	    try (MemoryStack stack = MemoryStack.stackPush()) {
+		IntBuffer errBuf = stack.callocInt(1);
+
+		if(info.vendor.toLowerCase().contains("nvidia"))
+		    constellationsMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
+			    CL_MEM_PINNED_NV, maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
+		else
+		    constellationsMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, 
+			    maxNumOfConstellations * (4 + 4 + 4 + 4), errBuf);
+		checkCLError(errBuf);
+
+//		if(info.vendor.toLowerCase().contains("nvidia"))
+//		    jklQueensMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+//			    CL_MEM_PINNED_NV, maxNumOfDistinctJkl * getN() * 4, errBuf);
+//		else
+//		    jklQueensMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+//			    maxNumOfDistinctJkl * getN() * 4, errBuf);
+//		checkCLError(errBuf);
+
+		if(info.vendor.toLowerCase().contains("nvidia"))
+		    resMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    CL_MEM_PINNED_NV, maxNumOfConstellations * 8, errBuf);
+		else
+		    resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    maxNumOfConstellations * 8, errBuf);
+		checkCLError(errBuf);
+
+		checkCLError(clFlush(memQueue));
+		checkCLError(clFinish(memQueue));
+
+		// set kernel args
+		LongBuffer constellationsArg = stack.mallocLong(1);
+		constellationsArg.put(0, constellationsMem);
+		checkCLError(clSetKernelArg(kernel, 0, constellationsArg));
+
+//		LongBuffer jklQueensArg = stack.mallocLong(1);
+//		jklQueensArg.put(0, jklQueensMem);
+//		checkCLError(clSetKernelArg(kernel, 1, jklQueensArg));
+
+		LongBuffer resArg = stack.mallocLong(1);
+		resArg.put(0, resMem);
+		checkCLError(clSetKernelArg(kernel, 1, resArg));
+	    }
+	}
+
+	private void releaseBuffers() {
+	    checkCLError(clReleaseMemObject(constellationsMem));
+//	    checkCLError(clReleaseMemObject(jklQueensMem));
+	    checkCLError(clReleaseMemObject(resMem));
+	}
+
+	private void executeWorkload(List<Constellation> constellations) {
+	    // TODO
+	    // fill jkl queens buffer
+	    try (MemoryStack stack = MemoryStack.stackPush()) {
+		IntBuffer errBuf = stack.callocInt(1);
+
+		// write data GPU buffers
+		ByteBuffer constellationPtr = clEnqueueMapBuffer(memQueue, constellationsMem, true, CL_MAP_WRITE,
+			0, constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
+		checkCLError(errBuf);
+		for (int i = 0; i < constellations.size(); i++) {
+		    constellationPtr.putInt(i*(4+4+4+4), constellations.get(i).getLd());
+		    constellationPtr.putInt(i*(4+4+4+4)+4, constellations.get(i).getRd());
+		    constellationPtr.putInt(i*(4+4+4+4)+4+4, constellations.get(i).getCol());
+		    constellationPtr.putInt(i*(4+4+4+4)+4+4+4, constellations.get(i).getStartIjkl());
+		}
+		checkCLError(clEnqueueUnmapMemObject(memQueue, constellationsMem, constellationPtr, null, null));
+
+		ByteBuffer resPtr = clEnqueueMapBuffer(memQueue, resMem, true, CL_MAP_WRITE, 0, constellations.size() * 8,
+			null, null, errBuf, null);
+		checkCLError(errBuf);
+		for (int i = 0; i < constellations.size(); i++) {
+		    resPtr.putLong(i * 8, constellations.get(i).getSolutions());
+		}
+		checkCLError(clEnqueueUnmapMemObject(memQueue, resMem, resPtr, null, null));
+
+		checkCLError(clFlush(memQueue));
+		checkCLError(clFinish(memQueue));
+
+		// define kernel dimensions
+		final int dimensions = 1;
+		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
+		globalWorkSize.put(0, constellations.size());
+		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
+		localWorkSize.put(0, workgroupSize);
+
+		// run kernel
+		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
+		checkCLError(clEnqueueNDRangeKernel(xQueue, kernel, dimensions, null, globalWorkSize,
+			localWorkSize, null, xEventBuf));
+		checkCLError(clFlush(xQueue));
+
+		// read start and end times using an event
+		long xEvent = xEventBuf.get(0);
+
+		// wait for kernel to finish and continuously read results from gpu
+		IntBuffer eventStatusBuf = stack.mallocInt(1);
+		while (true) {
+		    if(getUpdateInterval() > 0)
+			readResults(resPtr, constellations);
+
+		    checkCLError(clGetEventInfo(xEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, eventStatusBuf, null));
+		    if (eventStatusBuf.get(0) == CL_COMPLETE)
+			break;
+
+		    try {
+			Thread.sleep(50);
+		    } catch (InterruptedException e) {
+			// ignore
+		    }
+		}
+
+		// read final results
+		readResults(resPtr, constellations);
+
+		// read gpu kernel profiled time
+		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
+		int err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_START, startBuf, null);
+		checkCLError(err);
+		err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
+		checkCLError(err);
+		duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
+
+		// release memory and event
+		checkCLError(clReleaseEvent(xEvent));
+	    }
+	}
+
+	private void readResults(ByteBuffer resPtr, List<Constellation> constellations) {
+	    // read result and progress memory buffers
+	    checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
+	    for (int i = 0; i < constellations.size(); i++) {
+		if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
+		    continue;
+		long solutionsForConstellation = resPtr.getLong(i * 8)
+			* symmetry(getN(), constellations.get(i).extractIjkl());
+		if (solutionsForConstellation >= 0)
+		    // synchronize with the list of constellations on the RAM
+		    constellations.get(i).setSolutions(solutionsForConstellation);
+	    }
 	}
     }
 }

@@ -34,7 +34,7 @@ public class Demo {
 //		g.gpuSelection().add(gpu.id(), 50, 64);
 	    }
 	}
-	g.setUpdateInterval(1000);
+	g.setUpdateInterval(400);
 	g.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
         	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
         	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
