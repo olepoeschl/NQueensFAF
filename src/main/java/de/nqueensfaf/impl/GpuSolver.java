@@ -505,7 +505,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	private long program;
 	private long kernel;
 	private long xQueue, memQueue;
-	private long constellationsMem, resMem, jklQueensMem;
+	private long constellationsMem, jklQueensMem, resMem;
 
 	private Gpu() {
 	}
@@ -517,7 +517,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	private void reset() {
 	    duration = 0;
 	    maxNumOfConstellationsPerRun = 0;
-	    context = program = kernel = xQueue = memQueue = constellationsMem = resMem = 0;
+	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	}
 
 	private void createOpenClObjects() {
