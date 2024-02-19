@@ -534,7 +534,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		int error = clBuildProgram(program, info.id(), options, null, NULL);
 		if (error != 0) {
 		    String buildLog = getProgramBuildInfoStringASCII(program, info.id(), CL_PROGRAM_BUILD_LOG);
-		    String msg = String.format("could not build OpenCL program: %s", error, buildLog);
+		    String msg = String.format("could not build OpenCL program: %s", buildLog);
 		    throw new RuntimeException(msg);
 		}
 		this.program = program;
