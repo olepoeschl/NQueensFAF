@@ -8,7 +8,7 @@ struct constellation {
 };
 
 // Nvidia kernel
-kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global long *result) {
+kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global uint* jkl_queens_arr, global long *result) {
     const struct constellation c = constellation_arr[get_global_id(0)]; // task for this work item									
     
     // start_jkl_arr contains [6 queens free][5 queens for start][5 queens for i][5 queens for j][5 queens for k][5 queens for l] 
@@ -33,27 +33,10 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     // and also the left and right column 
     // in row k only L is free and in row l only 1 is free 
     local uint jkl_queens[N];
-    // the rd from queen j and k with respect to the last row
-    uint rdiag = (L >> ((c.start_ijkl >> 10) & 31)) | (L >> (N-1-((c.start_ijkl >> 5) & 31)));
-    // the ld from queen j and l with respect to the last row
-    uint ldiag = (L >> ((c.start_ijkl >> 10) & 31)) | (L >> (c.start_ijkl & 31));
-    if(l_id == 0) {
-	// we also occupy the left and right border 
-	for(int a = 0; a < N; a++){
-	    jkl_queens[N-1-a] = (ldiag >> a) | (rdiag << a) | L | 1;
-	}
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-    ldiag = L >> ((c.start_ijkl >> 5) & 31); // ld from queen l with respect to the first row 
-    rdiag = 1 << (c.start_ijkl & 31); // ld from queen k with respect to the first row 
-    if(l_id == 0) {
-	for(int a = 0; a < N; a++){
-	    jkl_queens[a] |= (ldiag << a) | (rdiag >> a);
-	}
-	jkl_queens[((c.start_ijkl >> 5) & 31)] = ~L;
-	jkl_queens[(c.start_ijkl & 31)] = ~1; 
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
+    jkl_queens[l_id % N] = jkl_queens_arr[get_group_id(0) * N + l_id % N];
+    
+    uint ldiag = L >> ((c.start_ijkl >> 5) & 31); // ld from queen l with respect to the first row 
+    uint rdiag = 1 << (c.start_ijkl & 31); // ld from queen k with respect to the first row 
 
     ld &= ~(ldiag << start); // remove queen k from ld 
     if((c.start_ijkl & 31) != N-1) 
