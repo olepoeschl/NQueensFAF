@@ -34,6 +34,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     // in row k only L is free and in row l only 1 is free 
     local uint jkl_queens[N];
     jkl_queens[l_id % N] = jkl_queens_arr[get_group_id(0) * N + l_id % N];
+    barrier(CLK_LOCAL_MEM_FENCE);
     
     uint ldiag = L >> ((c.start_ijkl >> 5) & 31); // ld from queen l with respect to the first row 
     uint rdiag = 1 << (c.start_ijkl & 31); // ld from queen k with respect to the first row 
@@ -205,6 +206,7 @@ kernel void nqfaf_amd(constant struct constellation *constellation_arr, global u
     // in row k only L is free and in row l only 1 is free 
     local uint jkl_queens[N];
     jkl_queens[l_id % N] = jkl_queens_arr[get_group_id(0) * N + l_id % N];
+    barrier(CLK_LOCAL_MEM_FENCE);
     
     uint ldiag = L >> ((c.start_ijkl >> 5) & 31); // ld from queen l with respect to the first row 
     uint rdiag = 1 << (c.start_ijkl & 31); // ld from queen k with respect to the first row 
@@ -376,6 +378,7 @@ kernel void nqfaf_intel(global struct constellation *constellation_arr, global u
     // in row k only L is free and in row l only 1 is free 
     local uint jkl_queens[N];
     jkl_queens[l_id % N] = jkl_queens_arr[get_group_id(0) * N + l_id % N];
+    barrier(CLK_LOCAL_MEM_FENCE);
     
     uint ldiag = L >> ((c.start_ijkl >> 5) & 31); // ld from queen l with respect to the first row 
     uint rdiag = 1 << (c.start_ijkl & 31); // ld from queen k with respect to the first row 
