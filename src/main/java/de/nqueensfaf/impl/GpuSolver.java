@@ -639,8 +639,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	}
 
 	private void executeWorkload(List<Constellation> constellations) {
-	    // TODO
-	    // fill jkl queens buffer
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
 
