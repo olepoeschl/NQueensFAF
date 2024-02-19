@@ -368,10 +368,10 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    throw new RuntimeException("could not wait for termination of GpuSolver: " + e.getMessage());
 	}
 
-	for (var gpu : selectedGpus) {
-	    if (gpu.maxNumOfConstellationsPerRun == 0)
+	for (int gpuIdx = 0; gpuIdx < selectedGpus.size(); gpuIdx++) {
+	    if (firstWorkloads.get(gpuIdx).size() == 0)
 		continue;
-	    gpu.releaseBuffers();
+	    selectedGpus.get(gpuIdx).releaseBuffers();
 	}
     }
 
