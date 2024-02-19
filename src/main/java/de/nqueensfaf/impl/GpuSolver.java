@@ -324,7 +324,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		    
 		    iteration++;
 		    
-		    int workloadSize = (int) (gpuFirstWorkloadSize * Math.pow(portionPerIteration, iteration));
+		    int workloadSize = (int) (gpuFirstWorkloadSize * Math.pow(portionPerIteration, iteration) * 0.9f);
 		    if(workloadSize < minGpuWorkloadSize)
 			workloadSize = minGpuWorkloadSize;
 		    while(workload.size() < workloadSize && !queue.isEmpty()) {
