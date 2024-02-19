@@ -294,15 +294,16 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 		toIndex = firstWorkloadSize;
 
 	    var gpuFirstWork = constellations.subList(fromIndex, toIndex);
-	    if (gpuFirstWork.size() == 0)
+	    if (gpuFirstWork.size() == 0) {
+		firstWorkloads.add(new ArrayList<Constellation>());
 		continue;
+	    }
 
 	    var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork, selectedGpus.get(gpuIdx).workgroupSize);
 	    firstWorkloads.add(gpuFirstWorkload);
 
 	    var gpu = selectedGpus.get(gpuIdx);
 	    gpu.createBuffers(gpuFirstWorkload.size());
-	    gpu.maxNumOfConstellationsPerRun = gpuFirstWorkload.size();
 
 	    fromIndex = toIndex;
 	}
@@ -314,7 +315,7 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    final int gpuIdx = idx;
 	    final var gpu = selectedGpus.get(idx);
 
-	    if (gpu.maxNumOfConstellationsPerRun == 0)
+	    if (firstWorkloads.get(gpuIdx).size() == 0)
 		continue;
 
 	    executor.execute(() -> {
