@@ -24,7 +24,7 @@ public class BooleanQueens extends Solver{
 	private void sq(int row) {
 		if(row == N) {
 			sol++;
-			print_queens();
+//			print_queens();
 			return;
 		}
 		for(int col = 0; col < N; col++) {
@@ -102,10 +102,11 @@ public class BooleanQueens extends Solver{
 	}
 
 	public static void main(String[] args){
-		for(int N = 1; N <= 8; N++) {
+		for(int N = 16; N <= 16; N++) {
 			BooleanQueens B = new BooleanQueens(N);
 			B.solve_board();
-			System.out.println("N = " + B.N + ": " + B.sol + " solutions in " + B.time + "ms");
+//			System.out.println("N = " + B.N + ": " + B.sol + " solutions in " + B.time + "ms");
+			System.out.println(N + " " + B.time + " " + B.sol);
 		}
 	}
 
