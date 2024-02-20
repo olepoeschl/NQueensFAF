@@ -24,7 +24,7 @@ public class BooleanQueens extends Solver{
 	private void sq(int row) {
 		if(row == N) {
 			sol++;
-//			print_queens();
+			print_queens();
 			return;
 		}
 		for(int col = 0; col < N; col++) {
@@ -55,34 +55,34 @@ public class BooleanQueens extends Solver{
 		return false;
 	}
 	
-//	private void print_queens() {
-//		for(int i = 0; i < N; i++) {
-//			for(int j = 0; j < N; j++) {
-//				System.out.print('[');
-//				if (queens[i] == j)
-//					System.out.print('X');
-//				else
-//					System.out.print(' ');
-//				System.out.print(']');
-//			}
-//			System.out.print('\n');
-//		}
-//		System.out.print('\n');
-//	}
-//	private void print_occupancy(boolean[][] board) {
-//		for(int i = 0; i < N; i++) {
-//			for(int j = 0; j < N; j++) {
-//				System.out.print('[');
-//				if (board[i][j] == true)
-//					System.out.print('X');
-//				else
-//					System.out.print(' ');
-//				System.out.print(']');
-//			}
-//			System.out.print('\n');
-//		}
-//		System.out.print('\n');
-//	}
+	private void print_queens() {
+		for(int row = 0; row < N; row++) {
+			for(int col = 0; col < N; col++) {
+				System.out.print('[');
+				if (queens[row][col])
+					System.out.print('X');
+				else
+					System.out.print(' ');
+				System.out.print(']');
+			}
+			System.out.print('\n');
+		}
+		System.out.print('\n');
+	}
+	private void print_occupancy(boolean[][] board) {
+		for(int row = 0; row < N; row++) {
+			for(int col = 0; col < N; col++) {
+				System.out.print('[');
+				if (board[row][col] == true)
+					System.out.print('X');
+				else
+					System.out.print(' ');
+				System.out.print(']');
+			}
+			System.out.print('\n');
+		}
+		System.out.print('\n');
+	}
 
 	@Override
 	public long getDuration() {
@@ -102,7 +102,7 @@ public class BooleanQueens extends Solver{
 	}
 
 	public static void main(String[] args){
-		for(int N = 1; N <= 14; N++) {
+		for(int N = 1; N <= 8; N++) {
 			BooleanQueens B = new BooleanQueens(N);
 			B.solve_board();
 			System.out.println("N = " + B.N + ": " + B.sol + " solutions in " + B.time + "ms");
