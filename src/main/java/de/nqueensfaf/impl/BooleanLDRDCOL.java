@@ -75,7 +75,7 @@ public class BooleanLDRDCOL extends Solver{
 	}
 	
 	public static void main(String[] args){
-		for(int N = 1; N <= 16; N++) {
+		for(int N = 15; N <= 15; N++) {
 			BooleanLDRDCOL B = new BooleanLDRDCOL(N);
 			B.solve_board();
 			System.out.println("N = " + B.N + ": " + B.sol + " solutions in " + B.time + "ms");

@@ -770,6 +770,21 @@ class CpuSolverThread extends Thread {
 	final int n = this.n;
 	final int smallmask = (1 << (n - 2)) - 1;
 
+	int rot90sym = 0, rot180sym = 0, unsym = 0;
+	for (Constellation constellation : constellations) {
+	    startIjkl = constellation.getStartIjkl();
+	    start = startIjkl >> 20;
+	    ijkl = startIjkl & ((1 << 20) - 1);
+	    int sym = symmetry(n, ijkl);
+	    if(sym == 2)
+	    	rot90sym++;
+	    else if(sym == 4)
+	    	rot180sym++;
+	    else 
+	    	unsym++;
+	}
+	System.out.println(rot90sym + " " + rot180sym + " " + unsym);
+	
 	for (Constellation constellation : constellations) {
 	    startIjkl = constellation.getStartIjkl();
 	    start = startIjkl >> 20;
@@ -1056,7 +1071,7 @@ class CpuSolverThread extends Thread {
 		    SQd0BkB(ld, rd, col, start, free);
 		}
 	    }
-
+	    
 	    // for saving and loading progress remove the finished starting constellation
 	    constellation.setSolutions(tempcounter * symmetry(n, ijkl));
 	    tempcounter = 0;
