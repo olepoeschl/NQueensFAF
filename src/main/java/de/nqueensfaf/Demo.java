@@ -13,26 +13,26 @@ public class Demo {
     }
     
     static void cpu() {
-	new CpuSolver()
-        	.setPresetQueens(5)
-        	.setThreadCount(1)
-        	.setUpdateInterval(800)
-        	.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
-        	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
-        	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
-        	.setN(16)
-        	.solve();
+	var cs = new CpuSolver();
+        cs.setPresetQueens(5);
+        cs.setThreadCount(1);
+        cs.setUpdateInterval(800);
+        cs.onInit(() -> System.out.println("Starting Solver for board size " + cs.getN() + "..."));
+        cs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
+        cs.onFinish(() -> System.out.println("Found " + cs.getSolutions() + " solutions in " + cs.getDuration() + " ms"));
+        cs.setN(16);
+        cs.solve();
     }
     
     static void gpu() {
-	GpuSolver g = new GpuSolver();
-	List<GpuInfo> availableGpus = g.getAvailableGpus();
-	g.gpuSelection().choose(availableGpus.get(0).id());
-	g.setUpdateInterval(400);
-	g.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
-        	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
-        	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
-		.setN(18)
-		.solve();
+	GpuSolver gs = new GpuSolver();
+	List<GpuInfo> availableGpus = gs.getAvailableGpus();
+	gs.gpuSelection().choose(availableGpus.get(0).id());
+	gs.setUpdateInterval(400);
+	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
+        gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
+        gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
+	gs.setN(18);
+	gs.solve();
     }
 }

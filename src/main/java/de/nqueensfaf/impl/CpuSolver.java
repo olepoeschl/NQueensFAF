@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import de.nqueensfaf.Solver;
 
-public class CpuSolver extends Solver<CpuSolver> implements Stateful {
+public class CpuSolver extends Solver implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();

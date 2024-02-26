@@ -73,7 +73,7 @@ import org.lwjgl.system.MemoryStack;
 
 import de.nqueensfaf.Solver;
 
-public class GpuSolver extends Solver<GpuSolver> implements Stateful {
+public class GpuSolver extends Solver implements Stateful {
 
     private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
     private GpuSelection gpuSelection = new GpuSelection();
@@ -391,15 +391,6 @@ public class GpuSolver extends Solver<GpuSolver> implements Stateful {
 	    throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
 	}
 	return resultString;
-    }
-
-    private int findNextJklChangeIndex(List<Constellation> constellations, int fromIndex) {
-	int currentJkl = getJkl(constellations.get(fromIndex).extractIjkl());
-	for (int i = fromIndex; i < constellations.size(); i++) {
-	    if (getJkl(constellations.get(i).extractIjkl()) != currentJkl)
-		return i;
-	}
-	return constellations.size();
     }
 
     private void sortConstellationsByJkl(List<Constellation> constellations) {

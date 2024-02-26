@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import de.nqueensfaf.Solver;
 import de.nqueensfaf.Solver.OnUpdateConsumer;
@@ -71,7 +70,7 @@ public class BaseCommand {
     
     public BaseCommand() {}
     
-    private <T extends Solver<T>> OnUpdateConsumer<T> onUpdate(T solver) {
+    private OnUpdateConsumer onUpdate(Solver solver) {
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 		try {
@@ -82,7 +81,7 @@ public class BaseCommand {
 		}
 	    }));
 	    
-	    return (self, progress, solutions, duration) -> {
+	    return (progress, solutions, duration) -> {
 		if (loadingCharIdx == BaseCommand.loadingChars.length)
 		    loadingCharIdx = 0;
 		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
@@ -100,7 +99,7 @@ public class BaseCommand {
 		}
 	    };
 	} else {
-	    return (self, progress, solutions, duration) -> {
+	    return (progress, solutions, duration) -> {
 		if (loadingCharIdx == BaseCommand.loadingChars.length)
 		    loadingCharIdx = 0;
 		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
@@ -111,13 +110,13 @@ public class BaseCommand {
 	
     }
     
-    private <T extends Solver<T>> Consumer<T> onFinish(T solver){
+    private Runnable onFinish(Solver solver){
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
-	    return (s) -> {
-		if(s.getUpdateInterval() > 0)
+	    return () -> {
+		if(solver.getUpdateInterval() > 0)
 		    System.out.println();
-		System.out.println("found " + s.getSolutions() + " solutions in "
-			+ getDurationPrettyString(s.getDuration()));
+		System.out.println("found " + solver.getSolutions() + " solutions in "
+			+ getDurationPrettyString(solver.getDuration()));
 		
 		autoSaveExecutorService.shutdown();
 		try {
@@ -127,17 +126,17 @@ public class BaseCommand {
 		}
 	    };
 	} else {
-	    return (s) -> {
-		if(s.getUpdateInterval() > 0)
+	    return () -> {
+		if(solver.getUpdateInterval() > 0)
 		    System.out.println();
-		System.out.println("found " + s.getSolutions() + " solutions in "
-			+ getDurationPrettyString(s.getDuration()));
+		System.out.println("found " + solver.getSolutions() + " solutions in "
+			+ getDurationPrettyString(solver.getDuration()));
 	    };
 	}
     }
     
-    <T extends Solver<T>> void applySolverConfig(T solver){
-	solver.onInit(s -> System.out.println("starting solver for board size " + s.getN() + "..."));
+    void applySolverConfig(Solver solver){
+	solver.onInit(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
 	solver.onFinish(onFinish(solver));
 	solver.onUpdate(onUpdate(solver));
 	
@@ -152,7 +151,7 @@ public class BaseCommand {
 	}
     }
     
-    <T extends Solver<T>> long getUniqueSolutions(T solver) {
+    long getUniqueSolutions(Solver solver) {
 	SymSolver symSolver = new SymSolver();
 	symSolver.setN(solver.getN());
 	symSolver.solve();
