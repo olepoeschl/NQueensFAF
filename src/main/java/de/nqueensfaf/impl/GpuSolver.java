@@ -75,7 +75,9 @@ import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver implements Stateful {
 
-    private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
+    private static ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
+    private static boolean availableGpusFetched = false;
+    
     private GpuSelection gpuSelection = new GpuSelection();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
@@ -86,7 +88,8 @@ public class GpuSolver extends Solver implements Stateful {
     private int L;
 
     public GpuSolver() {
-	fetchAvailableGpus();
+	if(!availableGpusFetched)
+	    fetchAvailableGpus();
     }
 
     // getters and setters
@@ -190,6 +193,8 @@ public class GpuSolver extends Solver implements Stateful {
 		    availableGpus.add(gpu);
 		}
 	    }
+	    
+	    availableGpusFetched = true;
 	}
     }
 
@@ -233,8 +238,10 @@ public class GpuSolver extends Solver implements Stateful {
 	if (remainingConstellations.size() == 0)
 	    return; // nothing to do
 
-	for (var gpu : gpuSelection.get())
+	for (var gpu : gpuSelection.get()) {
+	    gpu.setN(getN());
 	    gpu.createOpenClObjects();
+	}
 
 	start = System.currentTimeMillis();
 	
@@ -446,7 +453,11 @@ public class GpuSolver extends Solver implements Stateful {
 	    chosen = true;
 	}
 
-	public GpuSelection add(long gpuId, int benchmark, int workgroupSize) {
+	public void add(long gpuId, float benchmark) {
+	    add(gpuId, benchmark, 64);
+	}
+
+	public void add(long gpuId, float benchmark, int workgroupSize) {
 	    if (chosen)
 		throw new IllegalStateException("unable to add more GPU's after choosing one");
 
@@ -467,7 +478,6 @@ public class GpuSolver extends Solver implements Stateful {
 
 		selectedGpus.add(gpu);
 
-		return this;
 	    } catch (NoSuchElementException e) {
 		throw new IllegalArgumentException("no GPU found for id " + gpuId);
 	    }
@@ -497,7 +507,10 @@ public class GpuSolver extends Solver implements Stateful {
 	private long kernel;
 	private long xQueue, memQueue;
 	private long constellationsMem, jklQueensMem, resMem;
-
+	
+	// board size
+	private int n;
+	
 	private Gpu() {
 	}
 
@@ -511,6 +524,10 @@ public class GpuSolver extends Solver implements Stateful {
 	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	}
 
+	private void setN(int n) {
+	    this.n = n; 
+	}
+	
 	private void createOpenClObjects() {
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
@@ -532,7 +549,7 @@ public class GpuSolver extends Solver implements Stateful {
 		}
 		// build program
 		String options = "" // "-cl-std=CL1.2"
-			+ " -D N=" + getN() + " -D WORKGROUP_SIZE=" + workgroupSize + " -Werror";
+			+ " -D N=" + n + " -D WORKGROUP_SIZE=" + workgroupSize + " -Werror";
 		int error = clBuildProgram(program, info.id(), options, null, NULL);
 		if (error != 0) {
 		    String buildLog = getProgramBuildInfoStringASCII(program, info.id(), CL_PROGRAM_BUILD_LOG);
@@ -590,11 +607,11 @@ public class GpuSolver extends Solver implements Stateful {
 		checkCLError(errBuf);
 
 		if (info.vendor.toLowerCase().contains("nvidia"))
-		    jklQueensMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			    CL_MEM_PINNED_NV, maxNumOfJklQueensArrays * getN() * 4, errBuf);
+		    jklQueensMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    CL_MEM_PINNED_NV, maxNumOfJklQueensArrays * n * 4, errBuf);
 		else
-		    jklQueensMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			    maxNumOfJklQueensArrays * getN() * 4, errBuf);
+		    jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    maxNumOfJklQueensArrays * n * 4, errBuf);
 		checkCLError(errBuf);
 
 		if (info.vendor.toLowerCase().contains("nvidia"))
@@ -647,7 +664,7 @@ public class GpuSolver extends Solver implements Stateful {
 
 		int numOfJklQueensArrays = constellations.size() / workgroupSize;
 		ByteBuffer jklQueensPtr = clEnqueueMapBuffer(memQueue, jklQueensMem, true, CL_MAP_WRITE, 0,
-			numOfJklQueensArrays * getN() * 4, null, null, errBuf, null);
+			numOfJklQueensArrays * n * 4, null, null, errBuf, null);
 		checkCLError(errBuf);
 		for (int wgIdx = 0; wgIdx < numOfJklQueensArrays; wgIdx ++) {
 		    var ijkl = constellations.get(wgIdx * workgroupSize).extractIjkl();
@@ -655,21 +672,21 @@ public class GpuSolver extends Solver implements Stateful {
 		    int k = getk(ijkl);
 		    int l = getl(ijkl);
 		    // the rd from queen j and k with respect to the last row
-		    int rdiag = (L >> j) | (L >> (getN() - 1 - k));
+		    int rdiag = (L >> j) | (L >> (n - 1 - k));
 		    // the ld from queen j and l with respect to the last row
 		    int ldiag = (L >> j) | (L >> l);
-		    for (int row = 0; row < getN(); row++) {
+		    for (int row = 0; row < n; row++) {
 			jklQueensPtr
-				.putInt(wgIdx * getN() * 4 + ((getN() - 1 - row) * 4), (ldiag >> row) | (rdiag << row) | L | 1);
+				.putInt(wgIdx * n * 4 + ((n - 1 - row) * 4), (ldiag >> row) | (rdiag << row) | L | 1);
 		    }
 		    ldiag = L >> k;
 		    rdiag = 1 << l;
-		    for(int row = 0; row < getN(); row++){
-			int idx = wgIdx * getN() * 4 + (row * 4);
+		    for(int row = 0; row < n; row++){
+			int idx = wgIdx * n * 4 + (row * 4);
 			jklQueensPtr.putInt(idx, jklQueensPtr.getInt(idx) | (ldiag << row) | (rdiag >> row));
 		    }
-		    jklQueensPtr.putInt(wgIdx * getN() * 4 + (k * 4), ~L);
-		    jklQueensPtr.putInt(wgIdx * getN() * 4 + (l * 4), ~1);
+		    jklQueensPtr.putInt(wgIdx * n * 4 + (k * 4), ~L);
+		    jklQueensPtr.putInt(wgIdx * n * 4 + (l * 4), ~1);
 		}
 		checkCLError(clEnqueueUnmapMemObject(memQueue, jklQueensMem, jklQueensPtr, null, null));
 
@@ -740,7 +757,7 @@ public class GpuSolver extends Solver implements Stateful {
 		if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
 		    continue;
 		long solutionsForConstellation = resPtr.getLong(i * 8)
-			* symmetry(getN(), constellations.get(i).extractIjkl());
+			* symmetry(n, constellations.get(i).extractIjkl());
 		if (solutionsForConstellation >= 0)
 		    // synchronize with the list of constellations on the RAM
 		    constellations.get(i).setSolutions(solutionsForConstellation);
