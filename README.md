@@ -7,7 +7,7 @@ Built with Java 17.
 [Latest Release](https://github.com/olepoeschl/NQueensFAF/releases/latest)<br>
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly)<br>
 For more releases visit the "Releases" section. <br>
-You can also use the following link to download a GUI Version of NQueensFAF:
+You can also use the following link to download a GUI Version of NQueensFAF:<br>
 https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe
 
 # News
