@@ -75,8 +75,7 @@ import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver implements Stateful {
 
-    private static ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
-    private static boolean availableGpusFetched = false;
+    private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
     
     private GpuSelection gpuSelection = new GpuSelection();
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
@@ -88,8 +87,7 @@ public class GpuSolver extends Solver implements Stateful {
     private int L;
 
     public GpuSolver() {
-	if(!availableGpusFetched)
-	    fetchAvailableGpus();
+	fetchAvailableGpus();
     }
 
     // getters and setters
@@ -193,8 +191,6 @@ public class GpuSolver extends Solver implements Stateful {
 		    availableGpus.add(gpu);
 		}
 	    }
-	    
-	    availableGpusFetched = true;
 	}
     }
 
@@ -418,9 +414,7 @@ public class GpuSolver extends Solver implements Stateful {
 	for (var c : constellations) {
 	    // iterate through constellations, add each remaining constellations and fill up
 	    // each group of ijkl till its dividable by workgroup-size
-	    if (c.getSolutions() >= 0)
-		continue;
-
+	    
 	    if ((c.getStartIjkl() & ((1 << 15) - 1)) != currentJkl) { // check if new ijkl is found
 		while (newConstellations.size() % workgroupSize != 0) {
 		    addPseudoConstellation(newConstellations);
