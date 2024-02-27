@@ -7,7 +7,7 @@ Built with Java 17.
 [Latest Release](https://github.com/olepoeschl/NQueensFAF/releases/latest)<br>
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly)<br>
 For more releases visit the "Releases" section. <br>
-You can also download a [GUI Version for Windows](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe)
+You can also download a [Windows Exe with GUI](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe)
 
 # News
 We are excited to announce that we have succesfully verified the number of solutions for the **26-Queens problem**. <br> 
