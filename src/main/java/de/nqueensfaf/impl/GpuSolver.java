@@ -489,6 +489,10 @@ public class GpuSolver extends Solver implements Stateful {
     }
 
     public static record GpuInfo(long id, String vendor, String name) {
+	@Override
+	public String toString() {
+	    return name;
+	}
     }
 
     private class Gpu {
