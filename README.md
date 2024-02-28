@@ -12,6 +12,7 @@ You can also download a [Windows Exe with GUI](https://github.com/olepoeschl/NQu
 # Distributed
 We started solving the 27-Queens Problem as a distributed project. 
 Install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client.exe) and help us! <br>
+
 IMPORTANT NOTES:
 1) PLEASE CHECK FREQUENTLY FOR NEW VERISONS!!!<br>
 2) Your anti virus program may tell you that the program is not safe (although it is).<br>
