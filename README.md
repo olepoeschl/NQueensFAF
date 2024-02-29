@@ -1,32 +1,97 @@
 # NQueensFAF
-Insanely fast Solvers for the n queens problem, one for GPUs (definitely try this one) and one for CPUs. Also provides useful utilities for implementing custom N queens problem solving algorithms. <br>
-Comes with a command line interface.<br>
-Built with Java 17.
+Insanely fast Solvers for the n queens problem, one for GPUs (definitely try
+this one) and one for CPUs. Also provides useful utilities for implementing
+custom N queens problem solving algorithms. Features are: <br>
+1) support GPU-computing and aslo CPU-Multithreading  
+2) automated distribution among multiple gpus (proportional to their performance)
+3) auto progress save and continuing from save file
+4) some advanced settings, see explanation of the command line usage
+Can run on Windows, Linux and also Mac (for download and installation see
+below). The standard version uses a command line interface, which is easy to use
+(examples below). However we also linked a GUI program of an older version. <br>
+Built with Java 17.<br>
+__NOTE:___ currently only works for NVIDIA and integrated Intel GPU's
 
-### Download
-[Latest Release](https://github.com/olepoeschl/NQueensFAF/releases/latest)<br>
-[Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly)<br>
-For more releases visit the "Releases" section. <br>
-You can also download a [Windows Exe with GUI](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe).<br>
+# Distributed Computing 
+We recently started a distributed computing project for solving the N Queens
+problem! The goals are: 
+1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)
+2) Solve N=28 and set the new world record.
+You can check the current progress on the 27 queens problem
+[here](http://nqueensfaf.de:14772/progress). 
 
-# Distributed
-We started solving the 27-Queens Problem as a distributed project. 
-Install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client.exe) and help us! <br>
+## How you can help
+### Windows
+Download and install the [Windows
+Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client.exe).
+After that, just double click the desktop icon - the rest is self
+explanatory. Alternatively you may follow the same installation process as
+below.<br>  
+__NOTE:__ Your anti virus program may tell you that the program is not safe
+(although it is). In this case you must manually ignore the warning or even the
+program as an exception to the anti virus software.<br>
+### Linux and Mac (and also Windows)
+You first have to install the [Java
+JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
+OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
+driver, in Linux you may have to install the missing libraries manually. After
+that, download the jar and run it by executing the  command 
+'java -jar nqueens-client.jar nqueensfaf.de' in the directory where the jar is
+located.<br>
+__NOTE:__ Eventually adapt the name 'nqueens-client.jar' to the actual name of the jar
+you downloaded. 
 
-IMPORTANT NOTES:
-1) PLEASE CHECK FREQUENTLY FOR NEW VERISONS!!!<br>
-2) Your anti virus program may tell you that the program is not safe (although it is).<br>
-   In this case you must manually ignore the warning or even the program as an exception to the anti virus software.<br>
-(We are currently working on a Client Version that automatically updates if necessary.)
+# Local Computing
+## Download and Installation
+The following sections always refer to the most recent version of NQueensFAF. In
+case you want to try out older versions, just visit For older releases visit the
+"Releases" section. The installation process remains the same as described
+below. <br>
+### The simplest Way
+1) Choose the 
+[Latest Stable Release]
+(https://github.com/olepoeschl/NQueensFAF/releases/latest) 
+or the 
+[Latest Nightly Build]
+(https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
+and download the zip file that fits your Operating System. 
+2) Unpack the zip file and open a console in the unpacked directory. 
+3) Run the application by typing './nqueensfaf-cli 16' (Linux)
+or 'nqueensfaf-cli 16' (Windows).
+4) Check out the section 'Command Line Usage' for an overview of all possible
+commands including examples. <br>
+__NOTE:__ If you can not run the program try the command 'chmod +x nqueensfaf-cli'
+between steps 2 and 3. 
+### The Java Way
+0) First [install Java]
+(https://www.oracle.com/de/java/technologies/downloads/#java21) for your OS. 
+1) Choose the 
+[Latest Stable Release]
+(https://github.com/olepoeschl/NQueensFAF/releases/latest) 
+or the 
+[Latest Nightly Build]
+(https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
+and download the 'nqueensfaf-cli-***.jar' file (note the -CLI suffix). 
+2) open a console in the directory where the jar is located.  
+3) run the jar by typing 'java -jar nqueensfaf-cli.jar 16 cpu' (same command for
+all operating systems). 
+4) Check out the section 'Command Line Usage' for an overview of all possible
+commands including examples.
+### A GUI Version
+In case you are a Windows User and heavily prefer a graphical user interface you
+can downlad the following [Windows Installer with GUI] (https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe).<br>
 
 # News
-We are excited to announce that we have succesfully verified the number of solutions for the **26-Queens problem**. <br> 
+- The distributed computing for solving the 27 Queens problem has begun.
+Download the client and get started!  
+- We are excited to announce that we have successfully verified the number of solutions for the **26-Queens problem**. <br> 
 The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slightly more than 3 weeks to finish. <br>
 27 - Here we come! <br>
 
 # Current Benchmarks
-During the time we have spent developing this program, we have been able to continuously expand our available hardware. 
-Especially the newer graphics cards show the potential of our program. 
+During the time we have spent developing this NQueensFAF, we have been able to
+continuously expand our available hardware. Especially the newer graphics cards
+show the potential of our program.
 
 <b>GPUs</b>
 |      Board size N     |   18    |     19    |      20      |      21      |      22      |       23       |       24       |   25 |
@@ -53,141 +118,74 @@ The CPU's and the GPU's are used with stock settings.
 Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 # Usage
-
-## command line interface
-```
-Usage: nqueensfaf [-dgh] [-c=FILE] [-N=INT] [-t=FILE]
-  -c, --config=FILE      absolute path to the configuration file
-  -d, --show-devices     show a list of all available OpenCL devices
-  -g, --gpu              execute on GPU('s)
-  -h, --help             show this help message
-  -N, --board-size=INT   board size
-  -t, --task=FILE        absolute path to the file containing the task
-```
-For example, to run board size 18 on your default GPU with default settings, you would execute:
-`nqueensfaf -N 18 -g`
-
-### config files
-With `-c` you can pass a config file. Config files are written in json format and may have attributes from the following table.<br>
-<table>
-  <thead>
-    <tr>
-      <th>name</th>
-      <th>type</th>
-      <th>allowed values</th>
-      <th>default value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td colspan="4" align="center"><i>General configs</i></td>
-    </tr>
-    <tr>
-      <td>updateInterval</td>
-      <td>int</td>
-      <td>>0, =0 (no progress updates) </td>
-      <td>128</td>
-    </tr>
-    <tr>
-      <td>autoSaveEnabled</td>
-      <td>boolean</td>
-      <td>true, false</td>
-      <td>false</td>
-    </tr>
-    <tr>
-      <td>autoDeleteEnabled</td>
-      <td>boolean</td>
-      <td>true, false</td>
-      <td>false</td>
-    </tr>
-    <tr>
-      <td>autoSavePercentageStep</td>
-      <td>float</td>
-      <td>>0 && <100</td>
-      <td>10</td>
-    </tr>
-    <tr>
-      <td>autoSavePath</td>
-      <td>String</td>
-      <td>valid file system path</td>
-      <td>nqueensfaf{N}.dat</td>
-    </tr>
-    <tr>
-      <td colspan="4" align="center"><i>CPU configs</i></td>
-    </tr>
-    <tr>
-      <td>threadcount</td>
-      <td>int</td>
-      <td>>0</td>
-      <td>1</td>
-    </tr>
-    <tr>
-      <td>presetQueens</td>
-      <td>int</td>
-      <td>>=4</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <td colspan="4" align="center"><i>GPU configs</i></td>
-    </tr>
-    <tr>
-      <td>deviceConfigs</td>
-      <td>deviceConfig[]</td>
-      <td>see deviceConfig section</td>
-      <td>[{0, 64, 1, 0}]</td>
-    </tr>
-    <tr>
-      <td>presetQueens</td>
-      <td>int</td>
-      <td>>=4</td>
-      <td>6</td>
-    </tr>
-    <tr>
-      <td colspan="4" align="center"><i>deviceConfig attributes</i></td>
-    </tr>
-    <tr>
-      <td>index</td>
-      <td>int</td>
-      <td>>=0</td>
-      <td>-</td>
-    </tr>
-    <tr>
-      <td>workgroupSize</td>
-      <td>int</td>
-      <td>>0</td>
-      <td>64</td>
-    </tr>
-    <tr>
-      <td>weight</td>
-      <td>int</td>
-      <td>>0, =0 (device disabled) </td>
-      <td>-</td>
-    </tr>
-    <tr>
-      <td>maxGlobalWorkSize</td>
-      <td>int</td>
-      <td>>=workgroupSize, =0 (unlimited global work size) </td>
-      <td>0</td>
-    </tr>
-  </tbody>
-</table>
-
-Execute `nqueensfaf -d` to see your available devices and their respective indexes.
-
-An example config file would look something like this:
-```
-{
-"updateInterval": 200,
-"threadcount": 4,
-"deviceConfigs": [
-    {"index": 0, "weight": 1, "workgroupSize": 64}
-],
-"autoSaveEnabled": false
-}
-```
+## Compact Explanation
+Show the general help message by using nqueensfaf-cli -h
+nqueensfaf-cli [-u=<update-interval>] [-s=<auto-save-interval>] [<N> |
+<path-to-save-file>] [cpu | gpu] [<extra device options>] [-p=<pre-queens>] [-h]
+- -s=<value> -> auto save interval as a decimal, for example -s=0.05 for
+  auto-saving each 5%
+- -u=<value> -> update time, solution and progress after <value> milliseconds
+- N -> substitute the board size 
+- cpu | gpu -> write cpu for choosing cpu and gpu for choosing gpu (device
+  specific options see below)
+- -p=<value> -> default is 6. A higher number means more but smaller tasks by setting
+  additional queens before sending to the solver device. Most of the time 6 is
+  the best option.
+- -h -> print device specific help message
+Device options for CPU: nqueensfaf [...] 20 cpu [-t=<threadcount]
+- -t=<value> -> use <value> threads
+Device options for the GPU: nqueensfaf [...] 20 gpu [-g=<gpu1>:<option1><value1>:<option2><value2>:...] [-l] [-h] 
+- -l -> list all gpus in a nice table (usefull for choosing name value)
+- -h -> print gpu specific help message
+- -g=[...] -> GPUs that should be used in the format of
+  - <string_contained_in_name>[:<attr><val>[,:<attr><val>]]
+  - <attr> can be one of the following: wg, bm, al
+  - <val> is the value that should be assigned to the attribute, if the attribute expects one
+ 
+## Extended Explanation with Examples
+Depending on your way of installation you start the command with<br>
+'nqueensfaf-cli ' (Windows) <br>
+'./nqueensfaf-cli ' (Linux and Mac) <br>
+'java -jar nqueensfaf-cli.jar ' (Java). <br>
+Here we always use nqueensfaf-cli.<br>
+The board size (N) and the device (cpu or gpu) must always be specified.<br>
+### Explanation for CPU
+- nqueensfaf-cli 16 cpu  (N=16 on CPU with 1 thread)
+- nqueensfaf-cli 18 cpu -t=8 (N=18 on CPU with 8 threads)
+- nqueensfaf-cli 20 -s=0.05 cpu -t=8 (N=20 with 8 threads and auto-saves in 5%
+  steps)
+- nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8 (continue the solution of
+the 20 queens problem from the save-file 20-queens.faf)
+### Explanation for GPUs
+- nqueensfaf-cli 20 gpu --list-gpus (list all GPUs by name) 
+- nqueensfaf-cli 20 gpu -g=<name>:bm1 (compute N=20 on the GPU <name>. The :bm1
+flag represents benchmark and is required, but only takes effect if multiple
+GPUs are used, each one with its own benchmark score. A lower score shifts more
+work towards a GPU. )
+Also, <name> may include only a part of the full name. For referring to 'RTX
+3080 Founders Edition' it suffices to use the name '3080'.<br> 
+The GPU option flags are generally separated by ':'. Flags are 
+- wg (workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
+  Only set it to 24 for integrated Intel GPUs)
+- al (for systems with more than 1 GPU. use all GPUs containing the string
+  <name> in their description)
+Some Examples:
+- nqueensfaf-cli 20 gpu -g=3080:bm1 (N=20 on GPU 'RTX 3080 Founders Edition'
+  with the default workgroup size 64)
+- nqueensfaf-cli 19 gpu -g=intel:bm1:wg24 (N=19 on Intel GPU with workgroup size
+  24)
+In case you have multiple 3080 GPUs and all should contribute equally use
+- nqueensfaf-cli 23 gpu -g=3080:al:bm1 
+In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
+work as the 3070 with autosaves each 5% use 
+- nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2
+Last but not least, resume the computation from the save-file 23-queens.faf with
+only the 3070:
+- nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1 
+NOTE: you must enable auto-saving again each time you resume from a save-file) 
 
 ## Java usage
-```
+
 CPUSolver s = new CPUSolver()
       .config(config -> {
             config.threadcount = 1;
@@ -204,7 +202,7 @@ CPUSolver s = new CPUSolver()
 The abstract class Solver provides a good structure and handy features for your own N Queens Problem solution algorithm. Just extend it and fill the abstract methods with your code.
 <br>The method names are self explanatory.
 
-# General
+# References
 
 This solution is based on three ideas, especially the first two:
 
@@ -213,9 +211,6 @@ This solution is based on three ideas, especially the first two:
 - calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the <a href="https://github.com/preusser/q27">implementation by the TU Dresden</a> (a very good description of this method can be found <a href="http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html">here</a>)
 
 - GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in Ping Che Chen's implementation (https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's. 
-
-The GPU solver does support NVIDIA, AMD and also integrated Intel GPU's.
-For NDIDIA and AMD GPU's we recommend a workgroupsize of 64, for the integrated intel graphics we recommend 24 for optimal performance. 
 
 # Contact
 If you have a comment, question, idea or whatever, we will be happy to answer!
