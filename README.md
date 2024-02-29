@@ -70,12 +70,12 @@ all operating systems).
 4) Check out the section 'Command Line Usage' for an overview of all possible
 commands including examples.
 ### A GUI Version
-In case you are a Windows User and heavily prefer a graphical user interface you
+In case you are a Windows User and prefer a graphical user interface you
 can downlad the following [Windows Installer with GUI](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe).<br>
 
 # 3 News
-- The distributed computing for solving the 27 Queens problem has begun.
-Download the client and get started!  
+- The distributed computing for solving the 27 Queens problem has begun.<br>
+Download the client and get started (see __1 Distributed Computing__)!  
 - We are excited to announce that we have successfully verified the number of solutions for the **26-Queens problem**. <br> 
 The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slightly more than 3 weeks to finish. <br>
 27 - Here we come! <br>
@@ -112,33 +112,33 @@ Attention: Your graphics card may go into another power state when running the p
 # 5 Usage
 ## 5.1 Compact Explanation
 Show the general help message by using nqueensfaf-cli -h
-nqueensfaf-cli [-u=<update-interval>] [-s=<auto-save-interval>] [<N> |
-<path-to-save-file>] [cpu | gpu] [<extra device options>] [-p=<pre-queens>] [-h]
-- -s=\<value\> ==> auto save interval as a decimal, for example -s=0.05 for
+nqueensfaf-cli [-u=\<update-interval\>] [-s=\<auto-save-interval\>] [\<N\> |
+\<path-to-save-file\>] [cpu | gpu] [\<extra device options\>] [-p=\<pre-queens\>] [-h]
+- -s=\<value\> ⟶ auto save interval as a decimal, for example -s=0.05 for
   auto-saving each 5%
-- -u=\<value\> &#8594; update time, solution and progress after <value> milliseconds
-- N -> substitute the board size 
-- cpu | gpu ==> write cpu for choosing cpu and gpu for choosing gpu (device
+- -u=\<value\> ⟶ update time, solution and progress after <value> milliseconds
+- N ⟶ substitute the board size 
+- cpu | gpu ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
   specific options see below)
-- -p=\<value\> ==> default is 6. A higher number means more but smaller tasks by setting
+- -p=\<value\> ⟶ default is 6. A higher number means more but smaller tasks by setting
   additional queens before sending to the solver device. Most of the time 6 is
   the best option.
-- -h ==> print device specific help message
-Device options for CPU: nqueensfaf [...] 20 cpu [-t=<threadcount]
-- -t=\<value\> ==> use <value> threads
-Device options for the GPU: nqueensfaf [...] 20 gpu [-g=<gpu1>:<option1><value1>:<option2><value2>:...] [-l] [-h] 
-- -l ==> list all gpus in a nice table (usefull for choosing name value)
-- -h ==> print gpu specific help message
-- -g=[...] ==> GPUs that should be used in the format of
-  - \<string_contained_in_name\>[:<attr><val>[,:<attr><val>]]
+- -h  ⟶ print device specific help message
+Device options for CPU: nqueensfaf [...] 20 cpu [-t=\<threadcount\>]
+- -t=\<value\> ⟶ use <value> threads
+Device options for the GPU: nqueensfaf [...] 20 gpu [-g=\<gpu1\>:\<option1\>\<value1\>:\<option2\>\<value2\>:...] [-l] [-h] 
+- -l  ⟶ list all gpus in a nice table (usefull for choosing name value)
+- -h  ⟶ print gpu specific help message
+- -g=[...]  ⟶ GPUs that should be used in the format of
+  - \<string_contained_in_name\>[:\<attr\>\<val\>[,:\<attr\>\<val\>]]
   - \<attr\> can be one of the following: wg, bm, al
   - \<val\> is the value that should be assigned to the attribute, if the attribute expects one
  
 ## 5.2 Extended Explanation with Examples
 Depending on your way of installation you start the command with<br>
-'nqueensfaf-cli ' (Windows) <br>
-'./nqueensfaf-cli ' (Linux and Mac) <br>
-'java -jar nqueensfaf-cli.jar ' (Java). <br>
+- nqueensfaf-cli (Windows) <br>
+- ./nqueensfaf-cli (Linux and Mac) <br>
+- java -jar nqueensfaf-cli.jar (Java). <br>
 Here we always use nqueensfaf-cli.<br>
 The board size (N) and the device (cpu or gpu) must always be specified.<br>
 ### Explanation for CPU
