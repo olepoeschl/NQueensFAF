@@ -2,7 +2,7 @@
 Insanely fast Solvers for the N queens problem, one for GPUs (definitely try
 this one) and one for CPUs. Also provides useful utilities for implementing
 custom N queens problem solving algorithms. Features are: <br>
-1) support GPU-computing and aslo CPU-Multithreading  
+1) supports GPU-computing and also CPU-Multithreading  
 2) automated distribution among multiple gpus (proportional to their performance)
 3) auto progress save and continuing from save file
 4) some advanced settings, see explanation of the command line usage
@@ -15,10 +15,10 @@ __NOTE:__ currently only works for NVIDIA and integrated Intel GPUs.
 # 1 Distributed Computing 
 We recently started a distributed computing project for solving the N Queens
 problem! The goals are: 
-1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)
+1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)<br>
+You can check the current progress on the 27 queens problem [here](http://nqueensfaf.de:14772/progress). 
 2) Solve N=28 and set the new world record.
-You can check the current progress on the 27 queens problem
-[here](http://nqueensfaf.de:14772/progress). 
+
 
 ## 1.1 How to contribute
 ### Windows
