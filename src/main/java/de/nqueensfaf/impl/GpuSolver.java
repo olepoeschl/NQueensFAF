@@ -593,6 +593,8 @@ public class GpuSolver extends Solver implements Stateful {
 	}
 	
 	private void setConfig(GpuConfig config) {
+	    if(config.getMaxUsage() != 1 && !info.canBePartitioned())
+		throw new IllegalStateException("maximum GPU usage cannot be set for this GPU ('" + info.name() + "'): not supported by GPU driver");
 	    this.config = new GpuConfig(config);
 	}
 	
