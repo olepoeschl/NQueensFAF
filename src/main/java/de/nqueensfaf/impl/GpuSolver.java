@@ -2,6 +2,8 @@ package de.nqueensfaf.impl;
 
 import static de.nqueensfaf.impl.InfoUtil.checkCLError;
 import static de.nqueensfaf.impl.InfoUtil.getDeviceInfoStringUTF8;
+import static de.nqueensfaf.impl.InfoUtil.getDeviceInfoInt;
+import static de.nqueensfaf.impl.InfoUtil.getDeviceInfoPointer;
 import static de.nqueensfaf.impl.InfoUtil.getProgramBuildInfoStringASCII;
 import static de.nqueensfaf.impl.Utils.getJkl;
 import static de.nqueensfaf.impl.Utils.getj;
@@ -14,6 +16,10 @@ import static org.lwjgl.opencl.CL12.CL_DEVICE_NAME;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_NOT_FOUND;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_TYPE_GPU;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_VENDOR;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_MAX_COMPUTE_UNITS;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_PROPERTIES;
 import static org.lwjgl.opencl.CL12.CL_EVENT_COMMAND_EXECUTION_STATUS;
 import static org.lwjgl.opencl.CL12.CL_MAP_WRITE;
 import static org.lwjgl.opencl.CL12.CL_MEM_ALLOC_HOST_PTR;
@@ -29,6 +35,7 @@ import static org.lwjgl.opencl.CL12.clCreateCommandQueue;
 import static org.lwjgl.opencl.CL12.clCreateContext;
 import static org.lwjgl.opencl.CL12.clCreateKernel;
 import static org.lwjgl.opencl.CL12.clCreateProgramWithSource;
+import static org.lwjgl.opencl.CL12.clCreateSubDevices;
 import static org.lwjgl.opencl.CL12.clEnqueueMapBuffer;
 import static org.lwjgl.opencl.CL12.clEnqueueNDRangeKernel;
 import static org.lwjgl.opencl.CL12.clEnqueueReadBuffer;
@@ -45,6 +52,7 @@ import static org.lwjgl.opencl.CL12.clReleaseEvent;
 import static org.lwjgl.opencl.CL12.clReleaseKernel;
 import static org.lwjgl.opencl.CL12.clReleaseMemObject;
 import static org.lwjgl.opencl.CL12.clReleaseProgram;
+import static org.lwjgl.opencl.CL12.clReleaseDevice;
 import static org.lwjgl.opencl.CL12.clSetKernelArg;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.opencl.NVCreateBuffer.clCreateBufferNV;
@@ -185,7 +193,7 @@ public class GpuSolver extends Solver implements Stateful {
 		    long gpuId = gpusBuf.get(g);
 		    
 		    GpuInfo gpuInfo = new GpuInfo(getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR),
-			    getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME));
+			    getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME), getDeviceInfoPointer(gpuId, CL_DEVICE_PARTITION_PROPERTIES) != 0);
 
 		    Gpu gpu = new Gpu(gpuId, platform, gpuInfo);
 		    tempList.add(gpu);
@@ -484,7 +492,7 @@ public class GpuSolver extends Solver implements Stateful {
 	
     }
 
-    public static final record GpuInfo(String vendor, String name) {
+    public static final record GpuInfo(String vendor, String name, boolean canBePartitioned) {
 	@Override
 	public String toString() {
 	    return name;
@@ -556,6 +564,7 @@ public class GpuSolver extends Solver implements Stateful {
 	private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
 
 	// related opencl objects
+	private long subDevice;
 	private long context;
 	private long program;
 	private long kernel;
@@ -601,13 +610,36 @@ public class GpuSolver extends Solver implements Stateful {
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
 
-		// TODO
-		// create subdevice according to max usage config
+		if(info.canBePartitioned()) {
+		    // create subdevice according to max usage config
+		    int maxNumComputeUnitsActive = (int) (getDeviceInfoInt(id, CL_DEVICE_MAX_COMPUTE_UNITS) * config.getMaxUsage());
+		    PointerBuffer subDeviceProps = stack.mallocPointer(4);
+		    subDeviceProps
+        		    .put(CL_DEVICE_PARTITION_BY_COUNTS)
+        		    .put(maxNumComputeUnitsActive)
+        		    .put(CL_DEVICE_PARTITION_BY_COUNTS_LIST_END)
+        		    .put(NULL)
+        		    .flip();
+		    PointerBuffer subDeviceBuf = stack.mallocPointer(1);
+		    IntBuffer numDevicesRetBuf = stack.mallocInt(1);
+		    numDevicesRetBuf
+        		    .put(1)
+        		    .flip();
+		    checkCLError(clCreateSubDevices(id, subDeviceProps, subDeviceBuf, numDevicesRetBuf));
+
+		    subDevice = subDeviceBuf.get(0);
+		} else
+		    subDevice = id;
+
 		
 		// create context
 		PointerBuffer ctxProps = stack.mallocPointer(3);
-		ctxProps.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
-		long context = clCreateContext(ctxProps, id, null, NULL, errBuf);
+		ctxProps
+        		.put(CL_CONTEXT_PLATFORM)
+        		.put(platform)
+        		.put(NULL)
+        		.flip();
+		long context = clCreateContext(ctxProps, subDevice, null, NULL, errBuf);
 		checkCLError(errBuf);
 		this.context = context;
 
@@ -622,9 +654,9 @@ public class GpuSolver extends Solver implements Stateful {
 		// build program
 		String options = "" // "-cl-std=CL1.2"
 			+ " -D N=" + n + " -D WORKGROUP_SIZE=" + config.getWorkgroupSize() + " -Werror";
-		int error = clBuildProgram(program, id, options, null, NULL);
+		int error = clBuildProgram(program, subDevice, options, null, NULL);
 		if (error != 0) {
-		    String buildLog = getProgramBuildInfoStringASCII(program, id, CL_PROGRAM_BUILD_LOG);
+		    String buildLog = getProgramBuildInfoStringASCII(program, subDevice, CL_PROGRAM_BUILD_LOG);
 		    String msg = String.format("could not build OpenCL program: %s", buildLog);
 		    throw new RuntimeException(msg);
 		}
@@ -646,10 +678,10 @@ public class GpuSolver extends Solver implements Stateful {
 		this.kernel = kernel;
 
 		// create command queues
-		long xQueue = clCreateCommandQueue(context, id, CL_QUEUE_PROFILING_ENABLE, errBuf);
+		long xQueue = clCreateCommandQueue(context, subDevice, CL_QUEUE_PROFILING_ENABLE, errBuf);
 		checkCLError(errBuf);
 		this.xQueue = xQueue;
-		long memQueue = clCreateCommandQueue(context, id, 0, errBuf);
+		long memQueue = clCreateCommandQueue(context, subDevice, 0, errBuf);
 		checkCLError(errBuf);
 		this.memQueue = memQueue;
 	    }
@@ -661,6 +693,7 @@ public class GpuSolver extends Solver implements Stateful {
 	    checkCLError(clReleaseKernel(kernel));
 	    checkCLError(clReleaseProgram(program));
 	    checkCLError(clReleaseContext(context));
+	    checkCLError(clReleaseDevice(subDevice));
 	}
 
 	private void createBuffers(int maxNumOfConstellationsPerRun) {

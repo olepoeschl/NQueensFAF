@@ -1,10 +1,7 @@
 package de.nqueensfaf;
 
-import java.util.List;
-
 import de.nqueensfaf.impl.CpuSolver;
 import de.nqueensfaf.impl.GpuSolver;
-import de.nqueensfaf.impl.GpuSolver.Gpu;
 
 public class Demo {
 
@@ -26,8 +23,8 @@ public class Demo {
     
     static void gpu() {
 	GpuSolver gs = new GpuSolver();
-	List<Gpu> availableGpus = gs.getAvailableGpus();
-	gs.gpuSelection().choose(availableGpus.get(0).getId());
+	var gpu = gs.getAvailableGpus().get(1);
+	gs.gpuSelection().choose(gpu.getId());
 	gs.setUpdateInterval(400);
 	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
