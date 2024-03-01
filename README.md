@@ -21,6 +21,10 @@ problem! The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)<br>
 You can check the current progress on the 27 queens problem [here](http://nqueensfaf.de:14772/progress). 
 2) Solve N=28 and set the new world record.
+
+__Also:__ Many thanks to Aleks for being our first contributor!<br>
+We hope that he is the first of many. 
+
 ## 1.1 How to contribute
 Although the client is working just fine, we are still developing it.<br> 
 __PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
@@ -119,7 +123,8 @@ Attention: Your graphics card may go into another power state when running the p
 # 5 Usage
 Show the general help message by using `nqueensfaf-cli -h`and the device
 specific help messages by using either `nqueensfaf-cli 20 gpu -h` or
-`nqueensfaf-cli 20 cpu -h`.
+`nqueensfaf-cli 20 cpu -h`.<br>
+If you just want to get started maybe read __5.2 Extended Explanation with Examples__ first. 
 ## 5.1 Compact Explanation
 The command format reads as follows:<br>
 `nqueensfaf-cli [-u=<update-interval>] [-s=<auto-save-interval>] [<N> |
@@ -190,7 +195,8 @@ Multiple GPU option flags must be separated by `:`. Other flags are
   - `wg` ⟶ workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
   Only set it to 24 for integrated Intel GPUs. 
   - `al` ⟶ for systems with more than 1 GPU. Enables use of all GPUs containing
-the string <name> in their description. 
+the string <name> in their description.<br>
+
 Some Examples:
 - N=20 on GPU 'RTX 3080 Founders Edition' with the default workgroup size 64<br>
 `nqueensfaf-cli 20 gpu -g=3080:bm1`
