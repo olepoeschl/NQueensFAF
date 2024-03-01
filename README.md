@@ -37,9 +37,8 @@ You first have to install the [Java JDK](https://www.oracle.com/de/java/technolo
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
 driver, in Linux you may have to install the missing libraries manually. After
 that, download the jar and run it by executing the  command<br>
-`java -jar nqueens-client.jar nqueensfaf.de`
-in the directory where the jar is located. (nqueensfaf.de is the server that
-sends the workloads and gets the results) <br>
+`java -jar nqueens-client.jar nqueensfaf.de`<br>
+in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br>
 
 __NOTE:__ Eventually adapt the name 'nqueens-client.jar' to the actual name of the jar
 you downloaded. 
@@ -121,27 +120,27 @@ specific help messages by using either `nqueensfaf-cli 20 gpu -h` or
 `nqueensfaf-cli 20 cpu -h`.
 ## 5.1 Compact Explanation
 The command format reads as follows:<br>
-`nqueensfaf-cli [-u=\<update-interval\>] [-s=\<auto-save-interval\>] [\<N\> |
-\<path-to-save-file\>] [cpu | gpu] [\<extra device options\>]
-[-p=\<pre-queens\>] [-h]`
+`nqueensfaf-cli [-u=<update-interval>] [-s=<auto-save-interval>] [<N> |
+<path-to-save-file>] [cpu | gpu] [<extra device options>]
+[-p=<pre-queens>] [-h]`
 Explanation of the Options:
-- `-s=\<value\>` ⟶ auto save interval as a decimal, for example -s=0.05 for
+- `-s=<value>` ⟶ auto save interval as a decimal, for example -s=0.05 for
   auto-saving each 5%
-- `-u=\<value\>` ⟶ update time, solution and progress after <value> milliseconds
+- `-u=<value>` ⟶ update time, solution and progress after <value> milliseconds
 - `N` ⟶ substitute the board size 
 - `cpu` | `gpu` ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
   specific options see below)
-- `-p=\<value\>` ⟶ default is 6. A higher number means more but smaller tasks by setting
+- `-p=<value>` ⟶ default is 6. A higher number means more but smaller tasks by setting
   additional queens before sending to the solver device. Most of the time 6 is
   the best option.
 - `-h`  ⟶ print device specific help message
-Device options the CPU: `nqueensfaf [...] 20 cpu [-t=\<threadcount\>]`
-- `-t=\<value\>` ⟶ use <value> threads
-Device options for GPUs: `nqueensfaf [...] 20 gpu [-g=\<gpu1\>:\<option1\>\<value1\>:\<option2\>\<value2\>:...] [-l] [-h]` 
+Device options the CPU: `nqueensfaf [...] 20 cpu [-t=<threadcount>]`
+- `-t=<value>` ⟶ use <value> threads
+Device options for GPUs: `nqueensfaf [...] 20 gpu [-g=<gpu1>:<option1><value1>:<option2><value2>:...] [-l] [-h]` 
 - `-l`  ⟶ list all GPUs in a nice table (usefull for choosing name value)
 - `-h`  ⟶ print GPU specific help message
 - `-g=[...]`  ⟶ GPUs that should be used in the format of
-  - `\<string_contained_in_name\>[:\<attr\>\<val\>[,:\<attr\>\<val\>]]`
+  - `<string_contained_in_name>[:<attr><val>[,:<attr><val>]]`
   - \<attr\> can be one of the following: wg, bm, al
   - \<val\> is the value that should be assigned to the attribute, if the attribute expects one
  
@@ -153,18 +152,23 @@ Depending on your way of installation you start the command with<br>
 Here we always use `nqueensfaf-cli`.<br>
 The board size (N) and the device (cpu or gpu) must always be specified.<br>
 ### Explanation for CPU
-- `nqueensfaf-cli 16 cpu`  (N=16 on CPU with 1 thread)
-- `nqueensfaf-cli 18 cpu -t=8` (N=18 on CPU with 8 threads)
-- `nqueensfaf-cli 20 -s=0.05 cpu -t=8` (N=20 with 8 threads and auto-saves in 5%
-  steps)
-- `nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8` (continue the solution of
-the 20 queens problem from the save-file 20-queens.faf)
+- N=16 on CPU with 1 thread<br>
+`nqueensfaf-cli 16 cpu`
+- N=18 on CPU with 8 threads<br>
+`nqueensfaf-cli 18 cpu -t=8`
+- N=20 with 8 threads and auto-saves in 5% steps<br>
+`nqueensfaf-cli 20 -s=0.05 cpu -t=8`
+- continue the solution of the 20 queens problem from the save-file
+20-queens.faf<br>
+`nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8`
 ### Explanation for GPUs
-- `nqueensfaf-cli 20 gpu --list-gpus` (list all GPUs by name) 
-- `nqueensfaf-cli 20 gpu -g=<name>:bm1` (compute N=20 on the GPU <name>. The :bm1
-flag represents benchmark and is required, but only takes effect if multiple
-GPUs are used, each one with its own benchmark score. A lower score shifts more
-work towards a GPU. )
+- list all GPUs by name<br>
+`nqueensfaf-cli 20 gpu --list-gpus` 
+- compute N=20 on the GPU <name><br>
+`nqueensfaf-cli 20 gpu -g=<name>:bm1`<br>
+The `:bm1` flag represents benchmark and is required, but only takes effect if
+multiple GPUs are used, each one with its own benchmark score. A lower score
+shifts more work towards a GPU.<br>
 Also, <name> may include only a part of the full name. For referring to 'RTX
 3080 Founders Edition' it suffices to use the name '3080'.<br> 
 The GPU option flags are generally separated by ':'. Flags are 
@@ -173,21 +177,23 @@ The GPU option flags are generally separated by ':'. Flags are
 - al (for systems with more than 1 GPU. use all GPUs containing the string
   <name> in their description)
 Some Examples:
-- `nqueensfaf-cli 20 gpu -g=3080:bm1` (N=20 on GPU 'RTX 3080 Founders Edition'
-  with the default workgroup size 64)
-- `nqueensfaf-cli 19 gpu -g=intel:bm1:wg24` (N=19 on Intel GPU with workgroup size
-  24)
-In case you have multiple 3080 GPUs and all should contribute equally use
-- `nqueensfaf-cli 23 gpu -g=3080:al:bm1` 
-In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
-work as the 3070 with autosaves each 5% use 
-- `nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2`
-Last but not least, resume the computation from the save-file 23-queens.faf with
-only the 3070:
-- `nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1` 
-NOTE: you must enable auto-saving again each time you resume from a save-file) 
+- N=20 on GPU 'RTX 3080 Founders Edition' with the default workgroup size 64<br>
+`nqueensfaf-cli 20 gpu -g=3080:bm1`
+- N=19 on Intel GPU with workgroup size 24<br>
+`nqueensfaf-cli 19 gpu -g=intel:bm1:wg24`
+- In case you have multiple 3080 GPUs and all should contribute equally use<br>
+`nqueensfaf-cli 23 gpu -g=3080:al:bm1` 
+- In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
+work as the 3070 with auto-saves each 5% use<br> 
+`nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2`
+- Last but not least, resume the computation from the save-file 23-queens.faf with
+only the 3070<br>
+`nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1`<br>
+
+__NOTE:__ you must enable auto-saving again each time you resume from a save-file) 
 
 ## 5.3 Java usage
+```
 CPUSolver s = new CPUSolver()
       .config(config -> {
             config.threadcount = 1;
@@ -198,7 +204,7 @@ CPUSolver s = new CPUSolver()
       .onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
       .setN(16)
       .solve();
-
+```
 
 ## 5.4 Implement your own algorithm
 The abstract class Solver provides a good structure and handy features for your own N Queens Problem solution algorithm. Just extend it and fill the abstract methods with your code.

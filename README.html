@@ -60,9 +60,8 @@ program as an exception to the anti virus software.<br></p>
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
 driver, in Linux you may have to install the missing libraries manually. After
 that, download the jar and run it by executing the  command<br>
-<code>java -jar nqueens-client.jar nqueensfaf.de</code>
-in the directory where the jar is located. (nqueensfaf.de is the server that
-sends the workloads and gets the results) <br></p>
+<code>java -jar nqueens-client.jar nqueensfaf.de</code><br>
+in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br></p>
 
 <p><strong>NOTE:</strong> Eventually adapt the name 'nqueens-client.jar' to the actual name of the jar
 you downloaded. </p>
@@ -159,27 +158,27 @@ specific help messages by using either <code>nqueensfaf-cli 20 gpu -h</code> or
 <h2>5.1 Compact Explanation</h2>
 
 <p>The command format reads as follows:<br>
-<code>nqueensfaf-cli [-u=\&lt;update-interval\&gt;] [-s=\&lt;auto-save-interval\&gt;] [\&lt;N\&gt; |
-\&lt;path-to-save-file\&gt;] [cpu | gpu] [\&lt;extra device options\&gt;]
-[-p=\&lt;pre-queens\&gt;] [-h]</code>
+<code>nqueensfaf-cli [-u=&lt;update-interval&gt;] [-s=&lt;auto-save-interval&gt;] [&lt;N&gt; |
+&lt;path-to-save-file&gt;] [cpu | gpu] [&lt;extra device options&gt;]
+[-p=&lt;pre-queens&gt;] [-h]</code>
 Explanation of the Options:
-- <code>-s=\&lt;value\&gt;</code> ⟶ auto save interval as a decimal, for example -s=0.05 for
+- <code>-s=&lt;value&gt;</code> ⟶ auto save interval as a decimal, for example -s=0.05 for
   auto-saving each 5%
-- <code>-u=\&lt;value\&gt;</code> ⟶ update time, solution and progress after <value> milliseconds
+- <code>-u=&lt;value&gt;</code> ⟶ update time, solution and progress after <value> milliseconds
 - <code>N</code> ⟶ substitute the board size 
 - <code>cpu</code> | <code>gpu</code> ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
   specific options see below)
-- <code>-p=\&lt;value\&gt;</code> ⟶ default is 6. A higher number means more but smaller tasks by setting
+- <code>-p=&lt;value&gt;</code> ⟶ default is 6. A higher number means more but smaller tasks by setting
   additional queens before sending to the solver device. Most of the time 6 is
   the best option.
 - <code>-h</code>  ⟶ print device specific help message
-Device options the CPU: <code>nqueensfaf [...] 20 cpu [-t=\&lt;threadcount\&gt;]</code>
-- <code>-t=\&lt;value\&gt;</code> ⟶ use <value> threads
-Device options for GPUs: <code>nqueensfaf [...] 20 gpu [-g=\&lt;gpu1\&gt;:\&lt;option1\&gt;\&lt;value1\&gt;:\&lt;option2\&gt;\&lt;value2\&gt;:...] [-l] [-h]</code> 
+Device options the CPU: <code>nqueensfaf [...] 20 cpu [-t=&lt;threadcount&gt;]</code>
+- <code>-t=&lt;value&gt;</code> ⟶ use <value> threads
+Device options for GPUs: <code>nqueensfaf [...] 20 gpu [-g=&lt;gpu1&gt;:&lt;option1&gt;&lt;value1&gt;:&lt;option2&gt;&lt;value2&gt;:...] [-l] [-h]</code> 
 - <code>-l</code>  ⟶ list all GPUs in a nice table (usefull for choosing name value)
 - <code>-h</code>  ⟶ print GPU specific help message
 - <code>-g=[...]</code>  ⟶ GPUs that should be used in the format of
-  - <code>\&lt;string_contained_in_name\&gt;[:\&lt;attr\&gt;\&lt;val\&gt;[,:\&lt;attr\&gt;\&lt;val\&gt;]]</code>
+  - <code>&lt;string_contained_in_name&gt;[:&lt;attr&gt;&lt;val&gt;[,:&lt;attr&gt;&lt;val&gt;]]</code>
   - \<attr\> can be one of the following: wg, bm, al
   - \<val\> is the value that should be assigned to the attribute, if the attribute expects one</p>
 
@@ -195,19 +194,24 @@ The board size (N) and the device (cpu or gpu) must always be specified.<br></p>
 <h3>Explanation for CPU</h3>
 
 <ul>
-<li><code>nqueensfaf-cli 16 cpu</code>  (N=16 on CPU with 1 thread)</li>
-<li><code>nqueensfaf-cli 18 cpu -t=8</code> (N=18 on CPU with 8 threads)</li>
-<li><code>nqueensfaf-cli 20 -s=0.05 cpu -t=8</code> (N=20 with 8 threads and auto-saves in 5%
-steps)</li>
-<li><p><code>nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8</code> (continue the solution of
-the 20 queens problem from the save-file 20-queens.faf)</p>
+<li>N=16 on CPU with 1 thread<br>
+<code>nqueensfaf-cli 16 cpu</code></li>
+<li>N=18 on CPU with 8 threads<br>
+<code>nqueensfaf-cli 18 cpu -t=8</code></li>
+<li>N=20 with 8 threads and auto-saves in 5% steps<br>
+<code>nqueensfaf-cli 20 -s=0.05 cpu -t=8</code></li>
+<li><p>continue the solution of the 20 queens problem from the save-file
+20-queens.faf<br>
+<code>nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8</code></p>
 
 <h3>Explanation for GPUs</h3></li>
-<li><p><code>nqueensfaf-cli 20 gpu --list-gpus</code> (list all GPUs by name) </p></li>
-<li><code>nqueensfaf-cli 20 gpu -g=&lt;name&gt;:bm1</code> (compute N=20 on the GPU <name>. The :bm1
-flag represents benchmark and is required, but only takes effect if multiple
-GPUs are used, each one with its own benchmark score. A lower score shifts more
-work towards a GPU. )
+<li><p>list all GPUs by name<br>
+<code>nqueensfaf-cli 20 gpu --list-gpus</code> </p></li>
+<li>compute N=20 on the GPU <name><br>
+<code>nqueensfaf-cli 20 gpu -g=&lt;name&gt;:bm1</code><br>
+The <code>:bm1</code> flag represents benchmark and is required, but only takes effect if
+multiple GPUs are used, each one with its own benchmark score. A lower score
+shifts more work towards a GPU.<br>
 Also, <name> may include only a part of the full name. For referring to 'RTX
 3080 Founders Edition' it suffices to use the name '3080'.<br> 
 The GPU option flags are generally separated by ':'. Flags are </li>
@@ -216,33 +220,36 @@ Only set it to 24 for integrated Intel GPUs)</li>
 <li>al (for systems with more than 1 GPU. use all GPUs containing the string
 <name> in their description)
 Some Examples:</li>
-<li><code>nqueensfaf-cli 20 gpu -g=3080:bm1</code> (N=20 on GPU 'RTX 3080 Founders Edition'
-with the default workgroup size 64)</li>
-<li><code>nqueensfaf-cli 19 gpu -g=intel:bm1:wg24</code> (N=19 on Intel GPU with workgroup size
-24)
-In case you have multiple 3080 GPUs and all should contribute equally use</li>
-<li><code>nqueensfaf-cli 23 gpu -g=3080:al:bm1</code> 
-In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
-work as the 3070 with autosaves each 5% use </li>
-<li><code>nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2</code>
-Last but not least, resume the computation from the save-file 23-queens.faf with
-only the 3070:</li>
-<li><code>nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1</code> 
-NOTE: you must enable auto-saving again each time you resume from a save-file) </li>
+<li>N=20 on GPU 'RTX 3080 Founders Edition' with the default workgroup size 64<br>
+<code>nqueensfaf-cli 20 gpu -g=3080:bm1</code></li>
+<li>N=19 on Intel GPU with workgroup size 24<br>
+<code>nqueensfaf-cli 19 gpu -g=intel:bm1:wg24</code></li>
+<li>In case you have multiple 3080 GPUs and all should contribute equally use<br>
+<code>nqueensfaf-cli 23 gpu -g=3080:al:bm1</code> </li>
+<li>In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
+work as the 3070 with auto-saves each 5% use<br> 
+<code>nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2</code></li>
+<li>Last but not least, resume the computation from the save-file 23-queens.faf with
+only the 3070<br>
+<code>nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1</code><br></li>
 </ul>
+
+<p><strong>NOTE:</strong> you must enable auto-saving again each time you resume from a save-file) </p>
 
 <h2>5.3 Java usage</h2>
 
-<p>CPUSolver s = new CPUSolver()
-      .config(config -> {
+<p><code>
+CPUSolver s = new CPUSolver()
+      .config(config -&gt; {
             config.threadcount = 1;
             config.updateInterval = 200;
       })
-      .onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
-      .onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
-      .onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
+      .onInit(self -&gt; System.out.println("Starting Solver for board size " + self.getN() + "..."))
+      .onUpdate((self, progress, solutions, duration) -&gt; System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
+      .onFinish(self -&gt; System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
       .setN(16)
-      .solve();</p>
+      .solve();
+</code></p>
 
 <h2>5.4 Implement your own algorithm</h2>
 
