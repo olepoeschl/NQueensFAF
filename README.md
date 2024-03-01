@@ -1,11 +1,13 @@
 # NQueensFAF
 Insanely fast Solvers for the N queens problem, one for GPUs (definitely try
 this one) and one for CPUs. Also provides useful utilities for implementing
-custom N queens problem solving algorithms. Features are: <br>
+custom N queens problem solving algorithms.<br>
+Features are:
 1) supports GPU-computing and also CPU-Multithreading<br> 
 2) distribution among multiple GPUs (soon done automatically in proportion to performance)<br>
 3) auto progress save and continuing from save file<br>
 4) some advanced settings, see explanation of the command line usage<br>
+
 Can run on Windows, Linux and also Mac (for download and installation see
 below).<br> 
 The standard version uses a command line interface, which is easy to use
@@ -30,8 +32,8 @@ explanatory. Alternatively you may follow the same installation process as for
 Linux and Mac, see below.<br> 
 
 __NOTE:__ Your anti virus program may tell you that the program is not safe
-(although it is). In this case you must manually ignore the warning or even the
-program as an exception to the anti virus software.<br>
+(although it is). In this case you must manually ignore the warning or even add the
+program as an exception in the anti virus software.<br>
 ### Linux and Mac (and also Windows)
 You first have to install the [Java JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
@@ -40,7 +42,7 @@ that, download the jar and run it by executing the  command<br>
 `java -jar nqueens-client.jar nqueensfaf.de`<br>
 in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br>
 
-__NOTE:__ Eventually adapt the name 'nqueens-client.jar' to the actual name of the jar
+__NOTE:__ Eventually you have to adapt the name 'nqueens-client.jar' to the actual name of the jar
 you downloaded. 
 
 # 2 Local Computing
@@ -58,7 +60,7 @@ and download the zip file that fits your Operating System.
 2) Unpack the zip file and open a console in the unpacked directory. 
 3) Run the application by typing `./nqueensfaf-cli 16` (Linux)
 or `nqueensfaf-cli 16` (Windows).
-4) Check out the section __5 Usage__ for an overview of all possible
+4) Check out section __5 Usage__ for an overview of all possible
 commands including examples. <br>
 __NOTE:__ If you can not run the program try the command `chmod +x nqueensfaf-cli`
 between steps 2 and 3. 
@@ -68,7 +70,7 @@ between steps 2 and 3.
 [Latest Stable Release](https://github.com/olepoeschl/NQueensFAF/releases/latest) 
 or the 
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
-and download the `nqueensfaf-cli-***.jar` file (NOTE the -cli suffix). 
+and download the file "nqueensfaf-cli-***.jar" (NOTE the -cli suffix). 
 2) open a console in the directory where the jar is located.  
 3) run the jar by typing `java -jar nqueensfaf-cli.jar 16 cpu` (same command for
 all operating systems). 
@@ -86,7 +88,7 @@ The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slight
 27 - Here we come! <br>
 
 # 4 Current Benchmarks
-During the time we have spent developing this NQueensFAF, we have been able to
+During the time we have spent developing NQueensFAF, we have been able to
 continuously expand our available hardware. Especially the newer graphics cards
 show the potential of our program.
 
@@ -143,7 +145,13 @@ Device options for GPUs: `nqueensfaf [...] 20 gpu [-g=<gpu1>:<option1><value1>:<
 - `-h`  ⟶ print GPU specific help message
 - `-g=[...]`  ⟶ GPUs that should be used in the format of
   - `<string_contained_in_name>[:<attr><val>[,:<attr><val>]]`
-  - \<attr\> can be one of the following: wg, bm, al
+  - \<attr\> can be one of the following: `wg`, `bm`, `al`
+    - `wg` is the workgrou-size on the GPU. If not specified, the default option 64 is used.
+      You should only change it for integrated Intel GPUs, where 24 is a better value:`:wg24`.
+    - `bm` is the benchmark score of the GPU. Lower means the GPU is faster and the program assigns more tasks to the GPU.
+      The number of tasks is proportional the benchmark score assigned to the GPU.
+      Soon the benchmark will be assigned automatically, for now you have to set it manually. Just set it to 1 when computing on a single GPU: `:bm1`.
+    - `al` requires no additional value and tells the program to use all GPUs containing the string \<name\> in their full name
   - \<val\> is the value that should be assigned to the attribute, if the attribute expects one
  
 ## 5.2 Extended Explanation with Examples
