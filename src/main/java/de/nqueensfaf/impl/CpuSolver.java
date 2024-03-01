@@ -45,7 +45,7 @@ public class CpuSolver extends Solver implements Stateful {
 	if (isRunning()) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
-	return duration;
+	return duration + storedDuration;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class CpuSolver extends Solver implements Stateful {
 	try {
 	    if (executor.awaitTermination(365, TimeUnit.DAYS)) {
 		// finished
-		duration = System.currentTimeMillis() - start + storedDuration;
+		duration = System.currentTimeMillis() - start;
 	    }
 	} catch (InterruptedException e) {
 	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage(), e);

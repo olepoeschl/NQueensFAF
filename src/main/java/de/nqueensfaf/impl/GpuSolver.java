@@ -131,7 +131,7 @@ public class GpuSolver extends Solver implements Stateful {
 	if (isRunning() && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
-	return duration;
+	return duration + storedDuration;
     }
 
     @Override
@@ -484,7 +484,7 @@ public class GpuSolver extends Solver implements Stateful {
 	
     }
 
-    private static final record GpuInfo(String vendor, String name) {
+    public static final record GpuInfo(String vendor, String name) {
 	@Override
 	public String toString() {
 	    return name;
