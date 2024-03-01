@@ -171,11 +171,11 @@ multiple GPUs are used, each one with its own benchmark score. A lower score
 shifts more work towards a GPU.<br>
 Also, <name> may include only a part of the full name. For referring to 'RTX
 3080 Founders Edition' it suffices to use the name '3080'.<br> 
-The GPU option flags are generally separated by ':'. Flags are 
-- wg (workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
-  Only set it to 24 for integrated Intel GPUs)
-- al (for systems with more than 1 GPU. use all GPUs containing the string
-  <name> in their description)
+The GPU option flags are generally separated by ':'. Other flags are 
+1) `wg` ⟶ workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
+  Only set it to 24 for integrated Intel GPUs. 
+2) `al` ⟶ for systems with more than 1 GPU. Enables use of all GPUs containing
+the string <name> in their description. 
 Some Examples:
 - N=20 on GPU 'RTX 3080 Founders Edition' with the default workgroup size 64<br>
 `nqueensfaf-cli 20 gpu -g=3080:bm1`
