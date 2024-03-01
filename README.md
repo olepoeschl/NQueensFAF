@@ -58,7 +58,7 @@ and download the zip file that fits your Operating System.
 2) Unpack the zip file and open a console in the unpacked directory. 
 3) Run the application by typing `./nqueensfaf-cli 16` (Linux)
 or `nqueensfaf-cli 16` (Windows).
-4) Check out the section [Usage](docs/usage) for an overview of all possible
+4) Check out the section __5 Usage__ for an overview of all possible
 commands including examples. <br>
 __NOTE:__ If you can not run the program try the command `chmod +x nqueensfaf-cli`
 between steps 2 and 3. 
@@ -72,7 +72,7 @@ and download the `nqueensfaf-cli-***.jar` file (NOTE the -cli suffix).
 2) open a console in the directory where the jar is located.  
 3) run the jar by typing `java -jar nqueensfaf-cli.jar 16 cpu` (same command for
 all operating systems). 
-4) Check out the section [Usage](docs/Usage) for an overview of all possible
+4) Check out the section [Usage]('docs/5 Usage) for an overview of all possible
 commands including examples.
 ### A GUI Version
 In case you are a Windows User and prefer a graphical user interface you
@@ -133,9 +133,11 @@ Explanation of the Options:
 - `-p=<value>` ⟶ default is 6. A higher number means more but smaller tasks by setting
   additional queens before sending to the solver device. Most of the time 6 is
   the best option.
-- `-h`  ⟶ print device specific help message
-Device options the CPU: `nqueensfaf [...] 20 cpu [-t=<threadcount>]`
-- `-t=<value>` ⟶ use <value> threads
+- `-h`  ⟶ print device specific help message<br>
+
+Device options for the CPU: `nqueensfaf [...] 20 cpu [-t=<threadcount>]`
+- `-t=<value>` ⟶ use <value> threads<br>
+
 Device options for GPUs: `nqueensfaf [...] 20 gpu [-g=<gpu1>:<option1><value1>:<option2><value2>:...] [-l] [-h]` 
 - `-l`  ⟶ list all GPUs in a nice table (usefull for choosing name value)
 - `-h`  ⟶ print GPU specific help message
@@ -166,15 +168,15 @@ The board size (N) and the device (cpu or gpu) must always be specified.<br>
 `nqueensfaf-cli 20 gpu --list-gpus` 
 - compute N=20 on the GPU <name><br>
 `nqueensfaf-cli 20 gpu -g=<name>:bm1`<br>
-The `:bm1` flag represents benchmark and is required, but only takes effect if
+The GPU description <name> may include only a part of the full name. For example, in order to refer to
+'RTX 3080 Founders Edition' it suffices to use the name '3080'.<br> 
+The `:bm` flag represents benchmark and is required, but only takes effect if
 multiple GPUs are used, each one with its own benchmark score. A lower score
 shifts more work towards a GPU.<br>
-Also, <name> may include only a part of the full name. For referring to 'RTX
-3080 Founders Edition' it suffices to use the name '3080'.<br> 
-The GPU option flags are generally separated by ':'. Other flags are 
-1) `wg` ⟶ workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
+Multiple GPU option flags must be separated by `:`. Other flags are 
+  - `wg` ⟶ workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
   Only set it to 24 for integrated Intel GPUs. 
-2) `al` ⟶ for systems with more than 1 GPU. Enables use of all GPUs containing
+  - `al` ⟶ for systems with more than 1 GPU. Enables use of all GPUs containing
 the string <name> in their description. 
 Some Examples:
 - N=20 on GPU 'RTX 3080 Founders Edition' with the default workgroup size 64<br>
