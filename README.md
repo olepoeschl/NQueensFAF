@@ -192,7 +192,7 @@ work as the 3070 with auto-saves each 5% use<br>
 only the 3070<br>
 `nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1`<br>
 
-__NOTE:__ you must enable auto-saving again each time you resume from a save-file) 
+__NOTE:__ You must enable auto-saving again each time you resume from a save-file.
 
 ## 5.3 Java usage
 ```
