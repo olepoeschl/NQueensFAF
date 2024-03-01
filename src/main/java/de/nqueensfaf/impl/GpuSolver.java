@@ -75,12 +75,12 @@ import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver implements Stateful {
 
-    private ArrayList<Gpu> availableGpus = new ArrayList<Gpu>();
-    
+    private List<Gpu> availableGpus; // immutable list
     private GpuSelection gpuSelection = new GpuSelection();
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
 
+    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
+    
     private long start, duration, storedDuration;
     private boolean stateLoaded, ready = true;
 
@@ -160,6 +160,8 @@ public class GpuSolver extends Solver implements Stateful {
     }
 
     private void fetchAvailableGpus() {
+	var tempList = new ArrayList<Gpu>();
+	
 	try (MemoryStack stack = MemoryStack.stackPush()) {
 	    IntBuffer clCountBuf = stack.mallocInt(1);
 	    checkCLError(clGetPlatformIDs(null, clCountBuf));
@@ -181,24 +183,20 @@ public class GpuSolver extends Solver implements Stateful {
 		checkCLError(clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, gpusBuf, (IntBuffer) null));
 		for (int g = 0; g < gpusBuf.capacity(); g++) {
 		    long gpuId = gpusBuf.get(g);
-		    GpuInfo gpuInfo = new GpuInfo(gpuId, getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR),
+		    
+		    GpuInfo gpuInfo = new GpuInfo(getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR),
 			    getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME));
 
-		    Gpu gpu = new Gpu();
-		    gpu.info = gpuInfo;
-		    gpu.platform = platform;
-
-		    availableGpus.add(gpu);
+		    Gpu gpu = new Gpu(gpuId, platform, gpuInfo);
+		    tempList.add(gpu);
 		}
 	    }
+	    availableGpus = List.copyOf(tempList);
 	}
     }
 
-    public List<GpuInfo> getAvailableGpus() {
-	ArrayList<GpuInfo> infos = new ArrayList<GpuInfo>(availableGpus.size());
-	for (int i = 0; i < availableGpus.size(); i++)
-	    infos.add(availableGpus.get(i).info);
-	return infos;
+    public List<Gpu> getAvailableGpus() {
+	return availableGpus;
     }
 
     public GpuSelection gpuSelection() {
@@ -223,7 +221,7 @@ public class GpuSolver extends Solver implements Stateful {
 	// sort selected GPUs by descending benchmark (the ones with better benchmarks
 	// come first)
 	Collections.sort(gpuSelection.get(), (g1, g2) -> {
-	    return Float.compare(g1.benchmark, g2.benchmark);
+	    return Float.compare(g1.getConfig().getBenchmark(), g2.getConfig().getBenchmark());
 	});
 
 	if (!stateLoaded)
@@ -260,7 +258,7 @@ public class GpuSolver extends Solver implements Stateful {
 
     private void singleGpu(Gpu gpu, List<Constellation> constellations) {
 	constellations = new ArrayList<>(
-		fillWithPseudoConstellations(constellations, gpuSelection.get().get(0).workgroupSize));
+		fillWithPseudoConstellations(constellations, gpuSelection.get().get(0).getConfig().getWorkgroupSize()));
 
 	gpu.createBuffers(constellations.size());
 	gpu.executeWorkload(constellations);
@@ -271,11 +269,11 @@ public class GpuSolver extends Solver implements Stateful {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 
-	float benchmarkSum = selectedGpus.stream().map(Gpu::getBenchmark).reduce(0f, Float::sum);
+	float benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0f, Float::sum);
 	float[] gpuPortions = new float[selectedGpus.size()];
 	float gpuPortionSum = 0f;
 	for (int i = 0; i < selectedGpus.size(); i++) {
-	    gpuPortions[i] = (benchmarkSum / selectedGpus.get(i).benchmark);
+	    gpuPortions[i] = (benchmarkSum / selectedGpus.get(i).getConfig().getBenchmark());
 	    gpuPortionSum += gpuPortions[i];
 	}
 	for (int i = 0; i < selectedGpus.size(); i++) {
@@ -302,7 +300,7 @@ public class GpuSolver extends Solver implements Stateful {
 		continue;
 	    }
 
-	    var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork, selectedGpus.get(gpuIdx).workgroupSize);
+	    var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork, selectedGpus.get(gpuIdx).getConfig().getWorkgroupSize());
 	    firstWorkloads.add(gpuFirstWorkload);
 
 	    var gpu = selectedGpus.get(gpuIdx);
@@ -340,7 +338,7 @@ public class GpuSolver extends Solver implements Stateful {
 			workloadSize = minGpuWorkloadSize;
 		    while (workload.size() < workloadSize && !queue.isEmpty()) {
 			synchronized (queue) {
-			    for (int i = 0; i < gpu.workgroupSize && workload.size() < workloadSize
+			    for (int i = 0; i < gpu.getConfig().getWorkgroupSize() && workload.size() < workloadSize
 				    && !queue.isEmpty(); i++) {
 				workload.add(queue.remove());
 			    }
@@ -350,11 +348,11 @@ public class GpuSolver extends Solver implements Stateful {
 		    if (workload.isEmpty())
 			break;
 
-		    workload = fillWithPseudoConstellations(workload, gpu.workgroupSize);
+		    workload = fillWithPseudoConstellations(workload, gpu.getConfig().getWorkgroupSize());
 
 		    while (workload.size() > gpu.maxNumOfConstellationsPerRun) { // if workload too big, give some work
 										 // back to the queue
-			for (int i = 0; i < gpu.workgroupSize; i++) {
+			for (int i = 0; i < gpu.getConfig().getWorkgroupSize(); i++) {
 			    var c = workload.remove(workload.size() - 1);
 			    if (c.extractStart() != 69)
 				queue.add(c);
@@ -442,64 +440,122 @@ public class GpuSolver extends Solver implements Stateful {
 	private GpuSelection() {
 	}
 
-	public void choose(long gpuId) {
-	    add(gpuId, 1, 64);
+	public void choose(long id) {
+	    choose(id, null);
+	}
+	
+	public void choose(long id, GpuConfig config) {
+	    add(id, config);
 	    chosen = true;
 	}
 
-	public void add(long gpuId, float benchmark) {
-	    add(gpuId, benchmark, 64);
+	public void add(long id) {
+	    add(id, null);
 	}
-
-	public void add(long gpuId, float benchmark, int workgroupSize) {
+	
+	public void add(long id, GpuConfig config) {
 	    if (chosen)
 		throw new IllegalStateException("unable to add more GPU's after choosing one");
-
-	    if (benchmark <= 0)
-		throw new IllegalArgumentException("benchmark must not be <= 0");
-
-	    if (selectedGpus.stream().anyMatch(gpu -> gpu.info.id() == gpuId))
-		throw new IllegalArgumentException("GPU with id " + gpuId + " was already added");
+	    
+	    if (selectedGpus.stream().anyMatch(gpu -> gpu.id == id))
+		throw new IllegalArgumentException("GPU with id " + id + " was already added");
 
 	    try {
-		Gpu gpu = availableGpus.stream().filter(g -> g.info.id() == gpuId).findFirst().get();
-
-		if (benchmark != 0)
-		    gpu.benchmark = benchmark;
-
-		if (workgroupSize != 0)
-		    gpu.workgroupSize = workgroupSize;
-
+		Gpu gpu = availableGpus.stream().filter(g -> g.id == id).findFirst().get();
+		
+		if(config != null)
+		    gpu.setConfig(config);
+		
 		selectedGpus.add(gpu);
 
 	    } catch (NoSuchElementException e) {
-		throw new IllegalArgumentException("no GPU found for id " + gpuId);
+		throw new IllegalArgumentException("no GPU found for id " + id);
 	    }
 	}
-
+	
 	private ArrayList<Gpu> get() {
 	    return selectedGpus;
 	}
+    
+	public void reset() {
+	    selectedGpus.clear();
+	    chosen = false;
+	}
+	
     }
 
-    public static record GpuInfo(long id, String vendor, String name) {
+    private static final record GpuInfo(String vendor, String name) {
 	@Override
 	public String toString() {
 	    return name;
 	}
     }
-
-    private class Gpu {
-	private GpuInfo info;
-	private float benchmark = 1;
+    
+    public static final class GpuConfig {
+	
+	private float benchmark = 1f;
+	private float maxUsage = 1f;
 	private int workgroupSize = 64;
+	
+	public GpuConfig() {
+	}
+	
+	public GpuConfig(float benchmark, float maxUsage, int workgroupSize) {
+	    setBenchmark(benchmark);
+	    setMaxUsage(maxUsage);
+	    setWorkgroupSize(workgroupSize);
+	}
+	
+	public GpuConfig(GpuConfig config) {
+	    setBenchmark(config.getBenchmark());
+	    setMaxUsage(config.getMaxUsage());
+	    setWorkgroupSize(config.getWorkgroupSize());
+	}
+
+	public float getBenchmark() {
+	    return benchmark;
+	}
+
+	public void setBenchmark(float benchmark) {
+	    if(benchmark <= 0f)
+		throw new IllegalArgumentException("benchmark must be >0");
+	    this.benchmark = benchmark;
+	}
+
+	public float getMaxUsage() {
+	    return maxUsage;
+	}
+
+	public void setMaxUsage(float maxUsage) {
+	    if(maxUsage <= 0f || maxUsage > 1f)
+		throw new IllegalArgumentException("max usage must be >0 and <=1");
+	    this.maxUsage = maxUsage;
+	}
+
+	public int getWorkgroupSize() {
+	    return workgroupSize;
+	}
+
+	public void setWorkgroupSize(int workgroupSize) {
+	    if(workgroupSize <= 0)
+		throw new IllegalArgumentException("workgroup size must be >0");
+	    this.workgroupSize = workgroupSize;
+	}
+    }
+    
+    public final class Gpu {
+	
+	private final long id;
+	private final long platform;
+	private final GpuInfo info;
+	
+	private GpuConfig config = new GpuConfig();
 
 	// measured kernel duration
 	private long duration;
 	private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
 
 	// related opencl objects
-	private long platform;
 	private long context;
 	private long program;
 	private long kernel;
@@ -509,13 +565,28 @@ public class GpuSolver extends Solver implements Stateful {
 	// board size
 	private int n;
 	
-	private Gpu() {
+	private Gpu(long id, long platform, GpuInfo info) {
+	    this.id = id;
+	    this.platform = platform;
+	    this.info = info;
 	}
 
-	private float getBenchmark() {
-	    return benchmark;
+	public long getId() {
+	    return id;
+	}
+	
+	public GpuInfo getInfo() {
+	    return info;
 	}
 
+	private GpuConfig getConfig() {
+	    return config;
+	}
+	
+	private void setConfig(GpuConfig config) {
+	    this.config = new GpuConfig(config);
+	}
+	
 	private void reset() {
 	    duration = 0;
 	    maxNumOfConstellationsPerRun = 0;
@@ -530,10 +601,13 @@ public class GpuSolver extends Solver implements Stateful {
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
 
+		// TODO
+		// create subdevice according to max usage config
+		
 		// create context
 		PointerBuffer ctxProps = stack.mallocPointer(3);
 		ctxProps.put(CL_CONTEXT_PLATFORM).put(platform).put(NULL).flip();
-		long context = clCreateContext(ctxProps, info.id, null, NULL, errBuf);
+		long context = clCreateContext(ctxProps, id, null, NULL, errBuf);
 		checkCLError(errBuf);
 		this.context = context;
 
@@ -547,10 +621,10 @@ public class GpuSolver extends Solver implements Stateful {
 		}
 		// build program
 		String options = "" // "-cl-std=CL1.2"
-			+ " -D N=" + n + " -D WORKGROUP_SIZE=" + workgroupSize + " -Werror";
-		int error = clBuildProgram(program, info.id(), options, null, NULL);
+			+ " -D N=" + n + " -D WORKGROUP_SIZE=" + config.getWorkgroupSize() + " -Werror";
+		int error = clBuildProgram(program, id, options, null, NULL);
 		if (error != 0) {
-		    String buildLog = getProgramBuildInfoStringASCII(program, info.id(), CL_PROGRAM_BUILD_LOG);
+		    String buildLog = getProgramBuildInfoStringASCII(program, id, CL_PROGRAM_BUILD_LOG);
 		    String msg = String.format("could not build OpenCL program: %s", buildLog);
 		    throw new RuntimeException(msg);
 		}
@@ -572,10 +646,10 @@ public class GpuSolver extends Solver implements Stateful {
 		this.kernel = kernel;
 
 		// create command queues
-		long xQueue = clCreateCommandQueue(context, info.id(), CL_QUEUE_PROFILING_ENABLE, errBuf);
+		long xQueue = clCreateCommandQueue(context, id, CL_QUEUE_PROFILING_ENABLE, errBuf);
 		checkCLError(errBuf);
 		this.xQueue = xQueue;
-		long memQueue = clCreateCommandQueue(context, info.id(), 0, errBuf);
+		long memQueue = clCreateCommandQueue(context, id, 0, errBuf);
 		checkCLError(errBuf);
 		this.memQueue = memQueue;
 	    }
@@ -591,7 +665,7 @@ public class GpuSolver extends Solver implements Stateful {
 
 	private void createBuffers(int maxNumOfConstellationsPerRun) {
 	    this.maxNumOfConstellationsPerRun = maxNumOfConstellationsPerRun;
-	    maxNumOfJklQueensArrays = maxNumOfConstellationsPerRun / workgroupSize; // 1 jkl queens array per workgroup
+	    maxNumOfJklQueensArrays = maxNumOfConstellationsPerRun / config.getWorkgroupSize(); // 1 jkl queens array per workgroup
 
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
@@ -660,12 +734,12 @@ public class GpuSolver extends Solver implements Stateful {
 		}
 		checkCLError(clEnqueueUnmapMemObject(memQueue, constellationsMem, constellationPtr, null, null));
 
-		int numOfJklQueensArrays = constellations.size() / workgroupSize;
+		int numOfJklQueensArrays = constellations.size() / config.getWorkgroupSize();
 		ByteBuffer jklQueensPtr = clEnqueueMapBuffer(memQueue, jklQueensMem, true, CL_MAP_WRITE, 0,
 			numOfJklQueensArrays * n * 4, null, null, errBuf, null);
 		checkCLError(errBuf);
 		for (int wgIdx = 0; wgIdx < numOfJklQueensArrays; wgIdx ++) {
-		    var ijkl = constellations.get(wgIdx * workgroupSize).extractIjkl();
+		    var ijkl = constellations.get(wgIdx * config.getWorkgroupSize()).extractIjkl();
 		    int j = getj(ijkl);
 		    int k = getk(ijkl);
 		    int l = getl(ijkl);
@@ -704,7 +778,7 @@ public class GpuSolver extends Solver implements Stateful {
 		PointerBuffer globalWorkSize = BufferUtils.createPointerBuffer(dimensions);
 		globalWorkSize.put(0, constellations.size());
 		PointerBuffer localWorkSize = BufferUtils.createPointerBuffer(dimensions);
-		localWorkSize.put(0, workgroupSize);
+		localWorkSize.put(0, config.getWorkgroupSize());
 
 		// run kernel
 		final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
