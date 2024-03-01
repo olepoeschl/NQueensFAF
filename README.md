@@ -2,12 +2,13 @@
 Insanely fast Solvers for the N queens problem, one for GPUs (definitely try
 this one) and one for CPUs. Also provides useful utilities for implementing
 custom N queens problem solving algorithms. Features are: <br>
-1) supports GPU-computing and also CPU-Multithreading  
-2) automated distribution among multiple gpus (proportional to their performance)
-3) auto progress save and continuing from save file
-4) some advanced settings, see explanation of the command line usage
+1) supports GPU-computing and also CPU-Multithreading<br> 
+2) distribution among multiple GPUs (soon done automatically in proportion to performance)<br>
+3) auto progress save and continuing from save file<br>
+4) some advanced settings, see explanation of the command line usage<br>
 Can run on Windows, Linux and also Mac (for download and installation see
-below). The standard version uses a command line interface, which is easy to use
+below).<br> 
+The standard version uses a command line interface, which is easy to use
 (examples below). However we also linked a GUI program of an older version. <br>
 Built with Java 17.<br>
 __NOTE:__ currently only works for NVIDIA and integrated Intel GPUs.
@@ -18,13 +19,16 @@ problem! The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)<br>
 You can check the current progress on the 27 queens problem [here](http://nqueensfaf.de:14772/progress). 
 2) Solve N=28 and set the new world record.
-
-
 ## 1.1 How to contribute
-### Windows
+Although the client is working just fine, we are still developing it.<br> 
+__PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
+automatically (coming soon).
+### Windows 
 Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client.exe).
 After that, just double click the desktop icon - the rest is self
-explanatory. Alternatively you may follow the same installation process as for Linux and Mac, see below.<br>  
+explanatory. Alternatively you may follow the same installation process as for
+Linux and Mac, see below.<br> 
+
 __NOTE:__ Your anti virus program may tell you that the program is not safe
 (although it is). In this case you must manually ignore the warning or even the
 program as an exception to the anti virus software.<br>
@@ -32,9 +36,11 @@ program as an exception to the anti virus software.<br>
 You first have to install the [Java JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
 driver, in Linux you may have to install the missing libraries manually. After
-that, download the jar and run it by executing the  command 
-'java -jar nqueens-client.jar nqueensfaf.de' in the directory where the jar is
-located. (nqueensfaf.de is the server that sends the workloads and gets the results) <br>
+that, download the jar and run it by executing the  command<br>
+`java -jar nqueens-client.jar nqueensfaf.de`
+in the directory where the jar is located. (nqueensfaf.de is the server that
+sends the workloads and gets the results) <br>
+
 __NOTE:__ Eventually adapt the name 'nqueens-client.jar' to the actual name of the jar
 you downloaded. 
 
@@ -42,8 +48,8 @@ you downloaded.
 ## 2.1 Download and Installation
 The following sections always refer to the most recent version of NQueensFAF. In
 case you want to try out older versions, just visit the
-"Releases" section. The installation process remains the same as described
-below. <br>
+[Releases](https://github.com/olepoeschl/NQueensFAF/releases) section. The
+installation process remains the same as described below. <br>
 ### The simplest Way
 1) Choose the 
 [Latest Stable Release](https://github.com/olepoeschl/NQueensFAF/releases/latest) 
@@ -51,11 +57,11 @@ or the
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
 and download the zip file that fits your Operating System. 
 2) Unpack the zip file and open a console in the unpacked directory. 
-3) Run the application by typing './nqueensfaf-cli 16' (Linux)
-or 'nqueensfaf-cli 16' (Windows).
-4) Check out the section 'Command Line Usage' for an overview of all possible
+3) Run the application by typing `./nqueensfaf-cli 16` (Linux)
+or `nqueensfaf-cli 16` (Windows).
+4) Check out the section [Usage](docs/usage) for an overview of all possible
 commands including examples. <br>
-__NOTE:__ If you can not run the program try the command 'chmod +x nqueensfaf-cli'
+__NOTE:__ If you can not run the program try the command `chmod +x nqueensfaf-cli`
 between steps 2 and 3. 
 ### The Java Way
 0) First [install Java](https://www.oracle.com/de/java/technologies/downloads/#java21) for your OS. 
@@ -63,11 +69,11 @@ between steps 2 and 3.
 [Latest Stable Release](https://github.com/olepoeschl/NQueensFAF/releases/latest) 
 or the 
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
-and download the 'nqueensfaf-cli-***.jar' file (NOTE the -cli suffix). 
+and download the `nqueensfaf-cli-***.jar` file (NOTE the -cli suffix). 
 2) open a console in the directory where the jar is located.  
-3) run the jar by typing 'java -jar nqueensfaf-cli.jar 16 cpu' (same command for
+3) run the jar by typing `java -jar nqueensfaf-cli.jar 16 cpu` (same command for
 all operating systems). 
-4) Check out the section 'Command Line Usage' for an overview of all possible
+4) Check out the section [Usage](docs/Usage) for an overview of all possible
 commands including examples.
 ### A GUI Version
 In case you are a Windows User and prefer a graphical user interface you
@@ -105,52 +111,57 @@ show the potential of our program.
 |   Ryzen 5800X multi   |      0.28s      |   0.70s   |   4.06s   |   30.3s   |     4:04m    |    33:53m    | not measured |
 
 Single stands for single-threaded and multi for Multi-threaded. 
-The CPU's and the GPU's are used with stock settings. 
+The CPUs and the GPUs are used with stock settings. 
 
 Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 # 5 Usage
+Show the general help message by using `nqueensfaf-cli -h`and the device
+specific help messages by using either `nqueensfaf-cli 20 gpu -h` or
+`nqueensfaf-cli 20 cpu -h`.
 ## 5.1 Compact Explanation
-Show the general help message by using nqueensfaf-cli -h
-nqueensfaf-cli [-u=\<update-interval\>] [-s=\<auto-save-interval\>] [\<N\> |
-\<path-to-save-file\>] [cpu | gpu] [\<extra device options\>] [-p=\<pre-queens\>] [-h]
-- -s=\<value\> ⟶ auto save interval as a decimal, for example -s=0.05 for
+The command format reads as follows:<br>
+`nqueensfaf-cli [-u=\<update-interval\>] [-s=\<auto-save-interval\>] [\<N\> |
+\<path-to-save-file\>] [cpu | gpu] [\<extra device options\>]
+[-p=\<pre-queens\>] [-h]`
+Explanation of the Options:
+- `-s=\<value\>` ⟶ auto save interval as a decimal, for example -s=0.05 for
   auto-saving each 5%
-- -u=\<value\> ⟶ update time, solution and progress after <value> milliseconds
-- N ⟶ substitute the board size 
-- cpu | gpu ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
+- `-u=\<value\>` ⟶ update time, solution and progress after <value> milliseconds
+- `N` ⟶ substitute the board size 
+- `cpu` | `gpu` ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
   specific options see below)
-- -p=\<value\> ⟶ default is 6. A higher number means more but smaller tasks by setting
+- `-p=\<value\>` ⟶ default is 6. A higher number means more but smaller tasks by setting
   additional queens before sending to the solver device. Most of the time 6 is
   the best option.
-- -h  ⟶ print device specific help message
-Device options for CPU: nqueensfaf [...] 20 cpu [-t=\<threadcount\>]
-- -t=\<value\> ⟶ use <value> threads
-Device options for the GPU: nqueensfaf [...] 20 gpu [-g=\<gpu1\>:\<option1\>\<value1\>:\<option2\>\<value2\>:...] [-l] [-h] 
-- -l  ⟶ list all gpus in a nice table (usefull for choosing name value)
-- -h  ⟶ print gpu specific help message
-- -g=[...]  ⟶ GPUs that should be used in the format of
-  - \<string_contained_in_name\>[:\<attr\>\<val\>[,:\<attr\>\<val\>]]
+- `-h`  ⟶ print device specific help message
+Device options the CPU: `nqueensfaf [...] 20 cpu [-t=\<threadcount\>]`
+- `-t=\<value\>` ⟶ use <value> threads
+Device options for GPUs: `nqueensfaf [...] 20 gpu [-g=\<gpu1\>:\<option1\>\<value1\>:\<option2\>\<value2\>:...] [-l] [-h]` 
+- `-l`  ⟶ list all GPUs in a nice table (usefull for choosing name value)
+- `-h`  ⟶ print GPU specific help message
+- `-g=[...]`  ⟶ GPUs that should be used in the format of
+  - `\<string_contained_in_name\>[:\<attr\>\<val\>[,:\<attr\>\<val\>]]`
   - \<attr\> can be one of the following: wg, bm, al
   - \<val\> is the value that should be assigned to the attribute, if the attribute expects one
  
 ## 5.2 Extended Explanation with Examples
 Depending on your way of installation you start the command with<br>
-- nqueensfaf-cli (Windows) <br>
-- ./nqueensfaf-cli (Linux and Mac) <br>
-- java -jar nqueensfaf-cli.jar (Java). <br>
-Here we always use nqueensfaf-cli.<br>
+- `nqueensfaf-cli` (Windows)
+- `./nqueensfaf-cli` (Linux and Mac)
+- `java -jar nqueensfaf-cli.jar` (Java). 
+Here we always use `nqueensfaf-cli`.<br>
 The board size (N) and the device (cpu or gpu) must always be specified.<br>
 ### Explanation for CPU
-- nqueensfaf-cli 16 cpu  (N=16 on CPU with 1 thread)
-- nqueensfaf-cli 18 cpu -t=8 (N=18 on CPU with 8 threads)
-- nqueensfaf-cli 20 -s=0.05 cpu -t=8 (N=20 with 8 threads and auto-saves in 5%
+- `nqueensfaf-cli 16 cpu`  (N=16 on CPU with 1 thread)
+- `nqueensfaf-cli 18 cpu -t=8` (N=18 on CPU with 8 threads)
+- `nqueensfaf-cli 20 -s=0.05 cpu -t=8` (N=20 with 8 threads and auto-saves in 5%
   steps)
-- nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8 (continue the solution of
+- `nqueensfaf-cli -s=0.05 cpu ./20-queens.faf cpu -t=8` (continue the solution of
 the 20 queens problem from the save-file 20-queens.faf)
 ### Explanation for GPUs
-- nqueensfaf-cli 20 gpu --list-gpus (list all GPUs by name) 
-- nqueensfaf-cli 20 gpu -g=<name>:bm1 (compute N=20 on the GPU <name>. The :bm1
+- `nqueensfaf-cli 20 gpu --list-gpus` (list all GPUs by name) 
+- `nqueensfaf-cli 20 gpu -g=<name>:bm1` (compute N=20 on the GPU <name>. The :bm1
 flag represents benchmark and is required, but only takes effect if multiple
 GPUs are used, each one with its own benchmark score. A lower score shifts more
 work towards a GPU. )
@@ -162,18 +173,18 @@ The GPU option flags are generally separated by ':'. Flags are
 - al (for systems with more than 1 GPU. use all GPUs containing the string
   <name> in their description)
 Some Examples:
-- nqueensfaf-cli 20 gpu -g=3080:bm1 (N=20 on GPU 'RTX 3080 Founders Edition'
+- `nqueensfaf-cli 20 gpu -g=3080:bm1` (N=20 on GPU 'RTX 3080 Founders Edition'
   with the default workgroup size 64)
-- nqueensfaf-cli 19 gpu -g=intel:bm1:wg24 (N=19 on Intel GPU with workgroup size
+- `nqueensfaf-cli 19 gpu -g=intel:bm1:wg24` (N=19 on Intel GPU with workgroup size
   24)
 In case you have multiple 3080 GPUs and all should contribute equally use
-- nqueensfaf-cli 23 gpu -g=3080:al:bm1 
+- `nqueensfaf-cli 23 gpu -g=3080:al:bm1` 
 In case you have one 3080 and 1 3060ti and want the 3080 to get twice as much
 work as the 3070 with autosaves each 5% use 
-- nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2
+- `nqueensfaf-cli -s=0.05 23 gpu -g=3080:bm1,3070:bm2`
 Last but not least, resume the computation from the save-file 23-queens.faf with
 only the 3070:
-- nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1 
+- `nqueensfaf-cli -s=0.05 23 gpu -g=3070:bm1` 
 NOTE: you must enable auto-saving again each time you resume from a save-file) 
 
 ## 5.3 Java usage
