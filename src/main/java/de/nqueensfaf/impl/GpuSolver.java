@@ -695,7 +695,8 @@ public class GpuSolver extends Solver implements Stateful {
 	    checkCLError(clReleaseKernel(kernel));
 	    checkCLError(clReleaseProgram(program));
 	    checkCLError(clReleaseContext(context));
-	    checkCLError(clReleaseDevice(subDevice));
+	    if(subDevice != id)
+		checkCLError(clReleaseDevice(subDevice));
 	}
 
 	private void createBuffers(int maxNumOfConstellationsPerRun) {
