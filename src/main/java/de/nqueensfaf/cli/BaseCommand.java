@@ -73,10 +73,10 @@ public class BaseCommand {
 	    }));
 	    
 	    return (progress, solutions, duration) -> {
-		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		if (loadingCharIdx == loadingChars.length)
 		    loadingCharIdx = 0;
-		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
-			BaseCommand.getDurationPrettyString(duration));
+		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
+			getDurationPrettyString(duration));
 
 		if (progress - lastProgress >= autoSaveProgressStep && 
 			(autoSaveFuture == null || autoSaveFuture.isDone())) {
@@ -92,10 +92,10 @@ public class BaseCommand {
 	    };
 	} else {
 	    return (progress, solutions, duration) -> {
-		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		if (loadingCharIdx == loadingChars.length)
 		    loadingCharIdx = 0;
-		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
-			BaseCommand.getDurationPrettyString(duration));
+		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
+			getDurationPrettyString(duration));
 
 	    };
 	}

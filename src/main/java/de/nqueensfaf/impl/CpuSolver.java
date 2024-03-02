@@ -2,6 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -11,14 +12,14 @@ import de.nqueensfaf.Solver;
 
 public class CpuSolver extends Solver implements Stateful {
 
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
+    private List<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
     private long start, duration, storedDuration;
     private boolean stateLoaded, ready = true;
     private int presetQueens = 5, threadCount = 1;
 
     public void reset() {
-	constellations.clear();
+	constellations = new ArrayList<Constellation>();
 	threadConstellations.clear();
 	start = duration = storedDuration = 0;
 	stateLoaded = false;
@@ -36,7 +37,7 @@ public class CpuSolver extends Solver implements Stateful {
 	    throw new IllegalStateException("could not set solver state: solver was already used and must be reset first");
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
+	constellations = List.copyOf(state.getConstellations());
 	stateLoaded = true;
     }
 

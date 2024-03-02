@@ -10,12 +10,14 @@ import static de.nqueensfaf.impl.Utils.getj;
 import static de.nqueensfaf.impl.Utils.getk;
 import static de.nqueensfaf.impl.Utils.getl;
 import static de.nqueensfaf.impl.Utils.symmetry;
+import static org.lwjgl.opencl.CL12.CL_TRUE;
 import static org.lwjgl.opencl.CL12.CL_COMPLETE;
 import static org.lwjgl.opencl.CL12.CL_CONTEXT_PLATFORM;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_NAME;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_NOT_FOUND;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_TYPE_GPU;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_VENDOR;
+import static org.lwjgl.opencl.CL11.CL_DEVICE_HOST_UNIFIED_MEMORY;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_MAX_COMPUTE_UNITS;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
@@ -87,7 +89,7 @@ public class GpuSolver extends Solver implements Stateful {
     private GpuSelection gpuSelection = new GpuSelection();
     private int presetQueens = 6;
 
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
+    private List<Constellation> constellations = new ArrayList<Constellation>();
     
     private long start, duration, storedDuration;
     private boolean stateLoaded, ready = true;
@@ -109,7 +111,7 @@ public class GpuSolver extends Solver implements Stateful {
     }
 
     public void reset() {
-	constellations.clear();
+	constellations = new ArrayList<Constellation>();
 	start = duration = storedDuration = 0;
 	for (var gpu : gpuSelection.get())
 	    gpu.reset();
@@ -130,7 +132,7 @@ public class GpuSolver extends Solver implements Stateful {
 	reset();
 	setN(state.getN());
 	storedDuration = state.getStoredDuration();
-	constellations = state.getConstellations();
+	constellations = List.copyOf(state.getConstellations());
 	stateLoaded = true;
     }
 
@@ -192,8 +194,12 @@ public class GpuSolver extends Solver implements Stateful {
 		for (int g = 0; g < gpusBuf.capacity(); g++) {
 		    long gpuId = gpusBuf.get(g);
 		    
-		    GpuInfo gpuInfo = new GpuInfo(getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR),
-			    getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME), getDeviceInfoPointer(gpuId, CL_DEVICE_PARTITION_PROPERTIES) != 0);
+		    String vendor = getDeviceInfoStringUTF8(gpuId, CL_DEVICE_VENDOR);
+		    String name = getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME);
+		    boolean canBePartitioned = getDeviceInfoPointer(gpuId, CL_DEVICE_PARTITION_PROPERTIES) != 0;
+		    boolean isIntegrated = getDeviceInfoInt(gpuId, CL_DEVICE_HOST_UNIFIED_MEMORY) == CL_TRUE;
+		    
+		    GpuInfo gpuInfo = new GpuInfo(vendor, name, canBePartitioned, isIntegrated);
 
 		    Gpu gpu = new Gpu(gpuId, platform, gpuInfo);
 		    tempList.add(gpu);
@@ -492,7 +498,7 @@ public class GpuSolver extends Solver implements Stateful {
 	
     }
 
-    public static final record GpuInfo(String vendor, String name, boolean canBePartitioned) {
+    public static final record GpuInfo(String vendor, String name, boolean canBePartitioned, boolean isIntegrated) {
 	@Override
 	public String toString() {
 	    return name;
@@ -578,6 +584,9 @@ public class GpuSolver extends Solver implements Stateful {
 	    this.id = id;
 	    this.platform = platform;
 	    this.info = info;
+	    
+	    if(info.vendor().toLowerCase().contains("intel") && info.isIntegrated())
+		config.setWorkgroupSize(24);
 	}
 
 	public long getId() {
@@ -586,6 +595,11 @@ public class GpuSolver extends Solver implements Stateful {
 	
 	public GpuInfo getInfo() {
 	    return info;
+	}
+	
+	@Override
+	public String toString() {
+	    return info.name();
 	}
 
 	private GpuConfig getConfig() {

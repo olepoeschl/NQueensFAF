@@ -2,11 +2,17 @@ package de.nqueensfaf;
 
 import de.nqueensfaf.impl.CpuSolver;
 import de.nqueensfaf.impl.GpuSolver;
+import de.nqueensfaf.impl.SymSolver;
 
 public class Demo {
 
     public static void main(String[] args) {
-	gpu();
+//	gpu();
+	var s = new SymSolver();
+	s.setN(27);
+	long a = System.currentTimeMillis();
+	s.solve();
+	System.out.println(System.currentTimeMillis() - a);
     }
     
     static void cpu() {
