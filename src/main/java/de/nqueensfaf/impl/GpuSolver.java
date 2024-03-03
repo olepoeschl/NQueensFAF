@@ -311,7 +311,7 @@ public class GpuSolver extends Solver implements Stateful {
 	final int minGpuWorkloadSize = 1024;
 
 	// if very few constellations, enqueue all at once
-	final float firstPortion = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.4f;
+	final float firstPortion = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.5f;
 	var firstWorkloads = new ArrayList<List<Constellation>>(selectedGpus.size());
 
 	int firstWorkloadSize = (int) (constellations.size() * firstPortion);
