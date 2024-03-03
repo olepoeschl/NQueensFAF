@@ -63,8 +63,8 @@ or the
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
 and download the zip file that fits your Operating System. 
 2) Unpack the zip file and open a console in the unpacked directory. 
-3) Run the application by typing `./nqueensfaf-cli 16` (Linux)
-or `nqueensfaf-cli 16` (Windows).
+3) Run the application by typing `./nqueensfaf-cli -n 16` (Linux)
+or `nqueensfaf-cli -n 16` (Windows).
 4) Check out section __5 Usage__ for an overview of all possible
 commands including examples. <br>
 __NOTE:__ If you can not run the program try the command `chmod +x nqueensfaf-cli`
@@ -77,7 +77,7 @@ or the
 [Latest Nightly Build](https://github.com/olepoeschl/NQueensFAF/releases/tag/nightly) 
 and download the file "nqueensfaf-cli-***.jar" (NOTE the -cli suffix). 
 2) open a console in the directory where the jar is located.  
-3) run the jar by typing `java -jar nqueensfaf-cli.jar 16 cpu` (same command for
+3) run the jar by typing `java -jar nqueensfaf-cli.jar -n 16 cpu` (same command for
 all operating systems). 
 4) Check out the section [Usage]('docs/5 Usage) for an overview of all possible
 commands including examples.
@@ -123,8 +123,8 @@ Attention: Your graphics card may go into another power state when running the p
 
 # 5 Usage
 Show the general help message by using `nqueensfaf-cli -h`and the device
-specific help messages by using either `nqueensfaf-cli 20 gpu -h` or
-`nqueensfaf-cli 20 cpu -h`.<br>
+specific help messages by using either `nqueensfaf-cli -n 20 gpu -h` or
+`nqueensfaf-cli -n 20 cpu -h`.<br>
 If you just want to get started maybe read __5.2 Extended Explanation with Examples__ first. 
 ## 5.1 Compact Explanation
 The command format reads as follows:<br>
