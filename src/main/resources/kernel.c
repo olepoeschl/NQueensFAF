@@ -37,8 +37,8 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	uint free = ~(ld | rd | col | jkl_queens[row]);
 	uint queen = -free & free;
 
-	local uint queens[WORKGROUP_SIZE][N];
-	queens[l_id][start] = queen;
+	local uint queens[WORKGROUP_SIZE*N];
+	queens[l_id*N+start] = queen;
 
 	int direction = 0;
 
@@ -51,7 +51,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 				solutions++;
 				direction = 0;
 				row--;						// decrease row counter
-				queen = queens[l_id][row];			// recover the queen in order to remove it
+				queen = queens[l_id*N+row];			// recover the queen in order to remove it
 				ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;	// shift diagonals one back, remove the queen and insert the diagonals that had left the board
 				rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
 				ld_mem >>= 1;
@@ -60,7 +60,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 			else{
 				direction = 1;					// we are going forwards
 				queen = -free & free;				// this is the next free slot for a queen (searching from the right border) in the current row
-				queens[l_id][row] = queen;			// remember the queen
+				queens[l_id*N+row] = queen;			// remember the queen
 				row++;						// increase row counter
 
 				ld_mem = ld_mem << 1 | ld >> 31;		// place the queen in the diagonals and shift them and remember the diagonals leaving the board
@@ -72,7 +72,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 		else {						// if the row is completely occupied
 			direction = 0;					// we are going backwards
 			row--;						// decrease row counter
-			queen = queens[l_id][row];			// recover the queen in order to remove it
+			queen = queens[l_id*N+row];			// recover the queen in order to remove it
 
 			ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;	// shift diagonals one back, remove the queen and insert the diagonals that had left the board
 			rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;

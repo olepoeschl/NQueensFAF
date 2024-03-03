@@ -690,7 +690,7 @@ public class GpuSolver extends Solver implements Stateful {
 		// create program
 		long program;
 		try {
-		    program = clCreateProgramWithSource(context, readKernelSource("test_kernels_7.c"), errBuf);
+		    program = clCreateProgramWithSource(context, readKernelSource("kernels.c"), errBuf);
 		    checkCLError(errBuf);
 		} catch (IOException e) {
 		    throw new RuntimeException("could not read OpenCL kernel source file: " + e.getMessage(), e);

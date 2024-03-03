@@ -162,7 +162,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	    ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;
 	    rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
 	    ld_mem >>= 1;
-	    rd_mem <<= 1;						
+	    rd_mem <<= 1;
 	}
 	/* calculate the occupancy of the next row
 	 * (free is 1 if a queen can be set at the queens location)
