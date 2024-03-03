@@ -2,7 +2,6 @@ package de.nqueensfaf;
 
 import de.nqueensfaf.impl.CpuSolver;
 import de.nqueensfaf.impl.GpuSolver;
-import de.nqueensfaf.impl.SymSolver;
 
 public class Demo {
 
@@ -24,8 +23,8 @@ public class Demo {
     
     static void gpu() {
 	GpuSolver gs = new GpuSolver();
-	var gpu = gs.getAvailableGpus().get(1);
-	gs.gpuSelection().choose(gpu.getId());
+	var availableGpus = gs.getAvailableGpus();
+	gs.gpuSelection().add(availableGpus.get(0));
 	gs.setUpdateInterval(400);
 	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
