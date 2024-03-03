@@ -7,7 +7,7 @@ struct constellation {
 
 kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global uint* jkl_queens_arr, global long *result) {
 	const struct constellation c = constellation_arr[get_global_id(0)];
-    
+
 	int start = (c.start_ijkl >> 20) & 31;
 	if(start == 69) {				// if we have a pseudo constellation we do nothing
 		return;
@@ -34,10 +34,11 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	uint free = ~(ld | rd | col | jkl_queens[row]);
 	uint queen;
 
-	local uint4 stack[N][WORKGROUP_SIZE];
-	stack[start][l_id] = (uint4)(ld, rd, col, free);
-
-	uint4 current;
+	local uint stack[WORKGROUP_SIZE][4*N];
+	stack[l_id][4*start] = ld;
+	stack[l_id][4*start+1] = rd;
+	stack[l_id][4*start+2] = col;
+	stack[l_id][4*start+3] = free;
 
 	// iterative loop representing the recursive setqueen-function
 	// this is the actual solver (via backtracking with Jeff Somers Bit method)
@@ -46,21 +47,23 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 		solutions += (row == N-1);
 		if(free){
 			queen = free & -free;
-			stack[row][l_id].w = free ^ queen;
+			stack[l_id][4*row+3] = free ^ queen;
 			ld = (ld | queen) << 1;
 			rd = (rd | queen) >> 1;
 			col |= queen;
 			row++;
-			stack[row][l_id] = (uint4)(ld, rd, col, free);
+			stack[l_id][4*row] = ld;
+			stack[l_id][4*row+1] = rd;
+			stack[l_id][4*row+2] = col;
+			stack[l_id][4*row+3] = free;
 			free = ~(ld | rd | col | jkl_queens[row]);
 		}
 		else{
 			row--;
-			current = stack[row][l_id];
-			ld = current.x;
-			rd = current.y;
-			col = current.z;
-			free = current.w;
+			ld = stack[l_id][4*row];
+			rd = stack[l_id][4*row+1];
+			col = stack[l_id][4*row+2];
+			free = stack[l_id][4*row+3];
 		}
 	}
 	result[get_global_id(0)] = solutions;			// number of solutions of the work item

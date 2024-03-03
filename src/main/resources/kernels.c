@@ -54,7 +54,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     uint queen = -free & free;
     
     // all rows of queens in total contain the queens of the board of one workitem
-    local uint queens[WORKGROUP_SIZE][N]; // for remembering the queens for all rows for all boards in the work-group 
+    local uint queens[WORKGROUP_SIZE][N]; // for remembering the queens for all rows for all boards in the work-group
     queens[l_id][start] = queen;
 
     // going forward (setting a queen) or backward (removing a queen)? 										
