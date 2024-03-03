@@ -75,6 +75,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.lwjgl.BufferUtils;
@@ -294,14 +295,15 @@ public class GpuSolver extends Solver implements Stateful {
 	    gpuPortions[i] /= gpuPortionSum;
 	}
 
-	// if very few constellations, enqueue all at once
-	final float portionPerIteration = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.6f;
+	// first workload is the biggest one, then they shrink with each iteration
+	final float portionPerIteration = 0.7f;
 	final int minGpuWorkloadSize = 1024;
 
-	// first workload is the biggest one, then they shrink with each iteration
+	// if very few constellations, enqueue all at once
+	final float firstPortion = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.4f;
 	var firstWorkloads = new ArrayList<List<Constellation>>(selectedGpus.size());
 
-	int firstWorkloadSize = (int) (constellations.size() * portionPerIteration);
+	int firstWorkloadSize = (int) (constellations.size() * firstPortion);
 	int fromIndex = 0;
 	for (int gpuIdx = 0; gpuIdx < selectedGpus.size(); gpuIdx++) {
 	    int toIndex = fromIndex + (int) (firstWorkloadSize * gpuPortions[gpuIdx]);
@@ -325,7 +327,9 @@ public class GpuSolver extends Solver implements Stateful {
 
 	var queue = new ConcurrentLinkedQueue<>(constellations.subList(fromIndex, constellations.size()));
 	var executor = Executors.newFixedThreadPool(selectedGpus.size());
-
+	
+	final var iterationSum = new AtomicInteger(0);
+	
 	for (int idx = 0; idx < selectedGpus.size(); idx++) {
 	    final int gpuIdx = idx;
 	    final var gpu = selectedGpus.get(idx);
@@ -346,8 +350,19 @@ public class GpuSolver extends Solver implements Stateful {
 			break;
 
 		    iteration++;
-
-		    int workloadSize = (int) (gpuFirstWorkloadSize * Math.pow(portionPerIteration, iteration) * 0.9f);
+		    
+		    // if the other gpus did in average complete already more workloads, make the own workload size a smaller to catch up and vice versa
+		    float cumulatedIterationProgressAvg = iterationSum.incrementAndGet();
+		    for(var otherGpu : selectedGpus) {
+			if(otherGpu.getId() == gpu.getId())
+			    continue;
+			cumulatedIterationProgressAvg += otherGpu.getProgress();
+		    }
+		    cumulatedIterationProgressAvg /= selectedGpus.size();
+		    
+		    float adaptive = iteration / cumulatedIterationProgressAvg;
+		    
+		    int workloadSize = (int) (gpuFirstWorkloadSize * Math.pow(portionPerIteration, iteration) * adaptive);
 		    if (workloadSize < minGpuWorkloadSize)
 			workloadSize = minGpuWorkloadSize;
 		    while (workload.size() < workloadSize && !queue.isEmpty()) {
@@ -568,6 +583,7 @@ public class GpuSolver extends Solver implements Stateful {
 	// measured kernel duration
 	private long duration;
 	private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
+	private float progress = 0f;
 
 	// related opencl objects
 	private long subDevice;
@@ -614,7 +630,8 @@ public class GpuSolver extends Solver implements Stateful {
 	
 	private void reset() {
 	    duration = 0;
-	    maxNumOfConstellationsPerRun = 0;
+	    progress = 0f;
+	    maxNumOfConstellationsPerRun = maxNumOfJklQueensArrays = 0;
 	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	}
 
@@ -875,15 +892,23 @@ public class GpuSolver extends Solver implements Stateful {
 	private void readResults(ByteBuffer resPtr, List<Constellation> constellations) {
 	    // read result and progress memory buffers
 	    checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
+	    int numSolvedConstellations = 0; 
 	    for (int i = 0; i < constellations.size(); i++) {
 		if (constellations.get(i).extractStart() == 69) // start=69 is for trash constellations
 		    continue;
 		long solutionsForConstellation = resPtr.getLong(i * 8)
 			* symmetry(n, constellations.get(i).extractIjkl());
-		if (solutionsForConstellation >= 0)
+		if (solutionsForConstellation >= 0) {
 		    // synchronize with the list of constellations on the RAM
 		    constellations.get(i).setSolutions(solutionsForConstellation);
+		    numSolvedConstellations++;
+		}
 	    }
+	    progress = (float) numSolvedConstellations / constellations.size();
+	}
+	
+	private float getProgress() {
+	    return progress;
 	}
     }
 }
