@@ -30,7 +30,7 @@ Although the client is working just fine, we are still developing it.<br>
 __PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
 automatically (coming soon).
 ### Windows 
-Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client.exe).
+Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
 After that, just double click the desktop icon - the rest is self
 explanatory. Alternatively you may follow the same installation process as for
 Linux and Mac, see below.<br> 
