@@ -19,8 +19,6 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	uint ld = c.ld;
 	uint rd = c.rd;
 	uint col = ~(L-2) ^ c.col;
-//	uint ld_mem = 0;
-//	uint rd_mem = 0;
 
 	local uint jkl_queens[N];
 	jkl_queens[l_id % N] = jkl_queens_arr[get_group_id(0) * N + l_id % N];
@@ -34,13 +32,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	ulong solutions = 0;
 
 	uint free = ~(ld | rd | col | jkl_queens[row]);
-//	uint queen = -free & free;
 	uint queen;
-
-//	local uint queens[WORKGROUP_SIZE][N];
-//	queens[l_id][0] = queen;
-
-//	int direction = 0;
 
 	local uint4 stack[WORKGROUP_SIZE][N];
 	stack[l_id][start] = (uint4)(ld, rd, col, free);
@@ -64,6 +56,11 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 		}
 		else{
 			row--;
+			current = stack[l_id][row];
+			ld = current.x;
+			rd = current.y;
+			col = current.z;
+			free = current.w;
 		}
 	}
 	result[get_global_id(0)] = solutions;			// number of solutions of the work item

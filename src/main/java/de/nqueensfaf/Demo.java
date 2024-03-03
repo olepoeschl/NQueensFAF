@@ -26,10 +26,11 @@ public class Demo {
 	var availableGpus = gs.getAvailableGpus();
 	gs.gpuSelection().add(availableGpus.get(0));
 	gs.setUpdateInterval(400);
+	gs.setPresetQueens(6);
 	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
         gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
-	gs.setN(21);
+	gs.setN(19);
 	gs.solve();
     }
 }
