@@ -24,13 +24,13 @@ public class Demo {
     
     static void gpu() {
 	GpuSolver gs = new GpuSolver();
-	var gpu = gs.getAvailableGpus().get(1);
+	var gpu = gs.getAvailableGpus().get(0);
 	gs.gpuSelection().choose(gpu.getId());
 	gs.setUpdateInterval(400);
 	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
         gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
-	gs.setN(18);
+	gs.setN(21);
 	gs.solve();
     }
 }
