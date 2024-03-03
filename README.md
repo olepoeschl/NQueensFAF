@@ -43,8 +43,8 @@ program as an exception in the anti virus software.<br>
 You first have to install the [Java JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
 driver, in Linux you may have to install the missing libraries manually. After
-that, download the jar and run it by executing the  command<br>
-`java -jar nqueens-client.jar nqueensfaf.de`<br>
+that, [download the jar](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.2.jar) and run it by executing the  command<br>
+`java -jar nqueens-client.jar`<br>
 in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br>
 
 __NOTE:__ Eventually you have to adapt the name 'nqueens-client.jar' to the actual name of the jar
