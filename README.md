@@ -29,9 +29,9 @@ We hope that he is the first of many.
 Although the client is working just fine, we are still developing it.<br> 
 __PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
 automatically (coming soon).<br>
-Latest version: 0.0.2 (link below).
+Latest version: 0.0.1 (link below).
 ### Windows 
-Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.2.exe).
+Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
 After that, just double click the desktop icon - the rest is self
 explanatory. Alternatively you may follow the same installation process as for
 Linux and Mac, see below.<br> 
@@ -43,7 +43,7 @@ program as an exception in the anti virus software.<br>
 You first have to install the [Java JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
 OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
 driver, in Linux you may have to install the missing libraries manually. After
-that, [download the jar](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.2.jar) and run it by executing the  command<br>
+that, [download the jar](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.jar) and run it by executing the  command<br>
 `java -jar nqueens-client.jar`<br>
 in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br>
 
