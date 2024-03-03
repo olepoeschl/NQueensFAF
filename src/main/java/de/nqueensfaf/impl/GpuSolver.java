@@ -19,6 +19,7 @@ import static org.lwjgl.opencl.CL12.CL_DEVICE_TYPE_GPU;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_VENDOR;
 import static org.lwjgl.opencl.CL11.CL_DEVICE_HOST_UNIFIED_MEMORY;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_MAX_COMPUTE_UNITS;
+import static org.lwjgl.opencl.CL12.CL_DEVICE_MAX_CLOCK_FREQUENCY;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
 import static org.lwjgl.opencl.CL12.CL_DEVICE_PARTITION_PROPERTIES;
@@ -68,10 +69,10 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -199,10 +200,25 @@ public class GpuSolver extends Solver implements Stateful {
 		    String name = getDeviceInfoStringUTF8(gpuId, CL_DEVICE_NAME);
 		    boolean canBePartitioned = getDeviceInfoPointer(gpuId, CL_DEVICE_PARTITION_PROPERTIES) != 0;
 		    boolean isIntegrated = getDeviceInfoInt(gpuId, CL_DEVICE_HOST_UNIFIED_MEMORY) == CL_TRUE;
+		    int workgroupSize = 64;
+		    
+		    int maxClockFreq = getDeviceInfoInt(gpuId, CL_DEVICE_MAX_CLOCK_FREQUENCY);
+		    int numComputeUnits = getDeviceInfoInt(gpuId, CL_DEVICE_MAX_COMPUTE_UNITS);
+		    int cores = getNumCoresForGpu(gpuId, name, vendor, maxClockFreq, numComputeUnits);
+		    int benchmark = cores * maxClockFreq;
+		    
+		    // if gpu is integrated intel gpu
+		    if(isIntegrated && vendor.toLowerCase().contains("intel")) {
+			workgroupSize = 24; // 24 is best performing workgroup size for this case
+			benchmark *= 0.5; // make the benchmark a lot smaller
+		    }
 		    
 		    GpuInfo gpuInfo = new GpuInfo(vendor, name, canBePartitioned, isIntegrated);
+		    GpuConfig config = new GpuConfig(benchmark, 1f, workgroupSize);
 
 		    Gpu gpu = new Gpu(gpuId, platform, gpuInfo);
+		    gpu.setConfig(config);
+		    
 		    tempList.add(gpu);
 		}
 	    }
@@ -284,15 +300,10 @@ public class GpuSolver extends Solver implements Stateful {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 
-	float benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0f, Float::sum);
+	int benchmarkSum = selectedGpus.stream().mapToInt(gpu -> gpu.getConfig().getBenchmark()).reduce(0, Integer::sum);
 	float[] gpuPortions = new float[selectedGpus.size()];
-	float gpuPortionSum = 0f;
 	for (int i = 0; i < selectedGpus.size(); i++) {
-	    gpuPortions[i] = (benchmarkSum / selectedGpus.get(i).getConfig().getBenchmark());
-	    gpuPortionSum += gpuPortions[i];
-	}
-	for (int i = 0; i < selectedGpus.size(); i++) {
-	    gpuPortions[i] /= gpuPortionSum;
+	    gpuPortions[i] = (float) selectedGpus.get(i).getConfig().getBenchmark() / benchmarkSum;
 	}
 
 	// first workload is the biggest one, then they shrink with each iteration
@@ -300,7 +311,7 @@ public class GpuSolver extends Solver implements Stateful {
 	final int minGpuWorkloadSize = 1024;
 
 	// if very few constellations, enqueue all at once
-	final float firstPortion = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.4f;
+	final float firstPortion = (constellations.size() < 10_000 * selectedGpus.size()) ? 1f : 0.5f;
 	var firstWorkloads = new ArrayList<List<Constellation>>(selectedGpus.size());
 
 	int firstWorkloadSize = (int) (constellations.size() * firstPortion);
@@ -406,6 +417,37 @@ public class GpuSolver extends Solver implements Stateful {
     }
 
     // utils
+    private int getNumCoresForGpu(long gpuId, String gpuModelName, String vendorName, int maxClockFreq, int numComputeUnits) {
+	String name = gpuModelName.toLowerCase();
+	String vendor = vendorName.toLowerCase();
+	
+	// Copyright (c) 2022-2024 Dr. Moritz Lehmann
+	// Code from: https://github.com/ProjectPhysX/OpenCL-Wrapper
+	
+	boolean nvidia_192_cores_per_cu = Arrays.stream(new String[]{"gt 6", "gt 7", "gtx 6", "gtx 7", "quadro k", "tesla k"}).anyMatch(name::contains) || (maxClockFreq < 1000 && name.contains("titan")); // identify Kepler GPUs
+	boolean nvidia_64_cores_per_cu = Arrays.stream(new String[]{"p100", "v100", "a100", "a30", " 16", " 20", "titan v", "titan rtx", "quadro t", "tesla t", "quadro rtx"}).anyMatch(name::contains) && !name.contains("rtx a"); // identify P100, Volta, Turing, A100, A30
+	boolean amd_128_cores_per_dualcu = name.contains("gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
+	boolean amd_256_cores_per_dualcu = name.contains("gfx11"); // identify RDNA3 GPUs where dual CUs are reported
+	boolean intel_16_cores_per_cu = name.contains("gpu max"); // identify PVC GPUs
+	
+	int cores_per_cu;
+	if(vendor.contains("nvidia")) {
+	    cores_per_cu = nvidia_64_cores_per_cu ? 64 : nvidia_192_cores_per_cu ? 192 : 128; // Nvidia GPUs have 192 cores/CU (Kepler), 128 cores/CU (Maxwell, Pascal, Ampere, Hopper, Ada) or 64 cores/CU (P100, Volta, Turing, A100, A30)
+	} else if(vendor.contains("amd") || vendor.contains("advanced")) {
+	    cores_per_cu = amd_256_cores_per_dualcu ? 256 : amd_128_cores_per_dualcu ? 128 : 64; // AMD GPUs have 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2) or 256 cores/dualCU (RDNA3)
+	} else if(vendor.contains("intel")) {
+	    cores_per_cu = intel_16_cores_per_cu ? 16 : 8; // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc)
+	} else if(vendor.contains("apple")) {
+	    cores_per_cu = 128; // Apple ARM GPUs usually have 128 cores/CU
+	} else if(vendor.contains("arm")) {
+	    cores_per_cu = 8; // ARM GPUs usually have 8 cores/CU
+	} else {
+	    cores_per_cu = 64; // if device is not detected, use an average number just to be safe
+	}
+	
+	return numComputeUnits * cores_per_cu; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
+    }
+    
     private String readKernelSource(String filepath) throws IOException {
 	String resultString = null;
 	try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
@@ -463,54 +505,26 @@ public class GpuSolver extends Solver implements Stateful {
     }
 
     public class GpuSelection {
+	
 	private ArrayList<Gpu> selectedGpus = new ArrayList<Gpu>();
-	private boolean chosen = false;
 
 	private GpuSelection() {
 	}
 
-	public void choose(long id) {
-	    choose(id, null);
+	public void add(Gpu gpu) {
+	    if (selectedGpus.stream().anyMatch(g -> g.getId() == gpu.getId()))
+		throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was already added");
+
+	    selectedGpus.add(gpu);
 	}
 	
-	public void choose(long id, GpuConfig config) {
-	    add(id, config);
-	    chosen = true;
-	}
-
-	public void add(long id) {
-	    add(id, null);
-	}
-	
-	public void add(long id, GpuConfig config) {
-	    if (chosen)
-		throw new IllegalStateException("unable to add more GPU's after choosing one");
-	    
-	    if (selectedGpus.stream().anyMatch(gpu -> gpu.id == id))
-		throw new IllegalArgumentException("GPU with id " + id + " was already added");
-
-	    try {
-		Gpu gpu = availableGpus.stream().filter(g -> g.id == id).findFirst().get();
-		
-		if(config != null)
-		    gpu.setConfig(config);
-		
-		selectedGpus.add(gpu);
-
-	    } catch (NoSuchElementException e) {
-		throw new IllegalArgumentException("no GPU found for id " + id);
-	    }
-	}
-	
-	private ArrayList<Gpu> get() {
+	public ArrayList<Gpu> get() {
 	    return selectedGpus;
 	}
     
-	public void reset() {
+	public void clear() {
 	    selectedGpus.clear();
-	    chosen = false;
 	}
-	
     }
 
     public static final record GpuInfo(String vendor, String name, boolean canBePartitioned, boolean isIntegrated) {
@@ -522,14 +536,14 @@ public class GpuSolver extends Solver implements Stateful {
     
     public static final class GpuConfig {
 	
-	private float benchmark = 1f;
+	private int benchmark = 1;
 	private float maxUsage = 1f;
 	private int workgroupSize = 64;
 	
 	public GpuConfig() {
 	}
 	
-	public GpuConfig(float benchmark, float maxUsage, int workgroupSize) {
+	public GpuConfig(int benchmark, float maxUsage, int workgroupSize) {
 	    setBenchmark(benchmark);
 	    setMaxUsage(maxUsage);
 	    setWorkgroupSize(workgroupSize);
@@ -541,12 +555,12 @@ public class GpuSolver extends Solver implements Stateful {
 	    setWorkgroupSize(config.getWorkgroupSize());
 	}
 
-	public float getBenchmark() {
+	public int getBenchmark() {
 	    return benchmark;
 	}
 
-	public void setBenchmark(float benchmark) {
-	    if(benchmark <= 0f)
+	public void setBenchmark(int benchmark) {
+	    if(benchmark <= 0)
 		throw new IllegalArgumentException("benchmark must be >0");
 	    this.benchmark = benchmark;
 	}
@@ -600,9 +614,6 @@ public class GpuSolver extends Solver implements Stateful {
 	    this.id = id;
 	    this.platform = platform;
 	    this.info = info;
-	    
-	    if(info.vendor().toLowerCase().contains("intel") && info.isIntegrated())
-		config.setWorkgroupSize(24);
 	}
 
 	public long getId() {
@@ -612,20 +623,20 @@ public class GpuSolver extends Solver implements Stateful {
 	public GpuInfo getInfo() {
 	    return info;
 	}
+
+	public GpuConfig getConfig() {
+	    return config;
+	}
+	
+	public void setConfig(GpuConfig config) {
+	    if(config.getMaxUsage() != 1 && !info.canBePartitioned())
+		throw new IllegalStateException("maximum GPU usage cannot be set for this GPU ('" + info.name() + "'): not supported by GPU driver");
+	    this.config = new GpuConfig(config);
+	}
 	
 	@Override
 	public String toString() {
 	    return info.name();
-	}
-
-	private GpuConfig getConfig() {
-	    return config;
-	}
-	
-	private void setConfig(GpuConfig config) {
-	    if(config.getMaxUsage() != 1 && !info.canBePartitioned())
-		throw new IllegalStateException("maximum GPU usage cannot be set for this GPU ('" + info.name() + "'): not supported by GPU driver");
-	    this.config = new GpuConfig(config);
 	}
 	
 	private void reset() {

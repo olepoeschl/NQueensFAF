@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.nqueensfaf</groupId>
 	<artifactId>nqueensfaf</artifactId>
-	<version>2.0.0</version>
+	<version>3.0.0</version>
 	<name>nqueensfaf</name>
 	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
 	<packaging>jar</packaging>

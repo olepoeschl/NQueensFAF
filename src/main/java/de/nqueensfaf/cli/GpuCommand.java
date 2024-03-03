@@ -8,7 +8,6 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.impl.GpuSolver;
-import de.nqueensfaf.impl.GpuSolver.GpuConfig;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -43,7 +42,10 @@ public class GpuCommand implements Runnable {
 				new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
 				.dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().vendor()),
 				new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
-				.dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().name()))));
+				.dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().name()),
+				new Column().header("Benchmark").headerAlign(HorizontalAlign.CENTER)
+				.dataAlign(HorizontalAlign.RIGHT).with(gpu -> Integer.toString(gpu.getConfig().getBenchmark()))
+				)));
 
 	// let user choose which GPUs should be used
 	System.out.println("Please specify the indices of all GPU's you want to use, separated by commata.");
@@ -64,8 +66,8 @@ public class GpuCommand implements Runnable {
 		    throw new NumberFormatException("invalid index: '" + indices[i].trim() + "' is not an integer");
 		}
 
-		var config = new GpuConfig();
-
+		var gpu = availableGpus.get(index);
+		
 		if(configProperties.length > 1) {
 		    for(int j = 1; j < configProperties.length; j++) {
 			String configProperty = configProperties[j];
@@ -75,16 +77,16 @@ public class GpuCommand implements Runnable {
 			switch(propertyKey) {
 			case "bm":
 			    try {
-				float benchmark = Float.parseFloat(propertyVal);
-				config.setBenchmark(benchmark);
+				int benchmark = Integer.parseInt(propertyVal);
+				gpu.getConfig().setBenchmark(benchmark);
 			    } catch (NumberFormatException e) {
-				throw new NumberFormatException("invalid benchmark: '" + propertyVal + "' is not a float");
+				throw new NumberFormatException("invalid benchmark: '" + propertyVal + "' is not an integer");
 			    }
 			    break;
 			case "mu":
 			    try {
 				float maxUsage = Float.parseFloat(propertyVal);
-				config.setMaxUsage(maxUsage);
+				gpu.getConfig().setMaxUsage(maxUsage);
 			    } catch (NumberFormatException e) {
 				throw new NumberFormatException("invalid max usage percentage: '" + propertyVal + "' is not a float");
 			    }
@@ -92,7 +94,7 @@ public class GpuCommand implements Runnable {
 			case "ws":
 			    try {
 				int workgroupSize = Integer.parseInt(propertyVal);
-				config.setWorkgroupSize(workgroupSize);
+				gpu.getConfig().setWorkgroupSize(workgroupSize);
 			    } catch (NumberFormatException e) {
 				throw new NumberFormatException("invalid workgroup size: '" + propertyVal + "' is not an integer");
 			    }
@@ -103,7 +105,7 @@ public class GpuCommand implements Runnable {
 		    }
 		}
 	    
-		solver.gpuSelection().add(availableGpus.get(index).getId(), config);
+		solver.gpuSelection().add(gpu);
 	    }
 	}
 
