@@ -25,14 +25,15 @@ public class Demo {
     }
     
     static void gpu() {
-	GpuSolver g = new GpuSolver();
-	List<GpuInfo> availableGpus = g.getAvailableGpus();
-	g.gpuSelection().choose(availableGpus.get(0).id());
-	g.setUpdateInterval(400);
-	g.onInit(self -> System.out.println("Starting Solver for board size " + self.getN() + "..."))
-        	.onUpdate((self, progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration))
-        	.onFinish(self -> System.out.println("Found " + self.getSolutions() + " solutions in " + self.getDuration() + " ms"))
-		.setN(18)
-		.solve();
+	GpuSolver gs = new GpuSolver();
+	var availableGpus = gs.getAvailableGpus();
+	gs.gpuSelection().add(availableGpus.get(0));
+	gs.setUpdateInterval(400);
+	gs.setPresetQueens(6);
+	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
+        gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
+        gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
+	gs.setN(19);
+	gs.solve();
     }
 }
