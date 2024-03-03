@@ -29,7 +29,7 @@ public class Demo {
 	gs.onInit(() -> System.out.println("Starting Solver for board size " + gs.getN() + "..."));
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
         gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
-	gs.setN(18);
+	gs.setN(21);
 	gs.solve();
     }
 }
