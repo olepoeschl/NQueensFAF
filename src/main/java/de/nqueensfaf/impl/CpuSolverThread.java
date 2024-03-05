@@ -796,7 +796,7 @@ class CpuSolverThread extends Thread {
 	    free = ~(ld | rd | col);
 
 	    // big case distinction for deciding which soling algorithm to use
-
+		// it is a miracel that we got this to actually work..
 	    // if queen j is more than 2 columns away from the corner
 	    if (j < n - 3) {
 		jmark = j + 1;
