@@ -42,7 +42,7 @@ public class CpuSolver extends Solver implements Stateful {
 
     @Override
     public long getDuration() {
-	if (isRunning()) {
+	if (isRunning() && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;
