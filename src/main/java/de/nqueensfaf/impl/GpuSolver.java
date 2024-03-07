@@ -19,8 +19,6 @@ import static org.lwjgl.opencl.CL12.CL_MAP_WRITE;
 import static org.lwjgl.opencl.CL12.CL_MEM_ALLOC_HOST_PTR;
 import static org.lwjgl.opencl.CL12.CL_MEM_READ_ONLY;
 import static org.lwjgl.opencl.CL12.CL_MEM_WRITE_ONLY;
-import static org.lwjgl.opencl.CL12.CL_PROFILING_COMMAND_END;
-import static org.lwjgl.opencl.CL12.CL_PROFILING_COMMAND_START;
 import static org.lwjgl.opencl.CL12.CL_PROGRAM_BUILD_LOG;
 import static org.lwjgl.opencl.CL12.CL_QUEUE_PROFILING_ENABLE;
 import static org.lwjgl.opencl.CL12.clBuildProgram;
@@ -37,7 +35,6 @@ import static org.lwjgl.opencl.CL12.clFinish;
 import static org.lwjgl.opencl.CL12.clFlush;
 import static org.lwjgl.opencl.CL12.clGetDeviceIDs;
 import static org.lwjgl.opencl.CL12.clGetEventInfo;
-import static org.lwjgl.opencl.CL12.clGetEventProfilingInfo;
 import static org.lwjgl.opencl.CL12.clGetPlatformIDs;
 import static org.lwjgl.opencl.CL12.clReleaseCommandQueue;
 import static org.lwjgl.opencl.CL12.clReleaseContext;
@@ -220,6 +217,8 @@ public class GpuSolver extends Solver implements Stateful {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 
+	start = System.currentTimeMillis();
+	
 	// sort selected GPUs by descending benchmark (the ones with better benchmarks
 	// come first)
 	Collections.sort(gpuSelection.get(), (g1, g2) -> {
@@ -238,8 +237,6 @@ public class GpuSolver extends Solver implements Stateful {
 	    gpu.setN(getN());
 	    gpu.createOpenClObjects();
 	}
-
-	start = System.currentTimeMillis();
 	
 	L = 1 << (getN() - 1);
 
@@ -248,11 +245,8 @@ public class GpuSolver extends Solver implements Stateful {
 	} else {
 	    multiGpu(remainingConstellations);
 	}
-
-	if (gpuSelection.get().size() == 1)
-	    duration = gpuSelection.get().get(0).duration;
-	else
-	    duration = System.currentTimeMillis() - start;
+	
+	duration = System.currentTimeMillis() - start;
 
 	for (var gpu : gpuSelection.get())
 	    gpu.releaseOpenClObjects();
@@ -495,7 +489,6 @@ public class GpuSolver extends Solver implements Stateful {
 	private int workgroupSize = 64;
 
 	// measured kernel duration
-	private long duration;
 	private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
 
 	// related opencl objects
@@ -734,14 +727,6 @@ public class GpuSolver extends Solver implements Stateful {
 
 		// read final results
 		readResults(resPtr, constellations);
-
-		// read gpu kernel profiled time
-		LongBuffer startBuf = BufferUtils.createLongBuffer(1), endBuf = BufferUtils.createLongBuffer(1);
-		int err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_START, startBuf, null);
-		checkCLError(err);
-		err = clGetEventProfilingInfo(xEvent, CL_PROFILING_COMMAND_END, endBuf, null);
-		checkCLError(err);
-		duration += (endBuf.get(0) - startBuf.get(0)) / 1000000; // convert nanoseconds to ms
 
 		// release memory and event
 		checkCLError(clReleaseEvent(xEvent));
