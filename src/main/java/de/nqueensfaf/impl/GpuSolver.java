@@ -510,7 +510,7 @@ public class GpuSolver extends Solver implements Stateful {
 	private GpuInfo info;
 	private GpuConfig config = new GpuConfig();
 
-	// measured kernel duration
+	// for creating the buffers with sufficient size to be reused in all workloads (for multi gpu)
 	private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
 
 	// related opencl objects
