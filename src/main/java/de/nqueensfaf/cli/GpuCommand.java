@@ -8,7 +8,7 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 
 import de.nqueensfaf.impl.GpuSolver;
-import de.nqueensfaf.impl.GpuSolver.GpuInfo;
+import de.nqueensfaf.impl.GpuSolver.Gpu;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -43,9 +43,9 @@ public class GpuCommand implements Runnable {
 		    AsciiTable.getTable(AsciiTable.BASIC_ASCII, gpus,
 			    Arrays.asList(
 				    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.vendor()),
+				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().vendor()),
 				    new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
-				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.name()))));
+				    .dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().name()))));
 	    return;
 	}
 
@@ -55,21 +55,25 @@ public class GpuCommand implements Runnable {
 	if(presetQueens != 0)
 	    solver.setPresetQueens(presetQueens);
 	
-	List<GpuInfo> availableGpus = solver.getAvailableGpus();
+	List<Gpu> availableGpus = solver.getAvailableGpus();
 	if(gpu != null) {
 	    for(var requestedGpu : gpu) {
 		if(requestedGpu.useAllMatchingGpus) {
-		    var matchingGpus = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).toList();
+		    var matchingGpus = availableGpus.stream().filter(gi -> gi.getInfo().name().toLowerCase().contains(requestedGpu.nameContains)).toList();
 		    for(var matchingGpu : matchingGpus) {
-			solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
+			matchingGpu.getConfig().setBenchmark(requestedGpu.benchmarkScore);
+			matchingGpu.getConfig().setWorkgroupSize(requestedGpu.workgroupSize);
+			solver.gpuSelection().add(matchingGpu);
 		    }
 		} else {
-		    var matchingGpu = availableGpus.stream().filter(gi -> gi.name().toLowerCase().contains(requestedGpu.nameContains)).findFirst().get();
-		    solver.gpuSelection().add(matchingGpu.id(), requestedGpu.benchmarkScore, requestedGpu.workgroupSize);
+		    var matchingGpu = availableGpus.stream().filter(gi -> gi.getInfo().name().toLowerCase().contains(requestedGpu.nameContains)).findFirst().get();
+		    matchingGpu.getConfig().setBenchmark(requestedGpu.benchmarkScore);
+		    matchingGpu.getConfig().setWorkgroupSize(requestedGpu.workgroupSize);
+		    solver.gpuSelection().add(matchingGpu);
 		}
 	    }
 	} else {
-	    solver.gpuSelection().add(availableGpus.get(0).id(), 0, 0);
+	    solver.gpuSelection().choose(availableGpus.get(0));
 	}
 	
 	solver.solve();
