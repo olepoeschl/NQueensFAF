@@ -73,7 +73,7 @@ import de.nqueensfaf.Solver;
 
 public class GpuSolver extends Solver implements Stateful {
 
-    private List<Gpu> availableGpus = new ArrayList<Gpu>();
+    private List<Gpu> availableGpus;
     private GpuSelection gpuSelection = new GpuSelection();
     
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
