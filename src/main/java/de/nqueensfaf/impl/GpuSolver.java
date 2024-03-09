@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -446,7 +445,7 @@ public class GpuSolver extends Solver implements Stateful {
 
     public class GpuSelection {
 	
-	private TreeSet<Gpu> selectedGpus = new TreeSet<Gpu>((g1, g2) -> g1.compareTo(g2));
+	private List<Gpu> selectedGpus = new ArrayList<Gpu>();
 	private boolean chosen = false;
 
 	private GpuSelection() {
@@ -486,7 +485,7 @@ public class GpuSolver extends Solver implements Stateful {
 	}
     }
 
-    public class GpuConfig {
+    public static class GpuConfig {
 	
 	private float benchmark;
 	private int workgroupSize;
@@ -526,7 +525,7 @@ public class GpuSolver extends Solver implements Stateful {
 	}
     }
     
-    public class Gpu implements Comparable<Gpu> {
+    public class Gpu {
 	
 	private final long id; // OpenCL device id
 	private final long platform;
@@ -567,21 +566,6 @@ public class GpuSolver extends Solver implements Stateful {
 	
 	public void setConfig(GpuConfig config) {
 	    this.config = config;
-	}
-	
-	@Override
-	public int compareTo(Gpu gpu) {
-	    if(gpu.getConfig().getBenchmark() == config.getBenchmark())
-		return 1;
-	    return Float.compare(config.getBenchmark(), gpu.config.getBenchmark());
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-	    if(!(o instanceof Gpu))
-		return false;
-	    var gpu = (Gpu) o;
-	    return gpu.id == id && gpu.info.name() == info.name() && gpu.info.vendor() == info.vendor();
 	}
 	
 	@Override
