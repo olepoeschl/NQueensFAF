@@ -292,7 +292,7 @@ public class GpuSolver extends Solver implements Stateful {
 	    firstWorkloads.add(gpuFirstWorkload);
 
 	    var gpu = selectedGpus.get(gpuIdx);
-	    gpu.createBuffers(gpuFirstWorkload.size() * 3);
+	    gpu.createBuffers((int) (constellations.size() * 0.7)); // max size of workload, because 30% are already executed in the first iteration
 
 	    fromIndex = toIndex;
 	}
@@ -333,7 +333,8 @@ public class GpuSolver extends Solver implements Stateful {
 			cumulatedIterationProgressAvg += otherGpu.getProgress();
 		    }
 		    cumulatedIterationProgressAvg /= (selectedGpus.size() - 1);
-		    
+		    if(cumulatedIterationProgressAvg == 0f) // prevent division by 0
+			cumulatedIterationProgressAvg = 0.00001f;
 		    adaptive *= iteration / cumulatedIterationProgressAvg;
 		    
 		    int workloadSize = (int) (gpuFirstWorkloadSize * adaptive);
