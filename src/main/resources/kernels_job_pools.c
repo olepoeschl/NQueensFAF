@@ -12,7 +12,10 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     const int l_id = get_local_id(0); // local thread id within workgroup
 
     // local pointer to next job in global mem
-    int job_index = get_global_id(0);
+    local uint job_index;
+    if(l_id == 0)
+	job_index = get_global_id(0);
+    barrier(CLK_LOCAL_MEM_FENCE);
     
     // task content
     struct constellation c;
@@ -21,7 +24,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     
     const uint L = 1 << (N-1); // queen at the left border of the board (right border is represented by 1) 
     
-    local uint queens[WORKGROUP_SIZE][N-2]; // for remembering the queens for all rows for all boards in the work-group 
+    local uint queens[WORKGROUP_SIZE][N]; // for remembering the queens for all rows for all boards in the work-group 
     
     int start, row, direction;
     uint ld, rd, col, ld_mem, rd_mem, free, queen;
@@ -29,7 +32,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     
     while (job_index <= max_job_index) {
 	// init job
-	c = constellation_arr[job_index];
+	c = constellation_arr[job_index + l_id];
 	ld = c.ld;
 	rd = c.rd;
 	col = ~(L-2) ^ c.col;
@@ -172,13 +175,16 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	    }
 
 	    // write the number of solutions for this job back to global memory
-	    result[job_index] = solutions;
+	    result[job_index + l_id] = solutions;
 	}
 
 	barrier(CLK_LOCAL_MEM_FENCE); // wait for each item of the workgroup to finish
 	
 	// fetch next job
-	job_index += get_global_size(0);
+	if(l_id == 0) {
+	    job_index = atomic_add(next_job, WORKGROUP_SIZE);
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
 	
 	old_jkl = c.start_ijkl & 0b111111111111111;
     }
