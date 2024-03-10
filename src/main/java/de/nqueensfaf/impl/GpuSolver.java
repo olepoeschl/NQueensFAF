@@ -766,11 +766,11 @@ public class GpuSolver extends Solver implements Stateful {
 		checkCLError(clEnqueueUnmapMemObject(memQueue, jklQueensMem, jklQueensPtr, null, null));
 
 		globalWorkSize = constellations.size() / 4;
-		if(globalWorkSize < 1024 * 128)
+		if(globalWorkSize < 1024 * 32)
 		    globalWorkSize = constellations.size();
-		while(globalWorkSize % config.getWorkgroupSize() != 0) {
+		while(globalWorkSize % config.getWorkgroupSize() != 0)
 		    globalWorkSize++;
-		}
+		System.out.println("gws: " + globalWorkSize + ", cs: " + constellations.size());
 		
 		ByteBuffer nextJobPtr = clEnqueueMapBuffer(memQueue, nextJobMem, true, CL_MAP_WRITE, 0,
 			4, null, null, errBuf, null);
