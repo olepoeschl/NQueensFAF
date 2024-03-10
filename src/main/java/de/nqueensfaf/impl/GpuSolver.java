@@ -571,7 +571,7 @@ public class GpuSolver extends Solver implements Stateful {
 	
 	@Override
 	public String toString() {
-	    return "[id=" + id + ", name=" + info.name + ", vendor=" + info.vendor() + "]";
+	    return info.name();
 	}
 
 	private void reset() {
