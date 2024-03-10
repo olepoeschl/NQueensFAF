@@ -8,7 +8,7 @@ struct constellation {
 };
 
 // Nvidia kernel
-kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global uint* jkl_queens_arr, volatile global uint* next_job, const uint max_job_index, global long *result) {
+kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global uint* jkl_queens_arr, const uint max_job_index, global long *result) {
     const int l_id = get_local_id(0); // local thread id within workgroup
 
     // local pointer to next job in global mem

@@ -542,7 +542,7 @@ public class GpuSolver extends Solver implements Stateful {
 	private long program;
 	private long kernel;
 	private long xQueue, memQueue;
-	private long constellationsMem, jklQueensMem, nextJobMem, resMem;
+	private long constellationsMem, jklQueensMem, resMem;
 	private IntBuffer maxJobIndexArg;
 	private int globalWorkSize;
 	
@@ -580,7 +580,7 @@ public class GpuSolver extends Solver implements Stateful {
 	private void reset() {
 	    duration = 0;
 	    maxNumOfConstellationsPerRun = 0;
-	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = nextJobMem = resMem = 0;
+	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	    progress = 0;
 	}
 
@@ -673,14 +673,6 @@ public class GpuSolver extends Solver implements Stateful {
 		    jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
 			    maxNumOfJklQueensArrays * n * 4, errBuf);
 		checkCLError(errBuf);
-
-		if (info.vendor.toLowerCase().contains("nvidia"))
-		    nextJobMem = clCreateBufferNV(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-			    CL_MEM_PINNED_NV, 4, errBuf);
-		else
-		    nextJobMem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-			    4, errBuf);
-		checkCLError(errBuf);
 		
 		if (info.vendor.toLowerCase().contains("nvidia"))
 		    resMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
@@ -702,22 +694,17 @@ public class GpuSolver extends Solver implements Stateful {
 		jklQueensArg.put(0, jklQueensMem);
 		checkCLError(clSetKernelArg(kernel, 1, jklQueensArg));
 
-		LongBuffer nextJobArg = stack.mallocLong(1);
-		nextJobArg.put(0, nextJobMem);
-		checkCLError(clSetKernelArg(kernel, 2, nextJobArg));
-
 		maxJobIndexArg = stack.mallocInt(1);
 
 		LongBuffer resArg = stack.mallocLong(1);
 		resArg.put(0, resMem);
-		checkCLError(clSetKernelArg(kernel, 4, resArg));
+		checkCLError(clSetKernelArg(kernel, 3, resArg));
 	    }
 	}
 
 	private void releaseBuffers() {
 	    checkCLError(clReleaseMemObject(constellationsMem));
 	    checkCLError(clReleaseMemObject(jklQueensMem));
-	    checkCLError(clReleaseMemObject(nextJobMem));
 	    checkCLError(clReleaseMemObject(resMem));
 	}
 
@@ -765,7 +752,7 @@ public class GpuSolver extends Solver implements Stateful {
 		}
 		checkCLError(clEnqueueUnmapMemObject(memQueue, jklQueensMem, jklQueensPtr, null, null));
 
-		globalWorkSize = constellations.size() / (4);
+		globalWorkSize = constellations.size() / 4;
 //		if(globalWorkSize < 1024 * 64)
 //		    globalWorkSize = constellations.size();
 //		else if(globalWorkSize > 1024 * 256)
@@ -774,15 +761,9 @@ public class GpuSolver extends Solver implements Stateful {
 		    globalWorkSize++;
 		}
 		System.out.println("gws: " + this.globalWorkSize + ", cc: " + constellations.size());
-		
-		ByteBuffer nextJobPtr = clEnqueueMapBuffer(memQueue, nextJobMem, true, CL_MAP_WRITE, 0,
-			4, null, null, errBuf, null);
-		checkCLError(errBuf);
-		nextJobPtr.putInt(0, globalWorkSize);
-		checkCLError(clEnqueueUnmapMemObject(memQueue, nextJobMem, nextJobPtr, null, null));
 
 		maxJobIndexArg.put(0, constellations.size() - 1);
-		checkCLError(clSetKernelArg(kernel, 3, maxJobIndexArg));
+		checkCLError(clSetKernelArg(kernel, 2, maxJobIndexArg));
 		
 		ByteBuffer resPtr = clEnqueueMapBuffer(memQueue, resMem, true, CL_MAP_WRITE, 0,
 			constellations.size() * 8, null, null, errBuf, null);
