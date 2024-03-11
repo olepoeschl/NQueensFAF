@@ -238,7 +238,7 @@ public class GpuSolver extends Solver implements Stateful {
 	    multiGpu(remainingConstellations);
 	}
 	
-	duration = System.currentTimeMillis() - start;
+	duration = System.currentTimeMillis() - start + storedDuration;
 
 	for (var gpu : gpuSelection.get())
 	    gpu.releaseOpenClObjects();
