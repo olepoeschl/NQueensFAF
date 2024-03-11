@@ -203,30 +203,6 @@
 					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>io.github.fvarrui</groupId>
-				<artifactId>javapackager</artifactId>
-				<version>1.7.5</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>package</goal>
-						</goals>
-						<configuration>
-							<platform>auto</platform>
-							<name>nqueensfaf-cli</name>
-							<generateInstaller>false</generateInstaller>
-							<bundleJre>true</bundleJre>
-							<createZipball>true</createZipball>
-							<winConfig>
-								<headerType>console</headerType>
-							</winConfig>
-							<mainClass>de.nqueensfaf.cli.Main</mainClass>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 </project>
