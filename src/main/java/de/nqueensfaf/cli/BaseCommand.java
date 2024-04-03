@@ -3,6 +3,7 @@ package de.nqueensfaf.cli;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import de.nqueensfaf.Solver;
@@ -14,7 +15,6 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.TypeConversionException;
 
@@ -28,22 +28,12 @@ public class BaseCommand {
     NOrState nOrState;
 
     static class NOrState {
-	int n;
 	SolverState state;
 	
-	@Parameters(description = "Size of the chess board")
-	public void n(String input) {
-	    try {
-		n = Integer.parseInt(input);
-	    } catch (NumberFormatException e) {
-		pathToSolverStateFile(input);
-	    }
-	}
+	@Option(names = { "-n", "--board-size" }, required = true, description = "Size of the chess board")
+	int n;
 
-	// picocli always calls n() and never this method
-	// therefore, the functionality is implemented in the n() method 
-	// and the following method is just for the picocli help message
-	@Parameters(description = "Path to the solver state file")
+	@Option(names = { "-r", "--restore-state" }, description = "Path to the solver state file")
 	public void pathToSolverStateFile(String input) {
 	    try {
 		state = SolverState.load(input);
@@ -53,7 +43,7 @@ public class BaseCommand {
 	}
     }
 
-    @Option(names = { "-u", "--update-interval" }, required = false, description = "delay between progress updates")
+    @Option(names = { "-u", "--update-interval" }, required = false, description = "Delay between progress updates")
     int updateInterval;
 
     @Option(names = { "-s", "--auto-save" }, required = false, 
@@ -61,7 +51,8 @@ public class BaseCommand {
     float autoSaveProgressStep;
 
     // for printing the progress
-    private static final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %18d\tduration: %12s";
+    private static final String progressStringFormat = "\r%c\tprogress: %1.10f\tsolutions: %20s\tduration: %12s";
+    private Future<?> autoSaveFuture;
     // for showing the loading animation
     private static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
     private char loadingCharIdx = 0;
@@ -75,20 +66,21 @@ public class BaseCommand {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 		try {
 		    autoSaveExecutorService.shutdown();
-		    autoSaveExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+		    autoSaveExecutorService.awaitTermination(20, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 		    System.err.println("could not wait for completion of saving solver state: " + e.getMessage());
 		}
 	    }));
 	    
 	    return (progress, solutions, duration) -> {
-		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		if (loadingCharIdx == loadingChars.length)
 		    loadingCharIdx = 0;
-		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
-			BaseCommand.getDurationPrettyString(duration));
+		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
+			getDurationPrettyString(duration));
 
-		if (progress - lastProgress >= autoSaveProgressStep) {
-		    autoSaveExecutorService.submit(() -> {
+		if (progress - lastProgress >= autoSaveProgressStep && 
+			(autoSaveFuture == null || autoSaveFuture.isDone())) {
+		    autoSaveFuture = autoSaveExecutorService.submit(() -> {
 			try {
 			    ((Stateful) solver).getState().save(solver.getN() + "-queens.faf");
 			} catch (IOException e) {
@@ -100,23 +92,28 @@ public class BaseCommand {
 	    };
 	} else {
 	    return (progress, solutions, duration) -> {
-		if (loadingCharIdx == BaseCommand.loadingChars.length)
+		if (loadingCharIdx == loadingChars.length)
 		    loadingCharIdx = 0;
-		System.out.format(BaseCommand.progressStringFormat, BaseCommand.loadingChars[loadingCharIdx++], progress, solutions,
-			BaseCommand.getDurationPrettyString(duration));
+		System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
+			getDurationPrettyString(duration));
 
 	    };
 	}
 	
     }
     
-    private Runnable onFinish(Solver solver){
-	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
-	    return () -> {
+    private Runnable onFinish(Solver solver) {
+	final Runnable defaultOnFinish = () -> {
 		if(solver.getUpdateInterval() > 0)
 		    System.out.println();
-		System.out.println("found " + solver.getSolutions() + " solutions in "
+		System.out.println("found " + getSolutionsPrettyString(solver.getSolutions()) + " solutions in "
 			+ getDurationPrettyString(solver.getDuration()));
+		System.out.println("(" + getSolutionsPrettyString(getUniqueSolutions(solver)) + " unique solutions)");
+	}; 
+		
+	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
+	    return () -> {
+		defaultOnFinish.run();
 		
 		autoSaveExecutorService.shutdown();
 		try {
@@ -125,14 +122,8 @@ public class BaseCommand {
 		    System.err.println("could not wait for completion of saving solver state");
 		}
 	    };
-	} else {
-	    return () -> {
-		if(solver.getUpdateInterval() > 0)
-		    System.out.println();
-		System.out.println("found " + solver.getSolutions() + " solutions in "
-			+ getDurationPrettyString(solver.getDuration()));
-	    };
-	}
+	} else
+	    return defaultOnFinish;
     }
     
     void applySolverConfig(Solver solver){
@@ -158,6 +149,16 @@ public class BaseCommand {
 	return symSolver.getUniqueSolutionsTotal(solver.getSolutions());
     }
 
+    static String getSolutionsPrettyString(long solutions) {
+	StringBuilder sb = new StringBuilder(Long.toString(solutions));
+	for(int i = sb.length() - 3; i >= 0; i -= 3) {
+	    if(i <= 0)
+		break;
+	    sb.insert(i, ".");
+	}
+	return sb.toString();
+    }
+    
     private static String getDurationPrettyString(long time) {
 	long h = time / 1000 / 60 / 60;
 	long m = time / 1000 / 60 % 60;

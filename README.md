@@ -86,6 +86,13 @@ In case you are a Windows User and prefer a graphical user interface you
 can downlad the following [Windows Installer with GUI](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe).<br>
 
 # 3 News
+- We are currently developing a new solver which is based on a completely new method.
+  Solving N=22 on the 12600k (single-threaded) takes only 2h25min, which corresponds to a speedup factor of more than 40 compared to the present solver.
+  Additionally, the method possesses much better scaling. Increasing N to 24 increases the runtime only by a factor of ~40. (It is ~100 for the current solver.)
+  This is still a work in progress and there are lots of optimizations that have to be implemented, so lets see how far we can go.
+  The new solver will be included in the repository as soon as it is finished. However, this may take some time.
+  
+## Older News
 - The distributed computing for solving the 27 Queens problem has begun.<br>
 Download the client and get started (see __1 Distributed Computing__)!  
 - We are excited to announce that we have successfully verified the number of solutions for the **26-Queens problem**. <br> 
