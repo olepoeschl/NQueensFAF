@@ -27,9 +27,11 @@ We hope that he is the first of many.
 
 ## 1.1 How to contribute
 Although the client is working just fine, we are still developing it.<br> 
-__PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
+__Please check for updates__ from time to time, until updates will be fetched
 automatically (coming soon).<br>
 Latest version: 0.0.1 (link below).
+(next version will probably not be released before the end of 2024)
+
 ### Windows 
 Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
 After that, just double click the desktop icon - the rest is self
