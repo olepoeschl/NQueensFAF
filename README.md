@@ -31,7 +31,7 @@ We hope that he is the first of many.
 __Please check for updates__ from time to time, until updates will be fetched
 automatically (coming soon).<br>
 Latest version: 0.0.1 (link below).
-(next version will probably not be released before the end of 2024)-->
+(next version will probably not be released before the end of 2024)
 
 ### Windows 
 Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
@@ -52,7 +52,7 @@ in the directory where the jar is located. (nqueensfaf.de is the distributing se
 
 __NOTE:__ Eventually you have to adapt the name 'nqueens-client.jar' to the actual name of the jar
 you downloaded. 
-
+-->
 # 2 Local Computing
 ## 2.1 Download and Installation
 The following sections always refer to the most recent version of NQueensFAF. In
