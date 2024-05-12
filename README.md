@@ -26,11 +26,12 @@ __Also:__ Many thanks to Aleks for being our first contributor!<br>
 We hope that he is the first of many. 
 
 ## 1.1 How to contribute
-Although the client is working just fine, we are still developing it.<br> 
+! Development is paused at the moment due to traveling! 
+<!--Although the client is working just fine, we are still developing it.<br> 
 __Please check for updates__ from time to time, until updates will be fetched
 automatically (coming soon).<br>
 Latest version: 0.0.1 (link below).
-(next version will probably not be released before the end of 2024)
+(next version will probably not be released before the end of 2024)-->
 
 ### Windows 
 Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
