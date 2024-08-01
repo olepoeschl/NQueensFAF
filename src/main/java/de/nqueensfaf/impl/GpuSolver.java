@@ -68,9 +68,11 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
+import de.nqueensfaf.AbstractSolver;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.SolverStatus;
 
-public class GpuSolver extends Solver implements Stateful {
+public class GpuSolver extends AbstractSolver implements Stateful {
 
     private List<Gpu> availableGpus;
     private GpuSelection gpuSelection = new GpuSelection();
@@ -124,7 +126,7 @@ public class GpuSolver extends Solver implements Stateful {
 
     @Override
     public long getDuration() {
-	if (isRunning() && start != 0) {
+	if (getStatus().isBefore(SolverStatus.FINISHED) && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;
@@ -205,10 +207,12 @@ public class GpuSolver extends Solver implements Stateful {
 	ready = false;
 
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
-	    start = System.currentTimeMillis();
-	    constellations.add(new Constellation());
-	    constellations.get(0).setSolutions(solveSmallBoard());
-	    duration = System.currentTimeMillis() - start;
+	    Solver simpleSolver = new SimpleSolver();
+	    simpleSolver.solve();
+	    
+	    long solutions = simpleSolver.getSolutions();
+	    constellations.add(new Constellation(0, 0, 0, 0, 0, solutions));
+	    duration = simpleSolver.getDuration();
 	    return;
 	}
 
