@@ -7,9 +7,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import de.nqueensfaf.AbstractSolver;
 import de.nqueensfaf.Solver;
+import de.nqueensfaf.SolverStatus;
 
-public class CpuSolver extends Solver implements Stateful {
+public class CpuSolver extends AbstractSolver implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
@@ -42,7 +44,7 @@ public class CpuSolver extends Solver implements Stateful {
 
     @Override
     public long getDuration() {
-	if (isRunning() && start != 0) {
+	if (getStatus().isBefore(SolverStatus.FINISHED) && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;
@@ -79,9 +81,12 @@ public class CpuSolver extends Solver implements Stateful {
 	
 	start = System.currentTimeMillis();
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
-	    int solutions = solveSmallBoard();
-	    duration = System.currentTimeMillis() - start;
+	    Solver simpleSolver = new SimpleSolver();
+	    simpleSolver.solve();
+	    
+	    long solutions = simpleSolver.getSolutions();
 	    constellations.add(new Constellation(0, 0, 0, 0, 0, solutions));
+	    duration = simpleSolver.getDuration();
 	    return;
 	}
 

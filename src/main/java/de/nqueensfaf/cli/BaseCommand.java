@@ -6,8 +6,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import de.nqueensfaf.Solver;
-import de.nqueensfaf.Solver.OnUpdateConsumer;
+import de.nqueensfaf.AbstractSolver;
+import de.nqueensfaf.AbstractSolver.OnUpdateConsumer;
 import de.nqueensfaf.impl.SolverState;
 import de.nqueensfaf.impl.Stateful;
 import de.nqueensfaf.impl.SymSolver;
@@ -61,7 +61,7 @@ public class BaseCommand {
     
     public BaseCommand() {}
     
-    private OnUpdateConsumer onUpdate(Solver solver) {
+    private OnUpdateConsumer onUpdate(AbstractSolver solver) {
 	if(solver instanceof Stateful && autoSaveProgressStep > 0) {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 		try {
@@ -102,7 +102,7 @@ public class BaseCommand {
 	
     }
     
-    private Runnable onFinish(Solver solver) {
+    private Runnable onFinish(AbstractSolver solver) {
 	final Runnable defaultOnFinish = () -> {
 		if(solver.getUpdateInterval() > 0)
 		    System.out.println();
@@ -126,8 +126,8 @@ public class BaseCommand {
 	    return defaultOnFinish;
     }
     
-    void applySolverConfig(Solver solver){
-	solver.onInit(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
+    void applySolverConfig(AbstractSolver solver){
+	solver.onStart(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
 	solver.onFinish(onFinish(solver));
 	solver.onUpdate(onUpdate(solver));
 	
@@ -142,7 +142,7 @@ public class BaseCommand {
 	}
     }
     
-    long getUniqueSolutions(Solver solver) {
+    long getUniqueSolutions(AbstractSolver solver) {
 	SymSolver symSolver = new SymSolver();
 	symSolver.setN(solver.getN());
 	symSolver.solve();
