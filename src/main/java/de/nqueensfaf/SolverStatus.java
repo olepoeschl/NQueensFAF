@@ -10,4 +10,5 @@ public enum SolverStatus {
     public boolean isAfter(SolverStatus status) {
 	return ordinal() > status.ordinal();
     }
+    
 }

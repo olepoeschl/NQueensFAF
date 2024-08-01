@@ -7,20 +7,34 @@ public abstract class AbstractSolver implements Solver {
     private int n;
     private volatile SolverStatus status = NOT_INITIALIZED;
     
-    private Runnable onInit, onFinish;
+    private Runnable onStart, onFinish;
     private OnUpdateConsumer onUpdate;
     private int updateInterval = 128;
     private Thread bgThread;
     
     protected abstract void run();
+
+    public final void setN(int n) {
+	if (status.isAfter(READY) && status.isBefore(FINISHED)) {
+	    throw new IllegalStateException("could not set board size: solver has already started");
+	}
+	if (n <= 0 || n > 31) {
+	    throw new IllegalArgumentException("could not set board size: " + n + " is not a number between 0 and 32 (exclusive)");
+	}
+	this.n = n;
+    }
+    
+    public final int getN() {
+	return n;
+    }
     
     public final void solve() {
 	preconditions();
 
 	status = STARTING;
 	
-	if (onInit != null)
-	    onInit.run();
+	if (onStart != null)
+	    onStart.run();
 
 	if(updateInterval > 0 && onUpdate != null) { // if updateInterval is 0, it means disable progress updates
 	    bgThread = new Thread(() -> {
@@ -70,12 +84,16 @@ public abstract class AbstractSolver implements Solver {
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
     }
+
+    public SolverStatus getStatus() {
+	return status;
+    }
     
-    public final void onInit(Runnable c) {
+    public final void onStart(Runnable c) {
 	if (c == null) {
-	    throw new IllegalArgumentException("could not set initialization callback: callback must not be null");
+	    throw new IllegalArgumentException("could not set starting callback: callback must not be null");
 	}
-	onInit = c;
+	onStart = c;
     }
 
     public final void onFinish(Runnable c) {
@@ -85,26 +103,16 @@ public abstract class AbstractSolver implements Solver {
 	onFinish = c;
     }
 
+    public interface OnUpdateConsumer {
+	void accept(float progress, long solutions, long duration);
+    }
+    
     public final void onUpdate(OnUpdateConsumer onUpdate) {
 	if (onUpdate == null) {
 	    this.onUpdate = (progress, solutions, duration) -> {};
 	} else {
 	    this.onUpdate = onUpdate;
 	}
-    }
-
-    public final void setN(int n) {
-	if (status.isAfter(READY) && status.isBefore(FINISHED)) {
-	    throw new IllegalStateException("could not set board size: solver has already started");
-	}
-	if (n <= 0 || n > 31) {
-	    throw new IllegalArgumentException("could not set board size: must be a number between >0 and <32");
-	}
-	this.n = n;
-    }
-    
-    public final int getN() {
-	return n;
     }
     
     public final void setUpdateInterval(int updateInterval) {
@@ -115,13 +123,5 @@ public abstract class AbstractSolver implements Solver {
     
     public final int getUpdateInterval() {
 	return updateInterval;
-    }
-    
-    public interface OnUpdateConsumer {
-	void accept(float progress, long solutions, long duration);
-    }
-    
-    public SolverStatus getStatus() {
-	return status;
     }
 }

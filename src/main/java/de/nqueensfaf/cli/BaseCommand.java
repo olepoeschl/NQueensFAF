@@ -127,7 +127,7 @@ public class BaseCommand {
     }
     
     void applySolverConfig(AbstractSolver solver){
-	solver.onInit(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
+	solver.onStart(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
 	solver.onFinish(onFinish(solver));
 	solver.onUpdate(onUpdate(solver));
 	
