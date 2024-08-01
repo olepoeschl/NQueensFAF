@@ -1,8 +1,8 @@
 package de.nqueensfaf.impl;
 
-import de.nqueensfaf.Solver;
+import de.nqueensfaf.AbstractSolver;
 
-public class SymSolver extends Solver {
+public class SymSolver extends AbstractSolver {
 
     private long start, end;
     private long solutions90, solutions180;

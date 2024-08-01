@@ -68,9 +68,9 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
-import de.nqueensfaf.Solver;
+import de.nqueensfaf.AbstractSolver;
 
-public class GpuSolver extends Solver implements Stateful {
+public class GpuSolver extends AbstractSolver implements Stateful {
 
     private List<Gpu> availableGpus;
     private GpuSelection gpuSelection = new GpuSelection();

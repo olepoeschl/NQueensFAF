@@ -7,9 +7,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import de.nqueensfaf.Solver;
+import de.nqueensfaf.AbstractSolver;
 
-public class CpuSolver extends Solver implements Stateful {
+public class CpuSolver extends AbstractSolver implements Stateful {
 
     private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
