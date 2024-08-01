@@ -16,6 +16,6 @@ public interface Solver {
 	return 0f;
     }
     
-    SolverStatus getSolverStatus();
+    SolverStatus getStatus();
     
 }

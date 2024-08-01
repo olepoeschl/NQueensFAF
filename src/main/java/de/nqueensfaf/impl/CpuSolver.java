@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import de.nqueensfaf.AbstractSolver;
+import de.nqueensfaf.SolverStatus;
 
 public class CpuSolver extends AbstractSolver implements Stateful {
 
@@ -42,7 +43,7 @@ public class CpuSolver extends AbstractSolver implements Stateful {
 
     @Override
     public long getDuration() {
-	if (isRunning() && start != 0) {
+	if (getStatus().isBefore(SolverStatus.FINISHED) && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;

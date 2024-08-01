@@ -1,10 +1,12 @@
 package de.nqueensfaf;
 
+import static de.nqueensfaf.SolverStatus.*;
+
 public abstract class AbstractSolver implements Solver {
     
     private int n;
     private int updateInterval = 128;
-    private volatile Status status = Status.IDLE;
+    private volatile SolverStatus status = NOT_INITIALIZED;
     private Runnable onInit, onFinish;
     private OnUpdateConsumer onUpdate;
     private Thread asyncSolverThread, bgThread;
@@ -18,14 +20,14 @@ public abstract class AbstractSolver implements Solver {
     public final void solve() {
 	preconditions();
 
-	status = Status.INITIALIZING;
+	status = STARTING;
 	
 	if (onInit != null)
 	    onInit.run();
 
 	if(updateInterval > 0 && onUpdate != null) { // if updateInterval is 0, it means disable progress updates
 	    bgThread = new Thread(() -> {
-		while (isRunning() && getProgress() < 1f) {
+		while (status == RUNNING && getProgress() < 1f) {
 		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
 		    try {
 			Thread.sleep(updateInterval);
@@ -38,15 +40,15 @@ public abstract class AbstractSolver implements Solver {
 	    bgThread.start();
 	}
   
-	status = Status.RUNNING;
+	status = RUNNING;
 	try {
 	    run();
 	} catch (Exception e) {
-	    status = Status.CANCELED;
+	    status = CANCELED;
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
 	
-	status = Status.TERMINATING;
+	status = TERMINATING;
 	
 	if(bgThread != null) {
 	    try {
@@ -58,7 +60,7 @@ public abstract class AbstractSolver implements Solver {
 	if (onFinish != null)
 	    onFinish.run();
 	
-	status = Status.FINISHED;
+	status = FINISHED;
     }
 
     public final void solveAsync() {
@@ -80,8 +82,8 @@ public abstract class AbstractSolver implements Solver {
 	if (n == 0)
 	    throw new IllegalStateException("starting conditions not fullfilled: board size was not set");
 	
-	if (isInitializing() || isRunning() || isTerminating())
-	    throw new IllegalStateException("starting conditions not fullfilled: solver is neither idle nor finished, nor canceled");
+	if (status.isAfter(READY) && status.isBefore(FINISHED))
+	    throw new IllegalStateException("starting conditions not fullfilled: solver is neither ready nor finished, nor canceled");
 	
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
@@ -136,7 +138,7 @@ public abstract class AbstractSolver implements Solver {
     }
 
     public final void setN(int n) {
-	if (isInitializing() || isRunning() || isTerminating()) {
+	if (status.isAfter(READY) && status.isBefore(FINISHED)) {
 	    throw new IllegalStateException("could not set board size: solver already running");
 	}
 	if (n <= 0 || n > 31) {
@@ -159,35 +161,12 @@ public abstract class AbstractSolver implements Solver {
 	return updateInterval;
     }
     
-    public final boolean isIdle() {
-	return status == Status.IDLE;
-    }
-
-    public final boolean isInitializing() {
-	return status == Status.INITIALIZING;
-    }
-
-    public final boolean isRunning() {
-	return status == Status.RUNNING;
-    }
-
-    public final boolean isTerminating() {
-	return status == Status.TERMINATING;
-    }
-
-    public final boolean isFinished() {
-	return status == Status.FINISHED;
-    }
-
-    public final boolean isCanceled() {
-	return status == Status.CANCELED;
-    }
-    
-    private static enum Status {
-	IDLE, INITIALIZING, RUNNING, TERMINATING, FINISHED, CANCELED;
-    }
     
     public interface OnUpdateConsumer {
 	void accept(float progress, long solutions, long duration);
+    }
+    
+    public SolverStatus getStatus() {
+	return status;
     }
 }
