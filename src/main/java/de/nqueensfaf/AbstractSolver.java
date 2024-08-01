@@ -5,14 +5,12 @@ import static de.nqueensfaf.SolverStatus.*;
 public abstract class AbstractSolver implements Solver {
     
     private int n;
-    private int updateInterval = 128;
     private volatile SolverStatus status = NOT_INITIALIZED;
+    
     private Runnable onInit, onFinish;
     private OnUpdateConsumer onUpdate;
-    private Thread asyncSolverThread, bgThread;
-
-    public abstract long getSolutions();
-    public abstract long getDuration();
+    private int updateInterval = 128;
+    private Thread bgThread;
     
     protected abstract void run();
     
@@ -60,21 +58,6 @@ public abstract class AbstractSolver implements Solver {
 	    onFinish.run();
 	
 	status = FINISHED;
-    }
-
-    public final void solveAsync() {
-	asyncSolverThread = new Thread(() -> solve());
-	asyncSolverThread.start();
-    }
-
-    public final void waitFor() throws InterruptedException {
-	if(asyncSolverThread == null || !asyncSolverThread.isAlive())
-	    throw new IllegalStateException("could not wait for solver thread to terminate: solver thread is not running");
-	try {
-	    asyncSolverThread.join();
-	} catch (InterruptedException e) {
-	    throw new InterruptedException("could not wait for solver thread to terminate: " + e.getMessage());
-	}
     }
     
     private void preconditions() {
