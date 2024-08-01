@@ -11,8 +11,6 @@ public abstract class AbstractSolver implements Solver {
     private OnUpdateConsumer onUpdate;
     private int updateInterval = 128;
     private Thread bgThread;
-    
-    protected abstract void run();
 
     @Override
     public final void setN(int n) {
@@ -30,8 +28,11 @@ public abstract class AbstractSolver implements Solver {
 	return n;
     }
 
-    @Override
-    public final void solve() {
+    /**
+     * a wrapper around the {@link #solve()} method.
+     * Enables callbacks to be defined for certain events
+     */
+    public final void start() {
 	preconditions();
 
 	status = STARTING;
@@ -56,7 +57,7 @@ public abstract class AbstractSolver implements Solver {
   
 	status = RUNNING;
 	try {
-	    run();
+	    solve();
 	} catch (Exception e) {
 	    status = CANCELED;
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);

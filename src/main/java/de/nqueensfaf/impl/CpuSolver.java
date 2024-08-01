@@ -76,7 +76,7 @@ public class CpuSolver extends AbstractSolver implements Stateful {
     }
 
     @Override
-    protected void run() {
+    public void solve() {
 	ready = false;
 	
 	start = System.currentTimeMillis();

@@ -10,7 +10,7 @@ public class SymSolver extends AbstractSolver {
     private int mask, L;
 
     @Override
-    protected void run() {
+    public void solve() {
 	start = System.currentTimeMillis();
 	L = 1 << (getN() - 1);
 	mask = (L - 1) | L;

@@ -203,7 +203,7 @@ public class GpuSolver extends AbstractSolver implements Stateful {
     }
 
     @Override
-    protected void run() {
+    public void solve() {
 	ready = false;
 
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
