@@ -10,7 +10,6 @@ public abstract class AbstractSolver implements Solver {
     private Runnable onInit, onFinish;
     private OnUpdateConsumer onUpdate;
     private Thread asyncSolverThread, bgThread;
-    private int solutionsSmallN = 0;
 
     public abstract long getSolutions();
     public abstract long getDuration();
@@ -87,32 +86,6 @@ public abstract class AbstractSolver implements Solver {
 	
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
-    }
-    
-    protected int solveSmallBoard() {
-	solutionsSmallN = 0;
-	int mask = (1 << n) - 1;
-	smallBoardNQ(0, 0, 0, 0, mask, mask);
-	return solutionsSmallN;
-    }
-
-    private void smallBoardNQ(int ld, int rd, int col, int row, int free, int mask) {
-	if (row == n - 1) {
-	    solutionsSmallN++;
-	    return;
-	}
-
-	int bit;
-	int nextfree;
-
-	while (free > 0) {
-	    bit = free & (-free);
-	    free -= bit;
-	    nextfree = ~((ld | bit) << 1 | (rd | bit) >> 1 | col | bit) & mask;
-
-	    if (nextfree > 0)
-		smallBoardNQ((ld | bit) << 1, (rd | bit) >> 1, col | bit, row + 1, nextfree, mask);
-	}
     }
     
     public final void onInit(Runnable c) {
