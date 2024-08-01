@@ -13,7 +13,7 @@ public interface Solver {
     long getDuration();
     
     default float getProgress() {
-	return 0f;
+	return getStatus() == SolverStatus.FINISHED ? 1f : 0f;
     }
     
     SolverStatus getStatus();
