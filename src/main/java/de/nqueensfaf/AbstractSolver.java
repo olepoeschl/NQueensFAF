@@ -14,6 +14,7 @@ public abstract class AbstractSolver implements Solver {
     
     protected abstract void run();
 
+    @Override
     public final void setN(int n) {
 	if (status.isAfter(READY) && status.isBefore(FINISHED)) {
 	    throw new IllegalStateException("could not set board size: solver has already started");
@@ -23,11 +24,13 @@ public abstract class AbstractSolver implements Solver {
 	}
 	this.n = n;
     }
-    
+
+    @Override
     public final int getN() {
 	return n;
     }
-    
+
+    @Override
     public final void solve() {
 	preconditions();
 
@@ -85,7 +88,8 @@ public abstract class AbstractSolver implements Solver {
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
     }
 
-    public SolverStatus getStatus() {
+    @Override
+    public final SolverStatus getStatus() {
 	return status;
     }
     
