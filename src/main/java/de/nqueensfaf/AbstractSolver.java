@@ -139,7 +139,7 @@ public abstract class AbstractSolver implements Solver {
 
     public final void setN(int n) {
 	if (status.isAfter(READY) && status.isBefore(FINISHED)) {
-	    throw new IllegalStateException("could not set board size: solver already running");
+	    throw new IllegalStateException("could not set board size: solver has already started");
 	}
 	if (n <= 0 || n > 31) {
 	    throw new IllegalArgumentException("could not set board size: must be a number between >0 and <32");
@@ -160,7 +160,6 @@ public abstract class AbstractSolver implements Solver {
     public final int getUpdateInterval() {
 	return updateInterval;
     }
-    
     
     public interface OnUpdateConsumer {
 	void accept(float progress, long solutions, long duration);
