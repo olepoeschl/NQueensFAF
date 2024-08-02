@@ -69,7 +69,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
 import de.nqueensfaf.AbstractSolver;
-import de.nqueensfaf.SolverStatus;
+import de.nqueensfaf.SolverExecutionState;
 
 public class GpuSolver extends AbstractSolver implements Stateful {
 
@@ -125,7 +125,7 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 
     @Override
     public long getDuration() {
-	if (getStatus().isBefore(SolverStatus.FINISHED) && start != 0) {
+	if (getExecutionState().isBefore(SolverExecutionState.FINISHED) && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;
