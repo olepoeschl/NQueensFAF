@@ -301,7 +301,7 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 	}
 
 	var queue = new ArrayDeque<>(constellations.subList(fromIndex, constellations.size()));
-	var executor = Executors.newFixedThreadPool(selectedGpus.size());
+	var executor = Executors.newVirtualThreadPerTaskExecutor();
 	final var iterationSum = new AtomicInteger(0);
 	final int minGpuWorkloadSize = 1024;
 

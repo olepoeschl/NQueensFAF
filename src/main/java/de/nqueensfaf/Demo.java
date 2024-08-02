@@ -21,7 +21,7 @@ public class Demo {
         cs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
         cs.onFinish(() -> System.out.println("Found " + cs.getSolutions() + " solutions in " + cs.getDuration() + " ms"));
         cs.setN(16);
-        cs.solve();
+        cs.start();
     }
     
     static void gpu() {
@@ -33,6 +33,6 @@ public class Demo {
         gs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
         gs.onFinish(() -> System.out.println("Found " + gs.getSolutions() + " solutions in " + gs.getDuration() + " ms"));
 	gs.setN(18);
-	gs.solve();
+	gs.start();
     }
 }

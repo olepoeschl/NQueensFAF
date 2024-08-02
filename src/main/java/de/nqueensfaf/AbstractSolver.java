@@ -41,7 +41,7 @@ public abstract class AbstractSolver implements Solver {
 	    onStart.run();
 
 	if(updateInterval > 0 && onUpdate != null) { // if updateInterval is 0, it means disable progress updates
-	    bgThread = new Thread(() -> {
+	    bgThread = Thread.ofVirtual().start(() -> {
 		while (status == RUNNING && getProgress() < 1f) {
 		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
 		    try {
@@ -52,7 +52,6 @@ public abstract class AbstractSolver implements Solver {
 		}
 		onUpdate.accept(getProgress(), getSolutions(), getDuration());
 	    });
-	    bgThread.start();
 	}
   
 	status = RUNNING;
