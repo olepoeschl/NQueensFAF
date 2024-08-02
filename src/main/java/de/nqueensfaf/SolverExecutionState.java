@@ -45,26 +45,26 @@ public enum SolverExecutionState {
     CANCELED;
     
     /**
-     * Checks if this execution state chronologically comes before the given
-     * execution state.
+     * Checks if this execution state chronologically comes before
+     * {@code state}.
      * 
      * @param state the execution state to be compared to this execution state.
      * 
      * @return true if the ordinal of this execution state is lower than the
-     * ordinal of the given execution state, otherwise false.
+     * ordinal of {@code state}, otherwise false.
      */
     public boolean isBefore(SolverExecutionState state) {
 	return ordinal() < state.ordinal();
     }
 
     /**
-     * Checks if this execution state chronologically comes after the given
-     * execution state.
+     * Checks if this execution state chronologically comes after
+     * {@code state}.
      * 
      * @param state the execution state to be compared to this execution state.
      * 
      * @return true if the ordinal of this execution state is greater than the
-     * ordinal of the given execution state, otherwise false.
+     * ordinal of {@code state}, otherwise false.
      */
     public boolean isAfter(SolverExecutionState state) {
 	return ordinal() > state.ordinal();
