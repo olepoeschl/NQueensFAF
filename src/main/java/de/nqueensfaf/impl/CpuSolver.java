@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import de.nqueensfaf.AbstractSolver;
-import de.nqueensfaf.Solver;
 import de.nqueensfaf.SolverStatus;
 
 public class CpuSolver extends AbstractSolver implements Stateful {
@@ -81,8 +80,8 @@ public class CpuSolver extends AbstractSolver implements Stateful {
 	
 	start = System.currentTimeMillis();
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
-	    Solver simpleSolver = new SimpleSolver();
-	    simpleSolver.solve();
+	    AbstractSolver simpleSolver = new SimpleSolver(getN());
+	    simpleSolver.start();
 	    
 	    long solutions = simpleSolver.getSolutions();
 	    constellations.add(new Constellation(0, 0, 0, 0, 0, solutions));
