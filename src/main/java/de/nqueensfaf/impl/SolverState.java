@@ -23,16 +23,16 @@ public class SolverState {
     
     private int N;
     private long storedDuration;
-    private ArrayList<Constellation> constellations;
+    private ArrayList<ImmutableConstellation> constellations;
 
     public SolverState() {
 	super();
     }
 
-    public SolverState(int n, long storedDuration, List<Constellation> constellations) {
+    public SolverState(int n, long storedDuration, List<ImmutableConstellation> constellations) {
 	N = n;
 	this.storedDuration = storedDuration;
-	this.constellations = new ArrayList<Constellation>(constellations);
+	this.constellations = new ArrayList<ImmutableConstellation>(constellations);
     }
 
     public int getN() {
@@ -51,12 +51,12 @@ public class SolverState {
 	this.storedDuration = storedDuration;
     }
 
-    public ArrayList<Constellation> getConstellations() {
+    public ArrayList<ImmutableConstellation> getConstellations() {
 	return constellations;
     }
 
-    public void setConstellations(List<Constellation> constellations) {
-	this.constellations = new ArrayList<Constellation>(constellations);
+    public void setConstellations(List<ImmutableConstellation> constellations) {
+	this.constellations = new ArrayList<ImmutableConstellation>(constellations);
     }
     
     public void save(String path) throws IOException {

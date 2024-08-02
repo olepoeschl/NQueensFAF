@@ -21,8 +21,8 @@ public class ConstellationsGenerator {
 	mask = (L << 1) - 1;
     }
     
-    public ArrayList<Constellation> generate(int presetQueens){
-	ArrayList<Constellation> constellations = new ArrayList<Constellation>();
+    public ArrayList<ImmutableConstellation> generate(int presetQueens){
+	var constellations = new ArrayList<ImmutableConstellation>();
 	generate(presetQueens, constellation -> {
 	    constellations.add(constellation);
 	    return true;
@@ -30,7 +30,7 @@ public class ConstellationsGenerator {
 	return constellations;
     }
     
-    public void generate(int presetQueens, Predicate<Constellation> constellationConsumer){
+    public void generate(int presetQueens, Predicate<ImmutableConstellation> constellationConsumer){
 	if(presetQueens < 4)
 	    throw new IllegalArgumentException("could not initialize ConstellationsGenerator: presetQueens must be >=4");
 	this.presetQueens = presetQueens;
@@ -39,7 +39,7 @@ public class ConstellationsGenerator {
 	
 	subConstellations = new ArrayList<Constellation>();
 
-	int i, j, k, l, ld, rd, col, currentId = 0;
+	int i, j, k, l, ld, rd, col;
 	for (int ijkl : ijklList) {
 	    ijkl = jAsMin(n, ijkl);
 	    i = geti(ijkl);
@@ -66,10 +66,8 @@ public class ConstellationsGenerator {
 	    for (int a = 0; a < subConstellations.size(); a++) {
 		var c = subConstellations.get(a);
 		c.setStartIjkl(c.getStartIjkl() | ijkl);
-		c.setId(currentId);
-		currentId++;
 
-		if( ! constellationConsumer.test(c))
+		if( ! constellationConsumer.test((ImmutableConstellation) c))
 		    return; // stop generating if something goes wrong in the callback
 	    }
 	    
@@ -77,7 +75,7 @@ public class ConstellationsGenerator {
 	}
     }
 
-    public ArrayList<Constellation> generateSubConstellations(List<Constellation> baseConstellations, int extraQueens){
+    public ArrayList<ImmutableConstellation> generateSubConstellations(List<ImmutableConstellation> baseConstellations, int extraQueens){
 	if(baseConstellations.size() == 0)
 	    throw new IllegalArgumentException("could not generate sub constellations: base constellations must contain min 1 constellation");
 	if(extraQueens <= 0)
@@ -85,38 +83,36 @@ public class ConstellationsGenerator {
 	
 	// number of currently placed queens is the same for all base constellations
 	var c0 = baseConstellations.get(0);
-	int queens = c0.extractStart();
-	if(getk(c0.getStartIjkl()) < c0.extractStart())
+	int queens = c0.getStart();
+	if(getk(c0.getStartIjkl()) < c0.getStart())
 	    queens--;
-	if(getl(c0.getStartIjkl()) < c0.extractStart())
+	if(getl(c0.getStartIjkl()) < c0.getStart())
 	    queens--;
 	presetQueens = queens + extraQueens;
-	
+
+	var constellations = new ArrayList<ImmutableConstellation>();
 	subConstellations = new ArrayList<Constellation>();
-	int prevSize = 0, currentSize;
 	
 	for(var bc : baseConstellations) {
-	    queens = bc.extractStart();
-	    if(getk(bc.getStartIjkl()) < bc.extractStart())
+	    queens = bc.getStart();
+	    if(getk(bc.getStartIjkl()) < bc.getStart())
 		queens--;
-	    if(getl(bc.getStartIjkl()) < bc.extractStart())
+	    if(getl(bc.getStartIjkl()) < bc.getStart())
 		queens--;
 	    
-	    placePresetQueens(bc.extractIjkl(), bc.getLd(), bc.getRd(), bc.getCol(), bc.extractStart(), queens); // from row start to row presetQueens
-	    
-	    currentSize = subConstellations.size();
+	    placePresetQueens(bc.getIjkl(), bc.getLd(), bc.getRd(), bc.getCol(), bc.getStart(), queens); // from row start to row presetQueens
 	    
 	    // jkl and sym and start are the same for all sub constellations
-	    for (int a = 0; a < currentSize - prevSize; a++) {
-		var c = subConstellations.get(currentSize - a - 1);
-		c.setStartIjkl(c.getStartIjkl() | bc.extractIjkl());
-		c.setId(bc.getId());
+	    for (int a = 0; a < subConstellations.size(); a++) {
+		var c = subConstellations.get(a);
+		c.setStartIjkl(c.getStartIjkl() | bc.getIjkl());
+		constellations.add(c);
 	    }
 	    
-	    prevSize = subConstellations.size();
+	    subConstellations.clear();
 	}
 	
-	return subConstellations;
+	return constellations;
     }
     
     private void generateIjkls() {
@@ -164,7 +160,7 @@ public class ConstellationsGenerator {
 	// add queens until we have preQueens queens
 	if (queens == presetQueens) {
 	    // add the subconstellations to the list
-	    subConstellations.add(new Constellation(0, ld, rd, col, row << 20, -1));
+	    subConstellations.add(new Constellation(ld, rd, col, row << 20));
 	    return;
 	}
 	// if not done or row k or l, just place queens and occupy the board and go

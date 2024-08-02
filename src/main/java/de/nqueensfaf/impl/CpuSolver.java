@@ -12,7 +12,7 @@ import de.nqueensfaf.SolverExecutionState;
 
 public class CpuSolver extends AbstractSolver implements Stateful {
 
-    private ArrayList<Constellation> constellations = new ArrayList<Constellation>();
+    private ArrayList<ImmutableConstellation> constellations = new ArrayList<ImmutableConstellation>();
     private ArrayList<ArrayList<Constellation>> threadConstellations = new ArrayList<ArrayList<Constellation>>();
     private long start, duration, storedDuration;
     private boolean stateLoaded, ready = true;
@@ -56,7 +56,7 @@ public class CpuSolver extends AbstractSolver implements Stateful {
 	
 	int solvedConstellations = 0;
 	for (var c : constellations) {
-	    if (c.extractStart() == 69) // start=69 is for pseudo constellations
+	    if (c.getStart() == 69) // start=69 is for pseudo constellations
 		continue;
 	    if (c.getSolutions() >= 0) {
 		solvedConstellations++;
