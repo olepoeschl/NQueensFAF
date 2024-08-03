@@ -40,7 +40,7 @@ public enum SolverExecutionState {
     FINISHED,
     
     /**
-     * The {@link Solver} could not be successfully finish the computation.
+     * The {@link Solver} could not successfully finish the computation.
      */
     CANCELED;
     
