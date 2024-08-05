@@ -13,7 +13,8 @@ public class CpuCommand implements Runnable {
 	@ParentCommand
 	BaseCommand base;
 
-	@Option(names = { "-p", "--preset-queens" }, required = false, description = "How many queens should be placed for a start constellation")
+	@Option(names = { "-p",
+			"--preset-queens" }, required = false, description = "How many queens should be placed for a start constellation")
 	int presetQueens;
 
 	@Option(names = { "-t", "--threads" }, required = false, description = "How many CPU threads should be used")
@@ -21,7 +22,8 @@ public class CpuCommand implements Runnable {
 
 	private CpuSolver solver;
 
-	public CpuCommand() {}
+	public CpuCommand() {
+	}
 
 	@Override
 	public void run() {
@@ -33,9 +35,9 @@ public class CpuCommand implements Runnable {
 			System.err.println("could not apply solver config: " + e.getMessage());
 		}
 
-		if(presetQueens != 0)
+		if (presetQueens != 0)
 			solver.setPresetQueens(presetQueens);
-		if(threads != 0)
+		if (threads != 0)
 			solver.setThreadCount(threads);
 
 		solver.solve();

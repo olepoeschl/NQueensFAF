@@ -38,7 +38,7 @@ public class Utils {
 	}
 
 	static boolean oneQueenInCorner(int n, int ijkl) {
-		return getj(ijkl) == n-1 && getl(ijkl) == n-1;
+		return getj(ijkl) == n - 1 && getl(ijkl) == n - 1;
 	}
 
 	// true, if starting constellation rotated by any angle has already been found
@@ -98,7 +98,8 @@ public class Utils {
 
 	// how often does a found solution count for this start constellation
 	static int symmetry(int n, int ijkl) {
-		if (geti(ijkl) == n - 1 - getj(ijkl) && getk(ijkl) == n - 1 - getl(ijkl)) // starting constellation symmetric by rot180?
+		if (geti(ijkl) == n - 1 - getj(ijkl) && getk(ijkl) == n - 1 - getl(ijkl)) // starting constellation symmetric by
+																					// rot180?
 			if (symmetry90(n, ijkl)) // even by rot90?
 				return 2;
 			else

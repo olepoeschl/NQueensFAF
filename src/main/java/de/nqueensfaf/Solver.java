@@ -14,8 +14,8 @@ public interface Solver {
 	/**
 	 * Sets the value of {@code n}.
 	 * 
-	 * @param n represents both the dimensions of the chess board and the
-	 * number of queens to be positioned.
+	 * @param n represents both the dimensions of the chess board and the number of
+	 *          queens to be positioned.
 	 * 
 	 * @see #getN()
 	 */
@@ -31,15 +31,15 @@ public interface Solver {
 	int getN();
 
 	/**
-	 * Starts the solving process for the configured value of {@code n}. This
-	 * method should block until the solving process is finished or canceled.
+	 * Starts the solving process for the configured value of {@code n}. This method
+	 * should block until the solving process is finished or canceled.
 	 * <p>
 	 * It is advised to continuously update the values returned by
-	 * {@link #getSolutions()}, {@link #getDuration()} and
-	 * {@link #getProgress()} (when applicable) during the runtime of this
-	 * method so that the user can track the solver's progress. Additionally,
-	 * the value returned by {@link #getExecutionState()} should be continuously
-	 * updated according to {@link SolverExecutionState}.
+	 * {@link #getSolutions()}, {@link #getDuration()} and {@link #getProgress()}
+	 * (when applicable) during the runtime of this method so that the user can
+	 * track the solver's progress. Additionally, the value returned by
+	 * {@link #getExecutionState()} should be continuously updated according to
+	 * {@link SolverExecutionState}.
 	 * 
 	 * @see #setN(int)
 	 * @see #getSolutions()
@@ -47,8 +47,8 @@ public interface Solver {
 	void solve();
 
 	/**
-	 * Returns the (current) total count of solutions found by the solver for
-	 * the configured value of {@code n}.
+	 * Returns the (current) total count of solutions found by the solver for the
+	 * configured value of {@code n}.
 	 * 
 	 * @return the (current) total number of found solutions.
 	 * 
@@ -57,11 +57,9 @@ public interface Solver {
 	long getSolutions();
 
 	/**
-	 * Returns the (current) total duration of the solving process in
-	 * milliseconds.
+	 * Returns the (current) total duration of the solving process in milliseconds.
 	 * 
-	 * @return the (current) total duration of the solving process in
-	 * milliseconds.
+	 * @return the (current) total duration of the solving process in milliseconds.
 	 * 
 	 * @see #solve()
 	 */
@@ -71,8 +69,8 @@ public interface Solver {
 	 * Returns the (current) progress of the solving algorithm in percent.
 	 * <p>
 	 * The default implementation returns {@code 0f} if {@link #getExecutionState()}
-	 * returns anything other than {@link SolverExecutionState#FINISHED}. Otherwise it
-	 * returns {@code 1f}.
+	 * returns anything other than {@link SolverExecutionState#FINISHED}. Otherwise
+	 * it returns {@code 1f}.
 	 * 
 	 * @return the (current) progress of the solving algorithm in percent.
 	 * 
@@ -93,9 +91,9 @@ public interface Solver {
 	SolverExecutionState getExecutionState();
 
 	/**
-	 * Saves the current state of a {@link Solver} into a file under the
-	 * path {@code path}.
-	 * }
+	 * Saves the current state of a {@link Solver} into a file under the path
+	 * {@code path}. }
+	 * 
 	 * @param path the path the save file should be written to.
 	 * 
 	 * @see #load(String)
@@ -105,8 +103,8 @@ public interface Solver {
 	}
 
 	/**
-	 * Loads and restores a saved solver state, reading from the file under the
-	 * path {@code path}. 
+	 * Loads and restores a saved solver state, reading from the file under the path
+	 * {@code path}.
 	 * 
 	 * @param path the path to the file containing a saved solver state.
 	 * 

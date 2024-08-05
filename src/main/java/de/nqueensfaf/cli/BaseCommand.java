@@ -15,7 +15,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
-@Command(name = "nqueensfaf", mixinStandardHelpOptions = true, subcommands = {CpuCommand.class, GpuCommand.class})
+@Command(name = "nqueensfaf", mixinStandardHelpOptions = true, subcommands = { CpuCommand.class, GpuCommand.class })
 public class BaseCommand {
 
 	@Spec
@@ -35,8 +35,8 @@ public class BaseCommand {
 	@Option(names = { "-u", "--update-interval" }, required = false, description = "Delay between progress updates")
 	int updateInterval;
 
-	@Option(names = { "-s", "--auto-save" }, required = false, 
-			description = "How much progress should be made each time until the solver's progress is saved into a file")
+	@Option(names = { "-s",
+			"--auto-save" }, required = false, description = "How much progress should be made each time until the solver's progress is saved into a file")
 	float autoSaveProgressStep;
 
 	// for printing the progress
@@ -48,10 +48,11 @@ public class BaseCommand {
 	private float lastProgress;
 	private final ExecutorService autoSaveExecutorService = Executors.newFixedThreadPool(1);
 
-	public BaseCommand() {}
+	public BaseCommand() {
+	}
 
 	private OnUpdateConsumer onUpdate(AbstractSolver solver) {
-		if(autoSaveProgressStep > 0) {
+		if (autoSaveProgressStep > 0) {
 			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				try {
 					autoSaveExecutorService.shutdown();
@@ -64,11 +65,11 @@ public class BaseCommand {
 			return (progress, solutions, duration) -> {
 				if (loadingCharIdx == loadingChars.length)
 					loadingCharIdx = 0;
-				System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
-						getDurationPrettyString(duration));
+				System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress,
+						getSolutionsPrettyString(solutions), getDurationPrettyString(duration));
 
-				if (progress - lastProgress >= autoSaveProgressStep && 
-						(autoSaveFuture == null || autoSaveFuture.isDone())) {
+				if (progress - lastProgress >= autoSaveProgressStep
+						&& (autoSaveFuture == null || autoSaveFuture.isDone())) {
 					autoSaveFuture = autoSaveExecutorService.submit(() -> {
 						try {
 							solver.save(solver.getN() + "-queens.faf");
@@ -83,8 +84,8 @@ public class BaseCommand {
 			return (progress, solutions, duration) -> {
 				if (loadingCharIdx == loadingChars.length)
 					loadingCharIdx = 0;
-				System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress, getSolutionsPrettyString(solutions),
-						getDurationPrettyString(duration));
+				System.out.format(progressStringFormat, loadingChars[loadingCharIdx++], progress,
+						getSolutionsPrettyString(solutions), getDurationPrettyString(duration));
 
 			};
 		}
@@ -93,14 +94,14 @@ public class BaseCommand {
 
 	private Runnable onFinish(AbstractSolver solver) {
 		final Runnable defaultOnFinish = () -> {
-			if(solver.getUpdateInterval() > 0)
+			if (solver.getUpdateInterval() > 0)
 				System.out.println();
 			System.out.println("found " + getSolutionsPrettyString(solver.getSolutions()) + " solutions in "
 					+ getDurationPrettyString(solver.getDuration()));
 			System.out.println("(" + getSolutionsPrettyString(getUniqueSolutions(solver)) + " unique solutions)");
-		}; 
+		};
 
-		if(autoSaveProgressStep > 0) {
+		if (autoSaveProgressStep > 0) {
 			return () -> {
 				defaultOnFinish.run();
 
@@ -120,10 +121,10 @@ public class BaseCommand {
 		solver.onFinish(onFinish(solver));
 		solver.onUpdate(onUpdate(solver));
 
-		if(updateInterval != 0)
+		if (updateInterval != 0)
 			solver.setUpdateInterval(updateInterval);
 
-		if(NOrFile.path != null) {
+		if (NOrFile.path != null) {
 			try {
 				solver.load(NOrFile.path);
 			} catch (IOException e) {
@@ -144,8 +145,8 @@ public class BaseCommand {
 
 	static String getSolutionsPrettyString(long solutions) {
 		StringBuilder sb = new StringBuilder(Long.toString(solutions));
-		for(int i = sb.length() - 3; i >= 0; i -= 3) {
-			if(i <= 0)
+		for (int i = sb.length() - 3; i >= 0; i -= 3) {
+			if (i <= 0)
 				break;
 			sb.insert(i, ".");
 		}

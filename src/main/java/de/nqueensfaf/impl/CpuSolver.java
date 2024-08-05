@@ -27,9 +27,11 @@ public class CpuSolver extends AbstractSolver {
 	private long start, duration, storedDuration;
 	private boolean stateLoaded;
 	private int presetQueens = 5, threadCount = 1;
-	
+
 	private final Kryo kryo = new Kryo();
-	private record CpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {}
+
+	private record CpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
+	}
 
 	public CpuSolver() {
 		kryo.register(CpuSolverProgressState.class);
@@ -39,9 +41,9 @@ public class CpuSolver extends AbstractSolver {
 
 	@Override
 	public void save(String path) throws IOException {
-		if(!getExecutionState().isBusy())
+		if (!getExecutionState().isBusy())
 			throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
-		
+
 		try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(path)))) {
 			kryo.writeObject(output, new CpuSolverProgressState(getN(), getDuration(), constellations));
 			output.flush();
@@ -49,12 +51,12 @@ public class CpuSolver extends AbstractSolver {
 			throw new IOException("could not write cpu solver progress to file: " + e.getMessage(), e);
 		}
 	}
-	
+
 	@Override
 	public void load(String path) throws IOException {
-		if(!getExecutionState().isIdle())
+		if (!getExecutionState().isIdle())
 			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
-		
+
 		try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 			CpuSolverProgressState progress = kryo.readObject(input, CpuSolverProgressState.class);
 			load(progress.n(), progress.storedDuration(), progress.constellations());
@@ -62,11 +64,11 @@ public class CpuSolver extends AbstractSolver {
 			throw new IOException("could not read solver state from file: " + e.getMessage(), e);
 		}
 	}
-	
+
 	public void load(int n, long storedDuration, List<Constellation> constellations) {
-		if(!getExecutionState().isIdle())
+		if (!getExecutionState().isIdle())
 			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
-		
+
 		setN(n);
 		this.storedDuration = storedDuration;
 		this.constellations = constellations;
@@ -83,7 +85,7 @@ public class CpuSolver extends AbstractSolver {
 
 	@Override
 	public float getProgress() {
-		if(constellations.size() == 0)
+		if (constellations.size() == 0)
 			return 0;
 
 		int solvedConstellations = 0;
@@ -99,11 +101,11 @@ public class CpuSolver extends AbstractSolver {
 
 	@Override
 	public long getSolutions() {
-		if(constellations.size() == 0)
+		if (constellations.size() == 0)
 			return 0;
 
-		return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions())
-				.reduce(0l, (cAcc, c) -> cAcc + c);
+		return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions()).reduce(0l,
+				(cAcc, c) -> cAcc + c);
 	}
 
 	@Override
@@ -117,17 +119,17 @@ public class CpuSolver extends AbstractSolver {
 			duration = simpleSolver.getDuration();
 			return;
 		}
-		
+
 		start = System.currentTimeMillis();
 		duration = 0;
-		
+
 		if (!stateLoaded) {
 			constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 			storedDuration = 0;
 		} else {
 			stateLoaded = false;
 		}
-		
+
 		// split starting constellations in [threadcount] lists (splitting the work for
 		// the threads)
 		for (int i = 0; i < threadCount; i++) {
@@ -189,8 +191,8 @@ public class CpuSolver extends AbstractSolver {
 	public LinkedHashMap<Integer, Long> getSolutionsPerIjkl() {
 		LinkedHashMap<Integer, Long> solutionsPerIjkl = new LinkedHashMap<Integer, Long>();
 		constellations.stream().collect(Collectors.groupingBy(Constellation::getIjkl)).values().stream()
-		.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).getIjkl(),
-				cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
+				.forEach(cPerIjkl -> solutionsPerIjkl.put(cPerIjkl.get(0).getIjkl(),
+						cPerIjkl.stream().map(Constellation::getSolutions).reduce(0L, Long::sum)));
 		return solutionsPerIjkl;
 	}
 }

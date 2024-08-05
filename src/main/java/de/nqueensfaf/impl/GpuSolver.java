@@ -91,16 +91,17 @@ public class GpuSolver extends AbstractSolver {
 	private boolean stateLoaded;
 
 	private int L;
-	
-	private final Kryo kryo = new Kryo();
-	private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {}
 
+	private final Kryo kryo = new Kryo();
+
+	private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
+	}
 
 	public GpuSolver() {
 		kryo.register(GpuSolverProgressState.class);
 		kryo.register(ArrayList.class);
 		kryo.register(Constellation.class);
-		
+
 		fetchAvailableGpus();
 	}
 
@@ -112,11 +113,11 @@ public class GpuSolver extends AbstractSolver {
 	public void setPresetQueens(int presetQueens) {
 		this.presetQueens = presetQueens;
 	}
-	
+
 	public void save(String path) throws IOException {
-		if(!getExecutionState().isBusy())
+		if (!getExecutionState().isBusy())
 			throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
-		
+
 		try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(path)))) {
 			kryo.writeObject(output, new GpuSolverProgressState(getN(), getDuration(), constellations));
 			output.flush();
@@ -124,11 +125,11 @@ public class GpuSolver extends AbstractSolver {
 			throw new IOException("could not write cpu solver progress to file: " + e.getMessage(), e);
 		}
 	}
-	
+
 	public void load(String path) throws IOException {
-		if(!getExecutionState().isIdle())
+		if (!getExecutionState().isIdle())
 			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
-		
+
 		try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 			GpuSolverProgressState progress = kryo.readObject(input, GpuSolverProgressState.class);
 			load(progress.n(), progress.storedDuration(), progress.constellations());
@@ -136,11 +137,11 @@ public class GpuSolver extends AbstractSolver {
 			throw new IOException("could not load solver state from file: " + e.getMessage(), e);
 		}
 	}
-	
+
 	public void load(int n, long storedDuration, List<Constellation> constellations) {
-		if(!getExecutionState().isIdle())
+		if (!getExecutionState().isIdle())
 			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
-		
+
 		setN(n);
 		this.storedDuration = storedDuration;
 		this.constellations = constellations;
@@ -229,7 +230,7 @@ public class GpuSolver extends AbstractSolver {
 	public void solve() {
 		if (gpuSelection.get().size() == 0)
 			throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
-		
+
 		if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 			AbstractSolver simpleSolver = new SimpleSolver(getN());
 			simpleSolver.start();
@@ -239,17 +240,17 @@ public class GpuSolver extends AbstractSolver {
 			duration = simpleSolver.getDuration();
 			return;
 		}
-		
+
 		start = System.currentTimeMillis();
 		duration = 0;
-		
+
 		if (!stateLoaded) {
 			constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 			start = duration = storedDuration = 0;
 		} else {
 			stateLoaded = false;
 		}
-		
+
 		var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 				.collect(Collectors.toList());
 		if (remainingConstellations.size() == 0)
@@ -289,7 +290,8 @@ public class GpuSolver extends AbstractSolver {
 		sortConstellationsByJkl(constellations);
 		var selectedGpus = gpuSelection.get();
 
-		// calculate workload percentage for each gpu. the lower the benchmark, the bigger the workload
+		// calculate workload percentage for each gpu. the lower the benchmark, the
+		// bigger the workload
 		float benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0f, Float::sum);
 		float[] gpuPortions = new float[selectedGpus.size()];
 		float gpuPortionSum = 0f;
@@ -320,11 +322,13 @@ public class GpuSolver extends AbstractSolver {
 				continue;
 			}
 
-			var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork, selectedGpus.get(gpuIdx).getConfig().getWorkgroupSize());
+			var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork,
+					selectedGpus.get(gpuIdx).getConfig().getWorkgroupSize());
 			firstWorkloads.add(gpuFirstWorkload);
 
 			var gpu = selectedGpus.get(gpuIdx);
-			gpu.createBuffers((int) (constellations.size() * 0.7)); // max size of workload, because 30% are already executed in the first iteration
+			gpu.createBuffers((int) (constellations.size() * 0.7)); // max size of workload, because 30% are already
+																	// executed in the first iteration
 
 			fromIndex = toIndex;
 		}
@@ -357,28 +361,29 @@ public class GpuSolver extends AbstractSolver {
 
 					iteration++;
 
-					// if the other gpus in average completed already more workloads, make the own workload size a bit smaller to catch up and vice versa
+					// if the other gpus in average completed already more workloads, make the own
+					// workload size a bit smaller to catch up and vice versa
 					float cumulatedIterationProgressAvg = iterationSum.incrementAndGet() - iteration;
-					for(var otherGpu : selectedGpus) {
-						if(otherGpu.getId() == gpu.getId())
+					for (var otherGpu : selectedGpus) {
+						if (otherGpu.getId() == gpu.getId())
 							continue;
 						cumulatedIterationProgressAvg += otherGpu.getProgress();
 					}
 					cumulatedIterationProgressAvg /= (selectedGpus.size() - 1);
-					if(cumulatedIterationProgressAvg == 0f) // prevent division by 0
+					if (cumulatedIterationProgressAvg == 0f) // prevent division by 0
 						cumulatedIterationProgressAvg = 0.00001f;
 					adaptive *= iteration / cumulatedIterationProgressAvg;
 
 					int workloadSize = (int) (gpuFirstWorkloadSize * adaptive);
-					if(getProgress() > 0.8)
+					if (getProgress() > 0.8)
 						workloadSize *= 0.3;
-					else if(getProgress() > 0.5)
+					else if (getProgress() > 0.5)
 						workloadSize *= 0.5;
 					if (workloadSize < minGpuWorkloadSize)
 						workloadSize = minGpuWorkloadSize;
 
 					while (workload.size() < workloadSize && !queue.isEmpty()) {
-						synchronized(queue) {
+						synchronized (queue) {
 							for (int i = 0; i < gpu.getConfig().getWorkgroupSize() && workload.size() < workloadSize
 									&& !queue.isEmpty(); i++) {
 								workload.add(queue.remove());
@@ -393,7 +398,7 @@ public class GpuSolver extends AbstractSolver {
 
 					// if workload too big, give some work back to the queue
 					while (workload.size() > gpu.maxNumOfConstellationsPerRun) {
-						synchronized(queue) {
+						synchronized (queue) {
 							for (int i = 0; i < gpu.getConfig().getWorkgroupSize(); i++) {
 								var c = workload.remove(workload.size() - 1);
 								if (c.getStart() != 69)
@@ -472,8 +477,7 @@ public class GpuSolver extends AbstractSolver {
 	}
 
 	private void addPseudoConstellation(List<Constellation> constellations) {
-		constellations
-		.add(new Constellation((1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
+		constellations.add(new Constellation((1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
 	}
 
 	public class GpuSelection {
@@ -493,8 +497,9 @@ public class GpuSolver extends AbstractSolver {
 			if (chosen)
 				throw new IllegalStateException("unable to add more GPU's after choosing one");
 
-			if(!availableGpus.contains(gpu))
-				throw new IllegalArgumentException("no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
+			if (!availableGpus.contains(gpu))
+				throw new IllegalArgumentException(
+						"no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
 
 			if (selectedGpus.contains(gpu))
 				throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was already added");
@@ -542,7 +547,7 @@ public class GpuSolver extends AbstractSolver {
 		}
 
 		public void setBenchmark(float benchmark) {
-			if(benchmark <= 0)
+			if (benchmark <= 0)
 				throw new IllegalStateException("benchmark was " + benchmark + " but expected >0");
 			this.benchmark = benchmark;
 		}
@@ -552,7 +557,7 @@ public class GpuSolver extends AbstractSolver {
 		}
 
 		public void setWorkgroupSize(int workgroupSize) {
-			if(workgroupSize <= 0)
+			if (workgroupSize <= 0)
 				throw new IllegalStateException("workgroup size was " + workgroupSize + " but expected >0");
 			this.workgroupSize = workgroupSize;
 		}
@@ -565,7 +570,8 @@ public class GpuSolver extends AbstractSolver {
 		private GpuInfo info;
 		private GpuConfig config = new GpuConfig();
 
-		// for creating the buffers with sufficient size to be reused in all workloads (for multi gpu)
+		// for creating the buffers with sufficient size to be reused in all workloads
+		// (for multi gpu)
 		private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
 
 		// related opencl objects
@@ -614,7 +620,7 @@ public class GpuSolver extends AbstractSolver {
 		}
 
 		private void setN(int n) {
-			this.n = n; 
+			this.n = n;
 		}
 
 		private void createOpenClObjects() {
@@ -682,7 +688,8 @@ public class GpuSolver extends AbstractSolver {
 
 		private void createBuffers(int maxNumOfConstellationsPerRun) {
 			this.maxNumOfConstellationsPerRun = maxNumOfConstellationsPerRun;
-			maxNumOfJklQueensArrays = maxNumOfConstellationsPerRun / config.getWorkgroupSize(); // 1 jkl queens array per workgroup
+			maxNumOfJklQueensArrays = maxNumOfConstellationsPerRun / config.getWorkgroupSize(); // 1 jkl queens array
+																								// per workgroup
 
 			try (MemoryStack stack = MemoryStack.stackPush()) {
 				IntBuffer errBuf = stack.callocInt(1);
@@ -696,8 +703,8 @@ public class GpuSolver extends AbstractSolver {
 				checkCLError(errBuf);
 
 				if (info.vendor.toLowerCase().contains("nvidia"))
-					jklQueensMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-							CL_MEM_PINNED_NV, maxNumOfJklQueensArrays * n * 4, errBuf);
+					jklQueensMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
+							maxNumOfJklQueensArrays * n * 4, errBuf);
 				else
 					jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
 							maxNumOfJklQueensArrays * n * 4, errBuf);
@@ -755,7 +762,7 @@ public class GpuSolver extends AbstractSolver {
 				ByteBuffer jklQueensPtr = clEnqueueMapBuffer(memQueue, jklQueensMem, true, CL_MAP_WRITE, 0,
 						numOfJklQueensArrays * n * 4, null, null, errBuf, null);
 				checkCLError(errBuf);
-				for (int wgIdx = 0; wgIdx < numOfJklQueensArrays; wgIdx ++) {
+				for (int wgIdx = 0; wgIdx < numOfJklQueensArrays; wgIdx++) {
 					var ijkl = constellations.get(wgIdx * config.getWorkgroupSize()).getIjkl();
 					int j = getj(ijkl);
 					int k = getk(ijkl);
@@ -765,17 +772,17 @@ public class GpuSolver extends AbstractSolver {
 					// the ld from queen j and l with respect to the last row
 					int ldiag = (L >> j) | (L >> l);
 					for (int row = 0; row < n; row++) {
-						jklQueensPtr
-						.putInt(wgIdx * n * 4 + ((n - 1 - row) * 4), (ldiag >> row) | (rdiag << row) | L | 1);
+						jklQueensPtr.putInt(wgIdx * n * 4 + ((n - 1 - row) * 4),
+								(ldiag >> row) | (rdiag << row) | L | 1);
 					}
 					ldiag = L >> k;
-						rdiag = 1 << l;
-						for(int row = 0; row < n; row++){
-							int idx = wgIdx * n * 4 + (row * 4);
-							jklQueensPtr.putInt(idx, jklQueensPtr.getInt(idx) | (ldiag << row) | (rdiag >> row));
-						}
-						jklQueensPtr.putInt(wgIdx * n * 4 + (k * 4), ~L);
-						jklQueensPtr.putInt(wgIdx * n * 4 + (l * 4), ~1);
+					rdiag = 1 << l;
+					for (int row = 0; row < n; row++) {
+						int idx = wgIdx * n * 4 + (row * 4);
+						jklQueensPtr.putInt(idx, jklQueensPtr.getInt(idx) | (ldiag << row) | (rdiag >> row));
+					}
+					jklQueensPtr.putInt(wgIdx * n * 4 + (k * 4), ~L);
+					jklQueensPtr.putInt(wgIdx * n * 4 + (l * 4), ~1);
 				}
 				checkCLError(clEnqueueUnmapMemObject(memQueue, jklQueensMem, jklQueensPtr, null, null));
 
@@ -839,8 +846,7 @@ public class GpuSolver extends AbstractSolver {
 			for (int i = 0; i < constellations.size(); i++) {
 				if (constellations.get(i).getStart() == 69) // start=69 is for trash constellations
 					continue;
-				long solutionsForConstellation = resPtr.getLong(i * 8)
-						* symmetry(n, constellations.get(i).getIjkl());
+				long solutionsForConstellation = resPtr.getLong(i * 8) * symmetry(n, constellations.get(i).getIjkl());
 				if (solutionsForConstellation >= 0) {
 					// synchronize with the list of constellations on the RAM
 					constellations.get(i).setSolutions(solutionsForConstellation);

@@ -6,20 +6,20 @@ package de.nqueensfaf;
 public enum SolverExecutionState {
 
 	/**
-	 * There are configurations that still have to be applied to the
-	 * {@link Solver} before it can be started.
+	 * There are configurations that still have to be applied to the {@link Solver}
+	 * before it can be started.
 	 */
 	NOT_INITIALIZED,
 
 	/**
-	 * All nessessary configurations have been made and the {@link Solver} is
-	 * ready to be started.
+	 * All nessessary configurations have been made and the {@link Solver} is ready
+	 * to be started.
 	 */
 	READY,
 
 	/**
-	 * The {@link Solver} was started, but is not executing the solving
-	 * algorithm yet. Optional.
+	 * The {@link Solver} was started, but is not executing the solving algorithm
+	 * yet. Optional.
 	 */
 	STARTING,
 
@@ -29,8 +29,8 @@ public enum SolverExecutionState {
 	RUNNING,
 
 	/**
-	 * The solving algorithm has finished, but there are still tasks left to 
-	 * be teared down (for example terminating threads). Optional.
+	 * The solving algorithm has finished, but there are still tasks left to be
+	 * teared down (for example terminating threads). Optional.
 	 */
 	TERMINATING,
 
@@ -45,26 +45,24 @@ public enum SolverExecutionState {
 	CANCELED;
 
 	/**
-	 * Checks if this execution state chronologically comes before
-	 * {@code state}.
+	 * Checks if this execution state chronologically comes before {@code state}.
 	 * 
 	 * @param state the execution state to be compared to this execution state.
 	 * 
-	 * @return true if the ordinal of this execution state is lower than the
-	 * ordinal of {@code state}, otherwise false.
+	 * @return true if the ordinal of this execution state is lower than the ordinal
+	 *         of {@code state}, otherwise false.
 	 */
 	public boolean isBefore(SolverExecutionState state) {
 		return ordinal() < state.ordinal();
 	}
 
 	/**
-	 * Checks if this execution state chronologically comes after
-	 * {@code state}.
+	 * Checks if this execution state chronologically comes after {@code state}.
 	 * 
 	 * @param state the execution state to be compared to this execution state.
 	 * 
 	 * @return true if the ordinal of this execution state is greater than the
-	 * ordinal of {@code state}, otherwise false.
+	 *         ordinal of {@code state}, otherwise false.
 	 */
 	public boolean isAfter(SolverExecutionState state) {
 		return ordinal() > state.ordinal();
@@ -73,7 +71,7 @@ public enum SolverExecutionState {
 	public boolean isBusy() {
 		return isAfter(READY) && isBefore(FINISHED);
 	}
-	
+
 	public boolean isIdle() {
 		return !isBusy();
 	}

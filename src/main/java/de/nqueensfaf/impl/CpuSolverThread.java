@@ -7,7 +7,8 @@ import static de.nqueensfaf.impl.Utils.*;
 class CpuSolverThread extends Thread {
 
 	private final int n, n3, n4, L, L3, L4; // boardsize
-	private long tempcounter = 0; // tempcounter is #(unique solutions) of current start constellation, solvecounter is #(all solutions)
+	private long tempcounter = 0; // tempcounter is #(unique solutions) of current start constellation,
+									// solvecounter is #(all solutions)
 
 	// mark1 and mark2 mark the lines k-1 and l-1 (not necessarily in this order),
 	// because in from this line we will directly shift everything to the next free
@@ -773,293 +774,293 @@ class CpuSolverThread extends Thread {
 		for (Constellation constellation : constellations) {
 			startIjkl = constellation.getStartIjkl();
 			start = startIjkl >> 20;
-		ijkl = startIjkl & ((1 << 20) - 1);
-		j = getj(ijkl);
-		k = getk(ijkl);
-		l = getl(ijkl);
+			ijkl = startIjkl & ((1 << 20) - 1);
+			j = getj(ijkl);
+			k = getk(ijkl);
+			l = getl(ijkl);
 
-		// IMPORTANT NOTE: we shift ld and rd one to the right, because the right
-		// column does not matter (always occupied by queen l)
-		// add occupation of ld from queens j and l from the bottom row upwards
-		LD = (L >>> j) | (L >>> l);
-		ld = constellation.getLd() >>> 1;
-		ld |= LD >>> (n - start);
-		// add occupation of rd from queens j and k from the bottom row upwards
-		rd = constellation.getRd() >>> 1;
-		if (start > k)
-			rd |= (L >>> (start - k + 1));
-		if (j >= 2 * n - 33 - start) // only add the rd from queen j if it does not
-			rd |= (L >>> j) << (n - 2 - start); // occupy the sign bit!
+			// IMPORTANT NOTE: we shift ld and rd one to the right, because the right
+			// column does not matter (always occupied by queen l)
+			// add occupation of ld from queens j and l from the bottom row upwards
+			LD = (L >>> j) | (L >>> l);
+			ld = constellation.getLd() >>> 1;
+			ld |= LD >>> (n - start);
+			// add occupation of rd from queens j and k from the bottom row upwards
+			rd = constellation.getRd() >>> 1;
+			if (start > k)
+				rd |= (L >>> (start - k + 1));
+			if (j >= 2 * n - 33 - start) // only add the rd from queen j if it does not
+				rd |= (L >>> j) << (n - 2 - start); // occupy the sign bit!
 
-		// also occupy col and then calculate free
-		col = (constellation.getCol() >>> 1) | (~smallmask);
-		free = ~(ld | rd | col);
+			// also occupy col and then calculate free
+			col = (constellation.getCol() >>> 1) | (~smallmask);
+			free = ~(ld | rd | col);
 
-		// big case distinction for deciding which soling algorithm to use
-		// it is a miracel that we got this to actually work..
-		// if queen j is more than 2 columns away from the corner
-		if (j < n - 3) {
-			jmark = j + 1;
-			endmark = n - 2;
-			// if the queen j is more than 2 columns away from the corner but the rd from
-			// the
-			// j-queen can be set right at start
-			if (j > 2 * n - 34 - start) {
+			// big case distinction for deciding which soling algorithm to use
+			// it is a miracel that we got this to actually work..
+			// if queen j is more than 2 columns away from the corner
+			if (j < n - 3) {
+				jmark = j + 1;
+				endmark = n - 2;
+				// if the queen j is more than 2 columns away from the corner but the rd from
+				// the
+				// j-queen can be set right at start
+				if (j > 2 * n - 34 - start) {
+					// k < l
+					if (k < l) {
+						mark1 = k - 1;
+						mark2 = l - 1;
+						// if at least l is yet to come
+						if (start < l) {
+							// if also k is yet to come
+							if (start < k) {
+								// if there are free rows between k and l
+								if (l != k + 1) {
+									SQBkBlBjrB(ld, rd, col, start, free);
+								}
+								// if there are no free rows between k and l
+								else {
+									SQBklBjrB(ld, rd, col, start, free);
+								}
+							}
+							// if k already came before start and only l is left
+							else {
+								SQBlBjrB(ld, rd, col, start, free);
+							}
+						}
+						// if both k and l already came before start
+						else {
+							SQBjrB(ld, rd, col, start, free);
+						}
+					}
+					// l < k
+					else {
+						mark1 = l - 1;
+						mark2 = k - 1;
+						// if at least k is yet to come
+						if (start < k) {
+							// if also l is yet to come
+							if (start < l) {
+								// if there is at least one free row between l and k
+								if (k != l + 1) {
+									SQBlBkBjrB(ld, rd, col, start, free);
+								}
+								// if there is no free row between l and k
+								else {
+									SQBlkBjrB(ld, rd, col, start, free);
+								}
+							}
+							// if l already came and only k is yet to come
+							else {
+								SQBkBjrB(ld, rd, col, start, free);
+							}
+						}
+						// if both l and k already came before start
+						else {
+							SQBjrB(ld, rd, col, start, free);
+						}
+					}
+				}
+				// if we have to set some queens first in order to reach the row n-1-jmark where
+				// the
+				// rd from queen j
+				// can be set
+				else {
+					// k < l
+					if (k < l) {
+						mark1 = k - 1;
+						mark2 = l - 1;
+						// there is at least one free row between rows k and l
+						if (l != k + 1) {
+							SQBjlBkBlBjrB(ld, rd, col, start, free);
+						}
+						// if l comes right after k
+						else {
+							SQBjlBklBjrB(ld, rd, col, start, free);
+						}
+					}
+					// l < k
+					else {
+						mark1 = l - 1;
+						mark2 = k - 1;
+						// there is at least on efree row between rows l and k
+						if (k != l + 1) {
+							SQBjlBlBkBjrB(ld, rd, col, start, free);
+						}
+						// if k comes right after l
+						else {
+							SQBjlBlkBjrB(ld, rd, col, start, free);
+						}
+					}
+				}
+			}
+			// if the queen j is exactly 2 columns away from the corner
+			else if (j == n - 3) {
+				// this means that the last row will always be row n-2
+				endmark = n - 2;
 				// k < l
 				if (k < l) {
 					mark1 = k - 1;
 					mark2 = l - 1;
 					// if at least l is yet to come
 					if (start < l) {
-						// if also k is yet to come
+						// if k is yet to come too
 						if (start < k) {
 							// if there are free rows between k and l
 							if (l != k + 1) {
-								SQBkBlBjrB(ld, rd, col, start, free);
-							}
-							// if there are no free rows between k and l
-							else {
-								SQBklBjrB(ld, rd, col, start, free);
+								SQd2BkBlB(ld, rd, col, start, free);
+							} else {
+								SQd2BklB(ld, rd, col, start, free);
 							}
 						}
-						// if k already came before start and only l is left
+						// if k was set before start
 						else {
-							SQBlBjrB(ld, rd, col, start, free);
+							mark2 = l - 1;
+							SQd2BlB(ld, rd, col, start, free);
 						}
 					}
-					// if both k and l already came before start
+					// if k and l already came before start
 					else {
-						SQBjrB(ld, rd, col, start, free);
+						SQd2B(ld, rd, col, start, free);
 					}
 				}
 				// l < k
 				else {
 					mark1 = l - 1;
 					mark2 = k - 1;
+					endmark = n - 2;
 					// if at least k is yet to come
 					if (start < k) {
 						// if also l is yet to come
 						if (start < l) {
-							// if there is at least one free row between l and k
+							// if there are free rows between l and k
 							if (k != l + 1) {
-								SQBlBkBjrB(ld, rd, col, start, free);
+								SQd2BlBkB(ld, rd, col, start, free);
 							}
-							// if there is no free row between l and k
+							// if there are no free rows between l and k
 							else {
-								SQBlkBjrB(ld, rd, col, start, free);
+								SQd2BlkB(ld, rd, col, start, free);
 							}
 						}
-						// if l already came and only k is yet to come
+						// if l came before start
 						else {
-							SQBkBjrB(ld, rd, col, start, free);
+							mark2 = k - 1;
+							SQd2BkB(ld, rd, col, start, free);
 						}
 					}
 					// if both l and k already came before start
 					else {
-						SQBjrB(ld, rd, col, start, free);
+						SQd2B(ld, rd, col, start, free);
 					}
 				}
 			}
-			// if we have to set some queens first in order to reach the row n-1-jmark where
-			// the
-			// rd from queen j
-			// can be set
-			else {
+			// if the queen j is exactly 1 column away from the corner
+			else if (j == n - 2) {
 				// k < l
 				if (k < l) {
-					mark1 = k - 1;
-					mark2 = l - 1;
-					// there is at least one free row between rows k and l
-					if (l != k + 1) {
-						SQBjlBkBlBjrB(ld, rd, col, start, free);
+					// k can not be first, l can not be last due to queen placement
+					// thus always end in line n-2
+					endmark = n - 2;
+					// if at least l is yet to come
+					if (start < l) {
+						// if k is yet to come too
+						if (start < k) {
+							mark1 = k - 1;
+							// if k and l are next to each other
+							if (l != k + 1) {
+								mark2 = l - 1;
+								SQd1BkBlB(ld, rd, col, start, free);
+							}
+							//
+							else {
+								SQd1BklB(ld, rd, col, start, free);
+							}
+						}
+						// if only l is yet to come
+						else {
+							mark2 = l - 1;
+							SQd1BlB(ld, rd, col, start, free);
+						}
 					}
-					// if l comes right after k
+					// if k and l already came
 					else {
-						SQBjlBklBjrB(ld, rd, col, start, free);
+						SQd1B(ld, rd, col, start, free);
 					}
 				}
 				// l < k
 				else {
-					mark1 = l - 1;
-					mark2 = k - 1;
-					// there is at least on efree row between rows l and k
-					if (k != l + 1) {
-						SQBjlBlBkBjrB(ld, rd, col, start, free);
-					}
-					// if k comes right after l
-					else {
-						SQBjlBlkBjrB(ld, rd, col, start, free);
-					}
-				}
-			}
-		}
-		// if the queen j is exactly 2 columns away from the corner
-		else if (j == n - 3) {
-			// this means that the last row will always be row n-2
-			endmark = n - 2;
-			// k < l
-			if (k < l) {
-				mark1 = k - 1;
-				mark2 = l - 1;
-				// if at least l is yet to come
-				if (start < l) {
-					// if k is yet to come too
+					// if at least k is yet to come
 					if (start < k) {
-						// if there are free rows between k and l
-						if (l != k + 1) {
-							SQd2BkBlB(ld, rd, col, start, free);
-						} else {
-							SQd2BklB(ld, rd, col, start, free);
+						// if also l is yet to come
+						if (start < l) {
+							// if k is not at the end
+							if (k < n - 2) {
+								mark1 = l - 1;
+								endmark = n - 2;
+								// if there are free rows between l and k
+								if (k != l + 1) {
+									mark2 = k - 1;
+									SQd1BlBkB(ld, rd, col, start, free);
+								}
+								// if there are no free rows between l and k
+								else {
+									SQd1BlkB(ld, rd, col, start, free);
+								}
+							}
+							// if k is at the end
+							else {
+								// if l is not right before k
+								if (l != n - 3) {
+									mark2 = l - 1;
+									endmark = n - 3;
+									SQd1BlB(ld, rd, col, start, free);
+								}
+								// if l is right before k
+								else {
+									endmark = n - 4;
+									SQd1B(ld, rd, col, start, free);
+								}
+							}
 						}
-					}
-					// if k was set before start
-					else {
-						mark2 = l - 1;
-						SQd2BlB(ld, rd, col, start, free);
-					}
-				}
-				// if k and l already came before start
-				else {
-					SQd2B(ld, rd, col, start, free);
-				}
-			}
-			// l < k
-			else {
-				mark1 = l - 1;
-				mark2 = k - 1;
-				endmark = n - 2;
-				// if at least k is yet to come
-				if (start < k) {
-					// if also l is yet to come
-					if (start < l) {
-						// if there are free rows between l and k
-						if (k != l + 1) {
-							SQd2BlBkB(ld, rd, col, start, free);
-						}
-						// if there are no free rows between l and k
+						// if only k is yet to come
 						else {
-							SQd2BlkB(ld, rd, col, start, free);
-						}
-					}
-					// if l came before start
-					else {
-						mark2 = k - 1;
-						SQd2BkB(ld, rd, col, start, free);
-					}
-				}
-				// if both l and k already came before start
-				else {
-					SQd2B(ld, rd, col, start, free);
-				}
-			}
-		}
-		// if the queen j is exactly 1 column away from the corner
-		else if (j == n - 2) {
-			// k < l
-			if (k < l) {
-				// k can not be first, l can not be last due to queen placement
-				// thus always end in line n-2
-				endmark = n - 2;
-				// if at least l is yet to come
-				if (start < l) {
-					// if k is yet to come too
-					if (start < k) {
-						mark1 = k - 1;
-						// if k and l are next to each other
-						if (l != k + 1) {
-							mark2 = l - 1;
-							SQd1BkBlB(ld, rd, col, start, free);
-						}
-						//
-						else {
-							SQd1BklB(ld, rd, col, start, free);
-						}
-					}
-					// if only l is yet to come
-					else {
-						mark2 = l - 1;
-						SQd1BlB(ld, rd, col, start, free);
-					}
-				}
-				// if k and l already came
-				else {
-					SQd1B(ld, rd, col, start, free);
-				}
-			}
-			// l < k
-			else {
-				// if at least k is yet to come
-				if (start < k) {
-					// if also l is yet to come
-					if (start < l) {
-						// if k is not at the end
-						if (k < n - 2) {
-							mark1 = l - 1;
-							endmark = n - 2;
-							// if there are free rows between l and k
-							if (k != l + 1) {
+							// if k is not at the end
+							if (k != n - 2) {
 								mark2 = k - 1;
-								SQd1BlBkB(ld, rd, col, start, free);
-							}
-							// if there are no free rows between l and k
-							else {
-								SQd1BlkB(ld, rd, col, start, free);
-							}
-						}
-						// if k is at the end
-						else {
-							// if l is not right before k
-							if (l != n - 3) {
-								mark2 = l - 1;
+								endmark = n - 2;
+								SQd1BkB(ld, rd, col, start, free);
+							} else {
+								// if k is at the end
 								endmark = n - 3;
-								SQd1BlB(ld, rd, col, start, free);
-							}
-							// if l is right before k
-							else {
-								endmark = n - 4;
 								SQd1B(ld, rd, col, start, free);
 							}
 						}
 					}
-					// if only k is yet to come
+					// k and l came before start
 					else {
-						// if k is not at the end
-						if (k != n - 2) {
-							mark2 = k - 1;
-							endmark = n - 2;
-							SQd1BkB(ld, rd, col, start, free);
-						} else {
-							// if k is at the end
-							endmark = n - 3;
-							SQd1B(ld, rd, col, start, free);
-						}
+						endmark = n - 2;
+						SQd1B(ld, rd, col, start, free);
 					}
 				}
-				// k and l came before start
+			}
+			// if the queen j is placed in the corner
+			else {
+				endmark = n - 2;
+				if (start > k) {
+					SQd0B(ld, rd, col, start, free);
+				}
+				// k can not be in the last row due to the way we construct start constellations
+				// with a queen in the corner and
+				// due to the way we apply jasmin
 				else {
-					endmark = n - 2;
-					SQd1B(ld, rd, col, start, free);
+					mark1 = k - 1;
+					SQd0BkB(ld, rd, col, start, free);
 				}
 			}
-		}
-		// if the queen j is placed in the corner
-		else {
-			endmark = n - 2;
-			if (start > k) {
-				SQd0B(ld, rd, col, start, free);
-			}
-			// k can not be in the last row due to the way we construct start constellations
-			// with a queen in the corner and
-			// due to the way we apply jasmin
-			else {
-				mark1 = k - 1;
-				SQd0BkB(ld, rd, col, start, free);
-			}
-		}
 
-		// for saving and loading progress remove the finished starting constellation
-		constellation.setSolutions(tempcounter * symmetry(n, ijkl));
-		tempcounter = 0;
+			// for saving and loading progress remove the finished starting constellation
+			constellation.setSolutions(tempcounter * symmetry(n, ijkl));
+			tempcounter = 0;
 		}
 	}
 }

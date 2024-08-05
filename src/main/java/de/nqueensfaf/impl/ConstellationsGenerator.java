@@ -23,13 +23,14 @@ public class ConstellationsGenerator {
 
 	public List<Constellation> generate(int presetQueens) {
 		var constellations = new ArrayList<Constellation>();
-		generate(presetQueens, constellation -> constellations.add(constellation) );
+		generate(presetQueens, constellation -> constellations.add(constellation));
 		return constellations;
 	}
 
 	public void generate(int presetQueens, Consumer<Constellation> constellationConsumer) {
-		if(presetQueens < 4)
-			throw new IllegalArgumentException("could not initialize ConstellationsGenerator: presetQueens must be >=4");
+		if (presetQueens < 4)
+			throw new IllegalArgumentException(
+					"could not initialize ConstellationsGenerator: presetQueens must be >=4");
 		this.presetQueens = presetQueens;
 
 		generateIjkls();
@@ -71,36 +72,40 @@ public class ConstellationsGenerator {
 
 	public List<Constellation> generateSubConstellations(List<Constellation> baseConstellations, int extraQueens) {
 		var constellations = new ArrayList<Constellation>();
-		generateSubConstellations(baseConstellations, extraQueens, constellation -> constellations.add(constellation) );
+		generateSubConstellations(baseConstellations, extraQueens, constellation -> constellations.add(constellation));
 		return constellations;
 	}
-	
+
 	public void generateSubConstellations(List<Constellation> baseConstellations, int extraQueens,
-			Consumer<Constellation> constellationConsumer){
-		if(baseConstellations.size() == 0)
-			throw new IllegalArgumentException("could not generate sub constellations: base constellations must contain min 1 constellation");
-		if(extraQueens <= 0)
+			Consumer<Constellation> constellationConsumer) {
+		if (baseConstellations.size() == 0)
+			throw new IllegalArgumentException(
+					"could not generate sub constellations: base constellations must contain min 1 constellation");
+		if (extraQueens <= 0)
 			throw new IllegalArgumentException("could not generate sub constellations: extraQueens must be >0");
 
 		// number of currently placed queens is the same for all base constellations
 		var c0 = baseConstellations.get(0);
 		int queens = c0.getStart();
-		if(getk(c0.getIjkl()) < c0.getStart())
+		if (getk(c0.getIjkl()) < c0.getStart())
 			queens--;
-		if(getl(c0.getIjkl()) < c0.getStart())
+		if (getl(c0.getIjkl()) < c0.getStart())
 			queens--;
 		presetQueens = queens + extraQueens;
 
 		subConstellations = new ArrayList<Constellation>();
 
-		for(var bc : baseConstellations) {
+		for (var bc : baseConstellations) {
 			queens = bc.getStart();
-			if(getk(bc.getIjkl()) < bc.getStart())
+			if (getk(bc.getIjkl()) < bc.getStart())
 				queens--;
-			if(getl(bc.getIjkl()) < bc.getStart())
+			if (getl(bc.getIjkl()) < bc.getStart())
 				queens--;
 
-			placePresetQueens(bc.getIjkl(), bc.getLd(), bc.getRd(), bc.getCol(), bc.getStart(), queens); // from row start to row presetQueens
+			placePresetQueens(bc.getIjkl(), bc.getLd(), bc.getRd(), bc.getCol(), bc.getStart(), queens); // from row
+																											// start to
+																											// row
+																											// presetQueens
 
 			// jkl and sym and start are the same for all sub constellations
 			for (int a = 0; a < subConstellations.size(); a++) {
@@ -128,7 +133,7 @@ public class ConstellationsGenerator {
 						if (i == n - 1 - l || i == k) // skip if occupied
 							continue;
 
-						if (!checkRotations(n, ijklList, i, j, k, l)) { 
+						if (!checkRotations(n, ijklList, i, j, k, l)) {
 							// if no rotation-symmetric starting constellation is found
 							ijklList.add(toIjkl(i, j, k, l));
 						}
@@ -163,7 +168,8 @@ public class ConstellationsGenerator {
 		// if not done or row k or l, just place queens and occupy the board and go
 		// further
 		else {
-			int free = (~(ld | rd | col | (getLD(ijkl, L) >>> (n - 1 - row)) | (getRD(ijkl, L) << (n - 1 - row)))) & mask;
+			int free = (~(ld | rd | col | (getLD(ijkl, L) >>> (n - 1 - row)) | (getRD(ijkl, L) << (n - 1 - row))))
+					& mask;
 			int bit;
 
 			while (free > 0) {
