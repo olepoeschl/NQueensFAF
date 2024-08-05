@@ -37,6 +37,7 @@ public class CpuSolver extends AbstractSolver {
 		kryo.register(Constellation.class);
 	}
 
+	@Override
 	public void save(String path) throws IOException {
 		if(!getExecutionState().isBusy())
 			throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
@@ -49,6 +50,7 @@ public class CpuSolver extends AbstractSolver {
 		}
 	}
 	
+	@Override
 	public void load(String path) throws IOException {
 		if(!getExecutionState().isIdle())
 			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
@@ -57,7 +59,7 @@ public class CpuSolver extends AbstractSolver {
 			CpuSolverProgressState progress = kryo.readObject(input, CpuSolverProgressState.class);
 			load(progress.n(), progress.storedDuration(), progress.constellations());
 		} catch (Exception e) {
-			throw new IOException("could not load solver state from file: " + e.getMessage(), e);
+			throw new IOException("could not read solver state from file: " + e.getMessage(), e);
 		}
 	}
 	

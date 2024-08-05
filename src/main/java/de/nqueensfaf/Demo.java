@@ -14,28 +14,19 @@ public class Demo {
 	}
 
 	static void cpu() {
-		var cg = new ConstellationsGenerator(10);
-		var clist = cg.generate(4);
-		clist = cg.generateSubConstellations(clist, 2);
-
-		var s = new CpuSolver();
-		s.load(10, 0, clist);
-		s.onFinish(() -> System.out.println(s.getSolutions()));
-		s.start();
-
-		//	var cs = new CpuSolver();
-		//        cs.setPresetQueens(5);
-		//        cs.setThreadCount(1);
-		//        cs.setUpdateInterval(800);
-		//        cs.onStart(() -> System.out.println("Starting Solver for board size " + cs.getN() + "..."));
-		//        cs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
-		//        cs.onFinish(() -> System.out.println("Found " + cs.getSolutions() + " solutions in " + cs.getDuration() + " ms"));
-		//        cs.setN(16);
-		//        cs.start();
+		var cs = new CpuSolver();
+		cs.setPresetQueens(5);
+		cs.setThreadCount(1);
+		cs.setUpdateInterval(800);
+		cs.onStart(() -> System.out.println("Starting Solver for board size " + cs.getN() + "..."));
+		cs.onUpdate((progress, solutions, duration) -> System.out.println("progress: " + progress + " solutions: " + solutions + " duration: " + duration));
+		cs.onFinish(() -> System.out.println("Found " + cs.getSolutions() + " solutions in " + cs.getDuration() + " ms"));
+		cs.setN(16);
+		cs.start();
 	}
 
 	static void gpu() {
-		GpuSolver gs = new GpuSolver();
+		var gs = new GpuSolver();
 		List<Gpu> availableGpus = gs.getAvailableGpus();
 		gs.gpuSelection().add(availableGpus.get(0));
 		gs.setUpdateInterval(400);
