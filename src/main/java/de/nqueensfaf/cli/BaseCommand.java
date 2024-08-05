@@ -139,7 +139,7 @@ public class BaseCommand {
     long getUniqueSolutions(AbstractSolver solver) {
 	SymSolver symSolver = new SymSolver();
 	symSolver.setN(solver.getN());
-	symSolver.solve();
+	symSolver.start();
 	return symSolver.getUniqueSolutionsTotal(solver.getSolutions());
     }
 
