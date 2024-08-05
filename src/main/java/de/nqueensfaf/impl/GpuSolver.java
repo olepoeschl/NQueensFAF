@@ -292,15 +292,10 @@ public class GpuSolver extends AbstractSolver {
 
 	// calculate workload percentage for each gpu. the lower the benchmark, the
 	// bigger the workload
-	float benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0f, Float::sum);
+	int benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0, Integer::sum);
 	float[] gpuPortions = new float[selectedGpus.size()];
-	float gpuPortionSum = 0f;
 	for (int i = 0; i < selectedGpus.size(); i++) {
-	    gpuPortions[i] = (benchmarkSum / selectedGpus.get(i).getConfig().getBenchmark());
-	    gpuPortionSum += gpuPortions[i];
-	}
-	for (int i = 0; i < selectedGpus.size(); i++) {
-	    gpuPortions[i] /= gpuPortionSum;
+	    gpuPortions[i] = (float) selectedGpus.get(i).getConfig().getBenchmark() / benchmarkSum;
 	}
 
 	// if very few constellations, enqueue all at once
@@ -525,14 +520,14 @@ public class GpuSolver extends AbstractSolver {
 
     public static class GpuConfig {
 
-	private float benchmark;
+	private int benchmark;
 	private int workgroupSize;
 
 	public GpuConfig() {
 	    this(1, 64);
 	}
 
-	public GpuConfig(float benchmark, int workgroupSize) {
+	public GpuConfig(int benchmark, int workgroupSize) {
 	    this.benchmark = benchmark;
 	    this.workgroupSize = workgroupSize;
 	}
@@ -542,11 +537,11 @@ public class GpuSolver extends AbstractSolver {
 	    workgroupSize = config.getWorkgroupSize();
 	}
 
-	public float getBenchmark() {
+	public int getBenchmark() {
 	    return benchmark;
 	}
 
-	public void setBenchmark(float benchmark) {
+	public void setBenchmark(int benchmark) {
 	    if (benchmark <= 0)
 		throw new IllegalStateException("benchmark was " + benchmark + " but expected >0");
 	    this.benchmark = benchmark;
