@@ -290,8 +290,7 @@ public class GpuSolver extends AbstractSolver {
 	sortConstellationsByJkl(constellations);
 	var selectedGpus = gpuSelection.get();
 
-	// calculate workload percentage for each gpu. the lower the benchmark, the
-	// bigger the workload
+	// calculate workload percentage for each gpu depending on its benchmark
 	int benchmarkSum = selectedGpus.stream().map(gpu -> gpu.getConfig().getBenchmark()).reduce(0, Integer::sum);
 	float[] gpuPortions = new float[selectedGpus.size()];
 	for (int i = 0; i < selectedGpus.size(); i++) {
