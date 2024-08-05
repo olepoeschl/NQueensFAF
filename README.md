@@ -1,5 +1,5 @@
 # NQueensFAF
-Insanely fast Solvers for the N queens problem, one for GPUs (definitely try
+Highly optimized Solvers for the N queens problem, one for GPUs (definitely try
 this one) and one for CPUs. Also provides useful utilities for implementing
 custom N queens problem solving algorithms.<br>
 Features are:
