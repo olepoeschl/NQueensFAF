@@ -40,6 +40,6 @@ public class CpuCommand implements Runnable {
 	if (threads != 0)
 	    solver.setThreadCount(threads);
 
-	solver.solve();
+	solver.start();
     }
 }

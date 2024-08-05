@@ -113,6 +113,6 @@ public class GpuCommand implements Runnable {
 	    }
 	}
 
-	solver.solve();
+	solver.start();
     }
 }
