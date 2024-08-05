@@ -48,6 +48,8 @@ import static org.lwjgl.opencl.NVCreateBuffer.clCreateBufferNV;
 import static org.lwjgl.opencl.NVCreateBuffer.CL_MEM_PINNED_NV;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -63,15 +65,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import de.nqueensfaf.AbstractSolver;
 import de.nqueensfaf.SolverExecutionState;
 
-public class GpuSolver extends AbstractSolver implements Stateful {
+public class GpuSolver extends AbstractSolver {
 
 	private List<Gpu> availableGpus;
 	private GpuSelection gpuSelection = new GpuSelection();
@@ -80,11 +88,19 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 	private int presetQueens = 6;
 
 	private long start, duration, storedDuration;
-	private boolean stateLoaded, ready = true;
+	private boolean stateLoaded;
 
 	private int L;
+	
+	private final Kryo kryo = new Kryo();
+	private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {}
+
 
 	public GpuSolver() {
+		kryo.register(GpuSolverProgressState.class);
+		kryo.register(List.class);
+		kryo.register(Constellation.class);
+		
 		fetchAvailableGpus();
 	}
 
@@ -96,30 +112,38 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 	public void setPresetQueens(int presetQueens) {
 		this.presetQueens = presetQueens;
 	}
-
-	public void reset() {
-		constellations.clear();
-		start = duration = storedDuration = 0;
-		for (var gpu : gpuSelection.get())
-			gpu.reset();
-		stateLoaded = false;
-		ready = true;
+	
+	public void save(String path) throws IOException {
+		if(!getExecutionState().isBusy())
+			throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
+		
+		try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(path)))) {
+			kryo.writeObject(output, new GpuSolverProgressState(getN(), getDuration(), constellations));
+			output.flush();
+		} catch (IOException e) {
+			throw new IOException("could not write cpu solver progress to file: " + e.getMessage(), e);
+		}
 	}
-
-	@Override
-	public SolverState getState() {
-		return new SolverState(getN(), getDuration(), constellations);
+	
+	public void load(String path) throws IOException {
+		if(!getExecutionState().isIdle())
+			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+		
+		try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
+			GpuSolverProgressState progress = kryo.readObject(input, GpuSolverProgressState.class);
+			load(progress.n(), progress.storedDuration(), progress.constellations());
+		} catch (Exception e) {
+			throw new IOException("could not load solver state from file: " + e.getMessage(), e);
+		}
 	}
-
-	@Override
-	public void setState(SolverState state) {
-		if (!ready)
-			throw new IllegalStateException(
-					"could not set solver state: solver was already used and must be reset first");
-		reset();
-		setN(state.getN());
-		storedDuration = state.getStoredDuration();
-		constellations = state.getConstellations();
+	
+	public void load(int n, long storedDuration, List<Constellation> constellations) {
+		if(!getExecutionState().isIdle())
+			throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+		
+		setN(n);
+		this.storedDuration = storedDuration;
+		this.constellations = constellations;
 		stateLoaded = true;
 	}
 
@@ -203,8 +227,9 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 
 	@Override
 	public void solve() {
-		ready = false;
-
+		if (gpuSelection.get().size() == 0)
+			throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
+		
 		if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 			AbstractSolver simpleSolver = new SimpleSolver(getN());
 			simpleSolver.start();
@@ -214,15 +239,17 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 			duration = simpleSolver.getDuration();
 			return;
 		}
-
-		if (gpuSelection.get().size() == 0)
-			throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
-
+		
 		start = System.currentTimeMillis();
-
-		if (!stateLoaded)
+		duration = 0;
+		
+		if (!stateLoaded) {
 			constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-
+			start = duration = storedDuration = 0;
+		} else {
+			stateLoaded = false;
+		}
+		
 		var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 				.collect(Collectors.toList());
 		if (remainingConstellations.size() == 0)
@@ -243,8 +270,10 @@ public class GpuSolver extends AbstractSolver implements Stateful {
 
 		duration = System.currentTimeMillis() - start + storedDuration;
 
-		for (var gpu : gpuSelection.get())
+		for (var gpu : gpuSelection.get()) {
 			gpu.releaseOpenClObjects();
+			gpu.reset();
+		}
 	}
 
 	private void singleGpu(Gpu gpu, List<Constellation> constellations) {
