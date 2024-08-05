@@ -13,11 +13,11 @@ import static de.nqueensfaf.SolverExecutionState.*;
  */
 public abstract class AbstractSolver implements Solver {
     
-    private int n;
+    private int n = 0;
     private volatile SolverExecutionState executionState = NOT_INITIALIZED;
     
-    private Runnable onStart, onFinish;
-    private OnUpdateConsumer onUpdate;
+    private Runnable onStart = () -> {}, onFinish = () -> {};
+    private OnUpdateConsumer onUpdate = (p, s, d) -> {};
     private int updateInterval = 128;
     private Thread bgThread;
 
@@ -51,10 +51,9 @@ public abstract class AbstractSolver implements Solver {
 
 	executionState = STARTING;
 	
-	if (onStart != null)
-	    onStart.run();
+	onStart.run();
 
-	if(updateInterval > 0 && onUpdate != null) { // if updateInterval is 0, it means disable progress updates
+	if(updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
 	    bgThread = Thread.ofVirtual().start(() -> {
 		while (executionState == RUNNING && getProgress() < 1f) {
 		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
@@ -85,8 +84,8 @@ public abstract class AbstractSolver implements Solver {
 		throw new RuntimeException("could not wait for background thread to terminate: " + e.getMessage(), e);
 	    }
 	}
-	if (onFinish != null)
-	    onFinish.run();
+	
+	onFinish.run();
 	
 	executionState = FINISHED;
     }
@@ -101,7 +100,7 @@ public abstract class AbstractSolver implements Solver {
 	if (getProgress() == 1.0f)
 	    throw new IllegalStateException("starting conditions not fullfilled: solver is already done, nothing to do here");
     }
-
+    
     @Override
     public final SolverExecutionState getExecutionState() {
 	return executionState;
