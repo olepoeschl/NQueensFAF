@@ -92,7 +92,7 @@ public interface Solver {
 
     /**
      * Saves the current state of a {@link Solver} into a file under the path
-     * {@code path}. }
+     * {@code path}.
      * 
      * @param path the path the save file should be written to.
      * 
