@@ -33,7 +33,7 @@ public class CpuSolver extends AbstractSolver {
 
 	public CpuSolver() {
 		kryo.register(CpuSolverProgressState.class);
-		kryo.register(List.class);
+		kryo.register(ArrayList.class);
 		kryo.register(Constellation.class);
 	}
 

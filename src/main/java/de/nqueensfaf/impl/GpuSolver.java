@@ -98,7 +98,7 @@ public class GpuSolver extends AbstractSolver {
 
 	public GpuSolver() {
 		kryo.register(GpuSolverProgressState.class);
-		kryo.register(List.class);
+		kryo.register(ArrayList.class);
 		kryo.register(Constellation.class);
 		
 		fetchAvailableGpus();

@@ -5,6 +5,9 @@ public final class Constellation {
 	private int ld, rd, col, startIjkl;
 	private long solutions;
 	
+	// default constructor needed for Kryo deserialization
+	public Constellation() {}
+	
 	public Constellation(int ld, int rd, int col, int startIjkl) {
 		this.ld = ld;
 		this.rd = rd;
