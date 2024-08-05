@@ -246,7 +246,7 @@ public class GpuSolver extends AbstractSolver {
 
 	if (!stateLoaded) {
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-	    start = duration = storedDuration = 0;
+	    storedDuration = 0;
 	} else {
 	    stateLoaded = false;
 	}
