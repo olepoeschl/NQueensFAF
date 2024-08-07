@@ -1,208 +1,27 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.nqueensfaf</groupId>
 	<artifactId>nqueensfaf</artifactId>
 	<version>3.0.0-SNAPSHOT</version>
 	<name>nqueensfaf</name>
-	<description>Framework for writing own Java solvers for the n queens problem. A insanely fast solvers for CPU and also one for GPU are builtin.</description>
-	<packaging>jar</packaging>
+	<description>Highly optimized Solvers for the N queens problem, one for GPUs
+		and one for CPUs. Also provides useful utilities for implementing custom
+		N-queens problem solving algorithms.</description>
+	<packaging>pom</packaging>
+
 	<properties>
 		<maven.compiler.target>21</maven.compiler.target>
 		<maven.compiler.source>21</maven.compiler.source>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<lwjgl.version>3.3.4</lwjgl.version>
 	</properties>
-	<profiles>
-		<profile>
-			<id>lwjgl-natives-linux-amd64</id>
-			<activation>
-				<os>
-					<family>unix</family>
-					<arch>amd64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-linux</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-linux-aarch64</id>
-			<activation>
-				<os>
-					<family>unix</family>
-					<arch>aarch64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-linux-arm64</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-linux-arm</id>
-			<activation>
-				<os>
-					<family>unix</family>
-					<arch>arm</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-linux-arm32</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-linux-arm32</id>
-			<activation>
-				<os>
-					<family>unix</family>
-					<arch>arm32</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-linux-arm32</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-macos-x86_64</id>
-			<activation>
-				<os>
-					<family>mac</family>
-					<arch>x86_64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-macos</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-macos-aarch64</id>
-			<activation>
-				<os>
-					<family>mac</family>
-					<arch>aarch64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-macos-arm64</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-windows-amd64</id>
-			<activation>
-				<os>
-					<family>windows</family>
-					<arch>amd64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-windows</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-windows-x86</id>
-			<activation>
-				<os>
-					<family>windows</family>
-					<arch>x86</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-windows-x86</lwjgl.natives>
-			</properties>
-		</profile>
-		<profile>
-			<id>lwjgl-natives-windows-aarch64</id>
-			<activation>
-				<os>
-					<family>windows</family>
-					<arch>aarch64</arch>
-				</os>
-			</activation>
-			<properties>
-				<lwjgl.natives>natives-windows-arm64</lwjgl.natives>
-			</properties>
-		</profile>
-	</profiles>
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.lwjgl</groupId>
-				<artifactId>lwjgl-bom</artifactId>
-				<version>${lwjgl.version}</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
-	<dependencies>
-		<!-- lwjgl -->
-		<dependency>
-			<groupId>org.lwjgl</groupId>
-			<artifactId>lwjgl</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.lwjgl</groupId>
-			<artifactId>lwjgl-opencl</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.lwjgl</groupId>
-			<artifactId>lwjgl</artifactId>
-			<classifier>${lwjgl.natives}</classifier>
-		</dependency>
-		<!-- picocli -->
-		<dependency>
-	  		<groupId>info.picocli</groupId>
-	  		<artifactId>picocli</artifactId>
-	  		<version>4.7.6</version>
-		</dependency>
-		<!-- show ascii tables in console -->
-		<dependency>
-			<groupId>com.github.freva</groupId>
-			<artifactId>ascii-table</artifactId>
-			<version>1.8.0</version>
-		</dependency>
-		<!-- kryo for binary serialization -->
-		<dependency>
-			<groupId>com.esotericsoftware</groupId>
-			<artifactId>kryo</artifactId>
-			<version>5.6.0</version>
-		</dependency>
-	</dependencies>
 	
-	<build>
-		<sourceDirectory>src/main/java</sourceDirectory>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-		</resources>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<mainClass>de.nqueensfaf.cli.Main</mainClass>
-						</manifest>
-					</archive>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-					<finalName>nqueensfaf-cli-${project.version}</finalName>
-					<appendAssemblyId>false</appendAssemblyId>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+	<modules>
+		<module>nqueensfaf-core</module>
+		<module>nqueensfaf-impl</module>
+		<module>nqueensfaf-examples</module>
+		<module>nqueensfaf-demo</module>
+	</modules>
 </project>
