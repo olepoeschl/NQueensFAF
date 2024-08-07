@@ -10,6 +10,8 @@ public class CpuSolverExample {
 
     public static void main(String[] args) {
 
+	System.out.println("===== CpuSolver Example =====");
+	
 	try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
 	    // prompt the user to enter N
 	    System.out.println("Please enter N.");

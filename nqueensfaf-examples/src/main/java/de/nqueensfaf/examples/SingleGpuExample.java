@@ -17,6 +17,8 @@ public class SingleGpuExample {
 
     public static void main(String[] args) {
 
+	System.out.println("===== SingleGpu Example =====");
+
 	// instantiate GpuSolver and fetch available GPUs
 	final var gpuSolver = new GpuSolver();
 	final var availableGpus = gpuSolver.getAvailableGpus();

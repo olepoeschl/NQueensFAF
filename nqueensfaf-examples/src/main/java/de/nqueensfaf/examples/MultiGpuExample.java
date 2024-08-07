@@ -17,6 +17,8 @@ public class MultiGpuExample {
 
     public static void main(String[] args) {
 
+	System.out.println("===== MultiGpu Example =====");
+
 	// instantiate GpuSolver and fetch available GPUs
 	final var gpuSolver = new GpuSolver();
 	final var availableGpus = gpuSolver.getAvailableGpus();
@@ -46,7 +48,7 @@ public class MultiGpuExample {
 
 	    System.out.printf("GPU #%d: ", gpuSolver.gpuSelection().get().size() + 1);
 	    input = reader.readLine();
-	    while (input.trim().length() > 0 && gpuSolver.gpuSelection().get().size() < availableGpus.size()) {
+	    while (input.trim().length() > 0) {
 		var gpuConfigs = input.split(",");
 		
 		int index = Integer.parseInt(gpuConfigs[0].trim());
@@ -60,6 +62,8 @@ public class MultiGpuExample {
 		gpuSolver.gpuSelection().add(gpu);
 
 		// prompt the user to enter the index and optional configuration of the next GPU
+		if(gpuSolver.gpuSelection().get().size() >= availableGpus.size())
+		    break;
 		System.out.printf("GPU #%d: ", gpuSolver.gpuSelection().get().size() + 1);
 		input = reader.readLine();
 	    }
