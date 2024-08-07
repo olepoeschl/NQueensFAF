@@ -1,4 +1,4 @@
-package de.nqueensfaf.cli;
+package de.nqueensfaf.demo.cli;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -86,11 +86,11 @@ public class GpuCommand implements Runnable {
 			    switch (propertyKey) {
 			    case "bm":
 				try {
-				    float benchmark = Float.parseFloat(propertyVal);
+				    int benchmark = Integer.parseInt(propertyVal);
 				    gpu.getConfig().setBenchmark(benchmark);
 				} catch (NumberFormatException e) {
 				    throw new NumberFormatException(
-					    "invalid benchmark: '" + propertyVal + "' is not a float");
+					    "invalid benchmark: '" + propertyVal + "' is not an integer");
 				}
 				break;
 			    case "wg":

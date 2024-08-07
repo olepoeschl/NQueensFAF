@@ -1,4 +1,4 @@
-package de.nqueensfaf.cli;
+package de.nqueensfaf.demo.cli;
 
 import java.io.PrintWriter;
 

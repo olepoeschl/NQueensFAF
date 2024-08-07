@@ -16,7 +16,8 @@ public abstract class AbstractSolver implements Solver {
     private volatile SolverExecutionState executionState = NOT_INITIALIZED;
 
     private Runnable onStart = () -> {
-    }, onFinish = () -> {
+    };
+    private Runnable onFinish = () -> {
     };
     private OnUpdateConsumer onUpdate = (p, s, d) -> {
     };

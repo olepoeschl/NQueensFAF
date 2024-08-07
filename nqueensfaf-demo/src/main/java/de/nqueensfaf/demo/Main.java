@@ -1,5 +1,7 @@
-package de.nqueensfaf.cli;
+package de.nqueensfaf.demo;
 
+import de.nqueensfaf.demo.cli.BaseCommand;
+import de.nqueensfaf.demo.cli.ExceptionHandler;
 import picocli.CommandLine;
 
 public class Main {
