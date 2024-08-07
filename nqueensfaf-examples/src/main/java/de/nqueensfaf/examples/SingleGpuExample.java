@@ -13,15 +13,14 @@ public class SingleGpuExample {
 
     public static void main(String[] args) {
 
-	final int n = 17; // 17-queens problem
+	// instantiate GpuSolver and fetch available GPUs
 	final var gpuSolver = new GpuSolver();
-
 	final var availableGpus = gpuSolver.getAvailableGpus();
 	if (availableGpus.size() == 0) {
 	    System.err.println("no GPU available, terminating.");
 	    System.exit(0);
 	}
-
+	
 	// print a table showing all available GPUs
 	System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, availableGpus,
 		Arrays.asList(new Column().header("Index").headerAlign(HorizontalAlign.CENTER)
@@ -31,27 +30,39 @@ public class SingleGpuExample {
 			new Column().header("Name").headerAlign(HorizontalAlign.CENTER)
 				.dataAlign(HorizontalAlign.CENTER).with(gpu -> gpu.getInfo().name()))));
 
-	// prompt user to choose the GPU
-	System.out.println("Which GPU should be used? Specify its index.");
-	System.out.print("> ");
 	try (Scanner scanner = new Scanner(System.in)) {
-	    int index = scanner.nextInt();
-	    if (index < 0) {
+	    // prompt the user to enter N
+	    System.out.println("Please enter N.");
+	    System.out.print("> ");
+	    final int n = scanner.nextInt();
+	    
+	    // prompt the user to enter the index of the GPU that should perform the computation
+	    System.out.println("Please enter the index of the GPU that should be used.");
+	    System.out.print("> ");
+	    final int gpuIndex = scanner.nextInt();
+	    if (gpuIndex < 0) {
 		System.err.println("invalid input: index must not be <0");
 		System.exit(0);
-	    } else if (index >= availableGpus.size()) {
-		System.err.printf("invalid input: index %d is too large for only %d available GPUs\n", index,
+	    } else if (gpuIndex >= availableGpus.size()) {
+		System.err.printf("invalid input: index %d is too large for only %d available GPUs\n", gpuIndex,
 			availableGpus.size());
 		System.exit(0);
 	    }
-	    gpuSolver.gpuSelection().choose(availableGpus.get(index));
+	    
+	    // configure the GpuSolver
+	    gpuSolver.setN(n);
+	    gpuSolver.gpuSelection().choose(availableGpus.get(gpuIndex));
+
+	    // define callbacks for when the CpuSolver starts and finishes and when it makes progress
+	    gpuSolver.onStart(() -> System.out.printf("Starting GpuSolver for N=%d.\n", n));
+	    gpuSolver.onUpdate((progress, solutions, duration) -> System.out.printf("\t%.2f%% [%d solutions, %.2fs]\n",
+		    progress * 100, solutions, duration / 1000f));
+	    gpuSolver.onFinish(() -> System.out.printf("GpuSolver found %d solutions in %d ms for N=%d\n",
+		    gpuSolver.getSolutions(), gpuSolver.getDuration(), n));
+
+	    // start the solver
+	    gpuSolver.start();
 	}
-
-	gpuSolver.setN(n);
-	gpuSolver.onFinish(() -> System.out.printf("GpuSolver found %d solutions in %d ms for N=%d\n",
-		gpuSolver.getSolutions(), gpuSolver.getDuration(), n));
-
-	gpuSolver.start();
     }
 
 }
