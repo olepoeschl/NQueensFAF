@@ -2,7 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.List;
 
-import static de.nqueensfaf.impl.Utils.*;
+import static de.nqueensfaf.impl.ConstellationUtils.*;
 
 class CpuSolverThread extends Thread {
 

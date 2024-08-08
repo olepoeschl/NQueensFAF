@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static de.nqueensfaf.impl.Utils.*;
+import static de.nqueensfaf.impl.ConstellationUtils.*;
 
 public class ConstellationsGenerator {
 

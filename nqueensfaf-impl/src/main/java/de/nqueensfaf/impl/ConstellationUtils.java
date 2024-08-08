@@ -2,7 +2,7 @@ package de.nqueensfaf.impl;
 
 import java.util.HashSet;
 
-public class Utils {
+public class ConstellationUtils {
 
     // functions for ijkl manipulation
     static int toIjkl(int i, int j, int k, int l) {
