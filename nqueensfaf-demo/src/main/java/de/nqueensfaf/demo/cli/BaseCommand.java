@@ -46,7 +46,7 @@ public class BaseCommand {
     private static final char[] loadingChars = new char[] { '-', '\\', '|', '/' };
     private char loadingCharIdx = 0;
     private float lastProgress;
-    private final ExecutorService autoSaveExecutorService = Executors.newFixedThreadPool(1);
+    private final ExecutorService autoSaveExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
     public BaseCommand() {
     }
