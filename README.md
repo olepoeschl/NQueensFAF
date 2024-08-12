@@ -22,9 +22,6 @@ problem! The goals are:
 You can check the current progress on the 27 queens problem [here](http://nqueensfaf.de:14772/progress). 
 2) Solve N=28 and set the new world record.
 
-__Also:__ Many thanks to Aleks for being our first contributor!<br>
-We hope that he is the first of many. 
-
 ## 1.1 How to contribute
 Although the client is working just fine, we are still developing it.<br> 
 __PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
@@ -88,7 +85,7 @@ can downlad the following [Windows Installer with GUI](https://github.com/olepoe
 # 3 News
 - We are currently developing a new solver which is based on a completely new method.
   Solving N=22 on the 12600k (single-threaded) takes only 2h25min, which corresponds to a speedup factor of more than 40 compared to the present solver.
-  Additionally, the method possesses much better scaling. Increasing N to 24 increases the runtime only by a factor of ~40. (It is ~100 for the current solver.)
+  Additionally, the method possesses much better scaling. At N=24 the speedup factor is already 100. 
   This is still a work in progress and there are lots of optimizations that have to be implemented, so lets see how far we can go.
   The new solver will be included in the repository as soon as it is finished. However, this may take some time.
   
