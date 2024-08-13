@@ -67,11 +67,28 @@ public enum SolverExecutionState {
     public boolean isAfter(SolverExecutionState state) {
 	return ordinal() > state.ordinal();
     }
-
+    
+    /**
+     * Checks if this execution state represents the state of a running (busy) solver.
+     * Applies to any {@link Solver} instance that was started, but did not finish yet.
+     * 
+     * @return true if this execution state is {@link #STARTING}, {@link #RUNNING} or 
+     * {@link #TERMINATING}, otherwise false.
+     */
     public boolean isBusy() {
 	return isAfter(READY) && isBefore(FINISHED);
     }
 
+    /**
+     * The opposite of {@link #isBusy()}.
+     * <p>
+     * Checks if this execution state represents the state of an idle solver.
+     * Applies to any {@link Solver} instance that either was not started yet, that was 
+     * already finished or that was canceled.
+     * 
+     * @return true if this execution state is {@link #NOT_INITIALIZED}, {@link #READY},
+     * {@link #FINISHED} or {@link #CANCELED}, otherwise false.
+     */
     public boolean isIdle() {
 	return !isBusy();
     }
