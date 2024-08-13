@@ -557,7 +557,7 @@ public class GpuSolver extends AbstractSolver {
 	}
     }
 
-    public class Gpu {
+    public final class Gpu {
 
 	private final long id; // OpenCL device id
 	private final long platform;
