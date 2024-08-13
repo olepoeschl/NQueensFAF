@@ -38,11 +38,6 @@
 
 	<build>
 		<sourceDirectory>src/main/java</sourceDirectory>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -59,13 +54,13 @@
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
-							<mainClass>de.nqueensfaf.cli.Main</mainClass>
+							<mainClass>de.nqueensfaf.demo.Main</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
-					<finalName>nqueensfaf-cli-${project.version}</finalName>
+					<finalName>nqueensfaf-demo-${project.version}</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
 			</plugin>

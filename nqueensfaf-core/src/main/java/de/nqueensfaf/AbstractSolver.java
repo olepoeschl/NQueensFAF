@@ -21,7 +21,7 @@ public abstract class AbstractSolver implements Solver {
     };
     private OnUpdateConsumer onUpdate = (p, s, d) -> {
     };
-    private int updateInterval = 128;
+    private int updateInterval = 200;
     private Thread bgThread;
 
     @Override

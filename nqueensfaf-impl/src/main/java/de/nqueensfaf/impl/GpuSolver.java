@@ -474,7 +474,7 @@ public class GpuSolver extends AbstractSolver {
 	constellations.add(new Constellation((1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
     }
 
-    public class GpuSelection {
+    public final class GpuSelection {
 
 	private List<Gpu> selectedGpus = new ArrayList<Gpu>();
 	private boolean chosen = false;
@@ -557,7 +557,7 @@ public class GpuSolver extends AbstractSolver {
 	}
     }
 
-    public class Gpu {
+    public final class Gpu {
 
 	private final long id; // OpenCL device id
 	private final long platform;
