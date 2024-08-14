@@ -510,14 +510,14 @@ public class GpuSolver extends AbstractSolver {
 	}
     }
 
-    public static record GpuInfo(String vendor, String name) {
+    public static final record GpuInfo(String vendor, String name) {
 	@Override
 	public String toString() {
 	    return name;
 	}
     }
 
-    public static class GpuConfig {
+    public static final class GpuConfig {
 
 	private int benchmark;
 	private int workgroupSize;
