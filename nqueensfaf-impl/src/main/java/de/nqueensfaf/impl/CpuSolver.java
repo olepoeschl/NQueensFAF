@@ -184,7 +184,7 @@ public class CpuSolver extends AbstractSolver {
     }
 
     // debug info
-    public int getNumberOfConstellations() {
+    public int getTotalNumberOfConstellations() {
 	return constellations.size();
     }
 
