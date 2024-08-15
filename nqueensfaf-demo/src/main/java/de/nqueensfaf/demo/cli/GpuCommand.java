@@ -22,7 +22,7 @@ public class GpuCommand implements Runnable {
     BaseCommand base;
 
     @Option(names = { "-p",
-    "--preset-queens" }, required = false, defaultValue = "6", description = "How many queens should be placed for a start positions")
+	    "--preset-queens" }, required = false, defaultValue = "6", description = "How many queens should be placed for a start positions")
     int presetQueens;
 
     @Option(names = { "-0", "--use-default-gpu" }, description = "Use the default GPU", defaultValue = "false")
@@ -57,11 +57,11 @@ public class GpuCommand implements Runnable {
 	} else {
 	    System.out.println(AsciiTable.getTable(AsciiTable.BASIC_ASCII, availableGpus, Arrays.asList(
 		    new Column().header("Index").headerAlign(HorizontalAlign.CENTER).dataAlign(HorizontalAlign.CENTER)
-		    .with(gpu -> Integer.toString(availableGpus.indexOf(gpu))),
+			    .with(gpu -> Integer.toString(availableGpus.indexOf(gpu))),
 		    new Column().header("Vendor").headerAlign(HorizontalAlign.CENTER).dataAlign(HorizontalAlign.CENTER)
-		    .with(gpu -> gpu.getInfo().vendor()),
+			    .with(gpu -> gpu.getInfo().vendor()),
 		    new Column().header("Name").headerAlign(HorizontalAlign.CENTER).dataAlign(HorizontalAlign.CENTER)
-		    .with(gpu -> gpu.getInfo().name()))));
+			    .with(gpu -> gpu.getInfo().name()))));
 
 	    // let user choose which GPUs should be used
 	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
@@ -85,7 +85,7 @@ public class GpuCommand implements Runnable {
 		    solver.gpuSelection().add(gpu);
 
 		    // prompt the user to enter the index and optional configuration of the next GPU
-		    if(solver.gpuSelection().get().size() >= availableGpus.size())
+		    if (solver.gpuSelection().get().size() >= availableGpus.size())
 			break;
 		    System.out.printf("GPU #%d: ", solver.gpuSelection().get().size() + 1);
 		    input = reader.readLine();
