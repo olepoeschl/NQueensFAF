@@ -1,6 +1,6 @@
-package de.nqueensfaf;
+package de.nqueensfaf.core;
 
-import static de.nqueensfaf.SolverExecutionState.*;
+import static de.nqueensfaf.core.SolverExecutionState.*;
 
 import java.util.Timer;
 import java.util.TimerTask;

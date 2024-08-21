@@ -6,8 +6,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import de.nqueensfaf.AbstractSolver;
-import de.nqueensfaf.AbstractSolver.OnUpdateConsumer;
+import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.core.AbstractSolver.OnUpdateConsumer;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;

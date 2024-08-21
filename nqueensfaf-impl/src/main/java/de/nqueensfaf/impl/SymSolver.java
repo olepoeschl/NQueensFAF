@@ -1,7 +1,7 @@
 package de.nqueensfaf.impl;
 
-import de.nqueensfaf.AbstractSolver;
-import de.nqueensfaf.SolverExecutionState;
+import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.core.SolverExecutionState;
 
 public class SymSolver extends AbstractSolver {
 
