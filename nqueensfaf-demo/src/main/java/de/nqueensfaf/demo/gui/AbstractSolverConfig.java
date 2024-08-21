@@ -3,16 +3,18 @@ package de.nqueensfaf.demo.gui;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
-class GeneralSolverConfig {
+class AbstractSolverConfig {
 
     private int n;
     private int updateInterval;
+    private float autoSaveIntervalPercentage;
 
     private final PropertyChangeSupport propChange = new PropertyChangeSupport(this);
 
-    GeneralSolverConfig(int n, int updateInterval) {
+    AbstractSolverConfig(int n, int updateInterval, float autoSaveIntervalPercentage) {
 	setN(n);
 	setUpdateInterval(updateInterval);
+	setAutoSaveIntervalPercentage(autoSaveIntervalPercentage);
     }
 
     void setN(int n) {
@@ -20,11 +22,29 @@ class GeneralSolverConfig {
 	this.n = n;
 	propChange.firePropertyChange("n", oldVal, n);
     }
+    
+    int getN() {
+	return n;
+    }
 
     void setUpdateInterval(int updateInterval) {
 	int oldVal = this.updateInterval;
 	this.updateInterval = updateInterval;
 	propChange.firePropertyChange("updateInterval", oldVal, n);
+    }
+    
+    int getUpdateInterval() {
+	return updateInterval;
+    }
+
+    void setAutoSaveIntervalPercentage(float autoSaveIntervalPercentage) {
+	float oldVal = this.autoSaveIntervalPercentage;
+	this.autoSaveIntervalPercentage = autoSaveIntervalPercentage;
+	propChange.firePropertyChange("autoSaveIntervalPercentage", oldVal, n);
+    }
+    
+    float getAutoSaveIntervalPercentage() {
+	return autoSaveIntervalPercentage;
     }
 
     void addPropertyChangeListener(PropertyChangeListener listener) {
