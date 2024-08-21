@@ -2,6 +2,9 @@ package de.nqueensfaf;
 
 import static de.nqueensfaf.SolverExecutionState.*;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 /**
  * This class provides a skeletal implementation of the {@link Solver} interface
  * to minimize the effort required to implement this interface. It wraps the
@@ -22,11 +25,11 @@ public abstract class AbstractSolver implements Solver {
     private OnUpdateConsumer onUpdate = (p, s, d) -> {
     };
     private int updateInterval = 200;
-    private Thread bgThread;
+    private final Timer timer = new Timer();
 
     @Override
     public final void setN(int n) {
-	if (executionState.isAfter(READY) && executionState.isBefore(FINISHED)) {
+	if (executionState.isBusy()) {
 	    throw new IllegalStateException("could not set board size: solver has already started");
 	}
 	if (n <= 0 || n > 31) {
@@ -58,17 +61,14 @@ public abstract class AbstractSolver implements Solver {
 	onStart.run();
 
 	if (updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
-	    bgThread = Thread.ofVirtual().start(() -> {
-		while (executionState == RUNNING && getProgress() < 1f) {
+	    timer.schedule(new TimerTask() {
+		@Override
+		public void run() {
+		    if(executionState != RUNNING || getProgress() >= 1f)
+			return;
 		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
-		    try {
-			Thread.sleep(updateInterval);
-		    } catch (InterruptedException e) {
-			// ignore
-		    }
 		}
-		onUpdate.accept(getProgress(), getSolutions(), getDuration());
-	    });
+	    }, 0, updateInterval);
 	}
 
 	executionState = RUNNING;
@@ -81,12 +81,9 @@ public abstract class AbstractSolver implements Solver {
 
 	executionState = TERMINATING;
 
-	if (bgThread != null) {
-	    try {
-		bgThread.join();
-	    } catch (InterruptedException e) {
-		throw new RuntimeException("could not wait for background thread to terminate: " + e.getMessage(), e);
-	    }
+	if (updateInterval > 0) {
+	    timer.cancel();
+	    onUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	}
 
 	onFinish.run();
@@ -184,6 +181,8 @@ public abstract class AbstractSolver implements Solver {
      *                       updates.
      */
     public final void setUpdateInterval(int updateInterval) {
+	if (executionState.isBusy())
+	    throw new IllegalStateException("could not set update interval: solver has already started");
 	if (updateInterval < 0)
 	    throw new IllegalArgumentException(
 		    "invalid value for updateInterval: must be a number >=0 (0 means disabling updates)");
