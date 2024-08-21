@@ -1,6 +1,6 @@
 package de.nqueensfaf.impl;
 
-import de.nqueensfaf.AbstractSolver;
+import de.nqueensfaf.core.AbstractSolver;
 
 public class SimpleSolver extends AbstractSolver {
 

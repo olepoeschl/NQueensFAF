@@ -76,8 +76,8 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import de.nqueensfaf.AbstractSolver;
-import de.nqueensfaf.SolverExecutionState;
+import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.core.SolverExecutionState;
 
 public class GpuSolver extends AbstractSolver {
 
