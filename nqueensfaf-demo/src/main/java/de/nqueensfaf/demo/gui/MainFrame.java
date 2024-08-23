@@ -16,6 +16,7 @@ public class MainFrame extends JFrame {
     private final AbstractSolverConfig model = new AbstractSolverConfig(16, 200, 0);
 
     public MainFrame() {
+	FlatLightLaf.setup();
 	init();
     }
 
