@@ -3,17 +3,17 @@ package de.nqueensfaf.demo.gui;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 
-import javax.swing.Action;
-import javax.swing.JButton;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
+
+import com.formdev.flatlaf.FlatLightLaf;
 
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
 
-    private final AbstractSolverConfig model = new AbstractSolverConfig(16, 200, 0);
+    private final GeneralSolverConfig model = new GeneralSolverConfig(16, 200, 0);
 
     public MainFrame() {
 	FlatLightLaf.setup();
@@ -23,26 +23,23 @@ public class MainFrame extends JFrame {
     private void init() {
 	setTitle("NQueensFAF");
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	setLayout(new BorderLayout());
 	
-	addNConfigurationPanel();
+	JPanel container = new JPanel();
+	container.setLayout(new BorderLayout());
+	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	setContentPane(container);
+
+	JPanel configPanel = new JPanel();
+	configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
+	add(configPanel, BorderLayout.WEST);
+	
+	JPanel panelN = new IntValueConfigPanel("Board size N", 1, 31, 16, 1);
+	configPanel.add(panelN, BorderLayout.NORTH);
+
+	JPanel panelUpdateInterval = new IntValueConfigPanel("Update Interval in ms", 0, 10000, 200, 100);
+	configPanel.add(panelUpdateInterval, BorderLayout.NORTH);
 
 	pack();
 	setVisible(true);
-    }
-
-    private void addNConfigurationPanel() {
-	JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-	add(p, BorderLayout.WEST);
-	
-	JButton btnMinus = new JButton("-");
-	JSlider sliderN = new JSlider(1, 31, 16);
-	JButton btnPlus = new JButton("+");
-	JTextField txtN = new JTextField("16");
-	
-	p.add(btnMinus);
-	p.add(sliderN);
-	p.add(btnPlus);
-	p.add(txtN);
     }
 }

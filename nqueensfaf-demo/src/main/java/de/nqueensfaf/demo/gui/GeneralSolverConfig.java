@@ -3,7 +3,7 @@ package de.nqueensfaf.demo.gui;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
-class AbstractSolverConfig {
+class GeneralSolverConfig {
 
     private int n;
     private int updateInterval;
@@ -11,7 +11,7 @@ class AbstractSolverConfig {
 
     private final PropertyChangeSupport propChange = new PropertyChangeSupport(this);
 
-    AbstractSolverConfig(int n, int updateInterval, float autoSaveIntervalPercentage) {
+    GeneralSolverConfig(int n, int updateInterval, float autoSaveIntervalPercentage) {
 	setN(n);
 	setUpdateInterval(updateInterval);
 	setAutoSaveIntervalPercentage(autoSaveIntervalPercentage);
