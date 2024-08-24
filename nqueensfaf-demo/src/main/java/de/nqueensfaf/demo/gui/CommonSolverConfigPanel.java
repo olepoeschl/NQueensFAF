@@ -4,6 +4,16 @@ import javax.swing.JPanel;
 
 class CommonSolverConfigPanel extends JPanel {
 
+    private final CommonSolverConfig model = new CommonSolverConfig(16, 200, 0);
+    
+    CommonSolverConfigPanel() {
+	init();
+    }
+
+    private void init() {
+
+    }
+
     class CommonSolverConfig {
 	private int n;
 	private int updateInterval;
@@ -46,13 +56,4 @@ class CommonSolverConfigPanel extends JPanel {
 	}
     }
 
-    CommonSolverConfigPanel() {
-	init();
-    }
-
-    private void init() {
-
-    }
-
-    private final CommonSolverConfig model = new CommonSolverConfig(16, 200, 0);
 }
