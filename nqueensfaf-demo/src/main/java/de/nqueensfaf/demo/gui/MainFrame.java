@@ -13,7 +13,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
 
-    private final GeneralSolverConfig model = new GeneralSolverConfig(16, 200, 0);
+    private final CommonSolverConfig model = new CommonSolverConfig(16, 200, 0);
 
     public MainFrame() {
 	FlatLightLaf.setup();
