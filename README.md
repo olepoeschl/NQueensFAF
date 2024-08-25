@@ -57,8 +57,7 @@ all operating systems).
 4) Check out the section [Usage]('docs/5 Usage) for an overview of all possible
 commands including examples.
 ### A GUI Version
-In case you are a Windows User and prefer a graphical user interface you
-can downlad the following [Windows Installer with GUI](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueensfaf.exe).<br>
+In case you prefer a graphical user interface, you have to wait a few weeks until version 3.0.0 is released =)
 
 # 3 News
 - We are currently developing a new solver which is based on a completely new method.
