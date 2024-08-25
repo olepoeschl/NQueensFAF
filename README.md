@@ -23,6 +23,7 @@ You can check the current progress on the 27 queens problem [here](http://nqueen
 2) Solve N=28 and set the new world record.
 
 ## 1.1 How to contribute
+<b> The project is currently offline due to further development! <b><br>
 Although the client is working just fine, we are still developing it.<br> 
 __PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
 automatically (coming soon).<br>
