@@ -23,30 +23,7 @@ You can check the current progress on the 27 queens problem [here](http://nqueen
 2) Solve N=28 and set the new world record.
 
 ## 1.1 How to contribute
-<b> The project is currently offline due to further development! </b><br>
-Although the client is working just fine, we are still developing it.<br> 
-__PLEASE CHECK FOR UPDATES__ from time to time, until updates will be fetched
-automatically (coming soon).<br>
-Latest version: 0.0.1 (link below).
-### Windows 
-Download and install the [Windows Client](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.exe).
-After that, just double click the desktop icon - the rest is self
-explanatory. Alternatively you may follow the same installation process as for
-Linux and Mac, see below.<br> 
-
-__NOTE:__ Your anti virus program may tell you that the program is not safe
-(although it is). In this case you must manually ignore the warning or even add the
-program as an exception in the anti virus software.<br>
-### Linux and Mac (and also Windows)
-You first have to install the [Java JDK](https://www.oracle.com/de/java/technologies/downloads/#java21) and also
-OpenCL. In Windows and Mac the OpenCL Libraries should be included in the graphics
-driver, in Linux you may have to install the missing libraries manually. After
-that, [download the jar](https://github.com/olepoeschl/NQueensFAF-GUI/releases/download/1.17/nqueens-client-0.0.1.jar) and run it by executing the  command<br>
-`java -jar nqueens-client.jar`<br>
-in the directory where the jar is located. (nqueensfaf.de is the distributing server) <br>
-
-__NOTE:__ Eventually you have to adapt the name 'nqueens-client.jar' to the actual name of the jar
-you downloaded. 
+<b> The project is currently offline due to further development! </b>
 
 # 2 Local Computing
 ## 2.1 Download and Installation
