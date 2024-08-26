@@ -25,7 +25,7 @@ public abstract class AbstractSolver implements Solver {
     private OnUpdateConsumer onUpdate = (p, s, d) -> {
     };
     private int updateInterval = 200;
-    private final Timer timer = new Timer();
+    private Timer timer;
 
     @Override
     public final void setN(int n) {
@@ -61,6 +61,7 @@ public abstract class AbstractSolver implements Solver {
 	onStart.run();
 
 	if (updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
+	    timer = new Timer();
 	    timer.schedule(new TimerTask() {
 		@Override
 		public void run() {
@@ -98,10 +99,6 @@ public abstract class AbstractSolver implements Solver {
 	if (executionState.isAfter(READY) && executionState.isBefore(FINISHED))
 	    throw new IllegalStateException(
 		    "starting conditions not fullfilled: solver is neither ready nor finished, nor canceled");
-
-	if (getProgress() == 1.0f)
-	    throw new IllegalStateException(
-		    "starting conditions not fullfilled: solver is already done, nothing to do here");
     }
 
     @Override
