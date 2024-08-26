@@ -128,4 +128,14 @@ public class MainFrame extends JFrame {
 	    System.out.println(progress + " - " + solutions);
 	};
     }
+    
+    private class CommonSolverConfigPanel1 extends JPanel {
+	
+	final PropertyGroupConfigUi propertyGroupConfigUi;
+	
+	public CommonSolverConfigPanel1() {
+	    propertyGroupConfigUi = new PropertyGroupConfigUi(this);
+	    propertyGroupConfigUi.addIntProperty("n", "Board Size N", 1, 31, 16);
+	}
+    }
 }

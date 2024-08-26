@@ -1,7 +1,9 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.guiNew;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.text.NumberFormat;
 import java.util.HashMap;
 
@@ -17,9 +19,11 @@ class PropertyGroupConfigUi {
     private GridBagLayout layout = new GridBagLayout();
     private GridBagConstraints constraints = new GridBagConstraints();
 
-    private HashMap<String, Property<?>> properties = new HashMap<String, Property<?>>();
+    private HashMap<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
     private final JPanel panel;
+    
+    private PropertyChangeSupport prop = new PropertyChangeSupport(this);
     
     PropertyGroupConfigUi() {
 	this(new JPanel());
@@ -40,6 +44,14 @@ class PropertyGroupConfigUi {
 	return properties.get(name).getValue();
     }
     
+    void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	prop.addPropertyChangeListener(propertyName, l);
+    }
+    
+    void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	prop.removePropertyChangeListener(propertyName, l);
+    }
+    
     // only text input
     void addIntProperty(String name, String title, int min, int max, int value) {
 	addIntProperty(name, title, min, max, value, 0);
@@ -47,52 +59,68 @@ class PropertyGroupConfigUi {
 
     // text input, slider, + and - buttons
     void addIntProperty(String name, String title, int min, int max, int value, int step) {
-	var prop = new IntProperty(title, min, max, value, step);
+	var prop = new IntProperty(name, title, min, max, value, step);
 	properties.put(name, prop);
 	
 	prop.installConfigUi();
 	
 	resetConstraintsToNextRow();
     }
-
-    private interface Property<T> {
-	T getValue();
-	void installConfigUi();
-    }
-
-    private class IntProperty implements Property<Integer> {
+    
+    private abstract class AbstractProperty<T> {
 	
-	final String name;
+	private final String name;
+	private final String title;
+	private T value;
+	
+	AbstractProperty(String name, String title, T value) {
+	    this.name = name;
+	    this.title = title;
+	    this.value = value;
+	}
+	
+	final String getTitle() {
+	    return title;
+	}
+	
+	final T getValue() {
+	    return value;
+	}
+	
+	protected final void setValue(T value){
+	    T oldValue = value;
+	    this.value = value;
+	    prop.firePropertyChange(name, oldValue, value);
+	}
+	
+	abstract void installConfigUi();
+    }
+    
+    private class IntProperty extends AbstractProperty<Integer> {
+	
 	final int min, max, step;
-	int value;
 	
 	boolean textInputOnly = false;
 	
 	JFormattedTextField txtValue;
 	JSlider slider;
 
-	IntProperty(String name, int min, int max, int value, int step) {
-	    this.name = name;
+	IntProperty(String name, String title, int min, int max, int value, int step) {
+	    super(name, title, value);
+	    
 	    this.min = min;
 	    this.max = max;
-	    this.value = value;
-	    
 	    this.step = step;
 	    if(step == 0)
 		textInputOnly = true;
 	}
 
 	@Override
-	public Integer getValue() {
-	    return value;
-	}
-
-	@Override
 	public void installConfigUi() {
 	    constraints.fill = GridBagConstraints.HORIZONTAL;
 	    constraints.anchor = GridBagConstraints.WEST;
-	    JLabel lblName = new JLabel(name);
-	    panel.add(lblName, constraints);
+	    JLabel lblTitle = new JLabel(getTitle());
+	    panel.add(lblTitle, constraints);
 
 	    constraints.fill = GridBagConstraints.NONE;
 	    constraints.gridx = 0;
@@ -105,10 +133,10 @@ class PropertyGroupConfigUi {
 	    formatter.setAllowsInvalid(true);
 	    formatter.setCommitsOnValidEdit(true);
 	    txtValue = new JFormattedTextField(formatter);
-	    txtValue.setText(Integer.toString(value));
+	    txtValue.setText(Integer.toString(getValue()));
 	    txtValue.addPropertyChangeListener("value", e -> {
-		value = (int) e.getNewValue();
-		valueChanged();
+		int newValue = (int) e.getNewValue();
+		valueChanged(newValue);
 	    });
 	    panel.add(txtValue, constraints);
 
@@ -119,8 +147,8 @@ class PropertyGroupConfigUi {
 	    constraints.insets.left = 5;
 	    JButton btnMinus = new JButton("-");
 	    btnMinus.addActionListener(e -> {
-		value -= step;
-		valueChanged();
+		int newValue = getValue() - step;
+		valueChanged(newValue);
 	    });
 	    panel.add(btnMinus, constraints);
 
@@ -128,10 +156,10 @@ class PropertyGroupConfigUi {
 	    constraints.insets.left = 0;
 	    constraints.fill = GridBagConstraints.HORIZONTAL;
 	    constraints.weightx = 1.0;
-	    slider = new JSlider(min, max, value);
+	    slider = new JSlider(min, max, getValue());
 	    slider.addChangeListener(e -> {
-		value = slider.getValue();
-		valueChanged();
+		int newValue = slider.getValue();
+		valueChanged(newValue);
 	    });
 	    panel.add(slider, constraints);
 
@@ -139,21 +167,23 @@ class PropertyGroupConfigUi {
 	    constraints.weightx = 0;
 	    JButton btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
-		value += step;
-		valueChanged();
+		int newValue = getValue() + step;
+		valueChanged(newValue);
 	    });
 	    panel.add(btnPlus, constraints);
 	}
 
-	private void valueChanged() {
-	    if (value < min)
-		value = min;
-	    if (value > max)
-		value = max;
-	    txtValue.setText(Integer.toString(value));
+	private void valueChanged(int newValue) {
+	    if (newValue < min)
+		newValue = min;
+	    if (newValue > max)
+		newValue = max;
+	    txtValue.setText(Integer.toString(newValue));
 	    
 	    if(!textInputOnly)
-		slider.setValue(value);
+		slider.setValue(newValue);
+	    
+	    setValue(newValue);
 	}
     }
 
