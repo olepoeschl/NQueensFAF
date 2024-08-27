@@ -7,9 +7,10 @@ import de.nqueensfaf.impl.CpuSolver;
 class CpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final CpuSolver solver = new CpuSolver();
+    private final PropertyGroupConfigUi propConfigUi;
     
     public CpuSolverConfigPanel() {
-	var propConfigUi = new PropertyGroupConfigUi(this);
+	propConfigUi = new PropertyGroupConfigUi(this);
 	propConfigUi.addIntProperty("threads", "Threads", 1, 
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
 	propConfigUi.addPropertyChangeListener(
@@ -22,6 +23,12 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
     @Override
     AbstractSolver getConfiguredSolver() {
 	return solver;
+    }
+    
+    @Override
+    public void setEnabled(boolean enabled) {
+	super.setEnabled(enabled);
+	propConfigUi.setEnabled(enabled);
     }
 
 }

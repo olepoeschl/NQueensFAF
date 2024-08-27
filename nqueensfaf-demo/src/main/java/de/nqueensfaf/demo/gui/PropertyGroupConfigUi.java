@@ -54,6 +54,12 @@ class PropertyGroupConfigUi {
 	prop.removePropertyChangeListener(propertyName, l);
     }
     
+    void setEnabled(boolean enabled) {
+	for(var prop : properties.values()) {
+	    prop.setEnabled(enabled);
+	}
+    }
+    
     // only text input
     void addIntProperty(String name, String title, int min, int max, int value) {
 	addIntProperty(name, title, min, max, value, 0);
@@ -96,6 +102,7 @@ class PropertyGroupConfigUi {
 	}
 	
 	abstract void installConfigUi();
+	abstract void setEnabled(boolean enabled);
     }
     
     private class IntProperty extends AbstractProperty<Integer> {
@@ -105,6 +112,7 @@ class PropertyGroupConfigUi {
 	boolean textInputOnly = false;
 	
 	JFormattedTextField txtValue;
+	JButton btnMinus, btnPlus;
 	JSlider slider;
 
 	IntProperty(String name, String title, int min, int max, int value, int step) {
@@ -148,7 +156,7 @@ class PropertyGroupConfigUi {
 	    
 	    constraints.gridx++;
 	    constraints.insets.left = 5;
-	    JButton btnMinus = new JButton("-");
+	    btnMinus = new JButton("-");
 	    btnMinus.addActionListener(e -> {
 		int newValue = getValue() - step;
 		valueChanged(newValue);
@@ -168,7 +176,7 @@ class PropertyGroupConfigUi {
 
 	    constraints.gridx++;
 	    constraints.weightx = 0;
-	    JButton btnPlus = new JButton("+");
+	    btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
 		int newValue = getValue() + step;
 		valueChanged(newValue);
@@ -187,6 +195,14 @@ class PropertyGroupConfigUi {
 		slider.setValue(newValue);
 	    
 	    setValue(newValue);
+	}
+	
+	@Override
+	void setEnabled(boolean enabled) {
+	    txtValue.setEditable(enabled);
+	    btnMinus.setEnabled(enabled);
+	    btnPlus.setEnabled(enabled);
+	    slider.setEnabled(enabled);
 	}
     }
 

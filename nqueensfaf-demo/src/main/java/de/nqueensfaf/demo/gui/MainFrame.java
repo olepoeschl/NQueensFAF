@@ -45,17 +45,23 @@ public class MainFrame extends JFrame {
 	configUiN.addIntProperty("n", "Board Size N", 1, 31, 16, 1);
 	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
 	pnlConfigAndControl.add(configUiN.getUi(), constraints);
+	solverModel.addSolverStartListener(e -> configUiN.setEnabled(false));
+	solverModel.addSolverFinishListener(e -> configUiN.setEnabled(true));
 	
 	constraints.gridy++;
 	constraints.insets.top = 5;
 	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
 	pnlConfigAndControl.add(solverSelectionPanel, constraints);
+	solverModel.addSolverStartListener(e -> solverSelectionPanel.setEnabled(false));
+	solverModel.addSolverFinishListener(e -> solverSelectionPanel.setEnabled(true));
 
 	constraints.gridy++;
 	constraints.weighty = 1;
 	constraints.fill = GridBagConstraints.BOTH;
 	var solverControlPanel = new SolverControlPanel(solverModel);
 	pnlConfigAndControl.add(solverControlPanel, constraints);
+	solverModel.addSolverStartListener(e -> solverControlPanel.setEnabled(false));
+	solverModel.addSolverFinishListener(e -> solverControlPanel.setEnabled(true));
 
 	// south
 	addProgressBar();

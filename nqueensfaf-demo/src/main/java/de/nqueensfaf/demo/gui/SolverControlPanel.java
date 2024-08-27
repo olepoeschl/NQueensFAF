@@ -3,13 +3,13 @@ package de.nqueensfaf.demo.gui;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
 class SolverControlPanel extends JPanel {
     
     private final SolverModel solverModel;
+    private JButton btnStart;
     
     SolverControlPanel(SolverModel solverModel) {
 	this.solverModel = solverModel;
@@ -27,12 +27,18 @@ class SolverControlPanel extends JPanel {
 	constraints.weighty = 1;
 	constraints.fill = GridBagConstraints.BOTH;
 	
-	var btnStart = new JButton("Start");
+	btnStart = new JButton("Start");
 	btnStart.addActionListener(e -> {
 	    var solver = solverModel.getSelectedSolver();
 	    solverModel.applySolverConfig(solver);
 	    Thread.ofVirtual().start(() -> solver.start());
 	});
 	add(btnStart, constraints);
+    }
+    
+    @Override
+    public void setEnabled(boolean enabled) {
+	super.setEnabled(enabled);
+	btnStart.setEnabled(enabled);
     }
 }

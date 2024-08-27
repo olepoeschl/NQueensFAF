@@ -27,6 +27,13 @@ class SolverSelectionPanel extends JTabbedPane {
 	addTab("GPU", new GpuSolverConfigPanel());
     }
     
+    @Override
+    public void setEnabled(boolean enabled) {
+	super.setEnabled(enabled);
+	for(int i = 0; i < getTabCount(); i++)
+	    ((SolverImplConfigPanel) getSelectedComponent()).setEnabled(enabled);
+    }
+    
     static abstract class SolverImplConfigPanel extends JPanel {
 	public SolverImplConfigPanel() {
 	    setBackground(SELECTED_BACKGROUND_COLOR);
