@@ -47,12 +47,6 @@ class SolverModel {
 	listenerList.remove(SolverListener.class, l);
     }
     
-    void setSelectedSolver(AbstractSolver solver) {
-	var oldValue = this.selectedSolver;
-	this.selectedSolver = solver;
-	prop.firePropertyChange("selectedSolver", oldValue, solver);
-    }
-    
     void applySolverConfig(AbstractSolver solver) {
 	solver.onProgressUpdate(onProgressUpdate);
 	solver.onStart(onStart);
@@ -60,6 +54,12 @@ class SolverModel {
 	solver.setN(n);
     }
 
+    void setSelectedSolver(AbstractSolver solver) {
+	var oldValue = this.selectedSolver;
+	this.selectedSolver = solver;
+	prop.firePropertyChange("selectedSolver", oldValue, solver);
+    }
+    
     AbstractSolver getSelectedSolver() {
 	return selectedSolver;
     }
