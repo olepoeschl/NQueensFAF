@@ -7,7 +7,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.AbstractSolver.OnUpdateConsumer;
+import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 import de.nqueensfaf.impl.SymSolver;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -51,7 +51,7 @@ public class BaseCommand {
     public BaseCommand() {
     }
 
-    private OnUpdateConsumer onUpdate(AbstractSolver solver) {
+    private OnProgressUpdateConsumer onUpdate(AbstractSolver solver) {
 	if (autoSaveProgressStep > 0) {
 	    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 		try {
@@ -119,7 +119,7 @@ public class BaseCommand {
     void applySolverConfig(AbstractSolver solver) throws IOException {
 	solver.onStart(() -> System.out.println("starting solver for board size " + solver.getN() + "..."));
 	solver.onFinish(onFinish(solver));
-	solver.onUpdate(onUpdate(solver));
+	solver.onProgressUpdate(onUpdate(solver));
 
 	if (updateInterval != 0)
 	    solver.setUpdateInterval(updateInterval);

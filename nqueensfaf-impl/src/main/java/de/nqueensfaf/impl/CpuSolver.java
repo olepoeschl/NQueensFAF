@@ -163,20 +163,18 @@ public class CpuSolver extends AbstractSolver {
     }
 
     // setters and getters
-    public CpuSolver setPresetQueens(int presetQueens) {
+    public void setPresetQueens(int presetQueens) {
 	this.presetQueens = presetQueens;
-	return this;
     }
 
     public int getPresetQueens() {
 	return presetQueens;
     }
 
-    public CpuSolver setThreadCount(int threadCount) {
+    public void setThreadCount(int threadCount) {
 	if (threadCount < 1)
 	    throw new IllegalArgumentException("invalid value for thread count: not a number >0");
 	this.threadCount = threadCount;
-	return this;
     }
 
     public int getThreadCount() {

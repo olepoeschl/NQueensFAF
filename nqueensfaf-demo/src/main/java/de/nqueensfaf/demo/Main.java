@@ -6,7 +6,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 
 import de.nqueensfaf.demo.cli.BaseCommand;
 import de.nqueensfaf.demo.cli.ExceptionHandler;
-import de.nqueensfaf.demo.guiNew.MainFrame;
+import de.nqueensfaf.demo.gui.MainFrame;
 import picocli.CommandLine;
 
 public class Main {

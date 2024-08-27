@@ -31,7 +31,7 @@ public class CpuSolverExample {
 	    // define callbacks for when the CpuSolver starts and finishes and when it makes
 	    // progress
 	    cpuSolver.onStart(() -> System.out.printf("Starting CpuSolver for N=%d.\n", n));
-	    cpuSolver.onUpdate((progress, solutions, duration) -> System.out.printf("\t%.2f%% [%d solutions, %.2fs]\n",
+	    cpuSolver.onProgressUpdate((progress, solutions, duration) -> System.out.printf("\t%.2f%% [%d solutions, %.2fs]\n",
 		    progress * 100, solutions, duration / 1000f));
 	    cpuSolver.onFinish(() -> System.out.printf("CpuSolver found %d solutions in %d ms for N=%d\n",
 		    cpuSolver.getSolutions(), cpuSolver.getDuration(), n));

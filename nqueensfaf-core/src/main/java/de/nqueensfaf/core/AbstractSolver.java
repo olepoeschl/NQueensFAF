@@ -22,7 +22,7 @@ public abstract class AbstractSolver implements Solver {
     };
     private Runnable onFinish = () -> {
     };
-    private OnUpdateConsumer onUpdate = (p, s, d) -> {
+    private OnProgressUpdateConsumer onProgressUpdate = (p, s, d) -> {
     };
     private int updateInterval = 200;
     private Timer timer;
@@ -67,7 +67,7 @@ public abstract class AbstractSolver implements Solver {
 		public void run() {
 		    if(executionState != RUNNING || getProgress() >= 1f)
 			return;
-		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
+		    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration());
 		}
 	    }, 0, updateInterval);
 	}
@@ -84,7 +84,7 @@ public abstract class AbstractSolver implements Solver {
 
 	if (updateInterval > 0) {
 	    timer.cancel();
-	    onUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
+	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	}
 
 	onFinish.run();
@@ -138,23 +138,6 @@ public abstract class AbstractSolver implements Solver {
     }
 
     /**
-     * Defines the interface of a consumer callback to be executed on progress
-     * updates of the {@link Solver}.
-     */
-    public interface OnUpdateConsumer {
-	/**
-	 * Consumes the current progress, solution count and solving duration of a
-	 * {@link Solver}.
-	 * 
-	 * @param progress  the current progress of the {@link Solver}.
-	 * @param solutions the current total count of solutions found by the
-	 *                  {@link Solver}.
-	 * @param duration  the current duration the {@link Solver} spent computing.
-	 */
-	void accept(float progress, long solutions, long duration);
-    }
-
-    /**
      * Sets the callback that is executed on progress updates of the
      * {@link Solver#solve()}. The callback is executed only during the solving
      * process.
@@ -163,16 +146,16 @@ public abstract class AbstractSolver implements Solver {
      * 
      * @see #start()
      */
-    public final void onUpdate(OnUpdateConsumer onUpdate) {
-	if (onUpdate == null) {
-	    throw new IllegalArgumentException("could not set onUpdate callback: callback must not be null");
+    public final void onProgressUpdate(OnProgressUpdateConsumer onProgressUpdate) {
+	if (onProgressUpdate == null) {
+	    throw new IllegalArgumentException("could not set onProgressUpdate callback: callback must not be null");
 	}
-	this.onUpdate = onUpdate;
+	this.onProgressUpdate = onProgressUpdate;
     }
 
     /**
      * Sets the interval in which the background thread queries the {@link Solver}'s
-     * progress and executes the callback defined in {@link #onUpdate}.
+     * progress and executes the callback defined in {@link #onProgressUpdate}.
      * 
      * @param updateInterval the number of milliseconds to wait between progress
      *                       updates.
@@ -188,11 +171,28 @@ public abstract class AbstractSolver implements Solver {
 
     /**
      * Gets the interval in which the background thread queries the {@link Solver}'s
-     * progress and executes the callback defined in {@link #onUpdate}.
+     * progress and executes the callback defined in {@link #onProgressUpdate}.
      * 
      * @return the number of milliseconds to wait between progress updates.
      */
     public final int getUpdateInterval() {
 	return updateInterval;
+    }
+
+    /**
+     * Defines the interface of a consumer callback to be executed on progress
+     * updates of the {@link Solver}.
+     */
+    public interface OnProgressUpdateConsumer {
+	/**
+	 * Consumes the current progress, solution count and solving duration of a
+	 * {@link Solver}.
+	 * 
+	 * @param progress  the current progress of the {@link Solver}.
+	 * @param solutions the current total count of solutions found by the
+	 *                  {@link Solver}.
+	 * @param duration  the current duration the {@link Solver} spent computing.
+	 */
+	void accept(float progress, long solutions, long duration);
     }
 }
