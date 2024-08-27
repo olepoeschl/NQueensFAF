@@ -13,6 +13,7 @@ import javax.swing.JProgressBar;
 public class MainFrame extends JFrame {
     
     private final SolverModel solverModel = new SolverModel();
+    private final SolverController solverController = new SolverController(solverModel);
     
     public MainFrame() {
 	createAndShowUi();
@@ -42,26 +43,26 @@ public class MainFrame extends JFrame {
 	constraints.anchor = GridBagConstraints.NORTH;
 	// add n slider
 	var configUiN = new PropertyGroupConfigUi();
-	configUiN.addIntProperty("n", "Board Size N", 1, 31, 16, 1);
+	configUiN.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
 	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
 	pnlConfigAndControl.add(configUiN.getUi(), constraints);
-	solverModel.addSolverStartListener(e -> configUiN.setEnabled(false));
-	solverModel.addSolverFinishListener(e -> configUiN.setEnabled(true));
+	solverController.addSolverStartListener(e -> configUiN.setEnabled(false));
+	solverController.addSolverFinishListener(e -> configUiN.setEnabled(true));
 	
 	constraints.gridy++;
 	constraints.insets.top = 5;
-	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
+	var solverSelectionPanel = new SolverSelectionPanel(solverController);
 	pnlConfigAndControl.add(solverSelectionPanel, constraints);
-	solverModel.addSolverStartListener(e -> solverSelectionPanel.setEnabled(false));
-	solverModel.addSolverFinishListener(e -> solverSelectionPanel.setEnabled(true));
+	solverController.addSolverStartListener(e -> solverSelectionPanel.setEnabled(false));
+	solverController.addSolverFinishListener(e -> solverSelectionPanel.setEnabled(true));
 
 	constraints.gridy++;
 	constraints.weighty = 1;
 	constraints.fill = GridBagConstraints.BOTH;
-	var solverControlPanel = new SolverControlPanel(solverModel);
+	var solverControlPanel = new SolverControlPanel(solverController);
 	pnlConfigAndControl.add(solverControlPanel, constraints);
-	solverModel.addSolverStartListener(e -> solverControlPanel.setEnabled(false));
-	solverModel.addSolverFinishListener(e -> solverControlPanel.setEnabled(true));
+	solverController.addSolverStartListener(e -> solverControlPanel.setEnabled(false));
+	solverController.addSolverFinishListener(e -> solverControlPanel.setEnabled(true));
 
 	// south
 	addProgressBar();
@@ -77,7 +78,7 @@ public class MainFrame extends JFrame {
 	progressBar.setValue(0);
 	add(progressBar, BorderLayout.SOUTH);
 	
-	solverModel.addSolverProgressUpdateListener(e -> {
+	solverController.addSolverProgressUpdateListener(e -> {
 	    progressBar.setValue((int) (e.getProgress() * 100));
 	    System.out.println(e.getSolutions());
 	});
