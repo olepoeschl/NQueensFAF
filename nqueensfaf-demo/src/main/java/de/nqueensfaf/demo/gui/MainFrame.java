@@ -9,11 +9,12 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 
+import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
+
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
     
     private final SolverModel solverModel = new SolverModel();
-    private final SolverController solverController = new SolverController(solverModel);
     
     public MainFrame() {
 	createAndShowUi();
@@ -46,23 +47,50 @@ public class MainFrame extends JFrame {
 	configUiN.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
 	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
 	pnlConfigAndControl.add(configUiN.getUi(), constraints);
-	solverController.addSolverStartListener(e -> configUiN.setEnabled(false));
-	solverController.addSolverFinishListener(e -> configUiN.setEnabled(true));
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		configUiN.setEnabled(false);
+	    }
+	    
+	    @Override
+	    public void solverFinished() {
+		configUiN.setEnabled(true);
+	    }
+	});
 	
 	constraints.gridy++;
 	constraints.insets.top = 5;
-	var solverSelectionPanel = new SolverSelectionPanel(solverController);
+	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
 	pnlConfigAndControl.add(solverSelectionPanel, constraints);
-	solverController.addSolverStartListener(e -> solverSelectionPanel.setEnabled(false));
-	solverController.addSolverFinishListener(e -> solverSelectionPanel.setEnabled(true));
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		solverSelectionPanel.setEnabled(false);
+	    }
+	    
+	    @Override
+	    public void solverFinished() {
+		solverSelectionPanel.setEnabled(true);
+	    }
+	});
 
 	constraints.gridy++;
 	constraints.weighty = 1;
 	constraints.fill = GridBagConstraints.BOTH;
-	var solverControlPanel = new SolverControlPanel(solverController);
+	var solverControlPanel = new SolverControlPanel(solverModel);
 	pnlConfigAndControl.add(solverControlPanel, constraints);
-	solverController.addSolverStartListener(e -> solverControlPanel.setEnabled(false));
-	solverController.addSolverFinishListener(e -> solverControlPanel.setEnabled(true));
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		solverControlPanel.setEnabled(false);
+	    }
+	    
+	    @Override
+	    public void solverFinished() {
+		solverControlPanel.setEnabled(true);
+	    }
+	});
 
 	// south
 	addProgressBar();
@@ -77,10 +105,12 @@ public class MainFrame extends JFrame {
 	progressBar.setStringPainted(true);
 	progressBar.setValue(0);
 	add(progressBar, BorderLayout.SOUTH);
-	
-	solverController.addSolverProgressUpdateListener(e -> {
-	    progressBar.setValue((int) (e.getProgress() * 100));
-	    System.out.println(e.getSolutions());
+
+	solverModel.addPropertyChangeListener("progress", e -> {
+	    progressBar.setValue((int) (((float) e.getNewValue()) * 100));
+	});
+	solverModel.addPropertyChangeListener("solutions", e -> {
+	    System.out.println(e.getNewValue());
 	});
     }
 }

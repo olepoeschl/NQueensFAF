@@ -8,11 +8,11 @@ import javax.swing.JPanel;
 
 class SolverControlPanel extends JPanel {
     
-    private final SolverController solverController;
+    private final SolverModel solverModel;
     private JButton btnStart;
     
-    SolverControlPanel(SolverController solverController) {
-	this.solverController = solverController;
+    SolverControlPanel(SolverModel solverModel) {
+	this.solverModel = solverModel;
 	
 	setLayout(new GridBagLayout());
 	
@@ -29,8 +29,8 @@ class SolverControlPanel extends JPanel {
 	
 	btnStart = new JButton("Start");
 	btnStart.addActionListener(e -> {
-	    var solver = solverController.getModel().getSelectedSolver();
-	    solverController.applySolverConfig(solver);
+	    var solver = solverModel.getSelectedSolver();
+	    solverModel.applySolverConfig(solver);
 	    Thread.ofVirtual().start(() -> solver.start());
 	});
 	add(btnStart, constraints);
