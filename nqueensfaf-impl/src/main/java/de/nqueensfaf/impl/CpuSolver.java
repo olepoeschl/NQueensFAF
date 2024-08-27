@@ -23,7 +23,7 @@ import de.nqueensfaf.core.SolverExecutionState;
 public class CpuSolver extends AbstractSolver {
 
     private List<Constellation> constellations = new ArrayList<Constellation>();
-    private List<List<Constellation>> threadConstellations = new ArrayList<List<Constellation>>();
+    private final List<List<Constellation>> threadConstellations = new ArrayList<List<Constellation>>();
     private long start, duration, storedDuration;
     private boolean stateLoaded;
     private int presetQueens = 5, threadCount = 1;
@@ -55,7 +55,7 @@ public class CpuSolver extends AbstractSolver {
     @Override
     public void load(String path) throws IOException {
 	if (!getExecutionState().isIdle())
-	    throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+	    throw new IllegalStateException("solver progress can only be restored from a file when idle");
 
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 	    CpuSolverProgressState progress = kryo.readObject(input, CpuSolverProgressState.class);
@@ -67,7 +67,7 @@ public class CpuSolver extends AbstractSolver {
 
     public void load(int n, long storedDuration, List<Constellation> constellations) {
 	if (!getExecutionState().isIdle())
-	    throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+	    throw new IllegalStateException("solver progress can only be injected when idle");
 
 	setN(n);
 	this.storedDuration = storedDuration;
@@ -122,6 +122,7 @@ public class CpuSolver extends AbstractSolver {
 
 	start = System.currentTimeMillis();
 	duration = 0;
+	threadConstellations.clear();
 
 	if (!stateLoaded) {
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);

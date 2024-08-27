@@ -128,7 +128,7 @@ public class GpuSolver extends AbstractSolver {
 
     public void load(String path) throws IOException {
 	if (!getExecutionState().isIdle())
-	    throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+	    throw new IllegalStateException("solver progress can only be restored from a file when idle");
 
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
 	    GpuSolverProgressState progress = kryo.readObject(input, GpuSolverProgressState.class);
@@ -140,7 +140,7 @@ public class GpuSolver extends AbstractSolver {
 
     public void load(int n, long storedDuration, List<Constellation> constellations) {
 	if (!getExecutionState().isIdle())
-	    throw new IllegalStateException("progress of an old CpuSolver run can only be loaded when idle");
+	    throw new IllegalStateException("solver progress can only be injected when idle");
 
 	setN(n);
 	this.storedDuration = storedDuration;
