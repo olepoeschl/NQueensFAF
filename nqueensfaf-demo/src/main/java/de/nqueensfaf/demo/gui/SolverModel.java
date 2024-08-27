@@ -11,17 +11,17 @@ import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 
 class SolverModel {
 
+    private final EventListenerList listenerList = new EventListenerList();
+
+    private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
+
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	setProgress(progress);
 	setSolutions(solutions);
 	setDuration(duration);
     };
-
-    private final EventListenerList listenerList = new EventListenerList();
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
-
-    private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
 
     private AbstractSolver selectedSolver;
 
@@ -37,6 +37,14 @@ class SolverModel {
     
     void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	prop.removePropertyChangeListener(propertyName, l);
+    }
+
+    void addSolverListener(SolverListener l) {
+	listenerList.add(SolverListener.class, l);
+    }
+
+    void removeSolverStartListener(SolverListener l) {
+	listenerList.remove(SolverListener.class, l);
     }
     
     void setSelectedSolver(AbstractSolver solver) {
@@ -96,14 +104,6 @@ class SolverModel {
 	return duration;
     }
 
-    void addSolverListener(SolverListener l) {
-	listenerList.add(SolverListener.class, l);
-    }
-
-    void removeSolverStartListener(SolverListener l) {
-	listenerList.remove(SolverListener.class, l);
-    }
-    
     private void fireSolverStarted() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
 	    listener.solverStarted();
