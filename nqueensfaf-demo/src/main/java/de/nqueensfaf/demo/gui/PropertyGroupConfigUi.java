@@ -142,7 +142,7 @@ class PropertyGroupConfigUi {
 	    formatter.setMinimum(min);
 	    formatter.setMaximum(max);
 	    formatter.setAllowsInvalid(true);
-	    formatter.setCommitsOnValidEdit(true);
+	    formatter.setCommitsOnValidEdit(false);
 	    txtValue = new JFormattedTextField(formatter);
 	    txtValue.setText(Integer.toString(getValue()));
 	    txtValue.addPropertyChangeListener("value", e -> {

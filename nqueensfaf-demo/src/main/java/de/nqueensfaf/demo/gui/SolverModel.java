@@ -5,6 +5,7 @@ import de.nqueensfaf.core.AbstractSolver;
 class SolverModel {
 
     private AbstractSolver selectedSolver;
+    
     private int n = 16;
     
     void setSelectedSolver(AbstractSolver solver) {
