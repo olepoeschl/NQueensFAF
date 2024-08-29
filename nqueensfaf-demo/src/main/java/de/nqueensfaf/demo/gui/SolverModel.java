@@ -1,5 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.EventListener;
@@ -52,6 +53,7 @@ class SolverModel {
 	solver.onStart(onStart);
 	solver.onFinish(onFinish);
 	solver.setN(n);
+	solver.setUpdateInterval(50);
     }
 
     void setSelectedSolver(AbstractSolver solver) {
@@ -106,13 +108,13 @@ class SolverModel {
 
     private void fireSolverStarted() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
-	    listener.solverStarted();
+	    EventQueue.invokeLater(() -> listener.solverStarted());
 	}
     }
     
     private void fireSolverFinished() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
-	    listener.solverFinished();
+	    EventQueue.invokeLater(() -> listener.solverFinished());
 	}
     }
 
