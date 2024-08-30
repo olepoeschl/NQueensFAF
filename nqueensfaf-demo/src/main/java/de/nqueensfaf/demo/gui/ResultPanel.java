@@ -1,23 +1,21 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.Font;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
+
 class ResultPanel extends JPanel {
     
-    private static final Font labelFont = new Font("Serif", Font.PLAIN, 14);
     private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
     private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
 	
     private final SolverModel solverModel;
-    
-    private JLabel lblSolutions;
-    private JLabel lblDuration;
     
     ResultPanel(SolverModel solverModel) {
 	this.solverModel = solverModel;
@@ -27,54 +25,38 @@ class ResultPanel extends JPanel {
     }
     
     private void initUi() {
-	var constraints = new GridBagConstraints();
-	constraints.gridwidth = GridBagConstraints.REMAINDER;
-	
-	JLabel lblAboveSolutions = new JLabel("A total of");
-	lblAboveSolutions.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-	lblAboveSolutions.setFont(labelFont);
-	add(lblAboveSolutions, constraints);
-
-	lblSolutions = new JLabel("0");
-	lblSolutions.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-	lblSolutions.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+	JLabel lblSolutions = new JLabel("0");
 	lblSolutions.setFont(highlightFont);
 	solverModel.addPropertyChangeListener("solutions", e -> {
-	    lblSolutions.setText(Long.toString((long) e.getNewValue()));
+	    lblSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
 	});
-	add(lblSolutions, constraints);
-
+	
 	JLabel lblSolutionsCaption = new JLabel("solutions");
-	lblSolutionsCaption.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-	lblSolutionsCaption.setAlignmentX(JLabel.CENTER_ALIGNMENT);
 	lblSolutionsCaption.setFont(highlightCaptionFont);
-	add(lblSolutionsCaption, constraints);
-
-	JLabel lblBelowSolutions = new JLabel("was found");
-	lblBelowSolutions.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-	lblBelowSolutions.setFont(labelFont);
-	add(lblBelowSolutions, constraints);
-
-	JLabel lblAboveDuration = new JLabel("in");
-	lblAboveDuration.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-	lblAboveDuration.setFont(labelFont);
-	add(lblAboveDuration, constraints);
-
-	lblDuration = new JLabel("00:00:00.000");
-	lblSolutions.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-	lblDuration.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+	
+	JLabel lblDuration = new JLabel("00.000");
 	lblDuration.setFont(highlightFont);
 	solverModel.addPropertyChangeListener("duration", e -> {
 	    lblDuration.setText(getDurationPrettyString((long) e.getNewValue()));
 	});
-	add(lblDuration, constraints);
-
-	JLabel lblDurationCaption = new JLabel("(HH:mm:ss.SSS)");
-	lblDurationCaption.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-	lblDurationCaption.setFont(highlightCaptionFont);
-	add(lblDurationCaption, constraints);
+	
+	add(new JLabel("A total of"), new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
+	add(lblSolutions, new QuickGBC(0, 1).anchor(ANCHOR_CENTER).insets(8, 0, 0, 0));
+	add(lblSolutionsCaption, new QuickGBC(0, 2).anchor(ANCHOR_CENTER).insets(0, 0, 8, 0));
+	add(new JLabel("were found"), new QuickGBC(0, 3).anchor(ANCHOR_CENTER));
+	add(new JLabel("in"), new QuickGBC(0, 4).anchor(ANCHOR_CENTER));
+	add(lblDuration, new QuickGBC(0, 5).anchor(ANCHOR_CENTER).insets(8, 0, 8, 0));
     }
 
+    private static String getSolutionsPrettyString(long solutions) {
+	StringBuilder sb = new StringBuilder(Long.toString(solutions));
+	for (int i = sb.length() - 3; i >= 0; i -= 3) {
+	    if (i <= 0)
+		break;
+	    sb.insert(i, ".");
+	}
+	return sb.toString();
+    }
 
     private static String getDurationPrettyString(long time) {
 	long h = time / 1000 / 60 / 60;
@@ -114,6 +96,12 @@ class ResultPanel extends JPanel {
 	    strms = "00" + ms;
 	}
 
-	return strh + ":" + strm + ":" + strs + "." + strms;
+	var builder = new StringBuilder();
+	if(h > 0)
+	    return strh + ":" + strm + ":" + strs + "." + strms;
+	else if(m > 0)
+	    return strm + ":" + strs + "." + strms;
+	else
+	    return strs + "." + strms;
     }
 }
