@@ -1,6 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -101,11 +102,13 @@ public class MainFrame extends JFrame {
 	// add split pane to container
 	JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlConfigAndControl, pnlResults);
 	mainSplitPane.setResizeWeight(0.5);
+	mainSplitPane.setDividerLocation(0.5);
 	add(mainSplitPane, BorderLayout.CENTER);
 
 	// south
 	addProgressBar();
 
+	setPreferredSize(new Dimension(450, 300));
 	pack();
 	setVisible(true);
     }

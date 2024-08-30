@@ -25,6 +25,28 @@ class ResultPanel extends JPanel {
     }
     
     private void initUi() {
+	JLabel lblDuration = new JLabel("00.000");
+	lblDuration.setFont(highlightFont);
+	solverModel.addPropertyChangeListener("duration", e -> {
+	    lblDuration.setText(getDurationPrettyString((long) e.getNewValue()));
+	});
+	
+	JLabel lblDurationCaption = new JLabel("seconds");
+	lblDurationCaption.setFont(highlightCaptionFont);
+	solverModel.addPropertyChangeListener("duration", e -> {
+	    String unit;
+	    long duration = (long) e.getNewValue();
+	    
+	    if(duration >= 60 * 60 * 1000)
+		unit = "hours";
+	    else if(duration >= 60 * 1000)
+		unit = "minutes";
+	    else
+		unit = "seconds";
+	    
+	    lblDurationCaption.setText(unit);
+	});
+
 	JLabel lblSolutions = new JLabel("0");
 	lblSolutions.setFont(highlightFont);
 	solverModel.addPropertyChangeListener("solutions", e -> {
@@ -34,18 +56,21 @@ class ResultPanel extends JPanel {
 	JLabel lblSolutionsCaption = new JLabel("solutions");
 	lblSolutionsCaption.setFont(highlightCaptionFont);
 	
-	JLabel lblDuration = new JLabel("00.000");
-	lblDuration.setFont(highlightFont);
-	solverModel.addPropertyChangeListener("duration", e -> {
-	    lblDuration.setText(getDurationPrettyString((long) e.getNewValue()));
+	JLabel lblUniqueSolutions = new JLabel("0");
+	lblUniqueSolutions.setFont(highlightFont);
+	solverModel.addPropertyChangeListener("unique_solutions", e -> {
+	    lblUniqueSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
 	});
 	
-	add(new JLabel("A total of"), new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
-	add(lblSolutions, new QuickGBC(0, 1).anchor(ANCHOR_CENTER).insets(8, 0, 0, 0));
-	add(lblSolutionsCaption, new QuickGBC(0, 2).anchor(ANCHOR_CENTER).insets(0, 0, 8, 0));
-	add(new JLabel("were found"), new QuickGBC(0, 3).anchor(ANCHOR_CENTER));
-	add(new JLabel("in"), new QuickGBC(0, 4).anchor(ANCHOR_CENTER));
-	add(lblDuration, new QuickGBC(0, 5).anchor(ANCHOR_CENTER).insets(8, 0, 8, 0));
+	JLabel lblUniqueSolutionsCaption = new JLabel("unique");
+	lblUniqueSolutionsCaption.setFont(highlightCaptionFont);
+
+	add(lblDuration, new QuickGBC(0, 0).anchor(ANCHOR_NORTH));
+	add(lblDurationCaption, new QuickGBC(0, 1).anchor(ANCHOR_NORTH).insets(0, 0, 10, 0));
+	add(lblSolutions, new QuickGBC(0, 2).anchor(ANCHOR_CENTER).insets(0, 0, 0, 0));
+	add(lblSolutionsCaption, new QuickGBC(0, 3).anchor(ANCHOR_CENTER).insets(0, 0, 10, 0));
+	add(lblUniqueSolutions, new QuickGBC(0, 4).anchor(ANCHOR_SOUTH).insets(0, 0, 0, 0));
+	add(lblUniqueSolutionsCaption, new QuickGBC(0, 5).anchor(ANCHOR_SOUTH).insets(0, 0, 0, 0));
     }
 
     private static String getSolutionsPrettyString(long solutions) {

@@ -9,6 +9,7 @@ import javax.swing.event.EventListenerList;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
+import de.nqueensfaf.impl.SymSolver;
 
 class SolverModel {
 
@@ -23,6 +24,9 @@ class SolverModel {
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
+    
+//    private final SymSolver symSolver = new SymSolver();
+    // TODO
 
     private AbstractSolver selectedSolver;
 
@@ -31,6 +35,7 @@ class SolverModel {
     private float progress;
     private long solutions;
     private long duration;
+    private long uniqueSolutions;
     
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	prop.addPropertyChangeListener(propertyName, l);
@@ -104,6 +109,16 @@ class SolverModel {
 
     long getDuration() {
 	return duration;
+    }
+
+    void setUniqueSolutions(long uniqueSolutions) {
+	long oldValue = this.uniqueSolutions;
+	this.uniqueSolutions = uniqueSolutions;
+	prop.firePropertyChange("unique_solutions", oldValue, uniqueSolutions);
+    }
+
+    long getUniqueSolutions() {
+	return uniqueSolutions;
     }
 
     private void fireSolverStarted() {
