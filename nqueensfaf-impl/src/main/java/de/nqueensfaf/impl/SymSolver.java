@@ -1,7 +1,6 @@
 package de.nqueensfaf.impl;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.ExecutionState;
 
 public class SymSolver extends AbstractSolver {
 
@@ -11,6 +10,8 @@ public class SymSolver extends AbstractSolver {
 
     @Override
     public void solve() {
+	end = solutions90 = solutions180 = 0;
+	
 	start = System.currentTimeMillis();
 	L = 1 << (getN() - 1);
 	mask = (L - 1) | L;
@@ -99,20 +100,14 @@ public class SymSolver extends AbstractSolver {
     }
 
     public long getSolutions90() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED))
-	    return 0;
 	return solutions90;
     }
 
     public long getSolutions180() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED))
-	    return 0;
 	return solutions180;
     }
 
     public long getUniqueSolutionsTotal(long solutions) {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED))
-	    return 0;
 	return (solutions + 4 * solutions180 + 6 * solutions90) / 8;
     }
 

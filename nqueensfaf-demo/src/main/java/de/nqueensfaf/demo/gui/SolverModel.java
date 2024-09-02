@@ -17,10 +17,13 @@ class SolverModel {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
 
+    private final SymSolver symSolver = new SymSolver();
+    
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	setProgress(progress);
 	setSolutions(solutions);
 	setDuration(duration);
+	setUniqueSolutions(symSolver.getUniqueSolutionsTotal(solutions));
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
@@ -53,6 +56,11 @@ class SolverModel {
 	listenerList.remove(SolverListener.class, l);
     }
     
+    void startSymSolver() {
+	symSolver.setN(n);
+	symSolver.start();
+    }
+    
     void applySolverConfig(AbstractSolver solver) {
 	solver.onProgressUpdate(onProgressUpdate);
 	solver.onStart(onStart);
@@ -64,6 +72,11 @@ class SolverModel {
     void setSelectedSolver(AbstractSolver solver) {
 	var oldValue = this.selectedSolver;
 	this.selectedSolver = solver;
+	
+	setProgress(solver.getProgress());
+	setSolutions(solver.getSolutions());
+	setDuration(solver.getDuration());
+	
 	prop.firePropertyChange("selectedSolver", oldValue, solver);
     }
     
