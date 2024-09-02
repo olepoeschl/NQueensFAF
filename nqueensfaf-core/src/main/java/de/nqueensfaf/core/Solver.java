@@ -39,7 +39,7 @@ public interface Solver {
      * (when applicable) during the runtime of this method so that the user can
      * track the solver's progress. Additionally, the value returned by
      * {@link #getExecutionState()} should be continuously updated according to
-     * {@link SolverExecutionState}.
+     * {@link ExecutionState}.
      * 
      * @see #setN(int)
      * @see #getSolutions()
@@ -69,16 +69,16 @@ public interface Solver {
      * Returns the (current) progress of the solving algorithm in percent.
      * <p>
      * The default implementation returns {@code 0f} if {@link #getExecutionState()}
-     * returns anything other than {@link SolverExecutionState#FINISHED}. Otherwise
+     * returns anything other than {@link ExecutionState#FINISHED}. Otherwise
      * it returns {@code 1f}.
      * 
      * @return the (current) progress of the solving algorithm in percent.
      * 
      * @see #solve()
-     * @see SolverExecutionState
+     * @see ExecutionState
      */
     default float getProgress() {
-	return getExecutionState() == SolverExecutionState.FINISHED ? 1f : 0f;
+	return getExecutionState() == ExecutionState.FINISHED ? 1f : 0f;
     }
 
     /**
@@ -86,9 +86,9 @@ public interface Solver {
      * 
      * @return the current execution state of the solver.
      * 
-     * @see SolverExecutionState
+     * @see ExecutionState
      */
-    SolverExecutionState getExecutionState();
+    ExecutionState getExecutionState();
 
     /**
      * Saves the current state of a {@link Solver} into a file under the path

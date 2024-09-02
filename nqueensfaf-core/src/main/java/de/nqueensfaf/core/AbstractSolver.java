@@ -1,6 +1,6 @@
 package de.nqueensfaf.core;
 
-import static de.nqueensfaf.core.SolverExecutionState.*;
+import static de.nqueensfaf.core.ExecutionState.*;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -8,7 +8,7 @@ import java.util.TimerTask;
 /**
  * This class provides a skeletal implementation of the {@link Solver} interface
  * to minimize the effort required to implement this interface. It wraps the
- * {@link Solver#solve()}, keeping the {@link SolverExecutionState} updated and
+ * {@link Solver#solve()}, keeping the {@link ExecutionState} updated and
  * providing the possibility to define callbacks for certain events.
  * 
  * @see Solver
@@ -16,7 +16,7 @@ import java.util.TimerTask;
 public abstract class AbstractSolver implements Solver {
 
     private int n = 0;
-    private volatile SolverExecutionState executionState = NOT_INITIALIZED;
+    private volatile ExecutionState executionState = NOT_INITIALIZED;
 
     private Runnable onStart = () -> {
     };
@@ -46,12 +46,12 @@ public abstract class AbstractSolver implements Solver {
 
     /**
      * Wraps the {@link Solver#solve()} method. Keeps the
-     * {@link SolverExecutionState} updated and executes callbacks (if defined) when
+     * {@link ExecutionState} updated and executes callbacks (if defined) when
      * the {@link Solver} starts, finishes or when it makes progress. The progress
      * is tracked by a background thread that continuously queries the solution
      * count, the progress and the duration of the {@link Solver}.
      * 
-     * @see SolverExecutionState
+     * @see ExecutionState
      */
     public final void start() {
 	preconditions();
@@ -102,7 +102,7 @@ public abstract class AbstractSolver implements Solver {
     }
 
     @Override
-    public final SolverExecutionState getExecutionState() {
+    public final ExecutionState getExecutionState() {
 	return executionState;
     }
 

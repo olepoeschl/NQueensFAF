@@ -77,7 +77,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.SolverExecutionState;
+import de.nqueensfaf.core.ExecutionState;
 
 public class GpuSolver extends AbstractSolver {
 
@@ -150,7 +150,7 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public long getDuration() {
-	if (getExecutionState().isBefore(SolverExecutionState.FINISHED) && start != 0) {
+	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0) {
 	    return System.currentTimeMillis() - start + storedDuration;
 	}
 	return duration;
