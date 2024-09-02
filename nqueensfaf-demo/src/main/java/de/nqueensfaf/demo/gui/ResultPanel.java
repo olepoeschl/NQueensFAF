@@ -2,9 +2,12 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.Font;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.border.BevelBorder;
 
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
@@ -13,18 +16,19 @@ import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 class ResultPanel extends JPanel {
     
     private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
-    private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
+    private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 	
     private final SolverModel solverModel;
     
     ResultPanel(SolverModel solverModel) {
 	this.solverModel = solverModel;
 	
-	setLayout(new GridBagLayout());
+	setLayout(new GridLayout(3, 1, 0, 5));
 	initUi();
     }
     
     private void initUi() {
+	// labels
 	JLabel lblDuration = new JLabel("00.000");
 	lblDuration.setFont(highlightFont);
 	solverModel.addPropertyChangeListener("duration", e -> {
@@ -62,15 +66,28 @@ class ResultPanel extends JPanel {
 	    lblUniqueSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
 	});
 	
-	JLabel lblUniqueSolutionsCaption = new JLabel("unique");
+	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
 	lblUniqueSolutionsCaption.setFont(highlightCaptionFont);
 
-	add(lblDuration, new QuickGBC(0, 0).anchor(ANCHOR_NORTH));
-	add(lblDurationCaption, new QuickGBC(0, 1).anchor(ANCHOR_NORTH).insets(0, 0, 10, 0));
-	add(lblSolutions, new QuickGBC(0, 2).anchor(ANCHOR_CENTER).insets(0, 0, 0, 0));
-	add(lblSolutionsCaption, new QuickGBC(0, 3).anchor(ANCHOR_CENTER).insets(0, 0, 10, 0));
-	add(lblUniqueSolutions, new QuickGBC(0, 4).anchor(ANCHOR_SOUTH).insets(0, 0, 0, 0));
-	add(lblUniqueSolutionsCaption, new QuickGBC(0, 5).anchor(ANCHOR_SOUTH).insets(0, 0, 0, 0));
+	// panels
+	JPanel pnlDuration = new JPanel(new GridBagLayout());
+	JPanel pnlSolutions = new JPanel(new GridBagLayout());
+	JPanel pnlUniqueSolutions = new JPanel(new GridBagLayout());
+
+	pnlDuration.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+	pnlSolutions.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+	pnlUniqueSolutions.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+	
+	pnlDuration.add(lblDuration, new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
+	pnlDuration.add(lblDurationCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
+	pnlSolutions.add(lblSolutions, new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
+	pnlSolutions.add(lblSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
+	pnlUniqueSolutions.add(lblUniqueSolutions, new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
+	pnlUniqueSolutions.add(lblUniqueSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
+	
+	add(pnlDuration);
+	add(pnlSolutions);
+	add(pnlUniqueSolutions);
     }
 
     private static String getSolutionsPrettyString(long solutions) {

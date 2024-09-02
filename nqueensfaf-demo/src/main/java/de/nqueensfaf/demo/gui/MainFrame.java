@@ -2,14 +2,12 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Toolkit;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
@@ -108,7 +106,11 @@ public class MainFrame extends JFrame {
 	// south
 	addProgressBar();
 
-	setPreferredSize(new Dimension(450, 300));
+	final Dimension preferredSize = new Dimension(500, 300);
+	setPreferredSize(preferredSize);
+	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	setLocation(screenSize.width / 2 - preferredSize.width / 2, 
+		screenSize.height / 2 - preferredSize.height / 2);
 	pack();
 	setVisible(true);
     }
