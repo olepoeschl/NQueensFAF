@@ -1,8 +1,15 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.GridBagConstraints;
+import java.util.List;
+
+import javax.swing.JPanel;
+
 import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
 import de.nqueensfaf.demo.gui.SolverSelectionPanel.SolverImplConfigPanel;
 import de.nqueensfaf.impl.GpuSolver;
+import de.nqueensfaf.impl.GpuSolver.Gpu;
 
 class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
@@ -27,6 +34,24 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     public void setEnabled(boolean enabled) {
 	super.setEnabled(enabled);
 	propConfigUi.setEnabled(enabled);
+    }
+    
+    class GpuSelectionProperty extends AbstractProperty<List<Gpu>> {
+
+	GpuSelectionProperty(String name, String title, List<Gpu> value) {
+	    super(name, title, value);
+	}
+
+	@Override
+	protected void installConfigUi(JPanel panel, GridBagConstraints constraints) {
+	    // TODO Auto-generated method stub
+	}
+
+	@Override
+	void setEnabled(boolean enabled) {
+	    // TODO Auto-generated method stub
+	}
+	
     }
 
 }

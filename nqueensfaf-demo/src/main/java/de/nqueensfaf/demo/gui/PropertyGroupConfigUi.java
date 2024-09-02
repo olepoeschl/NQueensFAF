@@ -23,8 +23,6 @@ class PropertyGroupConfigUi {
 
     private final JPanel panel;
     
-    private PropertyChangeSupport prop = new PropertyChangeSupport(this);
-    
     PropertyGroupConfigUi() {
 	this(new JPanel());
     }
@@ -45,19 +43,23 @@ class PropertyGroupConfigUi {
     }
     
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	prop.addPropertyChangeListener(propertyName, l);
-	prop.firePropertyChange(
-		propertyName, null, getProperty(propertyName));
+	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
     }
     
     void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	prop.removePropertyChangeListener(propertyName, l);
+	properties.get(propertyName).removePropertyChangeListener(propertyName, l);
     }
     
     void setEnabled(boolean enabled) {
 	for(var prop : properties.values()) {
 	    prop.setEnabled(enabled);
 	}
+    }
+    
+    <T extends AbstractProperty<?>> void addProperty(T property) {
+	properties.put(property.getName(), property);
+	property.installUi(panel, constraints);
+	resetConstraintsToNextRow();
     }
     
     // only text input
@@ -67,24 +69,33 @@ class PropertyGroupConfigUi {
 
     // text input, slider, + and - buttons
     void addIntProperty(String name, String title, int min, int max, int value, int step) {
-	var prop = new IntProperty(name, title, min, max, value, step);
-	properties.put(name, prop);
-	
-	prop.installConfigUi();
-	
-	resetConstraintsToNextRow();
+	addProperty(new IntProperty(name, title, min, max, value, step));
     }
     
-    private abstract class AbstractProperty<T> {
+    static abstract class AbstractProperty<T> {
 	
 	private final String name;
 	private final String title;
 	private T value;
 	
+	private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
+	
 	AbstractProperty(String name, String title, T value) {
 	    this.name = name;
 	    this.title = title;
 	    this.value = value;
+	}
+	
+	final void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	    prop.addPropertyChangeListener(propertyName, l);
+	}
+	
+	final void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	    prop.removePropertyChangeListener(propertyName, l);
+	}
+	
+	final String getName() {
+	    return name;
 	}
 	
 	final String getTitle() {
@@ -101,11 +112,24 @@ class PropertyGroupConfigUi {
 	    prop.firePropertyChange(name, oldValue, value);
 	}
 	
-	abstract void installConfigUi();
+	void installUi(JPanel panel, GridBagConstraints constraints) {
+	    JLabel lblTitle = new JLabel(getTitle());
+	    constraints.fill = GridBagConstraints.HORIZONTAL;
+	    constraints.anchor = GridBagConstraints.NORTHWEST;
+	    panel.add(lblTitle, constraints);
+
+	    constraints.fill = GridBagConstraints.NONE;
+	    constraints.gridx = 0;
+	    constraints.gridy++;
+	    
+	    installConfigUi(panel, constraints);
+	}
+	
+	abstract protected void installConfigUi(JPanel panel, GridBagConstraints constraints);
 	abstract void setEnabled(boolean enabled);
     }
     
-    private class IntProperty extends AbstractProperty<Integer> {
+    static class IntProperty extends AbstractProperty<Integer> {
 	
 	final int min, max, step;
 	
@@ -126,15 +150,7 @@ class PropertyGroupConfigUi {
 	}
 
 	@Override
-	public void installConfigUi() {
-	    constraints.fill = GridBagConstraints.HORIZONTAL;
-	    constraints.anchor = GridBagConstraints.NORTHWEST;
-	    JLabel lblTitle = new JLabel(getTitle());
-	    panel.add(lblTitle, constraints);
-
-	    constraints.fill = GridBagConstraints.NONE;
-	    constraints.gridx = 0;
-	    constraints.gridy++;
+	public void installConfigUi(JPanel panel, GridBagConstraints constraints) {
 	    constraints.insets.top = 2;
 	    constraints.weighty = 1.0;
 	    NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
