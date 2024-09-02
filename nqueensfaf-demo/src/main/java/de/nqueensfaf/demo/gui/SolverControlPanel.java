@@ -32,7 +32,7 @@ class SolverControlPanel extends JPanel {
 	    var solver = solverModel.getSelectedSolver();
 	    solverModel.applySolverConfig(solver);
 	    
-	    Thread.ofVirtual().start(() -> solverModel.startSymSolver());
+	    Thread.ofVirtual().start(() -> solverModel.startSymSolver(solver));
 	    Thread.ofVirtual().start(() -> solver.start());
 	});
 	add(btnStart, constraints);

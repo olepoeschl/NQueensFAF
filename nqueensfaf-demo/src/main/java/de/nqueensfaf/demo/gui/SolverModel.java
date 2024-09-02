@@ -4,6 +4,7 @@ import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.EventListener;
+import java.util.HashMap;
 
 import javax.swing.event.EventListenerList;
 
@@ -17,13 +18,13 @@ class SolverModel {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
 
-    private final SymSolver symSolver = new SymSolver();
+    private final HashMap<AbstractSolver, SymSolver> symSolvers = new HashMap<AbstractSolver, SymSolver>();
     
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	setProgress(progress);
 	setSolutions(solutions);
 	setDuration(duration);
-	setUniqueSolutions(symSolver.getUniqueSolutionsTotal(solutions));
+	setUniqueSolutions(symSolvers.get(getSelectedSolver()).getUniqueSolutionsTotal(solutions));
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
@@ -56,9 +57,9 @@ class SolverModel {
 	listenerList.remove(SolverListener.class, l);
     }
     
-    void startSymSolver() {
-	symSolver.setN(n);
-	symSolver.start();
+    void startSymSolver(AbstractSolver solver) {
+	symSolvers.get(solver).setN(n);
+	symSolvers.get(solver).start();
     }
     
     void applySolverConfig(AbstractSolver solver) {
@@ -76,6 +77,13 @@ class SolverModel {
 	setProgress(solver.getProgress());
 	setSolutions(solver.getSolutions());
 	setDuration(solver.getDuration());
+
+	if(symSolvers.get(solver) == null)
+	    symSolvers.put(solver, new SymSolver());
+	if(solutions > 0)
+	    setUniqueSolutions(symSolvers.get(solver).getUniqueSolutionsTotal(solutions));
+	else
+	    setUniqueSolutions(0);
 	
 	prop.firePropertyChange("selectedSolver", oldValue, solver);
     }
