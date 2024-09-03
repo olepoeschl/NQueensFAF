@@ -231,18 +231,19 @@ public class GpuSolver extends AbstractSolver {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 
+	start = System.currentTimeMillis();
+	duration = 0;
+
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    AbstractSolver simpleSolver = new SimpleSolver(getN());
 	    simpleSolver.start();
 
 	    long solutions = simpleSolver.getSolutions();
+	    constellations.clear();
 	    constellations.add(new Constellation(0, 0, 0, 0, solutions));
 	    duration = simpleSolver.getDuration();
 	    return;
 	}
-
-	start = System.currentTimeMillis();
-	duration = 0;
 
 	if (!stateLoaded) {
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);

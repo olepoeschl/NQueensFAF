@@ -110,19 +110,20 @@ public class CpuSolver extends AbstractSolver {
 
     @Override
     public void solve() {
+	start = System.currentTimeMillis();
+	duration = 0;
+	threadConstellations.clear();
+	
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    AbstractSolver simpleSolver = new SimpleSolver(getN());
 	    simpleSolver.start();
 
 	    long solutions = simpleSolver.getSolutions();
+	    constellations.clear();
 	    constellations.add(new Constellation(0, 0, 0, 0, solutions));
 	    duration = simpleSolver.getDuration();
 	    return;
 	}
-
-	start = System.currentTimeMillis();
-	duration = 0;
-	threadConstellations.clear();
 
 	if (!stateLoaded) {
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
