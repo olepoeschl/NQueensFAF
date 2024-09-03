@@ -34,8 +34,7 @@ public class MainFrame extends JFrame {
 	setContentPane(container);
 
 	// left
-	JPanel pnlConfigAndControl = new JPanel();
-	pnlConfigAndControl.setLayout(new GridBagLayout());
+	JPanel pnlConfigAndControl = new JPanel(new GridBagLayout());
 
 	var constraints = new GridBagConstraints();
 	constraints.gridx = 0;
@@ -113,6 +112,8 @@ public class MainFrame extends JFrame {
 		screenSize.height / 2 - preferredSize.height / 2);
 	pack();
 	setVisible(true);
+	
+	pnlResults.requestFocus();
     }
 
     private void addProgressBar() {

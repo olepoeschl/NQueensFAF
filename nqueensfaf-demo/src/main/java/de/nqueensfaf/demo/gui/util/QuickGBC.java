@@ -128,6 +128,26 @@ public class QuickGBC extends GridBagConstraints {
 	return this;
     }
     
+    public QuickGBC top(int top) {
+	insets.top = top;
+	return this;
+    }
+    
+    public QuickGBC left(int left) {
+	insets.left = left;
+	return this;
+    }
+    
+    public QuickGBC bottom(int bottom) {
+	insets.bottom = bottom;
+	return this;
+    }
+    
+    public QuickGBC right(int right) {
+	insets.right = right;
+	return this;
+    }
+    
     public QuickGBC ipad(int ipadx, int ipady) {
 	this.ipadx = ipadx;
 	this.ipady = ipady;

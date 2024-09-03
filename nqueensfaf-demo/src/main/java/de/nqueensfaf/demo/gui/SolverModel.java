@@ -28,9 +28,6 @@ class SolverModel {
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
-    
-//    private final SymSolver symSolver = new SymSolver();
-    // TODO
 
     private AbstractSolver selectedSolver;
 

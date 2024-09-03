@@ -43,7 +43,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 
 	@Override
-	protected void installConfigUi(JPanel panel, GridBagConstraints constraints) {
+	protected void createConfigUi() {
 	    // TODO Auto-generated method stub
 	}
 

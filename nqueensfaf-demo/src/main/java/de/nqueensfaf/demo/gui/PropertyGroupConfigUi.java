@@ -5,35 +5,43 @@ import java.awt.GridBagLayout;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.text.NumberFormat;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.text.NumberFormatter;
 
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
+
 class PropertyGroupConfigUi {
-    
+
     private GridBagLayout layout = new GridBagLayout();
-    private GridBagConstraints constraints = new GridBagConstraints();
+    private int gridy = 0;
 
     private HashMap<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
     private final JPanel panel;
-    
+
     PropertyGroupConfigUi() {
 	this(new JPanel());
     }
-    
+
     PropertyGroupConfigUi(JPanel panel) {
 	this.panel = panel;
 	panel.setLayout(layout);
-	constraints.gridx = 0;
-	constraints.gridy = 0;
     }
-    
+
     JPanel getUi() {
 	return panel;
     }
@@ -41,27 +49,42 @@ class PropertyGroupConfigUi {
     Object getProperty(String name) {
 	return properties.get(name).getValue();
     }
-    
+
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
     }
-    
+
     void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	properties.get(propertyName).removePropertyChangeListener(propertyName, l);
     }
-    
+
     void setEnabled(boolean enabled) {
-	for(var prop : properties.values()) {
+	for (var prop : properties.values()) {
 	    prop.setEnabled(enabled);
 	}
     }
-    
+
     <T extends AbstractProperty<?>> void addProperty(T property) {
 	properties.put(property.getName(), property);
-	property.installUi(panel, constraints);
-	resetConstraintsToNextRow();
+	property.createUi();
+	installPropertyUi(property);
     }
     
+    void installPropertyUi(AbstractProperty<?> property) {
+	int maxGridy = 0;
+	
+	for(var entry : property.getComponentsWithConstraints()) {
+	    entry.getValue().gridy += gridy;
+	    if(entry.getValue().gridy > maxGridy)
+		maxGridy = entry.getValue().gridy;
+	    
+	    panel.add(entry.getKey(), entry.getValue());
+	}
+	
+	gridy = maxGridy + 1;
+	
+    }
+
     // only text input
     void addIntProperty(String name, String title, int min, int max, int value) {
 	addIntProperty(name, title, min, max, value, 0);
@@ -71,88 +94,94 @@ class PropertyGroupConfigUi {
     void addIntProperty(String name, String title, int min, int max, int value, int step) {
 	addProperty(new IntProperty(name, title, min, max, value, step));
     }
-    
+
     static abstract class AbstractProperty<T> {
-	
+
+	private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
+
+	private final List<Map.Entry<JComponent, GridBagConstraints>> componentsWithConstraints = new ArrayList<Entry<JComponent, GridBagConstraints>>();
+
 	private final String name;
 	private final String title;
 	private T value;
-	
-	private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
-	
+
 	AbstractProperty(String name, String title, T value) {
 	    this.name = name;
 	    this.title = title;
 	    this.value = value;
 	}
-	
+
 	final void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	    prop.addPropertyChangeListener(propertyName, l);
 	}
-	
+
 	final void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	    prop.removePropertyChangeListener(propertyName, l);
 	}
+
+	final void add(JComponent component, GridBagConstraints constraints) {
+	    componentsWithConstraints
+		    .add(new AbstractMap.SimpleEntry<JComponent, GridBagConstraints>(component, constraints));
+	}
 	
+	final List<Map.Entry<JComponent, GridBagConstraints>> getComponentsWithConstraints(){
+	    return componentsWithConstraints;
+	}
+
 	final String getName() {
 	    return name;
 	}
-	
+
 	final String getTitle() {
 	    return title;
 	}
-	
+
 	final T getValue() {
 	    return value;
 	}
-	
-	protected final void setValue(T value){
+
+	protected final void setValue(T value) {
 	    T oldValue = this.value;
 	    this.value = value;
 	    prop.firePropertyChange(name, oldValue, value);
 	}
-	
-	void installUi(JPanel panel, GridBagConstraints constraints) {
-	    JLabel lblTitle = new JLabel(getTitle());
-	    constraints.fill = GridBagConstraints.HORIZONTAL;
-	    constraints.anchor = GridBagConstraints.NORTHWEST;
-	    panel.add(lblTitle, constraints);
 
-	    constraints.fill = GridBagConstraints.NONE;
-	    constraints.gridx = 0;
-	    constraints.gridy++;
-	    
-	    installConfigUi(panel, constraints);
+	void createUi() {
+	    JLabel lblTitle = new JLabel(getTitle());
+	    add(lblTitle, new QuickGBC(0, 0).fill(FILL_HORIZONTAL).anchor(ANCHOR_NORTHWEST));
+
+	    createConfigUi();
 	}
-	
-	abstract protected void installConfigUi(JPanel panel, GridBagConstraints constraints);
+
+	abstract protected void createConfigUi();
+
 	abstract void setEnabled(boolean enabled);
     }
-    
+
     static class IntProperty extends AbstractProperty<Integer> {
-	
+
 	final int min, max, step;
-	
+
 	boolean textInputOnly = false;
-	
+
 	JFormattedTextField txtValue;
 	JButton btnMinus, btnPlus;
 	JSlider slider;
 
 	IntProperty(String name, String title, int min, int max, int value, int step) {
 	    super(name, title, value);
-	    
+
 	    this.min = min;
 	    this.max = max;
 	    this.step = step;
-	    if(step == 0)
+	    if (step == 0)
 		textInputOnly = true;
 	}
 
 	@Override
-	public void installConfigUi(JPanel panel, GridBagConstraints constraints) {
-	    constraints.insets.top = 2;
-	    constraints.weighty = 1.0;
+	public void createConfigUi() {
+	    int gridy = 1; // title is on y=0 so we start at y=1
+	    
 	    NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
 	    formatter.setValueClass(Integer.class);
 	    formatter.setMinimum(min);
@@ -165,39 +194,31 @@ class PropertyGroupConfigUi {
 		int newValue = (int) e.getNewValue();
 		valueChanged(newValue);
 	    });
-	    panel.add(txtValue, constraints);
+	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1));
 
-	    if(textInputOnly)
+	    if (textInputOnly)
 		return;
-	    
-	    constraints.gridx++;
-	    constraints.insets.left = 5;
+
 	    btnMinus = new JButton("-");
 	    btnMinus.addActionListener(e -> {
 		int newValue = getValue() - step;
 		valueChanged(newValue);
 	    });
-	    panel.add(btnMinus, constraints);
+	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1).left(5));
 
-	    constraints.gridx++;
-	    constraints.insets.left = 0;
-	    constraints.fill = GridBagConstraints.HORIZONTAL;
-	    constraints.weightx = 1.0;
 	    slider = new JSlider(min, max, getValue());
 	    slider.addChangeListener(e -> {
 		int newValue = slider.getValue();
 		valueChanged(newValue);
 	    });
-	    panel.add(slider, constraints);
+	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(1, 1).fill(FILL_HORIZONTAL));
 
-	    constraints.gridx++;
-	    constraints.weightx = 0;
 	    btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
 		int newValue = getValue() + step;
 		valueChanged(newValue);
 	    });
-	    panel.add(btnPlus, constraints);
+	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1));
 	}
 
 	private void valueChanged(int newValue) {
@@ -206,13 +227,13 @@ class PropertyGroupConfigUi {
 	    if (newValue > max)
 		newValue = max;
 	    txtValue.setText(Integer.toString(newValue));
-	    
-	    if(!textInputOnly)
+
+	    if (!textInputOnly)
 		slider.setValue(newValue);
-	    
+
 	    setValue(newValue);
 	}
-	
+
 	@Override
 	void setEnabled(boolean enabled) {
 	    txtValue.setEditable(enabled);
@@ -222,12 +243,7 @@ class PropertyGroupConfigUi {
 	}
     }
 
-    private void resetConstraintsToNextRow() {
-	final int oldGridY = constraints.gridy;
-	constraints = new GridBagConstraints();
-	constraints.gridx = 0;
-	constraints.gridy = oldGridY + 1;
-	constraints.insets.top = 5;
-	constraints.insets.left = 0;
+    private void nextRow() {
+	// TODO
     }
 }
