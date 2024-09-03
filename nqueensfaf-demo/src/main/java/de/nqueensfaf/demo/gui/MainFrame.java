@@ -5,9 +5,14 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
@@ -33,6 +38,52 @@ public class MainFrame extends JFrame {
 	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 	setContentPane(container);
 
+	// MenuBar
+	var fileMenu = new JMenu("File");
+	fileMenu.add(new JMenuItem(new AbstractAction("Open") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		System.out.println("File.Open");
+	    }
+	}));
+	fileMenu.add(new JMenuItem(new AbstractAction("Save") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		System.out.println("File.Save");
+	    }
+	}));
+	fileMenu.add(new JMenuItem(new AbstractAction("Settings") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		System.out.println("File.Settings");
+	    }
+	}));
+
+	var aboutMenu = new JMenu("About");
+	aboutMenu.add(new JMenuItem(new AbstractAction("Website") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		System.out.println("About.Website");
+	    }
+	}));
+	aboutMenu.add(new JMenuItem(new AbstractAction("Version") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		System.out.println("About.Version");
+	    }
+	}));
+	
+	var menuBar = new JMenuBar();
+	menuBar.add(fileMenu);
+	menuBar.add(aboutMenu);
+	
+	setJMenuBar(menuBar);
+	
 	// left
 	JPanel pnlConfigAndControl = new JPanel(new GridBagLayout());
 
@@ -63,6 +114,8 @@ public class MainFrame extends JFrame {
 	constraints.gridy++;
 	constraints.insets.top = 5;
 	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
+	solverSelectionPanel.addTab("CPU", new CpuSolverConfigPanel());
+	solverSelectionPanel.addTab("GPU", new GpuSolverConfigPanel());
 	pnlConfigAndControl.add(solverSelectionPanel, constraints);
 	solverModel.addSolverListener(new SolverListener() {
 	    @Override
@@ -112,6 +165,7 @@ public class MainFrame extends JFrame {
 		screenSize.height / 2 - preferredSize.height / 2);
 	pack();
 	setVisible(true);
+	setMinimumSize(getPreferredSize());
 	
 	pnlResults.requestFocus();
     }

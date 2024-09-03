@@ -23,8 +23,6 @@ class SolverSelectionPanel extends JTabbedPane {
 	    solverModel.setSelectedSolver(
 		    ((SolverImplConfigPanel) getSelectedComponent()).getConfiguredSolver());
 	});
-	addTab("CPU", new CpuSolverConfigPanel());
-	addTab("GPU", new GpuSolverConfigPanel());
     }
     
     @Override
