@@ -119,11 +119,14 @@ public class MainFrame extends JFrame {
     private void addProgressBar() {
 	JProgressBar progressBar = new JProgressBar(0, 100);
 	progressBar.setStringPainted(true);
+	progressBar.setString("0,000 %");
 	progressBar.setValue(0);
 	add(progressBar, BorderLayout.SOUTH);
 
 	solverModel.addPropertyChangeListener("progress", e -> {
-	    progressBar.setValue((int) (((float) e.getNewValue()) * 100));
+	    float progress = ((float) e.getNewValue()) * 100;
+	    progressBar.setValue((int) progress);
+	    progressBar.setString(String.format("%3.3f %%", progress));
 	});
     }
 }
