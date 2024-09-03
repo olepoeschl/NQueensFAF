@@ -13,6 +13,8 @@ public class SimpleSolver extends AbstractSolver {
 
     @Override
     public void solve() {
+	solutions = duration = 0;
+	
 	long start = System.currentTimeMillis();
 
 	int mask = (1 << getN()) - 1;
