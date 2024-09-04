@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
@@ -65,12 +66,15 @@ class PropertyGroupConfigUi {
     }
 
     <T extends AbstractProperty<?>> void addProperty(T property) {
-	properties.put(property.getName(), property);
 	property.createUi();
 	installPropertyUi(property);
+	properties.put(property.getName(), property);
     }
     
     void installPropertyUi(AbstractProperty<?> property) {
+	if(properties.size() > 0)
+	    panel.add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
+	
 	int maxGridy = 0;
 	
 	for(var entry : property.getComponentsWithConstraints()) {
@@ -82,7 +86,6 @@ class PropertyGroupConfigUi {
 	}
 	
 	gridy = maxGridy + 1;
-	
     }
 
     // only text input
@@ -148,7 +151,7 @@ class PropertyGroupConfigUi {
 
 	void createUi() {
 	    JLabel lblTitle = new JLabel(getTitle());
-	    add(lblTitle, new QuickGBC(0, 0).fill(FILL_HORIZONTAL).anchor(ANCHOR_NORTHWEST));
+	    add(lblTitle, new QuickGBC(0, 0).fillx().anchor(ANCHOR_WEST));
 
 	    createConfigUi();
 	}
@@ -194,7 +197,7 @@ class PropertyGroupConfigUi {
 		int newValue = (int) e.getNewValue();
 		valueChanged(newValue);
 	    });
-	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1));
+	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx());
 
 	    if (textInputOnly)
 		return;
@@ -204,21 +207,21 @@ class PropertyGroupConfigUi {
 		int newValue = getValue() - step;
 		valueChanged(newValue);
 	    });
-	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1).left(5));
+	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 
 	    slider = new JSlider(min, max, getValue());
 	    slider.addChangeListener(e -> {
 		int newValue = slider.getValue();
 		valueChanged(newValue);
 	    });
-	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(1, 1).fill(FILL_HORIZONTAL));
+	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTH).top(2).weight(1, 0).fillx().left(5));
 
 	    btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
 		int newValue = getValue() + step;
 		valueChanged(newValue);
 	    });
-	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTHWEST).top(2).weight(0, 1));
+	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 	}
 
 	private void valueChanged(int newValue) {
@@ -243,7 +246,7 @@ class PropertyGroupConfigUi {
 	}
     }
 
-    private void nextRow() {
-	// TODO
+    public void fillRemainingVerticalSpace() {
+	panel.add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
     }
 }

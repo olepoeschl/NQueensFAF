@@ -35,7 +35,7 @@ class SolverSelectionPanel extends JTabbedPane {
     static abstract class SolverImplConfigPanel extends JPanel {
 	public SolverImplConfigPanel() {
 	    setBackground(SELECTED_BACKGROUND_COLOR);
-	    setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	    setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
 	
 	abstract AbstractSolver getConfiguredSolver();

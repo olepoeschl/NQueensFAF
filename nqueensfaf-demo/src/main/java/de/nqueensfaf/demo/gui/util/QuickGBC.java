@@ -54,26 +54,6 @@ public class QuickGBC extends GridBagConstraints {
      */
     public static final int ANCHOR_NORTHWEST = 18;
     
-    /**
-     * Do not resize the component.
-     */
-    public static final int FILL_NONE = 0;
-
-    /**
-     * Resize the component both horizontally and vertically.
-     */
-    public static final int FILL_BOTH = 1;
-
-    /**
-     * Resize the component horizontally but not vertically.
-     */
-    public static final int FILL_HORIZONTAL = 2;
-
-    /**
-     * Resize the component vertically but not horizontally.
-     */
-    public static final int FILL_VERTICAL = 3;
-    
     public QuickGBC(int gridx, int gridy) {
 	this.gridx = gridx;
 	this.gridy = gridy;
@@ -107,7 +87,7 @@ public class QuickGBC extends GridBagConstraints {
 	return this;
     }
     
-    public QuickGBC weight(int weightx, int weighty) {
+    public QuickGBC weight(double weightx, double weighty) {
 	this.weightx = weightx;
 	this.weighty = weighty;
 	return this;
@@ -118,8 +98,18 @@ public class QuickGBC extends GridBagConstraints {
 	return this;
     }
     
-    public QuickGBC fill(int fill) {
-	this.fill = fill;
+    public QuickGBC fill() {
+	this.fill = GridBagConstraints.BOTH;
+	return this;
+    }
+    
+    public QuickGBC fillx() {
+	this.fill |= GridBagConstraints.HORIZONTAL;
+	return this;
+    }
+    
+    public QuickGBC filly() {
+	this.fill |= GridBagConstraints.VERTICAL;
 	return this;
     }
     

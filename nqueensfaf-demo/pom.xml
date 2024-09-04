@@ -40,6 +40,12 @@
 			<artifactId>flatlaf</artifactId>
 			<version>3.5</version>
 		</dependency>
+		<!-- MigLayout -->
+		<!--dependency>
+			<groupId>com.miglayout</groupId>
+			<artifactId>miglayout-swing</artifactId>
+			<version>11.4</version>
+		</dependency-->
 	</dependencies>
 
 	<build>

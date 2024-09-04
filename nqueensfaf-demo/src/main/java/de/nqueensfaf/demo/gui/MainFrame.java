@@ -2,7 +2,6 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -18,8 +17,10 @@ import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
-@SuppressWarnings("serial")
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
+
 public class MainFrame extends JFrame {
 
     private final SolverModel solverModel = new SolverModel();
@@ -39,6 +40,82 @@ public class MainFrame extends JFrame {
 	setContentPane(container);
 
 	// MenuBar
+	addMenuBar();
+
+	// left
+	JPanel pnlConfigAndControl = new JPanel(new GridBagLayout());
+
+	// add n slider
+	var configUiN = new PropertyGroupConfigUi();
+	configUiN.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
+	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
+	pnlConfigAndControl.add(configUiN.getUi(), new QuickGBC(0, 0).weight(1, 0).anchor(ANCHOR_NORTH).fillx());
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		configUiN.setEnabled(false);
+	    }
+
+	    @Override
+	    public void solverFinished() {
+		configUiN.setEnabled(true);
+	    }
+	});
+
+	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
+	solverSelectionPanel.addTab("CPU", new CpuSolverConfigPanel());
+	solverSelectionPanel.addTab("GPU", new GpuSolverConfigPanel());
+	pnlConfigAndControl.add(solverSelectionPanel, new QuickGBC(0, 1).weight(1, 0.3).anchor(ANCHOR_NORTH).fill().top(5));
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		solverSelectionPanel.setEnabled(false);
+	    }
+
+	    @Override
+	    public void solverFinished() {
+		solverSelectionPanel.setEnabled(true);
+	    }
+	});
+	
+	var solverControlPanel = new SolverControlPanel(solverModel);
+	pnlConfigAndControl.add(solverControlPanel, new QuickGBC(0, 2).weight(1, 0.7).fill().top(5));
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		solverControlPanel.setEnabled(false);
+	    }
+
+	    @Override
+	    public void solverFinished() {
+		solverControlPanel.setEnabled(true);
+	    }
+	});
+
+	// right
+	ResultPanel pnlResults = new ResultPanel(solverModel);
+
+	// add split pane to container
+	JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlConfigAndControl, pnlResults);
+	mainSplitPane.setResizeWeight(0.5);
+	mainSplitPane.setDividerLocation(0.5);
+	add(mainSplitPane, BorderLayout.CENTER);
+
+	// south
+	addProgressBar();
+
+	final Dimension preferredSize = new Dimension(500, 300);
+	setPreferredSize(preferredSize);
+	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	setLocation(screenSize.width / 2 - preferredSize.width / 2, screenSize.height / 2 - preferredSize.height / 2);
+	pack();
+	setVisible(true);
+//	setMinimumSize(getPreferredSize());
+
+	pnlResults.requestFocus();
+    }
+
+    private void addMenuBar() {
 	var fileMenu = new JMenu("File");
 	fileMenu.add(new JMenuItem(new AbstractAction("Open") {
 	    @Override
@@ -77,97 +154,12 @@ public class MainFrame extends JFrame {
 		System.out.println("About.Version");
 	    }
 	}));
-	
+
 	var menuBar = new JMenuBar();
 	menuBar.add(fileMenu);
 	menuBar.add(aboutMenu);
-	
+
 	setJMenuBar(menuBar);
-	
-	// left
-	JPanel pnlConfigAndControl = new JPanel(new GridBagLayout());
-
-	var constraints = new GridBagConstraints();
-	constraints.gridx = 0;
-	constraints.gridy = 0;
-	constraints.weightx = 1;
-	constraints.weighty = 0;
-	constraints.fill = GridBagConstraints.BOTH;
-	constraints.anchor = GridBagConstraints.NORTH;
-	// add n slider
-	var configUiN = new PropertyGroupConfigUi();
-	configUiN.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
-	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
-	pnlConfigAndControl.add(configUiN.getUi(), constraints);
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		configUiN.setEnabled(false);
-	    }
-
-	    @Override
-	    public void solverFinished() {
-		configUiN.setEnabled(true);
-	    }
-	});
-
-	constraints.gridy++;
-	constraints.insets.top = 5;
-	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
-	solverSelectionPanel.addTab("CPU", new CpuSolverConfigPanel());
-	solverSelectionPanel.addTab("GPU", new GpuSolverConfigPanel());
-	pnlConfigAndControl.add(solverSelectionPanel, constraints);
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		solverSelectionPanel.setEnabled(false);
-	    }
-
-	    @Override
-	    public void solverFinished() {
-		solverSelectionPanel.setEnabled(true);
-	    }
-	});
-
-	constraints.gridy++;
-	constraints.weighty = 1;
-	constraints.fill = GridBagConstraints.BOTH;
-	var solverControlPanel = new SolverControlPanel(solverModel);
-	pnlConfigAndControl.add(solverControlPanel, constraints);
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		solverControlPanel.setEnabled(false);
-	    }
-
-	    @Override
-	    public void solverFinished() {
-		solverControlPanel.setEnabled(true);
-	    }
-	});
-
-	// right
-	ResultPanel pnlResults = new ResultPanel(solverModel);
-
-	// add split pane to container
-	JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlConfigAndControl, pnlResults);
-	mainSplitPane.setResizeWeight(0.5);
-	mainSplitPane.setDividerLocation(0.5);
-	add(mainSplitPane, BorderLayout.CENTER);
-
-	// south
-	addProgressBar();
-
-	final Dimension preferredSize = new Dimension(500, 300);
-	setPreferredSize(preferredSize);
-	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-	setLocation(screenSize.width / 2 - preferredSize.width / 2, 
-		screenSize.height / 2 - preferredSize.height / 2);
-	pack();
-	setVisible(true);
-//	setMinimumSize(getPreferredSize());
-	
-	pnlResults.requestFocus();
     }
 
     private void addProgressBar() {

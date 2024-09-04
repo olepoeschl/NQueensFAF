@@ -72,7 +72,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    data[0][3] = true; // default gpu is selected
 	    
 	    var table = new JTable(data, columns);
-	    add(table, new QuickGBC(0, 1).fill(FILL_BOTH).size(4, 1).weight(2, 2));
+	    add(table, new QuickGBC(0, 1).fill().size(4, 1).weight(2, 2));
 	}
 
 	@Override

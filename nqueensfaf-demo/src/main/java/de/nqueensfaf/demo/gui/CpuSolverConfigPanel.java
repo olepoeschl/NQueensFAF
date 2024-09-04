@@ -18,6 +18,7 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 4, 1);
 	propConfigUi.addPropertyChangeListener(
 		"prequeens", e -> solver.setPresetQueens((int) e.getNewValue()));
+	propConfigUi.fillRemainingVerticalSpace();
     }
     
     @Override
