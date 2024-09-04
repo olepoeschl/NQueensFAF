@@ -98,19 +98,15 @@ public class MainFrame extends JFrame {
 	// add split pane to container
 	JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlConfigAndControl, pnlResults);
 	mainSplitPane.setResizeWeight(0.5);
-	mainSplitPane.setDividerLocation(0.5);
 	add(mainSplitPane, BorderLayout.CENTER);
 
 	// south
 	addProgressBar();
 
-	final Dimension preferredSize = new Dimension(500, 300);
-	setPreferredSize(preferredSize);
-	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-	setLocation(screenSize.width / 2 - preferredSize.width / 2, screenSize.height / 2 - preferredSize.height / 2);
 	pack();
+	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	setLocation(screenSize.width / 2 - getPreferredSize().width / 2, screenSize.height / 2 - getPreferredSize().height / 2);
 	setVisible(true);
-//	setMinimumSize(getPreferredSize());
 
 	pnlResults.requestFocus();
     }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
@@ -59,20 +60,35 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	@Override
 	protected void createConfigUi() {
 	    // TODO Auto-generated method stub
-	    var columns = new Object[] { "Name", "Weight", "Workgroup Size", "Selected"};
+	    var columns = new Object[] { "Vendor", "Name", "Weight", "Work Group Size", "X"};
 	    
 	    var data = new Object[availableGpus.size()][columns.length];
 	    for(int i = 0; i < data.length; i++) {
 		var gpu = availableGpus.get(i);
-		data[i][0] = gpu.getInfo().name();
-		data[i][1] = gpu.getConfig().getBenchmark(); // TODO: rename to "weight"
-		data[i][2] = gpu.getConfig().getWorkgroupSize();
-		data[i][3] = false;
+		data[i][0] = gpu.getInfo().vendor();
+		data[i][1] = gpu.getInfo().name();
+		data[i][2] = gpu.getConfig().getBenchmark(); // TODO: rename to "weight"
+		data[i][3] = gpu.getConfig().getWorkgroupSize();
+		data[i][4] = false;
 	    }
-	    data[0][3] = true; // default gpu is selected
+	    data[0][4] = true; // default gpu is selected
 	    
-	    var table = new JTable(data, columns);
-	    add(table, new QuickGBC(0, 1).fill().size(4, 1).weight(2, 2));
+	    var model = new DefaultTableModel(data, columns);
+	    var table = new JTable(model) {
+		@Override
+		public Class getColumnClass(int column) {
+		    switch(column) {
+		    case 0: return String.class;
+		    case 1: return String.class;
+		    case 2: return Double.class;
+		    case 3: return Integer.class;
+		    default: return Boolean.class;
+		    }
+		}
+	    };
+	    table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
+	    table.setPreferredScrollableViewportSize(table.getPreferredSize());
+	    add(new JScrollPane(table), new QuickGBC(0, 1).fill().size(4, 1).weight(1, 1));
 	}
 
 	@Override
