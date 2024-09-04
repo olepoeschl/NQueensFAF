@@ -13,8 +13,6 @@ import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 
-import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
-
 class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final GpuSolver solver = new GpuSolver();
@@ -88,7 +86,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    };
 	    table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 	    table.setPreferredScrollableViewportSize(table.getPreferredSize());
-	    add(new JScrollPane(table), new QuickGBC(0, 1).fill().size(4, 1).weight(1, 1));
+	    add(new JScrollPane(table), new QuickGBC(0, 1).fill().size(4, 1).weight(1, 1).bottom(5));
 	}
 
 	@Override
