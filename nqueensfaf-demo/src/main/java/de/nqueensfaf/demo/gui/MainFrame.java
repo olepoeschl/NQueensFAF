@@ -165,7 +165,7 @@ public class MainFrame extends JFrame {
 		screenSize.height / 2 - preferredSize.height / 2);
 	pack();
 	setVisible(true);
-	setMinimumSize(getPreferredSize());
+//	setMinimumSize(getPreferredSize());
 	
 	pnlResults.requestFocus();
     }
