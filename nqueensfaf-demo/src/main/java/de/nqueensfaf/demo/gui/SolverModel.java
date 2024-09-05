@@ -58,14 +58,6 @@ class SolverModel {
 	symSolvers.get(solver).setN(n);
 	symSolvers.get(solver).start();
     }
-    
-    void applySolverConfig(AbstractSolver solver) {
-	solver.onProgressUpdate(onProgressUpdate);
-	solver.onStart(onStart);
-	solver.onFinish(onFinish);
-	solver.setN(n);
-	solver.setUpdateInterval(50);
-    }
 
     void setSelectedSolver(AbstractSolver solver) {
 	var oldValue = this.selectedSolver;
@@ -86,6 +78,11 @@ class SolverModel {
     }
     
     AbstractSolver getSelectedSolver() {
+	selectedSolver.onProgressUpdate(onProgressUpdate);
+	selectedSolver.onStart(onStart);
+	selectedSolver.onFinish(onFinish);
+	selectedSolver.setN(n);
+	selectedSolver.setUpdateInterval(100);
 	return selectedSolver;
     }
 

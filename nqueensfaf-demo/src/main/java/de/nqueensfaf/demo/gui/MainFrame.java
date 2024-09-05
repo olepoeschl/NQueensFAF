@@ -62,9 +62,16 @@ public class MainFrame extends JFrame {
 	    }
 	});
 
+	// solver selection panel
+	var cpuPanel = new CpuSolverConfigPanel();
+	var gpuPanel = new GpuSolverConfigPanel();
+	solverModel.registerStartingConditions(cpuPanel);
+	solverModel.registerStartingConditions(gpuPanel);
+	
 	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
-	solverSelectionPanel.addTab("CPU", new CpuSolverConfigPanel());
-	solverSelectionPanel.addTab("GPU", new GpuSolverConfigPanel());
+	solverSelectionPanel.addTab("CPU", cpuPanel);
+	solverSelectionPanel.addTab("GPU", gpuPanel);
+	
 	pnlConfigAndControl.add(solverSelectionPanel, new QuickGBC(0, 1).weight(1, 0.3).anchor(ANCHOR_NORTH).fill().top(5));
 	solverModel.addSolverListener(new SolverListener() {
 	    @Override

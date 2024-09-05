@@ -1,6 +1,8 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.Color;
+import java.util.List;
+import java.util.function.Predicate;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -39,5 +41,11 @@ class SolverSelectionPanel extends JTabbedPane {
 	}
 	
 	abstract AbstractSolver getConfiguredSolver();
+	
+	abstract List<Condition> getStartingConditions();
+	
+	abstract Class<? extends AbstractSolver> getSolverClass();
+	
+	record Condition(Predicate<?> condition, String errorMessage) {};
     }
 }

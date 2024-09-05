@@ -1,5 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
+import java.util.List;
+
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.SolverSelectionPanel.SolverImplConfigPanel;
 import de.nqueensfaf.impl.CpuSolver;
@@ -30,6 +32,17 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
     public void setEnabled(boolean enabled) {
 	super.setEnabled(enabled);
 	propConfigUi.setEnabled(enabled);
+    }
+
+    @Override
+    List<Condition> getStartingConditions() {
+	// TODO
+	return null;
+    }
+
+    @Override
+    Class<? extends AbstractSolver> getSolverClass() {
+	return CpuSolver.class;
     }
 
 }

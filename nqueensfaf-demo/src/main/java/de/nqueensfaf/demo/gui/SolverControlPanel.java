@@ -6,6 +6,9 @@ import java.awt.GridBagLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
+import de.nqueensfaf.demo.gui.util.Dialog;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+
 class SolverControlPanel extends JPanel {
     
     private final SolverModel solverModel;
@@ -20,22 +23,20 @@ class SolverControlPanel extends JPanel {
     }
     
     private void initUi() {
-	var constraints = new GridBagConstraints();
-	constraints.gridx = 0;
-	constraints.gridy = 0;
-	constraints.weightx = 1;
-	constraints.weighty = 1;
-	constraints.fill = GridBagConstraints.BOTH;
-	
 	btnStart = new JButton("Start");
 	btnStart.addActionListener(e -> {
 	    var solver = solverModel.getSelectedSolver();
-	    solverModel.applySolverConfig(solver);
+	    String errorMessage = solverModel.checkStartingConditions(solver);
+	    if(errorMessage.length() > 0) {
+		Dialog.error(errorMessage);
+		return;
+	    }
 	    
 	    Thread.ofVirtual().start(() -> solverModel.startSymSolver(solver));
 	    Thread.ofVirtual().start(() -> solver.start());
 	});
-	add(btnStart, constraints);
+	
+	add(btnStart, new QuickGBC(0, 0).weight(1, 1).fill());
     }
     
     @Override

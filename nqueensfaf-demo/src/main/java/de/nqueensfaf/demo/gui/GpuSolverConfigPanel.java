@@ -91,9 +91,20 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
 	@Override
 	void setEnabled(boolean enabled) {
-	    // TODO Auto-generated method stub
+	    // TODO
 	}
 
+    }
+
+    @Override
+    List<Condition> getStartingConditions() {
+	// TODO
+	return null;
+    }
+
+    @Override
+    Class<? extends AbstractSolver> getSolverClass() {
+	return GpuSolver.class;
     }
 
 }
