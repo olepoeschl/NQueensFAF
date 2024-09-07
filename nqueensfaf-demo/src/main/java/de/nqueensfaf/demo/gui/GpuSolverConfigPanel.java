@@ -14,9 +14,9 @@ import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 
-class GpuSolverConfigPanel extends de.nqueensfaf.demo.gui.MainFrame.SolverImplConfigPanel {
+class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
-    private final GpuSolver solver = new GpuSolver();
+    private final GpuSolverConfig model = new GpuSolverConfig();
 
     private final PropertyGroupConfigUi propConfigUi;
 
@@ -24,22 +24,49 @@ class GpuSolverConfigPanel extends de.nqueensfaf.demo.gui.MainFrame.SolverImplCo
 	propConfigUi = new PropertyGroupConfigUi(this);
 	
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 4, 1);
-	propConfigUi.addPropertyChangeListener("prequeens", e -> solver.setPresetQueens((int) e.getNewValue()));
+	propConfigUi.addPropertyChangeListener("prequeens", e -> model.setPresetQueens((int) e.getNewValue()));
 	
-	final var gpus = solver.getAvailableGpus();
+	final var gpus = model.getAvailableGpus();
 	propConfigUi.addProperty(
 		new GpuSelectionProperty("gpus", gpus.size() > 0 ? List.of(gpus.get(0)) : List.of(), gpus));
     }
 
     @Override
-    AbstractSolver getConfiguredSolver() {
-	return solver;
+    SolverImplConfig getModel() {
+	return model;
     }
+    
+    class GpuSolverConfig implements SolverImplConfig {
+	
+	private final GpuSolver solver = new GpuSolver();
+	
+	@Override
+	public AbstractSolver getConfiguredSolver() {
+	    return solver;
+	}
 
-    @Override
-    String isValidConfiguration() {
-	// TODO
-	return null;
+	@Override
+	public String checkValid() {
+	    if(solver.getPresetQueens() >= solver.getN() - 1)
+		return "Number of pre placed queens must be lower than N - 1";
+	    return "";
+	}
+	
+	List<Gpu> getAvailableGpus(){
+	    return solver.getAvailableGpus();
+	}
+	
+	void addGpu(Gpu gpu) {
+	    solver.gpuSelection().add(gpu);
+	}
+	
+	void removeGpu(Gpu gpu) {
+	    solver.gpuSelection().remove(gpu);
+	}
+	
+	void setPresetQueens(int prequeens) {
+	    solver.setPresetQueens(prequeens);
+	}
     }
 
     class GpuSelectionProperty extends AbstractProperty<List<Gpu>> {
@@ -65,28 +92,28 @@ class GpuSolverConfigPanel extends de.nqueensfaf.demo.gui.MainFrame.SolverImplCo
 		data[i][4] = false;
 	    }
 	    
-	    var model = new DefaultTableModel(data, columns);
-	    model.addTableModelListener(e -> {
+	    var tableModel = new DefaultTableModel(data, columns);
+	    tableModel.addTableModelListener(e -> {
 		int row = e.getFirstRow();
 		int col = e.getColumn();
 		
 		switch(col) {
 		case 2:
-		    availableGpus.get(row).getConfig().setBenchmark((int) model.getValueAt(row, col));
+		    availableGpus.get(row).getConfig().setBenchmark((int) tableModel.getValueAt(row, col));
 		    break;
 		case 3:
-		    availableGpus.get(row).getConfig().setWorkgroupSize((int) model.getValueAt(row, col));
+		    availableGpus.get(row).getConfig().setWorkgroupSize((int) tableModel.getValueAt(row, col));
 		    break;
 		case 4:
-		    boolean gpuSelected = (boolean) model.getValueAt(row, col);
+		    boolean gpuSelected = (boolean) tableModel.getValueAt(row, col);
 		    if(gpuSelected)
-			solver.gpuSelection().add(availableGpus.get(row));
+			model.addGpu(availableGpus.get(row));
 		    else
-			solver.gpuSelection().remove(availableGpus.get(row));
+			model.removeGpu(availableGpus.get(row));
 		}
 	    });
 	    
-	    var table = new JTable(model) {
+	    var table = new JTable(tableModel) {
 		@Override
 		public Class getColumnClass(int column) {
 		    switch(column) {
@@ -153,7 +180,6 @@ class GpuSolverConfigPanel extends de.nqueensfaf.demo.gui.MainFrame.SolverImplCo
 	void setEnabled(boolean enabled) {
 	    // TODO
 	}
-
     }
 
     private static final String getShortNameOfGpuVendor(String vendor) {

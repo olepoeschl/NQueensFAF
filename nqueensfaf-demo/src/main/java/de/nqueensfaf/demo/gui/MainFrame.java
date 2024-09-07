@@ -22,6 +22,7 @@ import javax.swing.JTabbedPane;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
+import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
@@ -162,8 +163,9 @@ public class MainFrame extends JFrame {
 		solverSelectionPanel.setBackgroundAt(i, systemDefaultTabColor);
 	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), tabColor);
 	    
-	    solverModel.setSelectedSolver(
-		    ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getConfiguredSolver());
+	    var solverConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
+	    solverModel.setSelectedSolverConfig(solverConfig);
+	    solverModel.setSelectedSolver(solverConfig.getConfiguredSolver());
 	});
 
 	solverModel.addSolverListener(new SolverListener() {
@@ -230,11 +232,11 @@ public class MainFrame extends JFrame {
 	solver.setN(solverModel.getN());
 	solver.setUpdateInterval(100);
 	
-//	String errorMessage = solverModel.checkStartingConditions(solver);
-//	if(errorMessage.length() > 0) {
-//	    Dialog.error(errorMessage);
-//	    return;
-//	}
+	String errorMessage = solverModel.getSelectedSolverConfig().checkValid();
+	if(errorMessage.length() > 0) {
+	    Dialog.error(errorMessage);
+	    return;
+	}
 
 	Thread.ofVirtual().start(() -> solverModel.startSymSolver(solver));
 	Thread.ofVirtual().start(() -> solver.start());
@@ -253,12 +255,5 @@ public class MainFrame extends JFrame {
 	});
 	
 	return progressBar;
-    }
-    
-    static abstract class SolverImplConfigPanel extends JPanel {
-	
-	abstract AbstractSolver getConfiguredSolver();
-	
-	abstract String isValidConfiguration();
     }
 }

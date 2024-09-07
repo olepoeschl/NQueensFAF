@@ -8,7 +8,8 @@ public class Dialog {
     
     public static void error(String message, Runnable action) {
 	JOptionPane.showMessageDialog(null, message);
-	EventQueue.invokeLater(action);
+	if(action != null)
+	    EventQueue.invokeLater(action);
     }
     
     public static void error(String message) {

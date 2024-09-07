@@ -31,6 +31,7 @@ class SolverModel {
     private final Runnable onFinish = () -> fireSolverFinished();
 
     private AbstractSolver selectedSolver;
+    private SolverImplConfig selectedSolverConfig;
 
     private int n = 16;
 
@@ -64,6 +65,15 @@ class SolverModel {
 	selectedSolver.onProgressUpdate(onProgressUpdate);
 	selectedSolver.onStart(onStart);
 	selectedSolver.onFinish(onFinish);
+    }
+
+    void setSelectedSolverConfig(SolverImplConfig solverImplConfig) {
+	var oldValue = this.selectedSolverConfig;
+	this.selectedSolverConfig = solverImplConfig;
+    }
+    
+    SolverImplConfig getSelectedSolverConfig() {
+	return selectedSolverConfig;
     }
 
     void setSelectedSolver(AbstractSolver solver) {
