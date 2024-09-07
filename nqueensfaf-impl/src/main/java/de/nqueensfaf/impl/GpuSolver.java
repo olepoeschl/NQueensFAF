@@ -501,6 +501,20 @@ public class GpuSolver extends AbstractSolver {
 
 	    selectedGpus.add(gpu);
 	}
+	
+	public void remove(Gpu gpu) {
+	    if (chosen)
+		throw new IllegalStateException("unable to remove a GPU after choosing one");
+
+	    if (!availableGpus.contains(gpu))
+		throw new IllegalArgumentException(
+			"no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
+
+	    if (!selectedGpus.contains(gpu))
+		throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was not added yet");
+
+	    selectedGpus.remove(gpu);
+	}
 
 	public List<Gpu> get() {
 	    return List.copyOf(selectedGpus);
@@ -608,7 +622,6 @@ public class GpuSolver extends AbstractSolver {
 	}
 
 	private void reset() {
-	    duration = 0;
 	    maxNumOfConstellationsPerRun = 0;
 	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	    progress = 0;
