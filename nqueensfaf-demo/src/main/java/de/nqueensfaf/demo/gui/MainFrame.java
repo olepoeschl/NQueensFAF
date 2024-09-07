@@ -224,8 +224,8 @@ public class MainFrame extends JFrame {
     }
 
     private void startSolver() {
+	solverModel.applyCallbacks();
 	var solver = solverModel.getSelectedSolver();
-	solverModel.configureCallbacks();
 	
 	solver.setN(solverModel.getN());
 	solver.setUpdateInterval(100);

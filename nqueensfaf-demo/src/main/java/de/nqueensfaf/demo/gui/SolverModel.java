@@ -60,7 +60,7 @@ class SolverModel {
 	symSolvers.get(solver).start();
     }
     
-    void configureCallbacks() {
+    void applyCallbacks() {
 	selectedSolver.onProgressUpdate(onProgressUpdate);
 	selectedSolver.onStart(onStart);
 	selectedSolver.onFinish(onFinish);
