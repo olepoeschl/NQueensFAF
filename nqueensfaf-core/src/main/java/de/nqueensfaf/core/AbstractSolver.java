@@ -22,6 +22,8 @@ public abstract class AbstractSolver implements Solver {
     };
     private Runnable onFinish = () -> {
     };
+    private Runnable onCancel = () -> {
+    };
     private OnProgressUpdateConsumer onProgressUpdate = (p, s, d) -> {
     };
     private int updateInterval = 200;
@@ -77,6 +79,7 @@ public abstract class AbstractSolver implements Solver {
 	    solve();
 	} catch (Exception e) {
 	    executionState = CANCELED;
+	    onCancel.run();
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
 
@@ -119,6 +122,22 @@ public abstract class AbstractSolver implements Solver {
 	    throw new IllegalArgumentException("could not set starting callback: callback must not be null");
 	}
 	onStart = cb;
+    }
+
+    /**
+     * Sets the callback that is executed when an Exception was thrown during
+     * {@link Solver#solve()}, meaning that the {@link Solver} did not finish
+     * successfully.
+     * 
+     * @param cb the runnable to be executed. Must not be {@code null}.
+     * 
+     * @see #start()
+     */
+    public final void onCancel(Runnable cb) {
+	if (cb == null) {
+	    throw new IllegalArgumentException("could not set cancel callback: callback must not be null");
+	}
+	onCancel = cb;
     }
 
     /**

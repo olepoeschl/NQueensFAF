@@ -29,6 +29,10 @@ class SolverModel {
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> fireSolverFinished();
+    private final Runnable onCancel = () -> {
+	cancelSymSolver();
+	fireSolverCanceled();
+    };
 
     private AbstractSolver selectedSolver;
     private SolverImplConfig selectedSolverConfig;
@@ -56,19 +60,23 @@ class SolverModel {
 	listenerList.remove(SolverListener.class, l);
     }
     
-    void startSymSolver(AbstractSolver solver) {
-	symSolvers.get(solver).setN(n);
-	symSolvers.get(solver).start();
+    void startSymSolver() {
+	symSolvers.get(getSelectedSolver()).setN(n);
+	symSolvers.get(getSelectedSolver()).start();
+    }
+    
+    void cancelSymSolver() {
+	symSolvers.get(getSelectedSolver()).cancel();
     }
     
     void applyCallbacks() {
 	selectedSolver.onProgressUpdate(onProgressUpdate);
 	selectedSolver.onStart(onStart);
 	selectedSolver.onFinish(onFinish);
+	selectedSolver.onCancel(onCancel);
     }
 
     void setSelectedSolverConfig(SolverImplConfig solverImplConfig) {
-	var oldValue = this.selectedSolverConfig;
 	this.selectedSolverConfig = solverImplConfig;
     }
     
@@ -159,9 +167,16 @@ class SolverModel {
 	    EventQueue.invokeLater(() -> listener.solverFinished());
 	}
     }
+    
+    private void fireSolverCanceled() {
+	for(var listener : listenerList.getListeners(SolverListener.class)) {
+	    EventQueue.invokeLater(() -> listener.solverCanceled());
+	}
+    }
 
     static interface SolverListener extends EventListener {
 	void solverStarted();
 	void solverFinished();
+	default void solverCanceled() {}
     }
 }

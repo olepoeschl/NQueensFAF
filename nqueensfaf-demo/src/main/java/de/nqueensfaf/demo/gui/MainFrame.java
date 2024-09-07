@@ -238,8 +238,14 @@ public class MainFrame extends JFrame {
 	    return;
 	}
 
-	Thread.ofVirtual().start(() -> solverModel.startSymSolver(solver));
-	Thread.ofVirtual().start(() -> solver.start());
+	Thread.ofVirtual().start(() -> solverModel.startSymSolver());
+	Thread.ofVirtual().start(() -> {
+	    try {
+		solver.start();
+	    } catch (Exception e) {
+		Dialog.error(e.getMessage());
+	    }
+	});
     }
     
     private JProgressBar createAndGetProgressBar() {

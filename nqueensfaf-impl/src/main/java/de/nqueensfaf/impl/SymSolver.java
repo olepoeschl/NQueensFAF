@@ -8,7 +8,7 @@ public class SymSolver extends AbstractSolver {
     private long solutions90, solutions180;
     private int mask, L;
 
-    private boolean cancel = false;
+    private volatile boolean cancel = false;
     
     @Override
     public void solve() {
