@@ -8,8 +8,11 @@ public class SymSolver extends AbstractSolver {
     private long solutions90, solutions180;
     private int mask, L;
 
+    private boolean cancel = false;
+    
     @Override
     public void solve() {
+	cancel = false;
 	end = solutions90 = solutions180 = 0;
 	
 	start = System.currentTimeMillis();
@@ -45,6 +48,9 @@ public class SymSolver extends AbstractSolver {
     }
 
     private void rot90Solver(int ld, int rd, int col, int ldbot, int rdbot, int row, int rowidx, int queens) {
+	if(cancel)
+	    return;
+	
 	// in the mid row we are done
 	if (rowidx == getN() / 2) {
 	    solutions90++;
@@ -81,6 +87,9 @@ public class SymSolver extends AbstractSolver {
     // realize occupation by solving board from top to bottom and vice versa
     // simultaneously
     private void rot180Solver(int ld, int rd, int col, int ldbot, int rdbot, int rowidx) {
+	if(cancel)
+	    return;
+	
 	if (rowidx == getN() / 2) {
 	    solutions180++;
 	    return;
@@ -127,5 +136,9 @@ public class SymSolver extends AbstractSolver {
     @Override
     public long getSolutions() {
 	return 0;
+    }
+    
+    public void cancel() {
+	cancel = true;
     }
 }
