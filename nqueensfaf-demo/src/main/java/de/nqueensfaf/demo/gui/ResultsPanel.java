@@ -13,14 +13,14 @@ import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
-class ResultPanel extends JPanel {
+class ResultsPanel extends JPanel {
     
     private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
     private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 	
     private final SolverModel solverModel;
     
-    ResultPanel(SolverModel solverModel) {
+    ResultsPanel(SolverModel solverModel) {
 	this.solverModel = solverModel;
 	
 	setLayout(new GridLayout(3, 1, 0, 5));

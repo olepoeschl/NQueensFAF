@@ -8,12 +8,11 @@ import javax.swing.table.DefaultTableModel;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
-import de.nqueensfaf.demo.gui.SolverSelectionPanel.SolverImplConfigPanel;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 
-class GpuSolverConfigPanel extends SolverImplConfigPanel {
+class GpuSolverConfigPanel extends de.nqueensfaf.demo.gui.MainFrame.SolverImplConfigPanel {
 
     private final GpuSolver solver = new GpuSolver();
 
@@ -41,9 +40,9 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     }
 
     @Override
-    public void setEnabled(boolean enabled) {
-	super.setEnabled(enabled);
-	propConfigUi.setEnabled(enabled);
+    String isValidConfiguration() {
+	// TODO
+	return null;
     }
 
     class GpuSelectionProperty extends AbstractProperty<List<Gpu>> {
@@ -95,16 +94,4 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 
     }
-
-    @Override
-    List<Condition> getStartingConditions() {
-	// TODO
-	return null;
-    }
-
-    @Override
-    Class<? extends AbstractSolver> getSolverClass() {
-	return GpuSolver.class;
-    }
-
 }

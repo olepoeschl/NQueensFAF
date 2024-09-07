@@ -5,6 +5,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.event.EventListenerList;
 
@@ -18,7 +19,7 @@ class SolverModel {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
 
-    private final HashMap<AbstractSolver, SymSolver> symSolvers = new HashMap<AbstractSolver, SymSolver>();
+    private final Map<AbstractSolver, SymSolver> symSolvers = new HashMap<AbstractSolver, SymSolver>();
     
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	setProgress(progress);
@@ -58,6 +59,12 @@ class SolverModel {
 	symSolvers.get(solver).setN(n);
 	symSolvers.get(solver).start();
     }
+    
+    void configureCallbacks() {
+	selectedSolver.onProgressUpdate(onProgressUpdate);
+	selectedSolver.onStart(onStart);
+	selectedSolver.onFinish(onFinish);
+    }
 
     void setSelectedSolver(AbstractSolver solver) {
 	var oldValue = this.selectedSolver;
@@ -78,11 +85,6 @@ class SolverModel {
     }
     
     AbstractSolver getSelectedSolver() {
-	selectedSolver.onProgressUpdate(onProgressUpdate);
-	selectedSolver.onStart(onStart);
-	selectedSolver.onFinish(onFinish);
-	selectedSolver.setN(n);
-	selectedSolver.setUpdateInterval(100);
 	return selectedSolver;
     }
 

@@ -1,6 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
@@ -8,6 +9,8 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -15,7 +18,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 
+import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
@@ -30,95 +35,57 @@ public class MainFrame extends JFrame {
     }
 
     private void createAndShowUi() {
-	setTitle("NQueensFAF");
-	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-	JPanel container = new JPanel();
-	var layout = new BorderLayout(10, 10);
-	container.setLayout(layout);
+	// main container
+	var container = new JPanel(new BorderLayout(10, 10));
 	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 	setContentPane(container);
 
 	// MenuBar
-	addMenuBar();
+	setJMenuBar(createAndGetMenuBar());
 
-	// left
-	JPanel pnlConfigAndControl = new JPanel(new GridBagLayout());
-
-	// add n slider
-	var configUiN = new PropertyGroupConfigUi();
-	configUiN.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
-	configUiN.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
-	pnlConfigAndControl.add(configUiN.getUi(), new QuickGBC(0, 0).weight(1, 0).anchor(ANCHOR_NORTH).fillx());
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		configUiN.setEnabled(false);
-	    }
-
-	    @Override
-	    public void solverFinished() {
-		configUiN.setEnabled(true);
-	    }
-	});
-
-	// solver selection panel
-	var cpuPanel = new CpuSolverConfigPanel();
-	var gpuPanel = new GpuSolverConfigPanel();
-	solverModel.registerStartingConditions(cpuPanel);
-	solverModel.registerStartingConditions(gpuPanel);
+	// solver configs and controls
+	var configAndControlPanel = new JPanel(new GridBagLayout());
 	
-	var solverSelectionPanel = new SolverSelectionPanel(solverModel);
-	solverSelectionPanel.addTab("CPU", cpuPanel);
-	solverSelectionPanel.addTab("GPU", gpuPanel);
+	var nConfigPanel = createAndGetNConfigPanel();
+	var solverSelectionPanel = createAndGetSolverSelectionPanel();
+	var solverControlPanel = createAndGetSolverControlPanel();
 	
-	pnlConfigAndControl.add(solverSelectionPanel, new QuickGBC(0, 1).weight(1, 0.3).anchor(ANCHOR_NORTH).fill().top(5));
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		solverSelectionPanel.setEnabled(false);
-	    }
+	configAndControlPanel.add(nConfigPanel, new QuickGBC(0, 0).weight(1, 0).anchor(ANCHOR_NORTH).fillx());
+	configAndControlPanel.add(solverSelectionPanel, new QuickGBC(0, 1).weight(1, 0.5).anchor(ANCHOR_NORTH).fill().top(5));
+	configAndControlPanel.add(solverControlPanel, new QuickGBC(0, 2).weight(1, 0.5).fill().top(5));
 
-	    @Override
-	    public void solverFinished() {
-		solverSelectionPanel.setEnabled(true);
-	    }
-	});
-	
-	var solverControlPanel = new SolverControlPanel(solverModel);
-	pnlConfigAndControl.add(solverControlPanel, new QuickGBC(0, 2).weight(1, 0.7).fill().top(5));
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		solverControlPanel.setEnabled(false);
-	    }
+	// solver results
+	var resultsPanel = createAndGetResultsPanel();
 
-	    @Override
-	    public void solverFinished() {
-		solverControlPanel.setEnabled(true);
-	    }
-	});
-
-	// right
-	ResultPanel pnlResults = new ResultPanel(solverModel);
-
-	// add split pane to container
-	JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlConfigAndControl, pnlResults);
+	// display as configAndControlPanel and resultsPanel in split pane
+	var mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, configAndControlPanel, resultsPanel);
 	mainSplitPane.setResizeWeight(0.5);
+
+	// progress bar
+	var progressBar = createAndGetProgressBar();
+
+	// add all initialized components to main container
 	add(mainSplitPane, BorderLayout.CENTER);
-
-	// south
-	addProgressBar();
-
+	add(progressBar, BorderLayout.SOUTH);
+	
+	// finalize frame initialization
 	pack();
 	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	setLocation(screenSize.width / 2 - getPreferredSize().width / 2, screenSize.height / 2 - getPreferredSize().height / 2);
-	setVisible(true);
 
-	pnlResults.requestFocus();
+	setTitle("NQueensFAF");
+	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	
+	setVisible(true);
+	resultsPanel.requestFocus();
     }
 
-    private void addMenuBar() {
+    private JPanel createAndGetResultsPanel() {
+	var resultsPanel = new ResultsPanel(solverModel);
+	return resultsPanel;
+    }
+
+    private JMenuBar createAndGetMenuBar() {
 	var fileMenu = new JMenu("File");
 	fileMenu.add(new JMenuItem(new AbstractAction("Open") {
 	    @Override
@@ -161,21 +128,137 @@ public class MainFrame extends JFrame {
 	var menuBar = new JMenuBar();
 	menuBar.add(fileMenu);
 	menuBar.add(aboutMenu);
-
-	setJMenuBar(menuBar);
+	
+	return menuBar;
     }
 
-    private void addProgressBar() {
-	JProgressBar progressBar = new JProgressBar(0, 100);
+    private JPanel createAndGetNConfigPanel() {
+	var nConfigUi = new PropertyGroupConfigUi();
+	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
+	nConfigUi.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
+	
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		nConfigUi.setEnabled(false);
+	    }
+
+	    @Override
+	    public void solverFinished() {
+		nConfigUi.setEnabled(true);
+	    }
+	});
+	
+	return nConfigUi.getUi();
+    }
+    
+    private JTabbedPane createAndGetSolverSelectionPanel() {
+	var solverSelectionPanel = new JTabbedPane();
+	
+	final Color tabColor = new Color(235, 235, 235);
+	final Color systemDefaultTabColor = solverSelectionPanel.getBackground();
+	solverSelectionPanel.addChangeListener(e -> {
+	    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
+		solverSelectionPanel.setBackgroundAt(i, systemDefaultTabColor);
+	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), tabColor);
+	    
+	    solverModel.setSelectedSolver(
+		    ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getConfiguredSolver());
+	});
+
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
+		    component.setEnabled(false);
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
+		    if(i != solverSelectionPanel.getSelectedIndex())
+			solverSelectionPanel.setEnabledAt(i, false);
+	    }
+	    
+	    @Override
+	    public void solverFinished() {
+		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
+		    component.setEnabled(true);
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
+		    if(i != solverSelectionPanel.getSelectedIndex())
+			solverSelectionPanel.setEnabledAt(i, true);
+	    }
+	});
+	
+	// add Solver implementations' tabs
+	var cpuPanel = new CpuSolverConfigPanel();
+	var gpuPanel = new GpuSolverConfigPanel();
+
+	solverSelectionPanel.addTab("CPU", cpuPanel);
+	solverSelectionPanel.addTab("GPU", gpuPanel);
+	
+	for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+	    var component = solverSelectionPanel.getComponentAt(i);
+	    component.setBackground(tabColor);
+	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
+	}
+	
+	return solverSelectionPanel;
+    }
+    
+    private JPanel createAndGetSolverControlPanel() {
+	var startButton = new JButton("Start");
+	startButton.addActionListener(e -> startSolver());
+	
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		startButton.setEnabled(false);
+	    }
+	    @Override
+	    public void solverFinished() {
+		startButton.setEnabled(true);
+	    }
+	});
+
+	var solverControlPanel = new JPanel(new GridBagLayout());
+	solverControlPanel.add(startButton, new QuickGBC(0, 0).weight(1, 1).fill());
+	
+	return solverControlPanel;
+    }
+
+    private void startSolver() {
+	var solver = solverModel.getSelectedSolver();
+	solverModel.configureCallbacks();
+	
+	solver.setN(solverModel.getN());
+	solver.setUpdateInterval(100);
+	
+//	String errorMessage = solverModel.checkStartingConditions(solver);
+//	if(errorMessage.length() > 0) {
+//	    Dialog.error(errorMessage);
+//	    return;
+//	}
+
+	Thread.ofVirtual().start(() -> solverModel.startSymSolver(solver));
+	Thread.ofVirtual().start(() -> solver.start());
+    }
+    
+    private JProgressBar createAndGetProgressBar() {
+	var progressBar = new JProgressBar(0, 100);
 	progressBar.setStringPainted(true);
 	progressBar.setString("0,000 %");
 	progressBar.setValue(0);
-	add(progressBar, BorderLayout.SOUTH);
 
 	solverModel.addPropertyChangeListener("progress", e -> {
 	    float progress = ((float) e.getNewValue()) * 100;
 	    progressBar.setValue((int) progress);
 	    progressBar.setString(String.format("%3.3f %%", progress));
 	});
+	
+	return progressBar;
+    }
+    
+    static abstract class SolverImplConfigPanel extends JPanel {
+	
+	abstract AbstractSolver getConfiguredSolver();
+	
+	abstract String isValidConfiguration();
     }
 }

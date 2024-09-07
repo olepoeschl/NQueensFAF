@@ -30,7 +30,7 @@ class PropertyGroupConfigUi {
     private GridBagLayout layout = new GridBagLayout();
     private int gridy = 0;
 
-    private HashMap<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
+    private Map<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
     private final JPanel panel;
 
