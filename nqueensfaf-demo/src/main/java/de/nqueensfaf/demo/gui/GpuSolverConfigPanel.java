@@ -10,6 +10,7 @@ import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
+import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
@@ -99,10 +100,22 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		
 		switch(col) {
 		case 2:
-		    availableGpus.get(row).getConfig().setBenchmark((int) tableModel.getValueAt(row, col));
+		    int weight = (int) tableModel.getValueAt(row, col);
+		    if(weight <= 0) {
+			Dialog.error("GPU weight must be >= 1");
+			tableModel.setValueAt(1, row, col);
+			break;
+		    }
+		    availableGpus.get(row).getConfig().setBenchmark(weight);
 		    break;
 		case 3:
-		    availableGpus.get(row).getConfig().setWorkgroupSize((int) tableModel.getValueAt(row, col));
+		    int workgroupSize = (int) tableModel.getValueAt(row, col);
+		    if(workgroupSize <= 0) {
+			Dialog.error("GPU workgroup size must be >= 1");
+			tableModel.setValueAt(1, row, col);
+			break;
+		    }
+		    availableGpus.get(row).getConfig().setWorkgroupSize(workgroupSize);
 		    break;
 		case 4:
 		    boolean gpuSelected = (boolean) tableModel.getValueAt(row, col);
@@ -119,7 +132,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		    switch(column) {
 		    case 0: return String.class;
 		    case 1: return String.class;
-		    case 2: return Double.class;
+		    case 2: return Integer.class;
 		    case 3: return Integer.class;
 		    default: return Boolean.class;
 		    }

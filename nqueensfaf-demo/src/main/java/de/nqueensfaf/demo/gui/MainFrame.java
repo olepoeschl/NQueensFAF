@@ -20,7 +20,6 @@ import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
-import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
@@ -148,6 +147,11 @@ public class MainFrame extends JFrame {
 	    public void solverFinished() {
 		nConfigUi.setEnabled(true);
 	    }
+
+	    @Override
+	    public void solverCanceled() {
+		nConfigUi.setEnabled(true);
+	    }
 	});
 	
 	return nConfigUi.getUi();
@@ -186,6 +190,15 @@ public class MainFrame extends JFrame {
 		    if(i != solverSelectionPanel.getSelectedIndex())
 			solverSelectionPanel.setEnabledAt(i, true);
 	    }
+	    
+	    @Override
+	    public void solverCanceled() {
+		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
+		    component.setEnabled(true);
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
+		    if(i != solverSelectionPanel.getSelectedIndex())
+			solverSelectionPanel.setEnabledAt(i, true);
+	    }
 	});
 	
 	// add Solver implementations' tabs
@@ -217,6 +230,10 @@ public class MainFrame extends JFrame {
 	    public void solverFinished() {
 		startButton.setEnabled(true);
 	    }
+	    @Override
+	    public void solverCanceled() {
+		startButton.setEnabled(true);
+	    }
 	});
 
 	var solverControlPanel = new JPanel(new GridBagLayout());
@@ -230,7 +247,7 @@ public class MainFrame extends JFrame {
 	var solver = solverModel.getSelectedSolver();
 	
 	solver.setN(solverModel.getN());
-	solver.setUpdateInterval(100);
+	solver.setUpdateInterval(50);
 	
 	String errorMessage = solverModel.getSelectedSolverConfig().checkValid();
 	if(errorMessage.length() > 0) {
