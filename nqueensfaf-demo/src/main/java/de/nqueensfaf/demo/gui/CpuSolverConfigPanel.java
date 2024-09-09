@@ -22,11 +22,11 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
     }
 
     @Override
-    SolverImplConfig getModel() {
+    SolverImplWithConfig getModel() {
 	return model;
     }
     
-    class CpuSolverConfig implements SolverImplConfig {
+    class CpuSolverConfig implements SolverImplWithConfig {
 	
 	private final CpuSolver solver = new CpuSolver();
 	

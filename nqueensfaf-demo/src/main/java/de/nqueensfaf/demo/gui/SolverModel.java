@@ -6,6 +6,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.swing.event.EventListenerList;
 
@@ -25,17 +26,20 @@ class SolverModel {
 	setProgress(progress);
 	setSolutions(solutions);
 	setDuration(duration);
-	setUniqueSolutions(symSolvers.get(getSelectedSolver()).getUniqueSolutionsTotal(solutions));
+	setUniqueSolutions(symSolvers.get(getSelectedSolverImplWithConfig().getConfiguredSolver()).getUniqueSolutionsTotal(solutions));
     };
     private final Runnable onStart = () -> fireSolverStarted();
-    private final Runnable onFinish = () -> fireSolverFinished();
-    private final Runnable onCancel = () -> {
-	cancelSymSolver();
-	fireSolverCanceled();
+    private final Runnable onFinish = () -> {
+	fireSolverFinished();
+	fireSolverTerminated();
     };
-
-    private AbstractSolver selectedSolver;
-    private SolverImplConfig selectedSolverConfig;
+    private final Consumer<Exception> onCancel = e -> {
+	cancelSymSolver();
+	fireSolverCanceled(e);
+	fireSolverTerminated();
+    };
+    
+    private SolverImplWithConfig selectedSolverImplWithConfig;
 
     private int n = 16;
 
@@ -60,34 +64,27 @@ class SolverModel {
 	listenerList.remove(SolverListener.class, l);
     }
     
+    void startSolver() {
+	var selectedSolver = getSelectedSolverImplWithConfig().getConfiguredSolver();
+	selectedSolver.start();
+    }
+    
     void startSymSolver() {
-	symSolvers.get(getSelectedSolver()).setN(n);
-	symSolvers.get(getSelectedSolver()).start();
+	var selectedSolver = getSelectedSolverImplWithConfig().getConfiguredSolver();
+	symSolvers.get(selectedSolver).setN(n);
+	symSolvers.get(selectedSolver).start();
     }
     
     void cancelSymSolver() {
-	symSolvers.get(getSelectedSolver()).cancel();
-    }
-    
-    void applyCallbacks() {
-	selectedSolver.onProgressUpdate(onProgressUpdate);
-	selectedSolver.onStart(onStart);
-	selectedSolver.onFinish(onFinish);
-	selectedSolver.onCancel(onCancel);
+	var selectedSolver = getSelectedSolverImplWithConfig().getConfiguredSolver();
+	symSolvers.get(selectedSolver).cancel();
     }
 
-    void setSelectedSolverConfig(SolverImplConfig solverImplConfig) {
-	this.selectedSolverConfig = solverImplConfig;
-    }
-    
-    SolverImplConfig getSelectedSolverConfig() {
-	return selectedSolverConfig;
-    }
-
-    void setSelectedSolver(AbstractSolver solver) {
-	var oldValue = this.selectedSolver;
-	this.selectedSolver = solver;
+    void setSelectedSolverImplWithConfig(SolverImplWithConfig solverImplWithConfig) {
+	var oldValue = this.selectedSolverImplWithConfig;
+	this.selectedSolverImplWithConfig = solverImplWithConfig;
 	
+	var solver = selectedSolverImplWithConfig.getConfiguredSolver();
 	setProgress(solver.getProgress());
 	setSolutions(solver.getSolutions());
 	setDuration(solver.getDuration());
@@ -99,11 +96,21 @@ class SolverModel {
 	else
 	    setUniqueSolutions(0);
 	
-	prop.firePropertyChange("selectedSolver", oldValue, solver);
+	prop.firePropertyChange("selectedSolverImplWithConfig", oldValue, solver);
     }
     
-    AbstractSolver getSelectedSolver() {
-	return selectedSolver;
+    SolverImplWithConfig getSelectedSolverImplWithConfig() {
+	return selectedSolverImplWithConfig;
+    }
+    
+    void applyGeneralConfig() {
+	var selectedSolver = selectedSolverImplWithConfig.getConfiguredSolver();
+	selectedSolver.onProgressUpdate(onProgressUpdate);
+	selectedSolver.onStart(onStart);
+	selectedSolver.onFinish(onFinish);
+	selectedSolver.onCancel(onCancel);
+	selectedSolver.setN(n);
+	selectedSolver.setUpdateInterval(100);
     }
 
     void setN(int n) {
@@ -162,21 +169,28 @@ class SolverModel {
 	}
     }
     
+    private void fireSolverTerminated() {
+	for(var listener : listenerList.getListeners(SolverListener.class)) {
+	    EventQueue.invokeLater(() -> listener.solverTerminated());
+	}
+    }
+    
     private void fireSolverFinished() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
 	    EventQueue.invokeLater(() -> listener.solverFinished());
 	}
     }
     
-    private void fireSolverCanceled() {
+    private void fireSolverCanceled(Exception e) {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
-	    EventQueue.invokeLater(() -> listener.solverCanceled());
+	    EventQueue.invokeLater(() -> listener.solverCanceled(e));
 	}
     }
 
     static interface SolverListener extends EventListener {
 	void solverStarted();
-	void solverFinished();
-	default void solverCanceled() {}
+	void solverTerminated();
+	default void solverFinished() {}
+	default void solverCanceled(Exception e) {}
     }
 }

@@ -78,6 +78,20 @@ public class MainFrame extends JFrame {
 	
 	setVisible(true);
 	resultsPanel.requestFocus();
+	
+	// other initializations or one time configs
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+	    }
+	    @Override
+	    public void solverTerminated() {
+	    }
+	    @Override
+	    public void solverCanceled(Exception e) {
+		Dialog.error(e.getMessage());
+	    }
+	});
     }
 
     private JPanel createAndGetResultsPanel() {
@@ -144,12 +158,7 @@ public class MainFrame extends JFrame {
 	    }
 
 	    @Override
-	    public void solverFinished() {
-		nConfigUi.setEnabled(true);
-	    }
-
-	    @Override
-	    public void solverCanceled() {
+	    public void solverTerminated() {
 		nConfigUi.setEnabled(true);
 	    }
 	});
@@ -167,9 +176,8 @@ public class MainFrame extends JFrame {
 		solverSelectionPanel.setBackgroundAt(i, systemDefaultTabColor);
 	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), tabColor);
 	    
-	    var solverConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
-	    solverModel.setSelectedSolverConfig(solverConfig);
-	    solverModel.setSelectedSolver(solverConfig.getConfiguredSolver());
+	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
+	    solverModel.setSelectedSolverImplWithConfig(solverImplWithConfig);
 	});
 
 	solverModel.addSolverListener(new SolverListener() {
@@ -183,16 +191,7 @@ public class MainFrame extends JFrame {
 	    }
 	    
 	    @Override
-	    public void solverFinished() {
-		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
-		    component.setEnabled(true);
-		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
-		    if(i != solverSelectionPanel.getSelectedIndex())
-			solverSelectionPanel.setEnabledAt(i, true);
-	    }
-	    
-	    @Override
-	    public void solverCanceled() {
+	    public void solverTerminated() {
 		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
 		    component.setEnabled(true);
 		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
@@ -227,11 +226,7 @@ public class MainFrame extends JFrame {
 		startButton.setEnabled(false);
 	    }
 	    @Override
-	    public void solverFinished() {
-		startButton.setEnabled(true);
-	    }
-	    @Override
-	    public void solverCanceled() {
+	    public void solverTerminated() {
 		startButton.setEnabled(true);
 	    }
 	});
@@ -243,26 +238,16 @@ public class MainFrame extends JFrame {
     }
 
     private void startSolver() {
-	solverModel.applyCallbacks();
-	var solver = solverModel.getSelectedSolver();
+	solverModel.applyGeneralConfig();
 	
-	solver.setN(solverModel.getN());
-	solver.setUpdateInterval(50);
-	
-	String errorMessage = solverModel.getSelectedSolverConfig().checkValid();
+	String errorMessage = solverModel.getSelectedSolverImplWithConfig().checkValid();
 	if(errorMessage.length() > 0) {
 	    Dialog.error(errorMessage);
 	    return;
 	}
 
 	Thread.ofVirtual().start(() -> solverModel.startSymSolver());
-	Thread.ofVirtual().start(() -> {
-	    try {
-		solver.start();
-	    } catch (Exception e) {
-		Dialog.error(e.getMessage());
-	    }
-	});
+	Thread.ofVirtual().start(() -> solverModel.startSolver());
     }
     
     private JProgressBar createAndGetProgressBar() {

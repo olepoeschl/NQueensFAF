@@ -2,7 +2,7 @@ package de.nqueensfaf.demo.gui;
 
 import de.nqueensfaf.core.AbstractSolver;
 
-interface SolverImplConfig {
+interface SolverImplWithConfig {
 
     AbstractSolver getConfiguredSolver();
     

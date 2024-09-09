@@ -33,11 +33,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     }
 
     @Override
-    SolverImplConfig getModel() {
+    SolverImplWithConfig getModel() {
 	return model;
     }
     
-    class GpuSolverConfig implements SolverImplConfig {
+    class GpuSolverConfig implements SolverImplWithConfig {
 	
 	private final GpuSolver solver = new GpuSolver();
 	
