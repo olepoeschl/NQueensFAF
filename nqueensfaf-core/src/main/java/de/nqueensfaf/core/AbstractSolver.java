@@ -4,6 +4,7 @@ import static de.nqueensfaf.core.ExecutionState.*;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Consumer;
 
 /**
  * This class provides a skeletal implementation of the {@link Solver} interface
@@ -22,7 +23,7 @@ public abstract class AbstractSolver implements Solver {
     };
     private Runnable onFinish = () -> {
     };
-    private Runnable onCancel = () -> {
+    private Consumer<Exception> onCancel = e -> {
     };
     private OnProgressUpdateConsumer onProgressUpdate = (p, s, d) -> {
     };
@@ -79,7 +80,7 @@ public abstract class AbstractSolver implements Solver {
 	    solve();
 	} catch (Exception e) {
 	    executionState = CANCELED;
-	    onCancel.run();
+	    onCancel.accept(e);
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
 
@@ -133,7 +134,7 @@ public abstract class AbstractSolver implements Solver {
      * 
      * @see #start()
      */
-    public final void onCancel(Runnable cb) {
+    public final void onCancel(Consumer<Exception> cb) {
 	if (cb == null) {
 	    throw new IllegalArgumentException("could not set cancel callback: callback must not be null");
 	}
