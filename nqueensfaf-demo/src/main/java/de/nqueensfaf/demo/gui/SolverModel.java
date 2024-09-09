@@ -89,8 +89,13 @@ class SolverModel {
 	setSolutions(solver.getSolutions());
 	setDuration(solver.getDuration());
 
-	if(symSolvers.get(solver) == null)
-	    symSolvers.put(solver, new SymSolver());
+	if(symSolvers.get(solver) == null) {
+	    var symSolver = new SymSolver();
+	    symSolver.onProgressUpdate((progress, solutions, duration) -> {
+		setUniqueSolutions(symSolver.getUniqueSolutionsTotal(SolverModel.this.solutions));
+	    });
+	    symSolvers.put(solver, symSolver);
+	}
 	if(solutions > 0)
 	    setUniqueSolutions(symSolvers.get(solver).getUniqueSolutionsTotal(solutions));
 	else

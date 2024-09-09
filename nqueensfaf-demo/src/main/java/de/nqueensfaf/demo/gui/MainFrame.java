@@ -78,20 +78,6 @@ public class MainFrame extends JFrame {
 	
 	setVisible(true);
 	resultsPanel.requestFocus();
-	
-	// other initializations or one time configs
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-	    }
-	    @Override
-	    public void solverTerminated() {
-	    }
-	    @Override
-	    public void solverCanceled(Exception e) {
-		Dialog.error(e.getMessage());
-	    }
-	});
     }
 
     private JPanel createAndGetResultsPanel() {
@@ -247,7 +233,13 @@ public class MainFrame extends JFrame {
 	}
 
 	Thread.ofVirtual().start(() -> solverModel.startSymSolver());
-	Thread.ofVirtual().start(() -> solverModel.startSolver());
+	Thread.ofVirtual().start(() -> {
+	    try {
+		solverModel.startSolver();
+	    } catch(Exception e) {
+		Dialog.error(e.getMessage());
+	    }
+	});
     }
     
     private JProgressBar createAndGetProgressBar() {
