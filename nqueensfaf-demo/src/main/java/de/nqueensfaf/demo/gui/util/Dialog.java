@@ -16,4 +16,8 @@ public class Dialog {
 	error(message, null);
     }
     
+    public static void info(String message) {
+	JOptionPane.showMessageDialog(null, message);
+    }
+    
 }

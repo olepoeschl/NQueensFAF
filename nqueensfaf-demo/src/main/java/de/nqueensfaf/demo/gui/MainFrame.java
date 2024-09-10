@@ -2,10 +2,12 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.net.URI;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -20,6 +22,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 
+import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
@@ -113,15 +116,20 @@ public class MainFrame extends JFrame {
 	aboutMenu.add(new JMenuItem(new AbstractAction("Website") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		System.out.println("About.Website");
+		Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+		if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+		    try {
+			desktop.browse(URI.create("https://github.com/olepoeschl/NQueensFAF"));
+		    } catch (Exception ex) {
+			Dialog.error("could not open link: " + ex.getMessage());
+		    }
+		}
 	    }
 	}));
 	aboutMenu.add(new JMenuItem(new AbstractAction("Version") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		System.out.println("About.Version");
+		Dialog.info("<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>");
 	    }
 	}));
 
