@@ -113,10 +113,10 @@ public class MultiGpuExample {
 	    switch (configKey) {
 	    case "bm=":
 		try {
-		    int benchmark = Integer.parseInt(configValue);
-		    gpu.getConfig().setBenchmark(benchmark);
+		    int weight = Integer.parseInt(configValue);
+		    gpu.getConfig().setWeight(weight);
 		} catch (NumberFormatException e) {
-		    throw new NumberFormatException("invalid benchmark: '" + configValue + "' is not an integer");
+		    throw new NumberFormatException("invalid weight: '" + configValue + "' is not an integer");
 		}
 		break;
 	    case "wg=":

@@ -73,6 +73,8 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     class GpuSelectionProperty extends AbstractProperty<List<Gpu>> {
 
 	private final List<Gpu> availableGpus;
+	
+	private JTable table;
 
 	GpuSelectionProperty(String name, List<Gpu> value, List<Gpu> availableGpus) {
 	    super(name, "GPU Selection", value);
@@ -88,7 +90,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		var gpu = availableGpus.get(i);
 		data[i][0] = getShortNameOfGpuVendor(gpu.getInfo().vendor());
 		data[i][1] = gpu.getInfo().name();
-		data[i][2] = gpu.getConfig().getBenchmark(); // TODO: rename to "weight"
+		data[i][2] = gpu.getConfig().getWeight();
 		data[i][3] = gpu.getConfig().getWorkgroupSize();
 		data[i][4] = false;
 	    }
@@ -106,7 +108,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 			tableModel.setValueAt(1, row, col);
 			break;
 		    }
-		    availableGpus.get(row).getConfig().setBenchmark(weight);
+		    availableGpus.get(row).getConfig().setWeight(weight);
 		    break;
 		case 3:
 		    int workgroupSize = (int) tableModel.getValueAt(row, col);
@@ -126,7 +128,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		}
 	    });
 	    
-	    var table = new JTable(tableModel) {
+	    table = new JTable(tableModel) {
 		@Override
 		public Class getColumnClass(int column) {
 		    switch(column) {
@@ -140,6 +142,9 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		
 		@Override
 		public boolean isCellEditable(int rowIndex, int colIndex) {
+		    if(model.getConfiguredSolver().getExecutionState().isBusy())
+			return false;
+		    
 		    switch(colIndex) {
 		    case 0:
 		    case 1:
@@ -190,9 +195,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 
 	@Override
-	void setEnabled(boolean enabled) {
-	    // TODO
-	}
+	void setEnabled(boolean enabled) {}
     }
 
     private static final String getShortNameOfGpuVendor(String vendor) {
