@@ -7,12 +7,14 @@ import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.net.URI;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -191,13 +193,21 @@ public class MainFrame extends JFrame {
 	    @Override
 	    public void solverStarted() {
 		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(false);
-		solverSelectionPanel.setEnabledAt(solverSelectionPanel.getSelectedIndex(), false);
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+		    if(i == solverSelectionPanel.getSelectedIndex())
+			continue;
+		    solverSelectionPanel.setEnabledAt(i, false);
+		}
 	    }
 	    
 	    @Override
 	    public void solverTerminated() {
 		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(true);
-		solverSelectionPanel.setEnabledAt(solverSelectionPanel.getSelectedIndex(), true);
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+		    if(i == solverSelectionPanel.getSelectedIndex())
+			continue;
+		    solverSelectionPanel.setEnabledAt(i, true);
+		}
 	    }
 	});
 	
