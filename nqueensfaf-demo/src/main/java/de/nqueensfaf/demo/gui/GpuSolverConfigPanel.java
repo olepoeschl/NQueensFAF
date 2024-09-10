@@ -24,7 +24,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     public GpuSolverConfigPanel() {
 	propConfigUi = new PropertyGroupConfigUi(this);
 	
-	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 4, 1);
+	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 6, 1);
 	propConfigUi.addPropertyChangeListener("prequeens", e -> model.setPresetQueens((int) e.getNewValue()));
 	
 	final var gpus = model.getAvailableGpus();
@@ -188,9 +188,9 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    column = table.getColumnModel().getColumn(2);
 	    column.setPreferredWidth(column.getMinWidth());
 	    column = table.getColumnModel().getColumn(1);
-	    column.setPreferredWidth(50);
+	    column.setPreferredWidth(70);
 	    column = table.getColumnModel().getColumn(0);
-	    column.setPreferredWidth(50);
+	    column.setPreferredWidth(30);
 	    
 	    table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 	    table.setPreferredScrollableViewportSize(table.getPreferredSize());
