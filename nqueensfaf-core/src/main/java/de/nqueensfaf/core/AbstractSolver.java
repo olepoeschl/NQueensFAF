@@ -31,7 +31,7 @@ public abstract class AbstractSolver implements Solver {
     private Timer timer;
 
     @Override
-    public final void setN(int n) {
+    public void setN(int n) {
 	if (executionState.isBusy()) {
 	    throw new IllegalStateException("could not set board size: solver has already started");
 	}
