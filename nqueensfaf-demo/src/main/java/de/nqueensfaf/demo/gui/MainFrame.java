@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.filechooser.FileFilter;
 
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
@@ -95,8 +96,23 @@ public class MainFrame extends JFrame {
 	fileMenu.add(new JMenuItem(new AbstractAction("Open") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		System.out.println("File.Open");
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setFileFilter(new FileFilter() {
+		    @Override
+		    public String getDescription() {
+			return "NQueensFAF files";
+		    }
+		    @Override
+		    public boolean accept(File f) {
+			return f.isDirectory() || f.getName().endsWith(".faf");
+		    }
+		});
+		fileChooser.showOpenDialog(MainFrame.this);
+		fileChooser.setMultiSelectionEnabled(false);
+		
+		File selectedFile = fileChooser.getSelectedFile();
+		if(selectedFile.getName() != null)
+		    System.out.println(selectedFile.getName());
 	    }
 	}));
 	fileMenu.add(new JMenuItem(new AbstractAction("Save") {
