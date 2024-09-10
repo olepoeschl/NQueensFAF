@@ -26,6 +26,11 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	return model;
     }
     
+    @Override
+    public void setEnabled(boolean enabled) {
+	propConfigUi.setEnabled(enabled);
+    }
+    
     class CpuSolverConfig implements SolverImplWithConfig {
 	
 	private final CpuSolver solver = new CpuSolver();

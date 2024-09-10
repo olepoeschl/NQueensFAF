@@ -165,26 +165,6 @@ public class MainFrame extends JFrame {
 	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
 	    solverModel.setSelectedSolverImplWithConfig(solverImplWithConfig);
 	});
-
-	solverModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
-		    component.setEnabled(false);
-		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
-		    if(i != solverSelectionPanel.getSelectedIndex())
-			solverSelectionPanel.setEnabledAt(i, false);
-	    }
-	    
-	    @Override
-	    public void solverTerminated() {
-		for(var component : ((JPanel) solverSelectionPanel.getSelectedComponent()).getComponents())
-		    component.setEnabled(true);
-		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
-		    if(i != solverSelectionPanel.getSelectedIndex())
-			solverSelectionPanel.setEnabledAt(i, true);
-	    }
-	});
 	
 	// add Solver implementations' tabs
 	var cpuPanel = new CpuSolverConfigPanel();
@@ -198,6 +178,20 @@ public class MainFrame extends JFrame {
 	    component.setBackground(tabColor);
 	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
+
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(false);
+		solverSelectionPanel.setEnabledAt(solverSelectionPanel.getSelectedIndex(), false);
+	    }
+	    
+	    @Override
+	    public void solverTerminated() {
+		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(true);
+		solverSelectionPanel.setEnabledAt(solverSelectionPanel.getSelectedIndex(), true);
+	    }
+	});
 	
 	return solverSelectionPanel;
     }

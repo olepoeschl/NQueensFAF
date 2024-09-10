@@ -37,6 +37,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	return model;
     }
     
+    @Override
+    public void setEnabled(boolean enabled) {
+	propConfigUi.setEnabled(enabled);
+    }
+    
     class GpuSolverConfig implements SolverImplWithConfig {
 	
 	private final GpuSolver solver = new GpuSolver();
@@ -158,7 +163,6 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		protected JTableHeader createDefaultTableHeader() {
 		    return new JTableHeader(columnModel) {
 			public String getToolTipText(MouseEvent e) {
-			    String tip = null;
 			    java.awt.Point p = e.getPoint();
 			    int index = columnModel.getColumnIndexAtX(p.x);
 			    int realIndex = 
