@@ -38,6 +38,13 @@ public class CpuSolver extends AbstractSolver {
 	kryo.register(ArrayList.class);
 	kryo.register(Constellation.class);
     }
+    
+    @Override
+    public void setN(int n) {
+	if(stateLoaded)
+	    throw new IllegalStateException("could not change N because a solver state was loaded");
+	super.setN(n);
+    }
 
     @Override
     public void save(String path) throws IOException {
@@ -77,9 +84,10 @@ public class CpuSolver extends AbstractSolver {
 
     @Override
     public long getDuration() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0) {
+	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0)
 	    return System.currentTimeMillis() - start + storedDuration;
-	}
+	else if (start == 0 && stateLoaded)
+	    return storedDuration;
 	return duration;
     }
 

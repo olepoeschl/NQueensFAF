@@ -104,6 +104,13 @@ public class GpuSolver extends AbstractSolver {
 
 	fetchAvailableGpus();
     }
+    
+    @Override
+    public void setN(int n) {
+	if(stateLoaded)
+	    throw new IllegalStateException("could not change N because a solver state was loaded");
+	super.setN(n);
+    }
 
     // getters and setters
     public int getPresetQueens() {
@@ -150,9 +157,10 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public long getDuration() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0) {
+	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0)
 	    return System.currentTimeMillis() - start + storedDuration;
-	}
+	else if (start == 0 && stateLoaded)
+	    return storedDuration;
 	return duration;
     }
 
