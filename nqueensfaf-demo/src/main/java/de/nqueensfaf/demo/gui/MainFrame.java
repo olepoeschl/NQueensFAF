@@ -8,6 +8,7 @@ import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 
 import javax.swing.AbstractAction;
@@ -92,43 +93,95 @@ public class MainFrame extends JFrame {
     }
 
     private JMenuBar createAndGetMenuBar() {
-	var fileMenu = new JMenu("File");
-	fileMenu.add(new JMenuItem(new AbstractAction("Open") {
+	final var openFileChooser = new JFileChooser();
+	openFileChooser.setFileFilter(new FileFilter() {
+	    @Override
+	    public String getDescription() {
+		return "NQueensFAF files";
+	    }
+	    @Override
+	    public boolean accept(File f) {
+		return f.isDirectory() || f.getName().endsWith(".faf");
+	    }
+	});
+	openFileChooser.setMultiSelectionEnabled(false);
+	openFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+	final var saveFileChooser = new JFileChooser();
+	saveFileChooser.setFileFilter(new FileFilter() {
+	    @Override
+	    public String getDescription() {
+		return "NQueensFAF files";
+	    }
+	    @Override
+	    public boolean accept(File f) {
+		return f.isDirectory() || f.getName().endsWith(".faf");
+	    }
+	});
+	saveFileChooser.setMultiSelectionEnabled(false);
+	saveFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	
+	var openItem = new JMenuItem(new AbstractAction("Open") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setFileFilter(new FileFilter() {
-		    @Override
-		    public String getDescription() {
-			return "NQueensFAF files";
-		    }
-		    @Override
-		    public boolean accept(File f) {
-			return f.isDirectory() || f.getName().endsWith(".faf");
-		    }
-		});
-		fileChooser.showOpenDialog(MainFrame.this);
-		fileChooser.setMultiSelectionEnabled(false);
+		openFileChooser.showOpenDialog(MainFrame.this);
+		File selectedFile = openFileChooser.getSelectedFile();
 		
-		File selectedFile = fileChooser.getSelectedFile();
-		if(selectedFile.getName() != null)
-		    System.out.println(selectedFile.getName());
+		if(selectedFile != null) {
+		    try {
+			solverModel.getSelectedSolverImplWithConfig().getConfiguredSolver().load(selectedFile.getAbsolutePath());
+			solverModel.setSelectedSolverImplWithConfig(solverModel.getSelectedSolverImplWithConfig());
+		    } catch (IOException ex) {
+			Dialog.error("could not open file: " + ex.getMessage());
+		    }
+		}
 	    }
-	}));
-	fileMenu.add(new JMenuItem(new AbstractAction("Save") {
+	});
+	
+	var saveItem = new JMenuItem(new AbstractAction("Save") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		System.out.println("File.Save");
+		saveFileChooser.showOpenDialog(MainFrame.this);
+		File selectedFile = saveFileChooser.getSelectedFile();
+		
+		if(selectedFile != null) {
+		    String targetPath = selectedFile.getAbsolutePath();
+		    if(!targetPath.endsWith(".faf"))
+			targetPath += ".faf";
+		    try {
+			solverModel.getSelectedSolverImplWithConfig().getConfiguredSolver().save(targetPath);
+		    } catch (IOException ex) {
+			Dialog.error("could not save to file: " + ex.getMessage());
+		    }
+		}
 	    }
-	}));
-	fileMenu.add(new JMenuItem(new AbstractAction("Settings") {
+	});
+	saveItem.setEnabled(false);
+	
+	var settingsItem = new JMenuItem(new AbstractAction("Settings") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		System.out.println("File.Settings");
 	    }
-	}));
+	});
+	var fileMenu = new JMenu("File");
+	fileMenu.add(openItem);
+	fileMenu.add(saveItem);
+	fileMenu.add(settingsItem);
+	
+	solverModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		openItem.setEnabled(false);
+		saveItem.setEnabled(true);
+	    }
+	    @Override
+	    public void solverTerminated() {
+		openItem.setEnabled(true);
+		saveItem.setEnabled(false);
+	    }
+	});
 
 	var aboutMenu = new JMenu("About");
 	aboutMenu.add(new JMenuItem(new AbstractAction("Website") {
