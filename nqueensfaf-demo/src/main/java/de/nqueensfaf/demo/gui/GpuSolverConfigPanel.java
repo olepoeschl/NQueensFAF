@@ -200,6 +200,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
 	@Override
 	void setEnabled(boolean enabled) {}
+
+	@Override
+	void updateUi(List<Gpu> value) {
+	    // not needed
+	}
     }
 
     private static final String getShortNameOfGpuVendor(String vendor) {

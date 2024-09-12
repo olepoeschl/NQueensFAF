@@ -47,8 +47,8 @@ class PropertyGroupConfigUi {
 	return panel;
     }
 
-    Object getProperty(String name) {
-	return properties.get(name).getValue();
+    AbstractProperty<?> getProperty(String propertyName) {
+	return properties.get(propertyName);
     }
 
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
@@ -143,9 +143,10 @@ class PropertyGroupConfigUi {
 	    return value;
 	}
 
-	protected final void setValue(T value) {
+	final void setValue(T value) {
 	    T oldValue = this.value;
 	    this.value = value;
+	    updateUi(value);
 	    prop.firePropertyChange(name, oldValue, value);
 	}
 
@@ -155,6 +156,8 @@ class PropertyGroupConfigUi {
 
 	    createConfigUi();
 	}
+	
+	abstract void updateUi(T value);
 
 	abstract protected void createConfigUi();
 
@@ -195,7 +198,7 @@ class PropertyGroupConfigUi {
 	    txtValue.setText(Integer.toString(getValue()));
 	    txtValue.addPropertyChangeListener("value", e -> {
 		int newValue = (int) e.getNewValue();
-		valueChanged(newValue);
+		setValue(newValue);
 	    });
 	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx());
 
@@ -205,26 +208,27 @@ class PropertyGroupConfigUi {
 	    btnMinus = new JButton("-");
 	    btnMinus.addActionListener(e -> {
 		int newValue = getValue() - step;
-		valueChanged(newValue);
+		setValue(newValue);
 	    });
 	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 
 	    slider = new JSlider(min, max, getValue());
 	    slider.addChangeListener(e -> {
 		int newValue = slider.getValue();
-		valueChanged(newValue);
+		setValue(newValue);
 	    });
 	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTH).top(2).weight(1, 0).fillx().left(5));
 
 	    btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
 		int newValue = getValue() + step;
-		valueChanged(newValue);
+		setValue(newValue);
 	    });
 	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 	}
-
-	private void valueChanged(int newValue) {
+	
+	@Override
+	void updateUi(Integer newValue) {
 	    if (newValue < min)
 		newValue = min;
 	    if (newValue > max)
@@ -233,8 +237,6 @@ class PropertyGroupConfigUi {
 
 	    if (!textInputOnly)
 		slider.setValue(newValue);
-
-	    setValue(newValue);
 	}
 
 	@Override

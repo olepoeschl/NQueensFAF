@@ -30,6 +30,7 @@ import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
@@ -39,6 +40,11 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
 	createAndShowUi();
+	
+	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
+	    Dialog.error(e.getMessage());
+	    e.printStackTrace();
+	});
     }
 
     private void createAndShowUi() {
@@ -129,8 +135,7 @@ public class MainFrame extends JFrame {
 		
 		if(selectedFile != null) {
 		    try {
-			solverModel.getSelectedSolverImplWithConfig().getConfiguredSolver().load(selectedFile.getAbsolutePath());
-			solverModel.setSelectedSolverImplWithConfig(solverModel.getSelectedSolverImplWithConfig());
+			solverModel.load(selectedFile.getAbsolutePath());
 		    } catch (IOException ex) {
 			Dialog.error("could not open file: " + ex.getMessage());
 		    }
@@ -149,7 +154,7 @@ public class MainFrame extends JFrame {
 		    if(!targetPath.endsWith(".faf"))
 			targetPath += ".faf";
 		    try {
-			solverModel.getSelectedSolverImplWithConfig().getConfiguredSolver().save(targetPath);
+			solverModel.save(targetPath);
 		    } catch (IOException ex) {
 			Dialog.error("could not save to file: " + ex.getMessage());
 		    }
@@ -215,6 +220,14 @@ public class MainFrame extends JFrame {
 	var nConfigUi = new PropertyGroupConfigUi();
 	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
 	nConfigUi.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
+	
+	solverModel.addPropertyChangeListener("n", e -> {
+	    ((IntProperty) nConfigUi.getProperty("n")).setValue((Integer) e.getNewValue());
+	});
+	solverModel.addPropertyChangeListener("loaded", e -> {
+	    boolean loaded = (boolean) e.getNewValue();
+	    nConfigUi.setEnabled(!loaded);
+	});
 	
 	solverModel.addSolverListener(new SolverListener() {
 	    @Override

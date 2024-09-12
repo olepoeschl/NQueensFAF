@@ -3,6 +3,7 @@ package de.nqueensfaf.demo.gui;
 import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,8 @@ class SolverModel {
     private long duration;
     private long uniqueSolutions;
     
+    private boolean loaded = false;
+    
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	prop.addPropertyChangeListener(propertyName, l);
     }
@@ -84,6 +87,12 @@ class SolverModel {
 	var oldValue = this.selectedSolverImplWithConfig;
 	this.selectedSolverImplWithConfig = solverImplWithConfig;
 	
+	update();
+	
+	prop.firePropertyChange("selectedSolverImplWithConfig", oldValue, solverImplWithConfig);
+    }
+    
+    private void update() {
 	var solver = selectedSolverImplWithConfig.getConfiguredSolver();
 	setProgress(solver.getProgress());
 	setSolutions(solver.getSolutions());
@@ -101,7 +110,7 @@ class SolverModel {
 	else
 	    setUniqueSolutions(0);
 	
-	prop.firePropertyChange("selectedSolverImplWithConfig", oldValue, solver);
+	setN(solver.getN());
     }
     
     SolverImplWithConfig getSelectedSolverImplWithConfig() {
@@ -114,8 +123,9 @@ class SolverModel {
 	selectedSolver.onStart(onStart);
 	selectedSolver.onFinish(onFinish);
 	selectedSolver.onCancel(onCancel);
-	selectedSolver.setN(n);
 	selectedSolver.setUpdateInterval(100);
+	if(!loaded)
+	    selectedSolver.setN(n);
     }
 
     void setN(int n) {
@@ -166,6 +176,27 @@ class SolverModel {
 
     long getUniqueSolutions() {
 	return uniqueSolutions;
+    }
+
+    void load(String path) throws IOException {
+	selectedSolverImplWithConfig.getConfiguredSolver().load(path);
+	setLoaded(true);
+	update();
+    }
+    
+    private void setLoaded(boolean loaded) {
+	boolean oldValue = this.loaded;
+	this.loaded = loaded;
+	
+	prop.firePropertyChange("loaded", oldValue, loaded);
+    }
+
+    boolean isLoaded() {
+	return loaded;
+    }
+
+    public void save(String targetPath) throws IOException {
+	selectedSolverImplWithConfig.getConfiguredSolver().save(targetPath);
     }
 
     private void fireSolverStarted() {
