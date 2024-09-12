@@ -91,6 +91,8 @@ public class MainFrame extends JFrame {
 	
 	setVisible(true);
 	resultsPanel.requestFocus();
+	
+	solverModel.setN(16);
     }
 
     private JPanel createAndGetResultsPanel() {

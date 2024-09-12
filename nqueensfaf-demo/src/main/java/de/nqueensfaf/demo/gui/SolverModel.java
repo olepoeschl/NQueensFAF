@@ -49,7 +49,19 @@ class SolverModel {
     private long duration;
     private long uniqueSolutions;
     
-    private boolean loaded = false;
+    private final Map<AbstractSolver, Boolean> loaded = new HashMap<AbstractSolver, Boolean>();
+    
+    public SolverModel() {
+	addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverTerminated() {
+		setLoaded(false);
+	    }
+	    @Override
+	    public void solverStarted() {
+	    }
+	});
+    }
     
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	prop.addPropertyChangeListener(propertyName, l);
@@ -86,17 +98,8 @@ class SolverModel {
     void setSelectedSolverImplWithConfig(SolverImplWithConfig solverImplWithConfig) {
 	var oldValue = this.selectedSolverImplWithConfig;
 	this.selectedSolverImplWithConfig = solverImplWithConfig;
-	
-	update();
-	
-	prop.firePropertyChange("selectedSolverImplWithConfig", oldValue, solverImplWithConfig);
-    }
-    
-    private void update() {
+
 	var solver = selectedSolverImplWithConfig.getConfiguredSolver();
-	setProgress(solver.getProgress());
-	setSolutions(solver.getSolutions());
-	setDuration(solver.getDuration());
 
 	if(symSolvers.get(solver) == null) {
 	    var symSolver = new SymSolver();
@@ -105,10 +108,28 @@ class SolverModel {
 	    });
 	    symSolvers.put(solver, symSolver);
 	}
+	
+	if(loaded.get(solver) == null)
+	    loaded.put(solver, false);
+	
+	update();
+	
+	prop.firePropertyChange("selectedSolverImplWithConfig", oldValue, solverImplWithConfig);
+    }
+    
+    private void update() {
+	var solver = selectedSolverImplWithConfig.getConfiguredSolver();
+	
+	setProgress(solver.getProgress());
+	setSolutions(solver.getSolutions());
+	setDuration(solver.getDuration());
+	
 	if(solutions > 0)
 	    setUniqueSolutions(symSolvers.get(solver).getUniqueSolutionsTotal(solutions));
 	else
 	    setUniqueSolutions(0);
+	
+	prop.firePropertyChange("loaded", null, isLoaded());
 	
 	setN(solver.getN());
     }
@@ -124,7 +145,7 @@ class SolverModel {
 	selectedSolver.onFinish(onFinish);
 	selectedSolver.onCancel(onCancel);
 	selectedSolver.setUpdateInterval(100);
-	if(!loaded)
+	if(!loaded.get(selectedSolver))
 	    selectedSolver.setN(n);
     }
 
@@ -180,19 +201,19 @@ class SolverModel {
 
     void load(String path) throws IOException {
 	selectedSolverImplWithConfig.getConfiguredSolver().load(path);
+	
 	setLoaded(true);
+	
 	update();
     }
     
-    private void setLoaded(boolean loaded) {
-	boolean oldValue = this.loaded;
-	this.loaded = loaded;
-	
-	prop.firePropertyChange("loaded", oldValue, loaded);
+    private void setLoaded(boolean val) {
+	loaded.put(selectedSolverImplWithConfig.getConfiguredSolver(), val);
+	prop.firePropertyChange("loaded", null, val);
     }
 
     boolean isLoaded() {
-	return loaded;
+	return loaded.get(selectedSolverImplWithConfig.getConfiguredSolver());
     }
 
     public void save(String targetPath) throws IOException {
