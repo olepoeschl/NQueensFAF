@@ -18,9 +18,11 @@ import de.nqueensfaf.demo.gui.util.QuickGBC;
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 class ResultsPanel extends JPanel {
-    
-    private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
-    private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
+
+    private static final Font highlightFontBig = new Font(Font.MONOSPACED, Font.PLAIN, 20);
+    private static final Font captionFontBig = new Font(Font.MONOSPACED, Font.PLAIN, 14);
+    private static final Font highlightFontSmall = new Font(Font.MONOSPACED, Font.PLAIN, 15);
+    private static final Font captionFontSmall = new Font(Font.MONOSPACED, Font.PLAIN, 10);
 	
     private final MainModel mainModel;
     
@@ -30,9 +32,23 @@ class ResultsPanel extends JPanel {
     private JLabel lblDurationCaption;
     private JLabel lblSolutions;
     private JLabel lblUniqueSolutions;
+    private final Font highlightFont;
+    private final Font captionFont;
     
     ResultsPanel(MainModel mainModel) {
+	this(mainModel, false);
+    }
+    
+    ResultsPanel(MainModel mainModel, boolean small) {
 	this.mainModel = mainModel;
+	
+	if(small) {
+	    highlightFont = highlightFontSmall;
+	    captionFont = captionFontSmall;
+	} else {
+	    highlightFont = highlightFontBig;
+	    captionFont = captionFontBig;
+	}
 	
 	initUi();
     }
@@ -40,11 +56,11 @@ class ResultsPanel extends JPanel {
     private void initUi() {
 	// used config
 	lblN = new JLabel("");
-	lblN.setFont(highlightCaptionFont);
+	lblN.setFont(captionFont);
 	lblN.setHorizontalAlignment(JLabel.RIGHT);
 	
 	lblSolverName = new JLabel();
-	lblSolverName.setFont(highlightCaptionFont);
+	lblSolverName.setFont(captionFont);
 	lblSolverName.setHorizontalAlignment(JLabel.LEFT);
 	
 	var usedConfigs = new JPanel(new GridBagLayout());
@@ -59,19 +75,19 @@ class ResultsPanel extends JPanel {
 	lblDuration.setFont(highlightFont);
 	
 	lblDurationCaption = new JLabel("seconds");
-	lblDurationCaption.setFont(highlightCaptionFont);
+	lblDurationCaption.setFont(captionFont);
 
 	lblSolutions = new JLabel("0");
 	lblSolutions.setFont(highlightFont);
 	
 	JLabel lblSolutionsCaption = new JLabel("solutions");
-	lblSolutionsCaption.setFont(highlightCaptionFont);
+	lblSolutionsCaption.setFont(captionFont);
 	
 	lblUniqueSolutions = new JLabel("0");
 	lblUniqueSolutions.setFont(highlightFont);
 	
 	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
-	lblUniqueSolutionsCaption.setFont(highlightCaptionFont);
+	lblUniqueSolutionsCaption.setFont(captionFont);
 
 	// update labels from model listeners
 	mainModel.addPropertyChangeListener("duration", e -> {
@@ -100,8 +116,8 @@ class ResultsPanel extends JPanel {
 	pnlUniqueSolutions.add(lblUniqueSolutions, new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
 	pnlUniqueSolutions.add(lblUniqueSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
 
-	var resultsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
-	resultsPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+	var resultsPanel = new JPanel(new GridLayout(3, 1, 0, 7));
+	resultsPanel.setBorder(BorderFactory.createEmptyBorder(0, 7, 7, 7));
 	resultsPanel.setBackground(MainFrame.ACCENT_COLOR);
 	resultsPanel.add(pnlDuration);
 	resultsPanel.add(pnlSolutions);
