@@ -194,8 +194,8 @@ class MainModel {
     void openFile(String path) throws IOException {
 	selectedSolverImplWithConfig.getSolver().load(path);
 	selectedSolverImplWithConfig.loaded();
-	
 	setN(selectedSolverImplWithConfig.getSolver().getN());
+	fileOpened = true;
 	
 	update();
 	fireSolverFileOpened();
