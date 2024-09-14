@@ -55,7 +55,7 @@ class ResultsPanel extends JPanel {
     
     private void initUi() {
 	// used config
-	lblN = new JLabel("");
+	lblN = new JLabel("...");
 	lblN.setFont(captionFont);
 	lblN.setHorizontalAlignment(JLabel.RIGHT);
 	
