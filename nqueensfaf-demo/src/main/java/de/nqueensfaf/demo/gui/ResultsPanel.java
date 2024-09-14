@@ -1,6 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagLayout;
@@ -40,16 +41,15 @@ class ResultsPanel extends JPanel {
     private void initUi() {
 	// used config
 	lblN = new JLabel("N = ?");
-	lblN.setHorizontalAlignment(JLabel.LEFT);
+	lblN.setHorizontalAlignment(JLabel.CENTER);
 	
 	lblSolverName = new JLabel("Solver: ?");
-	lblSolverName.setHorizontalAlignment(JLabel.RIGHT);
+	lblSolverName.setHorizontalAlignment(JLabel.CENTER);
 	
-	var usedConfigs = new JPanel();
-	usedConfigs.setLayout(new FlowLayout());
+	var usedConfigs = new JPanel(new GridBagLayout());
 	usedConfigs.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
-	usedConfigs.add(lblN);
-	usedConfigs.add(lblSolverName);
+	usedConfigs.add(lblN, new QuickGBC(0, 0).weight(1, 0).fillx().anchor(QuickGBC.ANCHOR_CENTER));
+	usedConfigs.add(lblSolverName, new QuickGBC(1, 0).weight(1, 0).fillx().anchor(QuickGBC.ANCHOR_CENTER));
 	
 	// result labels
 	lblDuration = new JLabel("00.000");
@@ -102,7 +102,7 @@ class ResultsPanel extends JPanel {
 	resultsPanel.add(pnlSolutions);
 	resultsPanel.add(pnlUniqueSolutions);
 	
-	setLayout(new BorderLayout());
+	setLayout(new BorderLayout(0, 5));
 	add(usedConfigs, BorderLayout.NORTH);
 	add(resultsPanel, BorderLayout.CENTER);
 	
