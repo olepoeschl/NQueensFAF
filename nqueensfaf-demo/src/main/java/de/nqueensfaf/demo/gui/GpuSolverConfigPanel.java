@@ -1,7 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.event.MouseEvent;
-import java.io.IOException;
 import java.util.List;
 
 import javax.swing.JScrollPane;
@@ -43,10 +42,6 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.setEnabled(enabled);
     }
     
-    private void loaded() {
-	propConfigUi.getProperty("prequeens").setEnabled(false);
-    }
-    
     class GpuSolverWithConfig implements SolverImplWithConfig {
 	
 	private final GpuSolver solver = new GpuSolver();
@@ -80,9 +75,8 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 
 	@Override
-	public void load(String path) throws IOException {
-	    solver.load(path);
-	    loaded();
+	public void loaded() {
+	    propConfigUi.getProperty("prequeens").setEnabled(false);
 	}
     }
 

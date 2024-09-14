@@ -113,4 +113,13 @@ public interface Solver {
     default void load(String path) throws IOException {
 	throw new UnsupportedOperationException("Not implemented");
     }
+
+    /**
+     * Resets the solver after a file was loaded, so that it can be used normally again.
+     * 
+     * @see #load(String)
+     */
+    default void reset() {
+	throw new UnsupportedOperationException("Not implemented");
+    }
 }

@@ -72,6 +72,14 @@ public class CpuSolver extends AbstractSolver {
 	}
     }
 
+    @Override
+    public void reset() {
+	duration = start = storedDuration = 0;
+	threadConstellations.clear();
+	constellations.clear();
+	stateLoaded = false;
+    }
+    
     public void load(int n, long storedDuration, List<Constellation> constellations) {
 	if (!getExecutionState().isIdle())
 	    throw new IllegalStateException("solver progress can only be injected when idle");

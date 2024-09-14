@@ -138,6 +138,12 @@ public class SymSolver extends AbstractSolver {
 	return 0;
     }
     
+    @Override
+    public void reset() {
+	start = end = 0;
+	solutions90 = solutions180 = 0;
+    }
+    
     public void cancel() {
 	cancel = true;
     }

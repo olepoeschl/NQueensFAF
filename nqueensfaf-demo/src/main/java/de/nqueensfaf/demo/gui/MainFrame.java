@@ -90,6 +90,8 @@ public class MainFrame extends JFrame {
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	
 	setVisible(true);
+	setSize((int) (getWidth() * 1.2), (int) (getHeight() * 1.2));
+	mainSplitPane.setDividerLocation(0.6);
 	resultsPanel.requestFocus();
     }
 
@@ -154,6 +156,13 @@ public class MainFrame extends JFrame {
 	});
 	saveItem.setEnabled(false);
 	
+	var resetItem = new JMenuItem(new AbstractAction("Reset") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		model.reset();
+	    }
+	});
+	
 	var settingsItem = new JMenuItem(new AbstractAction("Settings") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
@@ -161,9 +170,11 @@ public class MainFrame extends JFrame {
 		System.out.println("File.Settings");
 	    }
 	});
+	
 	var fileMenu = new JMenu("File");
 	fileMenu.add(openItem);
 	fileMenu.add(saveItem);
+	fileMenu.add(resetItem);
 	fileMenu.add(settingsItem);
 	
 	model.addSolverListener(new SolverListener() {
@@ -171,17 +182,29 @@ public class MainFrame extends JFrame {
 	    public void solverStarted() {
 		openItem.setEnabled(false);
 		saveItem.setEnabled(true);
+		resetItem.setEnabled(false);
 	    }
+	    
 	    @Override
 	    public void solverTerminated() {
+		reset();
+	    }
+	    
+	    @Override
+	    public void solverFileOpened() {
+		openItem.setEnabled(false);
+	    }
+	    
+	    @Override
+	    public void solverReset() {
+		reset();
+	    }
+	    
+	    private void reset() {
 		openItem.setEnabled(true);
 		saveItem.setEnabled(false);
+		resetItem.setEnabled(true);
 	    }
-	});
-	
-	model.addPropertyChangeListener("fileOpened", e -> {
-	    boolean fileOpened = (boolean) e.getNewValue();
-	    openItem.setEnabled(!fileOpened);
 	});
 
 	var aboutMenu = new JMenu("About");
@@ -217,21 +240,29 @@ public class MainFrame extends JFrame {
 	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, model.getN(), 1);
 	nConfigUi.addPropertyChangeListener("n", e -> model.setN((int) e.getNewValue()));
 	
-	model.addPropertyChangeListener("fileOpened", e -> {
-	    boolean fileOpened = (boolean) e.getNewValue();
-	    nConfigUi.setEnabled(!fileOpened);
-	    
-	    if(fileOpened)
-		((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
-	});
-	
 	model.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
 		nConfigUi.setEnabled(false);
 	    }
+	    
 	    @Override
 	    public void solverTerminated() {
+		reset();
+	    }
+	    
+	    @Override
+	    public void solverFileOpened() {
+		nConfigUi.setEnabled(false);
+		((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
+	    }
+	    
+	    @Override
+	    public void solverReset() {
+		reset();
+	    }
+	    
+	    private void reset() {
 		nConfigUi.setEnabled(true);
 	    }
 	});
@@ -265,15 +296,6 @@ public class MainFrame extends JFrame {
 	    component.setBackground(tabColor);
 	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
-
-	model.addPropertyChangeListener("fileOpened", e -> {
-	    boolean fileOpened = (boolean) e.getNewValue();
-	    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
-		if(i == solverSelectionPanel.getSelectedIndex())
-		    continue;
-		solverSelectionPanel.setEnabledAt(i, !fileOpened);
-	    }
-	});
 	
 	model.addSolverListener(new SolverListener() {
 	    @Override
@@ -285,8 +307,27 @@ public class MainFrame extends JFrame {
 		    solverSelectionPanel.setEnabledAt(i, false);
 		}
 	    }
+	    
 	    @Override
 	    public void solverTerminated() {
+		reset();
+	    }
+	    
+	    @Override
+	    public void solverFileOpened() {
+		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+		    if(i == solverSelectionPanel.getSelectedIndex())
+			continue;
+		    solverSelectionPanel.setEnabledAt(i, false);
+		}
+	    }
+	    
+	    @Override
+	    public void solverReset() {
+		reset();
+	    }
+	    
+	    private void reset() {
 		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(true);
 		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 		    if(i == solverSelectionPanel.getSelectedIndex())

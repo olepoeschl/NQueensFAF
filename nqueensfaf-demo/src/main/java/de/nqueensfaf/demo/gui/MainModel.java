@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import javax.swing.event.EventListenerList;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
+import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.impl.SymSolver;
 
@@ -45,8 +46,10 @@ class MainModel {
     public MainModel() {
 	addSolverListener(new SolverListener() {
 	    @Override
+	    public void solverStarted() {}
+	    @Override
 	    public void solverTerminated() {
-		setFileOpened(false);
+		fileOpened = false;
 	    }
 	});
     }
@@ -89,7 +92,10 @@ class MainModel {
 	if(symSolvers.get(solverImplWithConfig) == null) {
 	    var symSolver = new SymSolver();
 	    symSolver.onProgressUpdate((progress, solutions, duration) -> {
-		prop.firePropertyChange("uniqueSolutions", null, symSolver.getUniqueSolutionsTotal(selectedSolverImplWithConfig.getSolver().getSolutions()));
+		// continue unique solutions updates if solver is finished but SymSolver still running
+		var runningSolverImpl = selectedSolverImplWithConfig.getSolver();
+		if(runningSolverImpl.getExecutionState().equals(ExecutionState.FINISHED))
+		    prop.firePropertyChange("uniqueSolutions", null, symSolver.getUniqueSolutionsTotal(runningSolverImpl.getSolutions()));
 	    });
 	    symSolvers.put(selectedSolverImplWithConfig, symSolver);
 	}
@@ -110,15 +116,6 @@ class MainModel {
     
     int getN() {
 	return n;
-    }
-    
-    private void setFileOpened(boolean fileOpened) {
-	this.fileOpened = fileOpened;
-	prop.firePropertyChange("fileOpened", null, fileOpened);
-    }
-    
-    boolean isFileOpened() {
-	return fileOpened;
     }
     
     void startSolver() {
@@ -155,14 +152,24 @@ class MainModel {
     }
     
     void openFile(String path) throws IOException {
-	selectedSolverImplWithConfig.load(path);
+	selectedSolverImplWithConfig.getSolver().load(path);
+	selectedSolverImplWithConfig.loaded();
+	
 	setN(selectedSolverImplWithConfig.getSolver().getN());
-	setFileOpened(true);
+	
 	update();
+	fireSolverFileOpened();
     }
     
     void saveToFile(String path) throws IOException {
 	selectedSolverImplWithConfig.getSolver().save(path);
+    }
+    
+    void reset() {
+	selectedSolverImplWithConfig.getSolver().reset();
+	symSolvers.get(selectedSolverImplWithConfig).reset();
+	update();
+	fireSolverReset();
     }
     
     // solver events management
@@ -178,8 +185,22 @@ class MainModel {
 	}
     }
     
+    private void fireSolverFileOpened() {
+	for(var listener : listenerList.getListeners(SolverListener.class)) {
+	    EventQueue.invokeLater(() -> listener.solverFileOpened());
+	}
+    }
+    
+    private void fireSolverReset() {
+	for(var listener : listenerList.getListeners(SolverListener.class)) {
+	    EventQueue.invokeLater(() -> listener.solverReset());
+	}
+    }
+    
     static interface SolverListener extends EventListener {
-	default void solverStarted() {}
-	default void solverTerminated() {}
+	void solverStarted();
+	void solverTerminated();
+	default void solverFileOpened() {}
+	default void solverReset() {}
     }
 }

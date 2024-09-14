@@ -1,7 +1,5 @@
 package de.nqueensfaf.demo.gui;
 
-import java.io.IOException;
-
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.impl.CpuSolver;
 
@@ -31,10 +29,6 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
     @Override
     public void setEnabled(boolean enabled) {
 	propConfigUi.setEnabled(enabled);
-    }
-    
-    private void loaded() {
-	propConfigUi.getProperty("prequeens").setEnabled(false);
     }
     
     class CpuSolverWithConfig implements SolverImplWithConfig {
@@ -70,9 +64,8 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 
 	@Override
-	public void load(String path) throws IOException {
-	    solver.load(path);
-	    loaded();
+	public void loaded() {
+	    propConfigUi.getProperty("prequeens").setEnabled(false);
 	}
     }
 }

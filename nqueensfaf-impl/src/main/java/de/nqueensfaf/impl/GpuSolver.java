@@ -121,6 +121,7 @@ public class GpuSolver extends AbstractSolver {
 	this.presetQueens = presetQueens;
     }
 
+    @Override
     public void save(String path) throws IOException {
 	if (!getExecutionState().isBusy())
 	    throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
@@ -133,6 +134,7 @@ public class GpuSolver extends AbstractSolver {
 	}
     }
 
+    @Override
     public void load(String path) throws IOException {
 	if (!getExecutionState().isIdle())
 	    throw new IllegalStateException("solver progress can only be restored from a file when idle");
@@ -143,6 +145,13 @@ public class GpuSolver extends AbstractSolver {
 	} catch (Exception e) {
 	    throw new IOException("could not load solver state from file: " + e.getMessage(), e);
 	}
+    }
+
+    @Override
+    public void reset() {
+	duration = start = storedDuration = 0;
+	constellations.clear();
+	stateLoaded = false;
     }
 
     public void load(int n, long storedDuration, List<Constellation> constellations) {
