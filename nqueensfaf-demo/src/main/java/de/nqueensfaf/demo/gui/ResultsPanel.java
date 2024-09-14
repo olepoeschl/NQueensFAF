@@ -1,8 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -11,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
@@ -40,14 +39,18 @@ class ResultsPanel extends JPanel {
     
     private void initUi() {
 	// used config
-	lblN = new JLabel("N = ?");
-	lblN.setHorizontalAlignment(JLabel.CENTER);
+	lblN = new JLabel("");
+	lblN.setFont(highlightCaptionFont);
+	lblN.setHorizontalAlignment(JLabel.RIGHT);
 	
-	lblSolverName = new JLabel("Solver: ?");
-	lblSolverName.setHorizontalAlignment(JLabel.CENTER);
+	lblSolverName = new JLabel();
+	lblSolverName.setFont(highlightCaptionFont);
+	lblSolverName.setHorizontalAlignment(JLabel.LEFT);
 	
 	var usedConfigs = new JPanel(new GridBagLayout());
-	usedConfigs.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+	usedConfigs.setBorder(new CompoundBorder(
+		BorderFactory.createLineBorder(MainFrame.ACCENT_COLOR, 10),
+		BorderFactory.createEmptyBorder(2, 5, 2, 5)));
 	usedConfigs.add(lblN, new QuickGBC(0, 0).weight(1, 0).fillx().anchor(QuickGBC.ANCHOR_CENTER));
 	usedConfigs.add(lblSolverName, new QuickGBC(1, 0).weight(1, 0).fillx().anchor(QuickGBC.ANCHOR_CENTER));
 	
@@ -98,11 +101,13 @@ class ResultsPanel extends JPanel {
 	pnlUniqueSolutions.add(lblUniqueSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
 
 	var resultsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+	resultsPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+	resultsPanel.setBackground(MainFrame.ACCENT_COLOR);
 	resultsPanel.add(pnlDuration);
 	resultsPanel.add(pnlSolutions);
 	resultsPanel.add(pnlUniqueSolutions);
 	
-	setLayout(new BorderLayout(0, 5));
+	setLayout(new BorderLayout());
 	add(usedConfigs, BorderLayout.NORTH);
 	add(resultsPanel, BorderLayout.CENTER);
 	
@@ -130,11 +135,11 @@ class ResultsPanel extends JPanel {
     }
     
     private void updateUsedN(int n) {
-	lblN.setText("N = " + n);
+	lblN.setText("N=" + n);
     }
     
     private void updateUsedSolverImplName(String solverImplName) {
-	lblSolverName.setText("Solver: " + solverImplName);
+	lblSolverName.setText("," + solverImplName);
     }
 
     private String getSolverImplName(AbstractSolver solver) {

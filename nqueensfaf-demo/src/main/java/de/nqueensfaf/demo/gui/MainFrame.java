@@ -36,6 +36,8 @@ import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 public class MainFrame extends JFrame {
     
+    static final Color ACCENT_COLOR = new Color(235, 235, 235);
+    
     private final MainModel model = new MainModel();
 
     public MainFrame() {
@@ -183,6 +185,7 @@ public class MainFrame extends JFrame {
 		openItem.setEnabled(false);
 		saveItem.setEnabled(true);
 		resetItem.setEnabled(false);
+		settingsItem.setEnabled(false);
 	    }
 	    
 	    @Override
@@ -204,6 +207,7 @@ public class MainFrame extends JFrame {
 		openItem.setEnabled(true);
 		saveItem.setEnabled(false);
 		resetItem.setEnabled(true);
+		settingsItem.setEnabled(true);
 	    }
 	});
 
@@ -273,12 +277,11 @@ public class MainFrame extends JFrame {
     private JTabbedPane createAndGetSolverSelectionPanel() {
 	var solverSelectionPanel = new JTabbedPane();
 	
-	final Color tabColor = new Color(235, 235, 235);
 	final Color systemDefaultTabColor = solverSelectionPanel.getBackground();
 	solverSelectionPanel.addChangeListener(e -> {
 	    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
 		solverSelectionPanel.setBackgroundAt(i, systemDefaultTabColor);
-	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), tabColor);
+	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), ACCENT_COLOR);
 	    
 	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
 	    model.setSelectedSolverImplWithConfig(solverImplWithConfig);
@@ -293,7 +296,7 @@ public class MainFrame extends JFrame {
 	
 	for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 	    var component = solverSelectionPanel.getComponentAt(i);
-	    component.setBackground(tabColor);
+	    component.setBackground(ACCENT_COLOR);
 	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
 	
