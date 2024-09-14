@@ -1,6 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.util.List;
 
 import javax.swing.JScrollPane;
@@ -17,7 +18,7 @@ import de.nqueensfaf.impl.GpuSolver.Gpu;
 
 class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
-    private final GpuSolverConfig model = new GpuSolverConfig();
+    private final GpuSolverWithConfig model = new GpuSolverWithConfig();
 
     private final PropertyGroupConfigUi propConfigUi;
 
@@ -42,17 +43,21 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.setEnabled(enabled);
     }
     
-    class GpuSolverConfig implements SolverImplWithConfig {
+    private void loaded() {
+	propConfigUi.getProperty("prequeens").setEnabled(false);
+    }
+    
+    class GpuSolverWithConfig implements SolverImplWithConfig {
 	
 	private final GpuSolver solver = new GpuSolver();
 	
 	@Override
-	public AbstractSolver getConfiguredSolver() {
+	public AbstractSolver getSolver() {
 	    return solver;
 	}
 
 	@Override
-	public String checkValid() {
+	public String checkConfigValid() {
 	    if(solver.getPresetQueens() >= solver.getN() - 1)
 		return "Number of pre placed queens must be lower than N - 1";
 	    return "";
@@ -72,6 +77,12 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	
 	void setPresetQueens(int prequeens) {
 	    solver.setPresetQueens(prequeens);
+	}
+
+	@Override
+	public void load(String path) throws IOException {
+	    solver.load(path);
+	    loaded();
 	}
     }
 
@@ -147,7 +158,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		
 		@Override
 		public boolean isCellEditable(int rowIndex, int colIndex) {
-		    if(model.getConfiguredSolver().getExecutionState().isBusy())
+		    if(model.getSolver().getExecutionState().isBusy())
 			return false;
 		    
 		    switch(colIndex) {

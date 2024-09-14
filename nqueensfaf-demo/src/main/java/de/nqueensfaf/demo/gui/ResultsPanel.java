@@ -18,10 +18,10 @@ class ResultsPanel extends JPanel {
     private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
     private static final Font highlightCaptionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 	
-    private final SolverModel solverModel;
+    private final MainModel mainModel;
     
-    ResultsPanel(SolverModel solverModel) {
-	this.solverModel = solverModel;
+    ResultsPanel(MainModel mainModel) {
+	this.mainModel = mainModel;
 	
 	setLayout(new GridLayout(3, 1, 0, 5));
 	initUi();
@@ -31,13 +31,13 @@ class ResultsPanel extends JPanel {
 	// labels
 	JLabel lblDuration = new JLabel("00.000");
 	lblDuration.setFont(highlightFont);
-	solverModel.addPropertyChangeListener("duration", e -> {
+	mainModel.addPropertyChangeListener("duration", e -> {
 	    lblDuration.setText(getDurationPrettyString((long) e.getNewValue()));
 	});
 	
 	JLabel lblDurationCaption = new JLabel("seconds");
 	lblDurationCaption.setFont(highlightCaptionFont);
-	solverModel.addPropertyChangeListener("duration", e -> {
+	mainModel.addPropertyChangeListener("duration", e -> {
 	    String unit;
 	    long duration = (long) e.getNewValue();
 	    
@@ -53,7 +53,7 @@ class ResultsPanel extends JPanel {
 
 	JLabel lblSolutions = new JLabel("0");
 	lblSolutions.setFont(highlightFont);
-	solverModel.addPropertyChangeListener("solutions", e -> {
+	mainModel.addPropertyChangeListener("solutions", e -> {
 	    lblSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
 	});
 	
@@ -62,7 +62,7 @@ class ResultsPanel extends JPanel {
 	
 	JLabel lblUniqueSolutions = new JLabel("0");
 	lblUniqueSolutions.setFont(highlightFont);
-	solverModel.addPropertyChangeListener("unique_solutions", e -> {
+	mainModel.addPropertyChangeListener("uniqueSolutions", e -> {
 	    lblUniqueSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
 	});
 	
@@ -137,8 +137,7 @@ class ResultsPanel extends JPanel {
 	} else {
 	    strms = "00" + ms;
 	}
-
-	var builder = new StringBuilder();
+	
 	if(h > 0)
 	    return strh + ":" + strm + ":" + strs + "." + strms;
 	else if(m > 0)

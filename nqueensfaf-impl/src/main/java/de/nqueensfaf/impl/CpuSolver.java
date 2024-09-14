@@ -86,7 +86,7 @@ public class CpuSolver extends AbstractSolver {
     public long getDuration() {
 	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0)
 	    return System.currentTimeMillis() - start + storedDuration;
-	else if (start == 0 && stateLoaded)
+	else if (getExecutionState().isIdle() && stateLoaded)
 	    return storedDuration;
 	return duration;
     }

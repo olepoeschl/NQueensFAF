@@ -27,7 +27,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.filechooser.FileFilter;
 
 import de.nqueensfaf.demo.Main;
-import de.nqueensfaf.demo.gui.SolverModel.SolverListener;
+import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
@@ -35,8 +35,8 @@ import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 public class MainFrame extends JFrame {
-
-    private final SolverModel solverModel = new SolverModel();
+    
+    private final MainModel model = new MainModel();
 
     public MainFrame() {
 	createAndShowUi();
@@ -91,12 +91,10 @@ public class MainFrame extends JFrame {
 	
 	setVisible(true);
 	resultsPanel.requestFocus();
-	
-	solverModel.setN(16);
     }
 
     private JPanel createAndGetResultsPanel() {
-	var resultsPanel = new ResultsPanel(solverModel);
+	var resultsPanel = new ResultsPanel(model);
 	return resultsPanel;
     }
 
@@ -135,13 +133,8 @@ public class MainFrame extends JFrame {
 		openFileChooser.showOpenDialog(MainFrame.this);
 		File selectedFile = openFileChooser.getSelectedFile();
 		
-		if(selectedFile != null) {
-		    try {
-			solverModel.load(selectedFile.getAbsolutePath());
-		    } catch (IOException ex) {
-			Dialog.error("could not open file: " + ex.getMessage());
-		    }
-		}
+		if(selectedFile != null)
+		    openFile(selectedFile.getAbsolutePath());
 	    }
 	});
 	
@@ -155,11 +148,7 @@ public class MainFrame extends JFrame {
 		    String targetPath = selectedFile.getAbsolutePath();
 		    if(!targetPath.endsWith(".faf"))
 			targetPath += ".faf";
-		    try {
-			solverModel.save(targetPath);
-		    } catch (IOException ex) {
-			Dialog.error("could not save to file: " + ex.getMessage());
-		    }
+		    saveToFile(targetPath);
 		}
 	    }
 	});
@@ -177,7 +166,7 @@ public class MainFrame extends JFrame {
 	fileMenu.add(saveItem);
 	fileMenu.add(settingsItem);
 	
-	solverModel.addSolverListener(new SolverListener() {
+	model.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
 		openItem.setEnabled(false);
@@ -188,6 +177,11 @@ public class MainFrame extends JFrame {
 		openItem.setEnabled(true);
 		saveItem.setEnabled(false);
 	    }
+	});
+	
+	model.addPropertyChangeListener("fileOpened", e -> {
+	    boolean fileOpened = (boolean) e.getNewValue();
+	    openItem.setEnabled(!fileOpened);
 	});
 
 	var aboutMenu = new JMenu("About");
@@ -220,23 +214,22 @@ public class MainFrame extends JFrame {
 
     private JPanel createAndGetNConfigPanel() {
 	var nConfigUi = new PropertyGroupConfigUi();
-	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, solverModel.getN(), 1);
-	nConfigUi.addPropertyChangeListener("n", e -> solverModel.setN((int) e.getNewValue()));
+	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, model.getN(), 1);
+	nConfigUi.addPropertyChangeListener("n", e -> model.setN((int) e.getNewValue()));
 	
-	solverModel.addPropertyChangeListener("n", e -> {
-	    ((IntProperty) nConfigUi.getProperty("n")).setValue((Integer) e.getNewValue());
-	});
-	solverModel.addPropertyChangeListener("loaded", e -> {
-	    boolean loaded = (boolean) e.getNewValue();
-	    nConfigUi.setEnabled(!loaded);
+	model.addPropertyChangeListener("fileOpened", e -> {
+	    boolean fileOpened = (boolean) e.getNewValue();
+	    nConfigUi.setEnabled(!fileOpened);
+	    
+	    if(fileOpened)
+		((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
 	});
 	
-	solverModel.addSolverListener(new SolverListener() {
+	model.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
 		nConfigUi.setEnabled(false);
 	    }
-
 	    @Override
 	    public void solverTerminated() {
 		nConfigUi.setEnabled(true);
@@ -257,7 +250,7 @@ public class MainFrame extends JFrame {
 	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), tabColor);
 	    
 	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
-	    solverModel.setSelectedSolverImplWithConfig(solverImplWithConfig);
+	    model.setSelectedSolverImplWithConfig(solverImplWithConfig);
 	});
 	
 	// add Solver implementations' tabs
@@ -273,7 +266,16 @@ public class MainFrame extends JFrame {
 	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
 
-	solverModel.addSolverListener(new SolverListener() {
+	model.addPropertyChangeListener("fileOpened", e -> {
+	    boolean fileOpened = (boolean) e.getNewValue();
+	    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+		if(i == solverSelectionPanel.getSelectedIndex())
+		    continue;
+		solverSelectionPanel.setEnabledAt(i, !fileOpened);
+	    }
+	});
+	
+	model.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
 		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(false);
@@ -283,7 +285,6 @@ public class MainFrame extends JFrame {
 		    solverSelectionPanel.setEnabledAt(i, false);
 		}
 	    }
-	    
 	    @Override
 	    public void solverTerminated() {
 		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(true);
@@ -300,9 +301,9 @@ public class MainFrame extends JFrame {
     
     private JPanel createAndGetSolverControlPanel() {
 	var startButton = new JButton("Start");
-	startButton.addActionListener(e -> startSolver());
+	startButton.addActionListener(e -> model.startSolver());
 	
-	solverModel.addSolverListener(new SolverListener() {
+	model.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
 		startButton.setEnabled(false);
@@ -317,26 +318,7 @@ public class MainFrame extends JFrame {
 	solverControlPanel.add(startButton, new QuickGBC(0, 0).weight(1, 1).fill());
 	
 	return solverControlPanel;
-    }
-
-    private void startSolver() {
-	solverModel.applyGeneralConfig();
-	
-	String errorMessage = solverModel.getSelectedSolverImplWithConfig().checkValid();
-	if(errorMessage.length() > 0) {
-	    Dialog.error(errorMessage);
-	    return;
-	}
-
-	Thread.ofVirtual().start(() -> solverModel.startSymSolver());
-	Thread.ofVirtual().start(() -> {
-	    try {
-		solverModel.startSolver();
-	    } catch(Exception e) {
-		Dialog.error(e.getMessage());
-	    }
-	});
-    }
+    }    
     
     private JProgressBar createAndGetProgressBar() {
 	var progressBar = new JProgressBar(0, 100);
@@ -344,12 +326,28 @@ public class MainFrame extends JFrame {
 	progressBar.setString("0,000 %");
 	progressBar.setValue(0);
 
-	solverModel.addPropertyChangeListener("progress", e -> {
+	model.addPropertyChangeListener("progress", e -> {
 	    float progress = ((float) e.getNewValue()) * 100;
 	    progressBar.setValue((int) progress);
 	    progressBar.setString(String.format("%3.3f %%", progress));
 	});
 	
 	return progressBar;
+    }
+
+    private void openFile(String path) {
+	try {
+	    model.openFile(path);
+	} catch (IOException e) {
+	    Dialog.error("could not open file: " + e.getMessage());
+	}
+    }
+    
+    private void saveToFile(String path) {
+	try {
+	    model.saveToFile(path);
+	} catch (IOException e) {
+	    Dialog.error("could not save to file: " + e.getMessage());
+	}
     }
 }

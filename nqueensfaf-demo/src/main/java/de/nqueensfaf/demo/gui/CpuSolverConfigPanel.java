@@ -1,11 +1,13 @@
 package de.nqueensfaf.demo.gui;
 
+import java.io.IOException;
+
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.impl.CpuSolver;
 
 class CpuSolverConfigPanel extends SolverImplConfigPanel {
 
-    private final CpuSolverConfig model = new CpuSolverConfig();
+    private final CpuSolverWithConfig model = new CpuSolverWithConfig();
     
     private final PropertyGroupConfigUi propConfigUi;
     
@@ -15,7 +17,7 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
 	propConfigUi.addPropertyChangeListener(
 		"threads", e -> model.setThreadCount((int) e.getNewValue()));
-	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 4, 1);
+	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 5, 1);
 	propConfigUi.addPropertyChangeListener(
 		"prequeens", e -> model.setPresetQueens((int) e.getNewValue()));
 	propConfigUi.fillRemainingVerticalSpace();
@@ -31,17 +33,21 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.setEnabled(enabled);
     }
     
-    class CpuSolverConfig implements SolverImplWithConfig {
+    private void loaded() {
+	propConfigUi.getProperty("prequeens").setEnabled(false);
+    }
+    
+    class CpuSolverWithConfig implements SolverImplWithConfig {
 	
 	private final CpuSolver solver = new CpuSolver();
 	
 	@Override
-	public AbstractSolver getConfiguredSolver() {
+	public AbstractSolver getSolver() {
 	    return solver;
 	}
 
 	@Override
-	public String checkValid() {
+	public String checkConfigValid() {
 	    if(solver.getPresetQueens() >= solver.getN() - 1)
 		return "Number of pre placed queens must be lower than N - 1";
 	    return "";
@@ -61,6 +67,12 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	
 	int getPresetQueens() {
 	    return solver.getPresetQueens();
+	}
+
+	@Override
+	public void load(String path) throws IOException {
+	    solver.load(path);
+	    loaded();
 	}
     }
 }
