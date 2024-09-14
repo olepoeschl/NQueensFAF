@@ -163,7 +163,7 @@ public class MainFrame extends JFrame {
 	    }
 	});
 	
-	var settingsItem = new JMenuItem(new AbstractAction("SettingsDialog") {
+	var settingsItem = new JMenuItem(new AbstractAction("Settings") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
 		var settingsDialog = new SettingsDialog(MainFrame.this, model);

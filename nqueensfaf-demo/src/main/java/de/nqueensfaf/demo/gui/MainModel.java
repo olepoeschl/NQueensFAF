@@ -104,7 +104,7 @@ class MainModel {
 	    symSolvers.put(selectedSolverImplWithConfig, symSolver);
 	}
 	
-	update();
+//	update();
 	
 	prop.firePropertyChange("selectedSolverImplWithConfig", null, solverImplWithConfig);
     }

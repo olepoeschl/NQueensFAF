@@ -1,5 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -9,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 
+import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
@@ -21,6 +24,8 @@ class ResultsPanel extends JPanel {
 	
     private final MainModel mainModel;
     
+    private JLabel lblN;
+    private JLabel lblSolverName;
     private JLabel lblDuration;
     private JLabel lblDurationCaption;
     private JLabel lblSolutions;
@@ -29,12 +34,24 @@ class ResultsPanel extends JPanel {
     ResultsPanel(MainModel mainModel) {
 	this.mainModel = mainModel;
 	
-	setLayout(new GridLayout(3, 1, 0, 5));
 	initUi();
     }
     
     private void initUi() {
-	// labels
+	// used config
+	lblN = new JLabel("N = ?");
+	lblN.setHorizontalAlignment(JLabel.LEFT);
+	
+	lblSolverName = new JLabel("Solver: ?");
+	lblSolverName.setHorizontalAlignment(JLabel.RIGHT);
+	
+	var usedConfigs = new JPanel();
+	usedConfigs.setLayout(new FlowLayout());
+	usedConfigs.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+	usedConfigs.add(lblN);
+	usedConfigs.add(lblSolverName);
+	
+	// result labels
 	lblDuration = new JLabel("00.000");
 	lblDuration.setFont(highlightFont);
 	
@@ -53,7 +70,7 @@ class ResultsPanel extends JPanel {
 	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
 	lblUniqueSolutionsCaption.setFont(highlightCaptionFont);
 
-	// update ui from model listeners
+	// update labels from model listeners
 	mainModel.addPropertyChangeListener("duration", e -> {
 	    updateDuration((long) e.getNewValue());
 	});
@@ -64,7 +81,7 @@ class ResultsPanel extends JPanel {
 	    updateUniqueSolutions((long) e.getNewValue());
 	});
 	
-	// panels
+	// result panels
 	JPanel pnlDuration = new JPanel(new GridBagLayout());
 	JPanel pnlSolutions = new JPanel(new GridBagLayout());
 	JPanel pnlUniqueSolutions = new JPanel(new GridBagLayout());
@@ -79,14 +96,22 @@ class ResultsPanel extends JPanel {
 	pnlSolutions.add(lblSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
 	pnlUniqueSolutions.add(lblUniqueSolutions, new QuickGBC(0, 0).anchor(ANCHOR_CENTER));
 	pnlUniqueSolutions.add(lblUniqueSolutionsCaption, new QuickGBC(0, 1).anchor(ANCHOR_CENTER));
+
+	var resultsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+	resultsPanel.add(pnlDuration);
+	resultsPanel.add(pnlSolutions);
+	resultsPanel.add(pnlUniqueSolutions);
 	
-	add(pnlDuration);
-	add(pnlSolutions);
-	add(pnlUniqueSolutions);
+	setLayout(new BorderLayout());
+	add(usedConfigs, BorderLayout.NORTH);
+	add(resultsPanel, BorderLayout.CENTER);
 	
 	mainModel.addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
+		updateUsedN(mainModel.getN());
+		updateUsedSolverImplName(getSolverImplName(mainModel.getSelectedSolverImplWithConfig().getSolver()));
+		
 		if(!mainModel.isFileOpened()) {
 		    updateDuration(0);
 		    updateSolutions(0);
@@ -102,6 +127,26 @@ class ResultsPanel extends JPanel {
 		updateUniqueSolutions(mainModel.getUniqueSolutions(solutions));
 	    }
 	});
+    }
+    
+    private void updateUsedN(int n) {
+	lblN.setText("N = " + n);
+    }
+    
+    private void updateUsedSolverImplName(String solverImplName) {
+	lblSolverName.setText("Solver: " + solverImplName);
+    }
+
+    private String getSolverImplName(AbstractSolver solver) {
+	String solverName = solver.getClass().getName();
+	
+	int fromIndex = solverName.lastIndexOf('.');
+	if(fromIndex >= 0)
+	    solverName = solverName.substring(fromIndex + 1);
+	
+	if(solverName.contains("Solver"))
+	    solverName = solverName.replace("Solver", "");
+	return solverName.toUpperCase();
     }
     
     private void updateDuration(long duration) {
@@ -181,4 +226,5 @@ class ResultsPanel extends JPanel {
 	else
 	    return strs + "." + strms;
     }
+
 }
