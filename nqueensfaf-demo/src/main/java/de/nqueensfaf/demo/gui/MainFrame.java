@@ -163,11 +163,11 @@ public class MainFrame extends JFrame {
 	    }
 	});
 	
-	var settingsItem = new JMenuItem(new AbstractAction("Settings") {
+	var settingsItem = new JMenuItem(new AbstractAction("SettingsDialog") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		System.out.println("File.Settings");
+		var settingsDialog = new SettingsDialog(MainFrame.this, model);
+		settingsDialog.setVisible(true);
 	    }
 	});
 	
@@ -371,6 +371,18 @@ public class MainFrame extends JFrame {
 	    float progress = ((float) e.getNewValue()) * 100;
 	    progressBar.setValue((int) progress);
 	    progressBar.setString(String.format("%3.3f %%", progress));
+	});
+	
+	model.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		if(!model.isFileOpened())
+		    progressBar.setValue(0);
+	    }
+	    @Override
+	    public void solverTerminated() {
+		progressBar.setValue((int) (model.getProgress() * 100));
+	    }
 	});
 	
 	return progressBar;

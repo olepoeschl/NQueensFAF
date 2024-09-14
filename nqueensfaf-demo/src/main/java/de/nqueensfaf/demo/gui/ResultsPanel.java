@@ -9,6 +9,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 
+import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
@@ -20,6 +21,11 @@ class ResultsPanel extends JPanel {
 	
     private final MainModel mainModel;
     
+    private JLabel lblDuration;
+    private JLabel lblDurationCaption;
+    private JLabel lblSolutions;
+    private JLabel lblUniqueSolutions;
+    
     ResultsPanel(MainModel mainModel) {
 	this.mainModel = mainModel;
 	
@@ -29,46 +35,35 @@ class ResultsPanel extends JPanel {
     
     private void initUi() {
 	// labels
-	JLabel lblDuration = new JLabel("00.000");
+	lblDuration = new JLabel("00.000");
 	lblDuration.setFont(highlightFont);
-	mainModel.addPropertyChangeListener("duration", e -> {
-	    lblDuration.setText(getDurationPrettyString((long) e.getNewValue()));
-	});
 	
-	JLabel lblDurationCaption = new JLabel("seconds");
+	lblDurationCaption = new JLabel("seconds");
 	lblDurationCaption.setFont(highlightCaptionFont);
-	mainModel.addPropertyChangeListener("duration", e -> {
-	    String unit;
-	    long duration = (long) e.getNewValue();
-	    
-	    if(duration >= 60 * 60 * 1000)
-		unit = "hours";
-	    else if(duration >= 60 * 1000)
-		unit = "minutes";
-	    else
-		unit = "seconds";
-	    
-	    lblDurationCaption.setText(unit);
-	});
 
-	JLabel lblSolutions = new JLabel("0");
+	lblSolutions = new JLabel("0");
 	lblSolutions.setFont(highlightFont);
-	mainModel.addPropertyChangeListener("solutions", e -> {
-	    lblSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
-	});
 	
 	JLabel lblSolutionsCaption = new JLabel("solutions");
 	lblSolutionsCaption.setFont(highlightCaptionFont);
 	
-	JLabel lblUniqueSolutions = new JLabel("0");
+	lblUniqueSolutions = new JLabel("0");
 	lblUniqueSolutions.setFont(highlightFont);
-	mainModel.addPropertyChangeListener("uniqueSolutions", e -> {
-	    lblUniqueSolutions.setText(getSolutionsPrettyString((long) e.getNewValue()));
-	});
 	
 	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
 	lblUniqueSolutionsCaption.setFont(highlightCaptionFont);
 
+	// update ui from model listeners
+	mainModel.addPropertyChangeListener("duration", e -> {
+	    updateDuration((long) e.getNewValue());
+	});
+	mainModel.addPropertyChangeListener("solutions", e -> {
+	    updateSolutions((long) e.getNewValue());
+	});
+	mainModel.addPropertyChangeListener("uniqueSolutions", e -> {
+	    updateUniqueSolutions((long) e.getNewValue());
+	});
+	
 	// panels
 	JPanel pnlDuration = new JPanel(new GridBagLayout());
 	JPanel pnlSolutions = new JPanel(new GridBagLayout());
@@ -88,6 +83,47 @@ class ResultsPanel extends JPanel {
 	add(pnlDuration);
 	add(pnlSolutions);
 	add(pnlUniqueSolutions);
+	
+	mainModel.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+		if(!mainModel.isFileOpened()) {
+		    updateDuration(0);
+		    updateSolutions(0);
+		    updateUniqueSolutions(0);
+		}
+	    }
+	    
+	    @Override
+	    public void solverTerminated() {
+		updateDuration(mainModel.getDuration());
+		final var solutions = mainModel.getSolutions();
+		updateSolutions(solutions);
+		updateUniqueSolutions(mainModel.getUniqueSolutions(solutions));
+	    }
+	});
+    }
+    
+    private void updateDuration(long duration) {
+	lblDuration.setText(getDurationPrettyString(duration));
+	lblDurationCaption.setText(getDurationUnitString(duration));
+    }
+    
+    private void updateSolutions(long solutions) {
+	lblSolutions.setText(getSolutionsPrettyString(solutions));
+    }
+    
+    private void updateUniqueSolutions(long uniqueSolutions) {
+	lblUniqueSolutions.setText(getSolutionsPrettyString(uniqueSolutions));
+    }
+    
+    private String getDurationUnitString(long duration) {
+	if(duration >= 60 * 60 * 1000)
+	    return "hours";
+	else if(duration >= 60 * 1000)
+	    return "minutes";
+	else
+	    return "seconds";
     }
 
     private static String getSolutionsPrettyString(long solutions) {

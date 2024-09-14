@@ -39,7 +39,7 @@ class MainModel {
     private SolverImplWithConfig selectedSolverImplWithConfig;
     private int n = 16;
     private int updateInterval = 100;
-    private float autoSaveInterval = 0; // disabled by default
+    private int autoSaveInterval = 0; // disabled by default
     
     private boolean fileOpened = false;
     
@@ -54,6 +54,14 @@ class MainModel {
 	});
     }
 
+    void addPropertyChangeListener(PropertyChangeListener l) {
+	prop.addPropertyChangeListener(l);
+    }
+
+    void removePropertyChangeListener(PropertyChangeListener l) {
+	prop.removePropertyChangeListener(l);
+    }
+    
     void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	prop.addPropertyChangeListener(propertyName, l);
     }
@@ -80,10 +88,6 @@ class MainModel {
     private void update() {
 	var solver = selectedSolverImplWithConfig.getSolver();
 	update(solver.getProgress(), solver.getSolutions(), solver.getDuration());
-    }
-    
-    private long getUniqueSolutions(long solutions) {
-	return symSolvers.get(selectedSolverImplWithConfig).getUniqueSolutionsTotal(solutions);
     }
     
     void setSelectedSolverImplWithConfig(SolverImplWithConfig solverImplWithConfig) {
@@ -116,6 +120,42 @@ class MainModel {
     
     int getN() {
 	return n;
+    }
+    
+    void setUpdateInterval(int updateInterval) {
+	this.updateInterval = updateInterval;
+	prop.firePropertyChange("updateInterval", null, updateInterval);
+    }
+    
+    int getUpdateInterval() {
+	return updateInterval;
+    }
+    
+    void setAutoSaveInterval(int autoSaveInterval) {
+	if(autoSaveInterval > 100)
+	    throw new IllegalArgumentException("invalid config: auto save interval must be <= 100");
+	this.autoSaveInterval = autoSaveInterval;
+	prop.firePropertyChange("autoSaveInterval", null, autoSaveInterval);
+    }
+    
+    int getAutoSaveInterval() {
+	return autoSaveInterval;
+    }
+    
+    float getProgress() {
+	return selectedSolverImplWithConfig.getSolver().getProgress();
+    }
+    
+    long getSolutions() {
+	return selectedSolverImplWithConfig.getSolver().getSolutions();
+    }
+    
+    long getDuration() {
+	return selectedSolverImplWithConfig.getSolver().getDuration();
+    }
+    
+    long getUniqueSolutions(long solutions) {
+	return symSolvers.get(selectedSolverImplWithConfig).getUniqueSolutionsTotal(solutions);
     }
     
     void startSolver() {
@@ -159,6 +199,10 @@ class MainModel {
 	
 	update();
 	fireSolverFileOpened();
+    }
+    
+    boolean isFileOpened() {
+	return fileOpened;
     }
     
     void saveToFile(String path) throws IOException {

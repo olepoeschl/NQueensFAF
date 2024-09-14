@@ -197,8 +197,8 @@ class PropertyGroupConfigUi {
 	    txtValue = new JFormattedTextField(formatter);
 	    txtValue.setText(Integer.toString(getValue()));
 	    txtValue.addPropertyChangeListener("value", e -> {
-		int newValue = (int) e.getNewValue();
-		setValue(newValue);
+		int newValue = e.getNewValue() != null ? (int) e.getNewValue() : getValue();
+		setValueIfValid(newValue);
 	    });
 	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx());
 
@@ -208,33 +208,36 @@ class PropertyGroupConfigUi {
 	    btnMinus = new JButton("-");
 	    btnMinus.addActionListener(e -> {
 		int newValue = getValue() - step;
-		setValue(newValue);
+		setValueIfValid(newValue);
 	    });
 	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 
 	    slider = new JSlider(min, max, getValue());
 	    slider.addChangeListener(e -> {
 		int newValue = slider.getValue();
-		setValue(newValue);
+		setValueIfValid(newValue);
 	    });
 	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTH).top(2).weight(1, 0).fillx().left(5));
 
 	    btnPlus = new JButton("+");
 	    btnPlus.addActionListener(e -> {
 		int newValue = getValue() + step;
-		setValue(newValue);
+		setValueIfValid(newValue);
 	    });
 	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 	}
 	
-	@Override
-	void updateUi(Integer newValue) {
+	void setValueIfValid(int newValue){
 	    if (newValue < min)
 		newValue = min;
 	    if (newValue > max)
 		newValue = max;
+	    setValue(newValue);
+	}
+	
+	@Override
+	void updateUi(Integer newValue) {
 	    txtValue.setText(Integer.toString(newValue));
-
 	    if (!textInputOnly)
 		slider.setValue(newValue);
 	}
