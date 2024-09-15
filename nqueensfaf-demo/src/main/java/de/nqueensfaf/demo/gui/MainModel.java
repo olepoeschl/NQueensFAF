@@ -110,7 +110,8 @@ class MainModel {
 	prop.firePropertyChange("progress", null, progress);
 	prop.firePropertyChange("solutions", null, solutions);
 	prop.firePropertyChange("duration", null, duration);
-	prop.firePropertyChange("uniqueSolutions", null, getUniqueSolutions(solutions));
+	if(solutions > 0)
+	    prop.firePropertyChange("uniqueSolutions", null, getUniqueSolutions(solutions));
     }
     
     private void update() {
