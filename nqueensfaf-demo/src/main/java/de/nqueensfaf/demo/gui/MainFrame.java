@@ -224,7 +224,11 @@ public class MainFrame extends JFrame {
 	var historyItem = new JMenuItem(new AbstractAction("History") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		historyFrame.setVisible(true);
+		if(historyFrame.isVisible()) {
+		    historyFrame.toFront();
+		    historyFrame.repaint();
+		} else
+		    historyFrame.setVisible(true);
 	    }
 	});
 	
@@ -464,6 +468,7 @@ public class MainFrame extends JFrame {
 	historyFrame.add(new JScrollPane(table), BorderLayout.CENTER);
 	historyFrame.pack();
 	historyFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+	historyFrame.setLocationRelativeTo(this);
 
 	model.addSolverListener(new SolverListener() {
 	    @Override
