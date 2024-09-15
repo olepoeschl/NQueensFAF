@@ -400,10 +400,6 @@ public class MainFrame extends JFrame {
     }
     
     private void saveToFile(String path) {
-	try {
-	    model.saveToFile(path);
-	} catch (IOException e) {
-	    Dialog.error("could not save to file: " + e.getMessage());
-	}
+	model.saveToFile(path, e -> Dialog.error("could not save to file: " + e.getMessage()));
     }
 }

@@ -205,8 +205,14 @@ class MainModel {
 	return fileOpened;
     }
     
-    void saveToFile(String path) throws IOException {
-	selectedSolverImplWithConfig.getSolver().save(path);
+    void saveToFile(String path, Consumer<Exception> onError) {
+	Thread.ofVirtual().start(() -> {
+	    try {
+		selectedSolverImplWithConfig.getSolver().save(path);
+	    } catch (IOException e) {
+		onError.accept(e);
+	    }
+	});
     }
     
     void reset() {
