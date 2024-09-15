@@ -117,7 +117,7 @@ public class SymSolver extends AbstractSolver {
     }
 
     public long getUniqueSolutionsTotal(long solutions) {
-	return (solutions + 4 * solutions180 + 6 * solutions90) / 8;
+	return solutions == 0 ? 0 : (solutions + 4 * solutions180 + 6 * solutions90) / 8;
     }
 
     @Override
