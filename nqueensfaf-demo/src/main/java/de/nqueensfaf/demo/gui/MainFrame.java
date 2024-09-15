@@ -225,6 +225,7 @@ public class MainFrame extends JFrame {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
 		if(historyFrame.isVisible()) {
+		    historyFrame.setExtendedState(JFrame.NORMAL);
 		    historyFrame.toFront();
 		    historyFrame.repaint();
 		} else
