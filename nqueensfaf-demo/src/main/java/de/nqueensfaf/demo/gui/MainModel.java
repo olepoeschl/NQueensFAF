@@ -56,6 +56,10 @@ class MainModel {
 	    public void solverTerminated() {
 		fileOpened = false;
 	    }
+	    @Override
+	    public void solverReset() {
+		fileOpened = false;
+	    }
 	});
 	
 	addPropertyChangeListener("progress", e -> {
