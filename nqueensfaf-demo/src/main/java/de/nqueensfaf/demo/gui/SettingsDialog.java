@@ -9,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 
+@SuppressWarnings("serial")
 class SettingsDialog extends JDialog {
     
     public SettingsDialog(Frame owner, MainModel model) {

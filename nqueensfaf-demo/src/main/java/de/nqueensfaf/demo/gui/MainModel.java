@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import javax.swing.event.EventListenerList;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
+import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.demo.gui.util.Dialog;
 import de.nqueensfaf.impl.SymSolver;
@@ -30,6 +31,7 @@ class MainModel {
     };
     private final Runnable onStart = () -> fireSolverStarted();
     private final Runnable onFinish = () -> {
+	fireSolverFinished();
 	fireSolverTerminated();
     };
     private final Consumer<Exception> onCancel = e -> {
@@ -40,7 +42,6 @@ class MainModel {
     private int n = 16;
     private int updateInterval = 100;
     private int autoSaveInterval = 0; // disabled by default
-    
     private boolean fileOpened = false;
     
     private volatile boolean saving = false;
@@ -86,43 +87,19 @@ class MainModel {
 	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
     }
 
-    void addPropertyChangeListener(PropertyChangeListener l) {
-	prop.addPropertyChangeListener(l);
-    }
-
-    void removePropertyChangeListener(PropertyChangeListener l) {
-	prop.removePropertyChangeListener(l);
-    }
-    
-    void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	prop.addPropertyChangeListener(propertyName, l);
-    }
-    
-    void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	prop.removePropertyChangeListener(propertyName, l);
-    }
-    
-    void addSolverListener(SolverListener l) {
-	listenerList.add(SolverListener.class, l);
-    }
-    
-    void removeSolverListener(SolverListener l) {
-	listenerList.remove(SolverListener.class, l);
-    }
-    
     private void update(float progress, long solutions, long duration) {
 	prop.firePropertyChange("progress", null, progress);
 	prop.firePropertyChange("solutions", null, solutions);
 	prop.firePropertyChange("duration", null, duration);
-	if(solutions > 0)
-	    prop.firePropertyChange("uniqueSolutions", null, getUniqueSolutions(solutions));
+	prop.firePropertyChange("uniqueSolutions", null, getUniqueSolutions(solutions));
     }
     
     private void update() {
 	var solver = selectedSolverImplWithConfig.getSolver();
 	update(solver.getProgress(), solver.getSolutions(), solver.getDuration());
     }
-    
+
+    // ------------ getters and setters -------------
     void setSelectedSolverImplWithConfig(SolverImplWithConfig solverImplWithConfig) {
 	selectedSolverImplWithConfig = solverImplWithConfig;
 	
@@ -190,7 +167,12 @@ class MainModel {
     long getUniqueSolutions(long solutions) {
 	return symSolvers.get(selectedSolverImplWithConfig).getUniqueSolutionsTotal(solutions);
     }
-    
+
+    boolean isFileOpened() {
+	return fileOpened;
+    }
+
+    // ------------ actions (data manipulation) -------------
     void startSolver() {
 	applyConfigs();
 	
@@ -234,10 +216,6 @@ class MainModel {
 	fireSolverFileOpened();
     }
     
-    boolean isFileOpened() {
-	return fileOpened;
-    }
-    
     void saveToFile(String path, Consumer<Exception> onError) {
 	Thread.ofVirtual().start(() -> {
 	    saving = true;
@@ -256,8 +234,59 @@ class MainModel {
 	update();
 	fireSolverReset();
     }
+
+    void addHistoryEntry(int n, AbstractSolver solver, long duration) {
+	var entry = new HistoryEntry(n, getSolverImplName(solver), 
+		ResultsPanel.getDurationPrettyString(duration) + " " + ResultsPanel.getDurationUnitString(duration));
+	fireHistoryEntryAdded(entry);
+    }
     
-    // solver events management
+    static final String getSolverImplName(AbstractSolver solver) {
+	String solverName = solver.getClass().getName();
+	
+	int fromIndex = solverName.lastIndexOf('.');
+	if(fromIndex >= 0)
+	    solverName = solverName.substring(fromIndex + 1);
+	
+	if(solverName.contains("Solver"))
+	    solverName = solverName.replace("Solver", "");
+	return solverName.toUpperCase();
+    }
+    
+    // ------------ listener handling -------------
+    void addPropertyChangeListener(PropertyChangeListener l) {
+	prop.addPropertyChangeListener(l);
+    }
+
+    void removePropertyChangeListener(PropertyChangeListener l) {
+	prop.removePropertyChangeListener(l);
+    }
+    
+    void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	prop.addPropertyChangeListener(propertyName, l);
+    }
+    
+    void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
+	prop.removePropertyChangeListener(propertyName, l);
+    }
+    
+    void addSolverListener(SolverListener l) {
+	listenerList.add(SolverListener.class, l);
+    }
+    
+    void removeSolverListener(SolverListener l) {
+	listenerList.remove(SolverListener.class, l);
+    }
+    
+    void addHistoryEntryListener(HistoryEntryListener l) {
+	listenerList.add(HistoryEntryListener.class, l);
+    }
+    
+    void removeHistoryEntryListener(HistoryEntryListener l) {
+	listenerList.remove(HistoryEntryListener.class, l);
+    }
+    
+    // ------------ event management -------------
     private void fireSolverStarted() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
 	    EventQueue.invokeLater(() -> listener.solverStarted());
@@ -267,6 +296,12 @@ class MainModel {
     private void fireSolverTerminated() {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
 	    EventQueue.invokeLater(() -> listener.solverTerminated());
+	}
+    }
+    
+    private void fireSolverFinished() {
+	for(var listener : listenerList.getListeners(SolverListener.class)) {
+	    EventQueue.invokeLater(() -> listener.solverFinished());
 	}
     }
     
@@ -281,11 +316,25 @@ class MainModel {
 	    EventQueue.invokeLater(() -> listener.solverReset());
 	}
     }
-    
+
+    private void fireHistoryEntryAdded(HistoryEntry entry) {
+	for(var listener : listenerList.getListeners(HistoryEntryListener.class)) {
+	    EventQueue.invokeLater(() -> listener.entryAdded(entry));
+	}
+    }
+
+    // ------------ classes and types -------------
     static interface SolverListener extends EventListener {
 	void solverStarted();
 	void solverTerminated();
+	default void solverFinished() {}
 	default void solverFileOpened() {}
 	default void solverReset() {}
+    }
+    
+    record HistoryEntry(int n, String solverImplName, String duration) {}
+    
+    static interface HistoryEntryListener extends EventListener {
+	void entryAdded(HistoryEntry entry);
     }
 }

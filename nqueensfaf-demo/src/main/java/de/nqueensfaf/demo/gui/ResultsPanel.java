@@ -11,18 +11,16 @@ import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 
-import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
+@SuppressWarnings("serial")
 class ResultsPanel extends JPanel {
 
-    private static final Font highlightFontBig = new Font(Font.MONOSPACED, Font.PLAIN, 20);
-    private static final Font captionFontBig = new Font(Font.MONOSPACED, Font.PLAIN, 14);
-    private static final Font highlightFontSmall = new Font(Font.MONOSPACED, Font.PLAIN, 15);
-    private static final Font captionFontSmall = new Font(Font.MONOSPACED, Font.PLAIN, 10);
+    private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
+    private static final Font captionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 	
     private final MainModel mainModel;
     
@@ -32,24 +30,9 @@ class ResultsPanel extends JPanel {
     private JLabel lblDurationCaption;
     private JLabel lblSolutions;
     private JLabel lblUniqueSolutions;
-    private final Font highlightFont;
-    private final Font captionFont;
     
     ResultsPanel(MainModel mainModel) {
-	this(mainModel, false);
-    }
-    
-    ResultsPanel(MainModel mainModel, boolean small) {
 	this.mainModel = mainModel;
-	
-	if(small) {
-	    highlightFont = highlightFontSmall;
-	    captionFont = captionFontSmall;
-	} else {
-	    highlightFont = highlightFontBig;
-	    captionFont = captionFontBig;
-	}
-	
 	initUi();
     }
     
@@ -131,7 +114,7 @@ class ResultsPanel extends JPanel {
 	    @Override
 	    public void solverStarted() {
 		updateUsedN(mainModel.getN());
-		updateUsedSolverImplName(getSolverImplName(mainModel.getSelectedSolverImplWithConfig().getSolver()));
+		updateUsedSolverImplName(MainModel.getSolverImplName(mainModel.getSelectedSolverImplWithConfig().getSolver()));
 		
 		if(!mainModel.isFileOpened()) {
 		    updateDuration(0);
@@ -157,18 +140,6 @@ class ResultsPanel extends JPanel {
     private void updateUsedSolverImplName(String solverImplName) {
 	lblSolverName.setText("," + solverImplName);
     }
-
-    private String getSolverImplName(AbstractSolver solver) {
-	String solverName = solver.getClass().getName();
-	
-	int fromIndex = solverName.lastIndexOf('.');
-	if(fromIndex >= 0)
-	    solverName = solverName.substring(fromIndex + 1);
-	
-	if(solverName.contains("Solver"))
-	    solverName = solverName.replace("Solver", "");
-	return solverName.toUpperCase();
-    }
     
     private void updateDuration(long duration) {
 	lblDuration.setText(getDurationPrettyString(duration));
@@ -183,7 +154,7 @@ class ResultsPanel extends JPanel {
 	lblUniqueSolutions.setText(getSolutionsPrettyString(uniqueSolutions));
     }
     
-    private String getDurationUnitString(long duration) {
+    static String getDurationUnitString(long duration) {
 	if(duration >= 60 * 60 * 1000)
 	    return "hours";
 	else if(duration >= 60 * 1000)
@@ -202,7 +173,7 @@ class ResultsPanel extends JPanel {
 	return sb.toString();
     }
 
-    private static String getDurationPrettyString(long time) {
+    static String getDurationPrettyString(long time) {
 	long h = time / 1000 / 60 / 60;
 	long m = time / 1000 / 60 % 60;
 	long s = time / 1000 % 60;
@@ -240,12 +211,14 @@ class ResultsPanel extends JPanel {
 	    strms = "00" + ms;
 	}
 	
+	String durationStr;
 	if(h > 0)
-	    return strh + ":" + strm + ":" + strs + "." + strms;
+	    durationStr = strh + ":" + strm + ":" + strs + "." + strms;
 	else if(m > 0)
-	    return strm + ":" + strs + "." + strms;
+	    durationStr = strm + ":" + strs + "." + strms;
 	else
-	    return strs + "." + strms;
-    }
+	    durationStr = strs + "." + strms;
 
+	return durationStr.startsWith("0") ? durationStr.substring(1) : durationStr;
+    }
 }

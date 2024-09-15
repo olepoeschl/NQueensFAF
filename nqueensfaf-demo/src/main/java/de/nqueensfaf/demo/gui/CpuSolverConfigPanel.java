@@ -3,6 +3,7 @@ package de.nqueensfaf.demo.gui;
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.impl.CpuSolver;
 
+@SuppressWarnings("serial")
 class CpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final CpuSolverWithConfig model = new CpuSolverWithConfig();

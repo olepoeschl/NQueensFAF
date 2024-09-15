@@ -15,6 +15,7 @@ import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 
+@SuppressWarnings("serial")
 class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final GpuSolverWithConfig model = new GpuSolverWithConfig();
@@ -140,7 +141,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    
 	    table = new JTable(tableModel) {
 		@Override
-		public Class getColumnClass(int column) {
+		public Class<?> getColumnClass(int column) {
 		    switch(column) {
 		    case 0: return String.class;
 		    case 1: return String.class;

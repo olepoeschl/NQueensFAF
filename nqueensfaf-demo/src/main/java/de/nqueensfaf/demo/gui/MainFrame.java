@@ -17,14 +17,19 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
@@ -34,14 +39,19 @@ import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 
 import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
+@SuppressWarnings("serial")
 public class MainFrame extends JFrame {
     
     static final Color ACCENT_COLOR = new Color(235, 235, 235);
     
     private final MainModel model = new MainModel();
-
+    
+    private JFrame historyFrame;
+    
     public MainFrame() {
 	createAndShowUi();
+	
+	initHistoryFrame();
 	
 	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
 	    Dialog.error(e.getMessage());
@@ -211,6 +221,24 @@ public class MainFrame extends JFrame {
 	    }
 	});
 
+	var historyItem = new JMenuItem(new AbstractAction("History") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		historyFrame.setVisible(true);
+	    }
+	});
+	
+	var recordsItem = new JMenuItem(new AbstractAction("Records") {
+	    @Override
+	    public void actionPerformed(ActionEvent e) {
+		showRecords(); // TODO
+	    } 
+	});
+	
+	var statsMenu = new JMenu("Stats");
+	statsMenu.add(historyItem);
+	statsMenu.add(recordsItem);
+	
 	var aboutMenu = new JMenu("About");
 	aboutMenu.add(new JMenuItem(new AbstractAction("Website") {
 	    @Override
@@ -234,6 +262,7 @@ public class MainFrame extends JFrame {
 
 	var menuBar = new JMenuBar();
 	menuBar.add(fileMenu);
+	menuBar.add(statsMenu);
 	menuBar.add(aboutMenu);
 	
 	return menuBar;
@@ -401,5 +430,58 @@ public class MainFrame extends JFrame {
     
     private void saveToFile(String path) {
 	model.saveToFile(path, e -> Dialog.error("could not save to file: " + e.getMessage()));
+    }
+
+    private void initHistoryFrame() {
+	// create table
+	var columns = new String[] { "N", "Solver", "Duration"};
+	var tableModel = new DefaultTableModel(null, columns);
+	var table = new JTable(tableModel) {
+	    @Override
+	    public Class<?> getColumnClass(int column) {
+		switch(column) {
+		case 0: return Integer.class;
+		case 1: return String.class;
+		case 2: return String.class;
+		default: return String.class;
+		}
+	    }
+	    @Override
+	    public boolean isCellEditable(int rowIndex, int colIndex) {
+		return false;
+	    }
+	};
+	
+	// adjust column alignment
+	var centerRenderer = new DefaultTableCellRenderer();
+	centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+	table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+	table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+	table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+	
+	// init frame
+	historyFrame = new JFrame("History");
+	historyFrame.add(new JScrollPane(table), BorderLayout.CENTER);
+	historyFrame.pack();
+	historyFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+	model.addSolverListener(new SolverListener() {
+	    @Override
+	    public void solverStarted() {
+	    }
+	    public void solverTerminated() {
+	    }
+	    @Override
+	    public void solverFinished() {
+		model.addHistoryEntry(model.getN(), model.getSelectedSolverImplWithConfig().getSolver(), model.getDuration());
+	    }
+	});
+	
+	model.addHistoryEntryListener(
+		entry -> tableModel.insertRow(0, new Object[] { entry.n(), entry.solverImplName(), entry.duration() }));
+    }
+
+    private void showRecords() {
+	Dialog.error("Not implemented yet");
     }
 }
