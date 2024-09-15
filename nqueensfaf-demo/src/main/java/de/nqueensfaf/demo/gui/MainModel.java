@@ -43,15 +43,43 @@ class MainModel {
     
     private boolean fileOpened = false;
     
+    private volatile boolean saving = false;
+    private int lastAutoSave;
+    
     public MainModel() {
 	addSolverListener(new SolverListener() {
 	    @Override
-	    public void solverStarted() {}
+	    public void solverStarted() {
+		lastAutoSave = (int) (selectedSolverImplWithConfig.getSolver().getProgress() * 100);
+	    }
 	    @Override
 	    public void solverTerminated() {
 		fileOpened = false;
 	    }
 	});
+	
+	addPropertyChangeListener("progress", e -> {
+	    if(autoSaveInterval <= 0) 
+		return;
+	    int progress = (int) ((float) e.getNewValue() * 100);
+	    if(progress - lastAutoSave >= autoSaveInterval) {
+		saveToFile(getN() + "-queens.faf", ex -> Dialog.error("could not save to file: " + ex.getMessage()));
+		lastAutoSave = progress;
+	    }
+	});
+	
+	// when the application is still busy saving to a file when the user closes the window,
+	// complete the saving process before shutting down
+	var saveOnExitCompletionThreadBuilder = Thread.ofVirtual().name("saveOnExitCompleter");
+	Runnable saveOnExitCompletion = () -> {
+	    while(saving)
+		try {
+		    Thread.sleep(500);
+		} catch (InterruptedException e) {
+		    Dialog.error("could not complete saving to file: " + e.getMessage());
+		}
+	};
+	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
     }
 
     void addPropertyChangeListener(PropertyChangeListener l) {
@@ -207,11 +235,13 @@ class MainModel {
     
     void saveToFile(String path, Consumer<Exception> onError) {
 	Thread.ofVirtual().start(() -> {
+	    saving = true;
 	    try {
 		selectedSolverImplWithConfig.getSolver().save(path);
 	    } catch (IOException e) {
 		onError.accept(e);
 	    }
+	    saving = false;
 	});
     }
     
