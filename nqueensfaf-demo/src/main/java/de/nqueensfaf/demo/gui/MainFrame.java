@@ -33,7 +33,7 @@ import javax.swing.table.DefaultTableModel;
 
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
-import de.nqueensfaf.demo.gui.util.Dialog;
+import de.nqueensfaf.demo.gui.util.DialogUtils;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 
@@ -50,11 +50,12 @@ public class MainFrame extends JFrame {
     
     public MainFrame() {
 	createAndShowUi();
+	DialogUtils.setJFrame(this);
 	
 	initHistoryFrame();
 	
 	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
-	    Dialog.error(e.getMessage());
+	    DialogUtils.error(e.getMessage());
 	    e.printStackTrace();
 	});
     }
@@ -253,7 +254,7 @@ public class MainFrame extends JFrame {
 		    try {
 			desktop.browse(URI.create("https://github.com/olepoeschl/NQueensFAF"));
 		    } catch (Exception ex) {
-			Dialog.error("could not open link: " + ex.getMessage());
+			DialogUtils.error("could not open link: " + ex.getMessage());
 		    }
 		}
 	    }
@@ -261,7 +262,7 @@ public class MainFrame extends JFrame {
 	aboutMenu.add(new JMenuItem(new AbstractAction("Version") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		Dialog.info("<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>");
+		DialogUtils.info("<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>", "Version");
 	    }
 	}));
 
@@ -429,12 +430,12 @@ public class MainFrame extends JFrame {
 	try {
 	    model.openFile(path);
 	} catch (IOException e) {
-	    Dialog.error("could not open file: " + e.getMessage());
+	    DialogUtils.error("could not open file: " + e.getMessage());
 	}
     }
     
     private void saveToFile(String path) {
-	model.saveToFile(path, e -> Dialog.error("could not save to file: " + e.getMessage()));
+	model.saveToFile(path, e -> DialogUtils.error("could not save to file: " + e.getMessage()));
     }
 
     private void initHistoryFrame() {
@@ -488,6 +489,6 @@ public class MainFrame extends JFrame {
     }
 
     private void showRecords() {
-	Dialog.error("Not implemented yet");
+	DialogUtils.error("Not implemented yet");
     }
 }

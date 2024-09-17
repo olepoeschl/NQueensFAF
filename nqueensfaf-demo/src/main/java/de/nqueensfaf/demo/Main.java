@@ -12,7 +12,7 @@ import picocli.CommandLine;
 public class Main {
     
     public static final String VERSION = "3.0.0-SNAPSHOT";
-    public static final String VERSION_DATE = "10.09.2024";
+    public static final String VERSION_DATE = "???";
 
     public static void main(String[] args) {
 	if (args.length == 0) {

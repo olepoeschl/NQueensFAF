@@ -14,7 +14,7 @@ import javax.swing.event.EventListenerList;
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
-import de.nqueensfaf.demo.gui.util.Dialog;
+import de.nqueensfaf.demo.gui.util.DialogUtils;
 import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {
@@ -68,7 +68,7 @@ class MainModel {
 		return;
 	    int progress = (int) ((float) e.getNewValue() * 100);
 	    if(progress - lastAutoSave >= autoSaveInterval) {
-		saveToFile(getN() + "-queens.faf", ex -> Dialog.error("could not save to file: " + ex.getMessage()));
+		saveToFile(getN() + "-queens.faf", ex -> DialogUtils.error("could not save to file: " + ex.getMessage()));
 		lastAutoSave = progress;
 	    }
 	});
@@ -81,7 +81,7 @@ class MainModel {
 		try {
 		    Thread.sleep(500);
 		} catch (InterruptedException e) {
-		    Dialog.error("could not complete saving to file: " + e.getMessage());
+		    DialogUtils.error("could not complete saving to file: " + e.getMessage());
 		}
 	};
 	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
@@ -178,7 +178,7 @@ class MainModel {
 	
 	String errorMessage = selectedSolverImplWithConfig.checkConfigValid();
 	if(errorMessage.length() > 0) {
-	    Dialog.error(errorMessage);
+	    DialogUtils.error(errorMessage);
 	    return;
 	}
 	
@@ -187,7 +187,7 @@ class MainModel {
 	    try {
 		selectedSolverImplWithConfig.getSolver().start();
 	    } catch(Exception e) {
-		Dialog.error(e.getMessage());
+		DialogUtils.error(e.getMessage());
 		symSolvers.get(selectedSolverImplWithConfig).cancel();
 	    }
 	});

@@ -10,7 +10,7 @@ import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
-import de.nqueensfaf.demo.gui.util.Dialog;
+import de.nqueensfaf.demo.gui.util.DialogUtils;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
@@ -115,7 +115,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		case 2:
 		    int weight = (int) tableModel.getValueAt(row, col);
 		    if(weight <= 0) {
-			Dialog.error("GPU weight must be >= 1");
+			DialogUtils.error("GPU weight must be >= 1");
 			tableModel.setValueAt(1, row, col);
 			break;
 		    }
@@ -124,7 +124,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		case 3:
 		    int workgroupSize = (int) tableModel.getValueAt(row, col);
 		    if(workgroupSize <= 0) {
-			Dialog.error("GPU workgroup size must be >= 1");
+			DialogUtils.error("GPU workgroup size must be >= 1");
 			tableModel.setValueAt(1, row, col);
 			break;
 		    }
