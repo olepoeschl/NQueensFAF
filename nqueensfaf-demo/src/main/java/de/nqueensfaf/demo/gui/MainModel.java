@@ -14,7 +14,6 @@ import javax.swing.event.EventListenerList;
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
-import de.nqueensfaf.demo.gui.util.DialogUtils;
 import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {

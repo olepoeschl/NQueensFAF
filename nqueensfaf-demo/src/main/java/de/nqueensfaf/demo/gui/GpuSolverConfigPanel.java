@@ -10,8 +10,6 @@ import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
-import de.nqueensfaf.demo.gui.util.DialogUtils;
-import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 

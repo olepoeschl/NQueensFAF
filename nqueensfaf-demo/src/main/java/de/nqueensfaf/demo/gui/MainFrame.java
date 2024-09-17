@@ -1,5 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
+import static de.nqueensfaf.demo.gui.QuickGBC.*;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -33,11 +35,7 @@ import javax.swing.table.DefaultTableModel;
 
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
-import de.nqueensfaf.demo.gui.util.DialogUtils;
-import de.nqueensfaf.demo.gui.util.QuickGBC;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
-
-import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {

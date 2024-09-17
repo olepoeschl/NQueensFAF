@@ -1,5 +1,7 @@
 package de.nqueensfaf.demo.gui;
 
+import static de.nqueensfaf.demo.gui.QuickGBC.*;
+
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.beans.PropertyChangeListener;
@@ -20,10 +22,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.text.NumberFormatter;
-
-import de.nqueensfaf.demo.gui.util.QuickGBC;
-
-import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 class PropertyGroupConfigUi {
 
