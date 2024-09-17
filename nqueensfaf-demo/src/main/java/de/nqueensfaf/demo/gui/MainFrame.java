@@ -466,8 +466,9 @@ public class MainFrame extends JFrame {
 	// init frame
 	historyFrame = new JFrame("History");
 	historyFrame.add(new JScrollPane(table), BorderLayout.CENTER);
-	historyFrame.pack();
 	historyFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+	historyFrame.pack();
+	historyFrame.setSize(new Dimension(300, 300));
 	historyFrame.setLocationRelativeTo(this);
 
 	model.addSolverListener(new SolverListener() {
