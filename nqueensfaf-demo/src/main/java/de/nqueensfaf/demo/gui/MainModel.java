@@ -66,6 +66,8 @@ class MainModel {
 	addPropertyChangeListener("progress", e -> {
 	    if(autoSaveInterval <= 0) 
 		return;
+	    if(saving)
+		return;
 	    int progress = (int) ((float) e.getNewValue() * 100);
 	    if(progress - lastAutoSave >= autoSaveInterval) {
 		saveToFile(getN() + "-queens.faf", ex -> DialogUtils.error("could not save to file: " + ex.getMessage()));
