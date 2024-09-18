@@ -60,10 +60,13 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -91,11 +94,11 @@ public class GpuSolver extends AbstractSolver {
     private boolean stateLoaded;
 
     private int L;
+    
+    private final AtomicLong solutions = new AtomicLong(0);
+    private final AtomicInteger solvedConstellations = new AtomicInteger(0);
 
     private final Kryo kryo = new Kryo();
-
-    private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
-    }
 
     public GpuSolver() {
 	kryo.register(GpuSolverProgressState.class);
@@ -147,13 +150,6 @@ public class GpuSolver extends AbstractSolver {
 	}
     }
 
-    @Override
-    public void reset() {
-	duration = start = storedDuration = 0;
-	constellations.clear();
-	stateLoaded = false;
-    }
-
     public void load(int n, long storedDuration, List<Constellation> constellations) {
 	if (!getExecutionState().isIdle())
 	    throw new IllegalStateException("solver progress can only be injected when idle");
@@ -161,7 +157,29 @@ public class GpuSolver extends AbstractSolver {
 	setN(n);
 	this.storedDuration = storedDuration;
 	this.constellations = constellations;
+	
+	// update solvedConstellations and solution count
+	solutions.set(0);
+	solvedConstellations.set(0);
+	for (var c : constellations) {
+	    if (c.getStart() == 69) // start=69 is for pseudo constellations
+		continue;
+	    if (c.getSolutions() >= 0) {
+		solutions.addAndGet(c.getSolutions());
+		solvedConstellations.incrementAndGet();
+	    }
+	}
+	
 	stateLoaded = true;
+    }
+
+    @Override
+    public void reset() {
+	solutions.set(0);
+	solvedConstellations.set(0);
+	duration = start = storedDuration = 0;
+	constellations.clear();
+	stateLoaded = false;
     }
 
     @Override
@@ -175,27 +193,12 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public float getProgress() {
-	if (constellations.size() == 0)
-	    return 0;
-
-	int solvedConstellations = 0;
-	for (var c : constellations) {
-	    if (c.getStart() == 69) // start=69 is for pseudo constellations
-		continue;
-	    if (c.getSolutions() >= 0) {
-		solvedConstellations++;
-	    }
-	}
-	return (float) solvedConstellations / constellations.size();
+	return (float) solvedConstellations.get() / constellations.size();
     }
 
     @Override
     public long getSolutions() {
-	if (constellations.size() == 0)
-	    return 0;
-
-	return constellations.stream().filter(c -> c.getSolutions() >= 0).map(c -> c.getSolutions()).reduce(0l,
-		(cAcc, c) -> cAcc + c);
+	return solutions.get();
     }
 
     private void fetchAvailableGpus() {
@@ -248,8 +251,10 @@ public class GpuSolver extends AbstractSolver {
 	if (gpuSelection.get().size() == 0)
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 
-	start = System.currentTimeMillis();
 	duration = 0;
+	solutions.set(0);
+	solvedConstellations.set(0);
+	start = System.currentTimeMillis();
 
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
 	    AbstractSolver simpleSolver = new SimpleSolver(getN());
@@ -492,6 +497,9 @@ public class GpuSolver extends AbstractSolver {
 	constellations.add(new Constellation((1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
     }
 
+    private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
+    }
+
     public final class GpuSelection {
 
 	private List<Gpu> selectedGpus = new ArrayList<Gpu>();
@@ -610,6 +618,7 @@ public class GpuSolver extends AbstractSolver {
 	// other variables
 	private int n;
 	private float progress;
+	private final Set<Integer> solvedConstellationsIndexes = new HashSet<Integer>();
 
 	private Gpu(long id, long platform, GpuInfo info) {
 	    this.id = id;
@@ -642,6 +651,7 @@ public class GpuSolver extends AbstractSolver {
 	    maxNumOfConstellationsPerRun = 0;
 	    context = program = kernel = xQueue = memQueue = constellationsMem = jklQueensMem = resMem = 0;
 	    progress = 0;
+	    solvedConstellationsIndexes.clear();
 	}
 
 	private void setN(int n) {
@@ -768,6 +778,8 @@ public class GpuSolver extends AbstractSolver {
 	}
 
 	private void executeWorkload(List<Constellation> constellations) {
+	    solvedConstellationsIndexes.clear();
+	    
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
 
@@ -864,23 +876,30 @@ public class GpuSolver extends AbstractSolver {
 	}
 
 	private void readResults(ByteBuffer resPtr, List<Constellation> constellations) {
-	    int solvedConstellations = 0;
-
 	    // read result and progress memory buffers
 	    checkCLError(clEnqueueReadBuffer(memQueue, resMem, true, 0, resPtr, null, null));
 	    for (int i = 0; i < constellations.size(); i++) {
-		if (constellations.get(i).getStart() == 69) // start=69 is for trash constellations
+		if(solvedConstellationsIndexes.contains(i)) // constellation already solved
 		    continue;
+		
+		if (constellations.get(i).getStart() == 69) {// start=69 is for trash constellations
+		    solvedConstellationsIndexes.add(i);
+		    continue;
+		}
+		
 		long solutionsForConstellation = resPtr.getLong(i * 8) * symmetry(n, constellations.get(i).getIjkl());
 		if (solutionsForConstellation >= 0) {
 		    // synchronize with the list of constellations on the RAM
 		    constellations.get(i).setSolutions(solutionsForConstellation);
 
-		    solvedConstellations++;
+		    solutions.addAndGet(solutionsForConstellation);
+		    solvedConstellations.incrementAndGet();
+		    
+		    solvedConstellationsIndexes.add(i);
 		}
 	    }
 
-	    progress = (float) solvedConstellations / constellations.size();
+	    progress = (float) solvedConstellationsIndexes.size() / constellations.size();
 	}
 
 	private float getProgress() {
