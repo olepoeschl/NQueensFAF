@@ -43,6 +43,7 @@ class MainModel {
     private int updateInterval = 100;
     private int autoSaveInterval = 0; // disabled by default
     private boolean fileOpened = false;
+    private Records records;
     
     private volatile boolean saving = false;
     private int lastAutoSave;
@@ -80,6 +81,10 @@ class MainModel {
 		lastAutoSave = progress;
 	    }
 	});
+	
+	records = new Records("test");
+	records.putRecord(4385, 16, "CPU");
+	records.putRecord(438543689, 16, "GTX 1650 TI");
 	
 	// when the application is still busy saving to a file when the user closes the window,
 	// complete the saving process before shutting down
@@ -179,6 +184,10 @@ class MainModel {
     boolean isFileOpened() {
 	return fileOpened;
     }
+    
+    Records getRecords() {
+	return records;
+    }
 
     // ------------ actions (data manipulation) -------------
     void startSolver() {
@@ -239,7 +248,7 @@ class MainModel {
 
     void addHistoryEntry(int n, AbstractSolver solver, long duration) {
 	var entry = new HistoryEntry(n, getSolverImplName(solver), 
-		ResultsPanel.getDurationPrettyString(duration) + " " + ResultsPanel.getDurationUnitString(duration));
+		ResultsPanel.getDurationUnitlessString(duration) + " " + ResultsPanel.getDurationUnitString(duration));
 	fireHistoryEntryAdded(entry);
     }
     

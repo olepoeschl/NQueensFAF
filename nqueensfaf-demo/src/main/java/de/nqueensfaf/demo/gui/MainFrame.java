@@ -17,6 +17,7 @@ import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -235,7 +236,7 @@ public class MainFrame extends JFrame {
 	var recordsItem = new JMenuItem(new AbstractAction("Records") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		showRecords(); // TODO
+		showRecords();
 	    } 
 	});
 	
@@ -499,6 +500,10 @@ public class MainFrame extends JFrame {
     }
 
     private void showRecords() {
-	DialogUtils.error("Not implemented yet");
+	var dialog = new JDialog(this, "Records", true);
+	dialog.setContentPane(new RecordsPanel(model.getRecords()));
+	dialog.pack();
+	dialog.setLocationRelativeTo(this);
+	dialog.setVisible(true);
     }
 }
