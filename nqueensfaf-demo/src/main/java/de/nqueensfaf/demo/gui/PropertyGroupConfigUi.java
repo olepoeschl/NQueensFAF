@@ -21,6 +21,7 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
 
 class PropertyGroupConfigUi {
@@ -98,7 +99,7 @@ class PropertyGroupConfigUi {
 
     static abstract class AbstractProperty<T> {
 
-	private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
+	private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
 
 	private final List<Map.Entry<JComponent, GridBagConstraints>> componentsWithConstraints = new ArrayList<Entry<JComponent, GridBagConstraints>>();
 

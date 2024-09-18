@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import javax.swing.event.EventListenerList;
+import javax.swing.event.SwingPropertyChangeSupport;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 import de.nqueensfaf.core.AbstractSolver;
@@ -18,7 +19,7 @@ import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {
 
-    private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
+    private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
     
     private final EventListenerList listenerList = new EventListenerList();
     

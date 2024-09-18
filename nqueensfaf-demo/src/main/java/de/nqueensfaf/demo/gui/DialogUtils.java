@@ -38,10 +38,10 @@ class DialogUtils {
 	var panel = new JPanel(new GridBagLayout());
 	panel.add(lbl, new QuickGBC(0, 0).anchor(QuickGBC.ANCHOR_CENTER).insets(5, 5, 5, 5));
 	
-	var dialog = new JDialog(jframe, title, true);
+	var dialog = new JDialog(jframe, title, false);
 	dialog.setContentPane(panel);
 	dialog.pack();
-	dialog.setVisible(true);
+	dialog.setLocationRelativeTo(jframe);
 	
 	return dialog;
     }
