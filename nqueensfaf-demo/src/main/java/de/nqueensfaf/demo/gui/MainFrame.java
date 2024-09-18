@@ -427,14 +427,13 @@ public class MainFrame extends JFrame {
     private void openFile(String path) {
 	DialogUtils.loading(true);
 	
-	Thread.ofVirtual().start(() -> {
-	    try {
-		model.openFile(path);
-	    } catch (IOException e) {
-		DialogUtils.error("could not open file: " + e.getMessage());
-	    }
-	    DialogUtils.loading(false);
-	});
+	try {
+	    model.openFile(path);
+	} catch (IOException e) {
+	    DialogUtils.error("could not open file: " + e.getMessage());
+	}
+	
+	DialogUtils.loading(false);
     }
     
     private void saveToFile(String path) {
