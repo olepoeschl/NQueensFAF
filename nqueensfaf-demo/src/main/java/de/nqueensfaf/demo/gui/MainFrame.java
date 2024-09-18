@@ -438,15 +438,12 @@ public class MainFrame extends JFrame {
     
     private void saveToFile(String path) {
 	DialogUtils.loading(true);
-	
-	Thread.ofVirtual().start(() -> {
-	    try {
-		model.saveToFile(path);
-	    } catch (IOException e) {
-		DialogUtils.error("could not save to file: " + e.getMessage());
-	    }
-	    DialogUtils.loading(false);
-	});
+	try {
+	    model.saveToFile(path);
+	} catch (IOException e) {
+	    DialogUtils.error("could not save to file: " + e.getMessage());
+	}
+	DialogUtils.loading(false);
 
     }
 
