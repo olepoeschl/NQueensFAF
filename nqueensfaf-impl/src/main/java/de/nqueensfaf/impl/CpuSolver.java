@@ -108,8 +108,6 @@ public class CpuSolver extends AbstractSolver {
 	solutions.set(0);
 	solvedConstellations.set(0);
 	for (var c : constellations) {
-	    if (c.getStart() == 69) // start=69 is for pseudo constellations
-		continue;
 	    if (c.getSolutions() >= 0) {
 		solutions.addAndGet(c.getSolutions());
 		solvedConstellations.incrementAndGet();
@@ -150,8 +148,6 @@ public class CpuSolver extends AbstractSolver {
 
     @Override
     public void solve() {
-	solutions.set(0);
-	solvedConstellations.set(0);
 	duration = 0;
 	threadConstellations.clear();
 	start = System.currentTimeMillis();
@@ -168,8 +164,10 @@ public class CpuSolver extends AbstractSolver {
 	}
 
 	if (!stateLoaded) {
-	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
+	    solutions.set(0);
+	    solvedConstellations.set(0);
 	    storedDuration = 0;
+	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 	} else {
 	    stateLoaded = false;
 	}

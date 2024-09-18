@@ -252,8 +252,6 @@ public class GpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 
 	duration = 0;
-	solutions.set(0);
-	solvedConstellations.set(0);
 	start = System.currentTimeMillis();
 
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
@@ -268,8 +266,10 @@ public class GpuSolver extends AbstractSolver {
 	}
 
 	if (!stateLoaded) {
-	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
+	    solutions.set(0);
+	    solvedConstellations.set(0);
 	    storedDuration = 0;
+	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
 	} else {
 	    stateLoaded = false;
 	}
