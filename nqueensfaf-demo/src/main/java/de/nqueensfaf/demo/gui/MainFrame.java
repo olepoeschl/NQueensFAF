@@ -425,15 +425,30 @@ public class MainFrame extends JFrame {
     }
 
     private void openFile(String path) {
-	try {
-	    model.openFile(path);
-	} catch (IOException e) {
-	    DialogUtils.error("could not open file: " + e.getMessage());
-	}
+	DialogUtils.loading(true);
+	
+	Thread.ofVirtual().start(() -> {
+	    try {
+		model.openFile(path);
+	    } catch (IOException e) {
+		DialogUtils.error("could not open file: " + e.getMessage());
+	    }
+	    DialogUtils.loading(false);
+	});
     }
     
     private void saveToFile(String path) {
-	model.saveToFile(path, e -> DialogUtils.error("could not save to file: " + e.getMessage()));
+	DialogUtils.loading(true);
+	
+	Thread.ofVirtual().start(() -> {
+	    try {
+		model.saveToFile(path);
+	    } catch (IOException e) {
+		DialogUtils.error("could not save to file: " + e.getMessage());
+	    }
+	    DialogUtils.loading(false);
+	});
+
     }
 
     private void initHistoryFrame() {

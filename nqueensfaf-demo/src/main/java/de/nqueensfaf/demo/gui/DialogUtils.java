@@ -1,13 +1,10 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.Cursor;
 import java.awt.EventQueue;
-import java.awt.GridBagLayout;
 
-import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
 class DialogUtils {
     
@@ -31,18 +28,10 @@ class DialogUtils {
 	JOptionPane.showMessageDialog(jframe, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
     
-    static JDialog loading(String title) {
-	String loadingText = "Please wait...";
-	var lbl = new JLabel(loadingText);
-	
-	var panel = new JPanel(new GridBagLayout());
-	panel.add(lbl, new QuickGBC(0, 0).anchor(QuickGBC.ANCHOR_CENTER).insets(5, 5, 5, 5));
-	
-	var dialog = new JDialog(jframe, title, false);
-	dialog.setContentPane(panel);
-	dialog.pack();
-	dialog.setLocationRelativeTo(jframe);
-	
-	return dialog;
+    static void loading(boolean loading) {
+	if(loading)
+	    jframe.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+	else
+	    jframe.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
     }
 }

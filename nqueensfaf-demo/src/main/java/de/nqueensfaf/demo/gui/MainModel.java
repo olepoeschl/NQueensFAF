@@ -70,7 +70,13 @@ class MainModel {
 		return;
 	    int progress = (int) ((float) e.getNewValue() * 100);
 	    if(progress - lastAutoSave >= autoSaveInterval) {
-		saveToFile(getN() + "-queens.faf", ex -> DialogUtils.error("could not save to file: " + ex.getMessage()));
+		Thread.ofVirtual().start(() -> {
+		    try {
+			saveToFile(n + "-queens.faf");
+		    } catch (IOException ex) {
+			DialogUtils.error("could not save to file: " + ex.getMessage());
+		    }
+		});
 		lastAutoSave = progress;
 	    }
 	});
@@ -218,16 +224,10 @@ class MainModel {
 	fireSolverFileOpened();
     }
     
-    void saveToFile(String path, Consumer<Exception> onError) {
-	Thread.ofVirtual().start(() -> {
-	    saving = true;
-	    try {
-		selectedSolverImplWithConfig.getSolver().save(path);
-	    } catch (IOException e) {
-		onError.accept(e);
-	    }
-	    saving = false;
-	});
+    void saveToFile(String path) throws IOException {
+	saving = true;
+	selectedSolverImplWithConfig.getSolver().save(path);
+	saving = false;
     }
     
     void reset() {
