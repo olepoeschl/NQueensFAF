@@ -17,7 +17,6 @@ import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -500,9 +499,7 @@ public class MainFrame extends JFrame {
     }
 
     private void showRecords() {
-	var dialog = new JDialog(this, "Records", true);
-	dialog.setContentPane(new RecordsPanel(model.getRecords()));
-	dialog.pack();
+	var dialog = new RecordsDialog(model.getRecords());
 	dialog.setLocationRelativeTo(this);
 	dialog.setVisible(true);
     }

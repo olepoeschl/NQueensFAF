@@ -4,11 +4,12 @@ import java.awt.GridBagLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 @SuppressWarnings("serial")
-class RecordsPanel extends JPanel {
+class RecordsDialog extends JDialog {
 
     private final Records records;
     
@@ -17,14 +18,15 @@ class RecordsPanel extends JPanel {
     private JLabel nLbl;
     private JPanel dataPanel = new JPanel(new GridBagLayout());
     
-    public RecordsPanel(Records records) {
+    public RecordsDialog(Records records) {
 	this.records = records;
 	createUi();
     }
     
     private void createUi() {
-	setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-	setLayout(new GridBagLayout());
+	var contentPane = new JPanel(new GridBagLayout());
+	contentPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	setContentPane(contentPane);
 	
 	// n configuration ui
 	var nEqLbl = new JLabel("N = ");
@@ -54,26 +56,29 @@ class RecordsPanel extends JPanel {
 	add(nLbl, new QuickGBC(1, 1).weight(0.5, 0).anchor(QuickGBC.ANCHOR_CENTER).left(20).right(20));
 	add(nextNBtn, new QuickGBC(2, 1).fill().weight(0.25, 0));
 	
-	refreshDataPanel();
+	updateDataPanel();
+	
+	pack();
+	setModal(true);
     }
     
     private void setN(int n) {
 	this.n = n;
 	nLbl.setText(Integer.toString(n));
-	refreshDataPanel();
+	updateDataPanel();
+	refresh();
     }
     
-    private void refreshDataPanel() {
-	JPanel panel = new JPanel(new GridBagLayout());
-	panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    private void updateDataPanel() {
+	var panel = new JPanel(new GridBagLayout());
+	panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 	
 	var recordsByN = records.getRecordsByN(n);
 	if(recordsByN == null) {
 	    remove(dataPanel);
-	    add(panel, new QuickGBC(0, 3).size(3, 1).weight(1, 1));
-	    revalidate();
-	    repaint();
 	    dataPanel = panel;
+	    add(dataPanel, new QuickGBC(0, 3).size(3, 1).weight(1, 1));
+	    refresh();
 	    return;
 	}
 	
@@ -89,40 +94,22 @@ class RecordsPanel extends JPanel {
 	    durationLbl.setHorizontalAlignment(JLabel.RIGHT);
 	    
 	    int topGap = 5;
-	    panel.add(deviceLbl, new QuickGBC(0, y).anchor(QuickGBC.ANCHOR_WEST).top(topGap));
-	    panel.add(durationLbl, new QuickGBC(1, y).size(1, 1).anchor(QuickGBC.ANCHOR_EAST).top(topGap).left(10));
+	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
+	    panel.add(durationLbl, new QuickGBC(1, y).top(topGap).left(10).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
 	    
 	    y++;
 	}
-	
+	panel.add(new JPanel(), new QuickGBC(0, y).weight(1, 1).fill());
+
 	remove(dataPanel);
-	add(panel, new QuickGBC(0, 3).size(3, 1).weight(1, 1));
+	dataPanel = panel;
+	add(dataPanel, new QuickGBC(0, 3).size(3, 1).weight(1, 1).fill());
+	refresh();
+    }
+    
+    // refresh data panel and frame
+    void refresh() {
 	revalidate();
 	repaint();
-	dataPanel = panel;
     }
-    
-    private void update(int n) {
-	var recordsByN = records.getRecordsByN(n);
-	if(recordsByN == null)
-	    return;
-	
-	int y = 2;
-	for(var record : recordsByN.entrySet()) {
-	    String device = record.getKey();
-	    long duration = record.getValue();
-	    
-	    var deviceLbl = new JLabel(device + ":");
-	    deviceLbl.setHorizontalAlignment(JLabel.LEFT);
-	    
-	    var durationLbl = new JLabel(ResultsPanel.getDurationString(duration));
-	    durationLbl.setHorizontalAlignment(JLabel.RIGHT);
-	    
-	    int topGap = y == 2 ? 10 : 5;
-	    add(deviceLbl, new QuickGBC(0, y).anchor(QuickGBC.ANCHOR_WEST).top(topGap));
-	    add(durationLbl, new QuickGBC(1, y).size(1, 1).anchor(QuickGBC.ANCHOR_EAST).top(topGap).left(10));
-	    y++;
-	}
-    }
-    
 }
