@@ -49,6 +49,8 @@ class MainModel {
     private int lastAutoSave;
     
     public MainModel() {
+	records = new Records("test");
+	
 	addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
@@ -61,6 +63,12 @@ class MainModel {
 	    @Override
 	    public void solverReset() {
 		fileOpened = false;
+	    }
+	    @Override
+	    public void solverFinished() {
+		var solver = selectedSolverImplWithConfig.getSolver();
+		if(records.isNewRecord(solver.getDuration(), solver.getN(), selectedSolverImplWithConfig.toString()))
+		    records.putRecord(solver.getDuration(), solver.getN(), selectedSolverImplWithConfig.toString());
 	    }
 	});
 	
@@ -81,10 +89,6 @@ class MainModel {
 		lastAutoSave = progress;
 	    }
 	});
-	
-	records = new Records("test");
-	records.putRecord(4385, 16, "CPU");
-	records.putRecord(438543689, 16, "GTX 1650 TI");
 	
 	// when the application is still busy saving to a file when the user closes the window,
 	// complete the saving process before shutting down

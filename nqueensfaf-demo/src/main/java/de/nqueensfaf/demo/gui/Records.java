@@ -14,15 +14,17 @@ class Records {
     }
     
     boolean isNewRecord(long duration, int n, String device) {
-	// TODO
-	return false;
+	if(records.get(n) == null)
+	    return true;
+	if(records.get(n).get(device) == null)
+	    return true;
+	return records.get(n).get(device) > duration;
     }
     
     void putRecord(long duration, int n, String device) {
 	if(records.get(n) == null)
 	    records.put(n, new TreeMap<String, Long>());
-	var recordsByN = records.get(n);
-	recordsByN.put(device, duration);
+	records.get(n).put(device, duration);
     }
     
     // Map: deviceName -> duration

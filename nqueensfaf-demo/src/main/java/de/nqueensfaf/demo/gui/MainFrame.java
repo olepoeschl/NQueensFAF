@@ -6,6 +6,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -41,6 +42,8 @@ import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 public class MainFrame extends JFrame {
     
     static final Color ACCENT_COLOR = new Color(235, 235, 235);
+    static final Font HIGHLIGHT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 20);
+    static final Font CAPTION_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     
     private final MainModel model = new MainModel();
     

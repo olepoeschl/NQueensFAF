@@ -57,6 +57,19 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    return "";
 	}
 	
+	@Override
+	public String toString() {
+	    int usedGpusSize = solver.gpuSelection().get().size();
+	    switch(usedGpusSize) {
+	    case 0:
+		return "GPU";
+	    case 1:
+		return solver.gpuSelection().get().get(0).getInfo().name();
+	    default:
+		return "Multi-GPU";
+	    }
+	}
+	
 	List<Gpu> getAvailableGpus(){
 	    return solver.getAvailableGpus();
 	}

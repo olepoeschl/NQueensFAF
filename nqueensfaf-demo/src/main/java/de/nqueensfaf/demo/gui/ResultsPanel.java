@@ -3,7 +3,6 @@ package de.nqueensfaf.demo.gui;
 import static de.nqueensfaf.demo.gui.QuickGBC.*;
 
 import java.awt.BorderLayout;
-import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 
@@ -18,9 +17,6 @@ import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 @SuppressWarnings("serial")
 class ResultsPanel extends JPanel {
 
-    private static final Font highlightFont = new Font(Font.MONOSPACED, Font.PLAIN, 20);
-    private static final Font captionFont = new Font(Font.MONOSPACED, Font.PLAIN, 14);
-	
     private final MainModel mainModel;
     
     private JLabel lblN;
@@ -38,11 +34,11 @@ class ResultsPanel extends JPanel {
     private void initUi() {
 	// used config
 	lblN = new JLabel("...");
-	lblN.setFont(captionFont);
+	lblN.setFont(MainFrame.CAPTION_FONT);
 	lblN.setHorizontalAlignment(JLabel.RIGHT);
 	
 	lblSolverName = new JLabel();
-	lblSolverName.setFont(captionFont);
+	lblSolverName.setFont(MainFrame.CAPTION_FONT);
 	lblSolverName.setHorizontalAlignment(JLabel.LEFT);
 	
 	var usedConfigs = new JPanel(new GridBagLayout());
@@ -54,22 +50,22 @@ class ResultsPanel extends JPanel {
 	
 	// result labels
 	lblDuration = new JLabel("00.000");
-	lblDuration.setFont(highlightFont);
+	lblDuration.setFont(MainFrame.HIGHLIGHT_FONT);
 	
 	lblDurationCaption = new JLabel("seconds");
-	lblDurationCaption.setFont(captionFont);
+	lblDurationCaption.setFont(MainFrame.CAPTION_FONT);
 
 	lblSolutions = new JLabel("0");
-	lblSolutions.setFont(highlightFont);
+	lblSolutions.setFont(MainFrame.HIGHLIGHT_FONT);
 	
 	JLabel lblSolutionsCaption = new JLabel("solutions");
-	lblSolutionsCaption.setFont(captionFont);
+	lblSolutionsCaption.setFont(MainFrame.CAPTION_FONT);
 	
 	lblUniqueSolutions = new JLabel("0");
-	lblUniqueSolutions.setFont(highlightFont);
+	lblUniqueSolutions.setFont(MainFrame.HIGHLIGHT_FONT);
 	
 	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
-	lblUniqueSolutionsCaption.setFont(captionFont);
+	lblUniqueSolutionsCaption.setFont(MainFrame.CAPTION_FONT);
 
 	// update labels from model listeners
 	mainModel.addPropertyChangeListener("duration", e -> {
