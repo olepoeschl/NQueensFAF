@@ -502,7 +502,7 @@ public class MainFrame extends JFrame {
     }
 
     private void showRecords() {
-	var dialog = new RecordsDialog(model.getRecords());
+	var dialog = new RecordsDialog(model.getRecords(), model.getN());
 	dialog.setLocationRelativeTo(this);
 	dialog.setVisible(true);
     }

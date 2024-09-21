@@ -16,13 +16,14 @@ class RecordsDialog extends JDialog {
 
     private final Records records;
     
-    private int n = 16;
+    private int n;
     
     private JLabel nLbl;
     private JScrollPane dataPanel = new JScrollPane();
     
-    public RecordsDialog(Records records) {
+    public RecordsDialog(Records records, int initialN) {
 	this.records = records;
+	n = initialN;
 	createUi();
     }
     
