@@ -3,6 +3,8 @@ package de.nqueensfaf.demo.gui;
 import java.awt.GridBagLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
+import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -111,8 +113,11 @@ class RecordsDialog extends JDialog {
 	    return;
 	}
 	
+	final var recordsSortedByDuration = new ArrayList<>(recordsByN.entrySet());
+	recordsSortedByDuration.sort(Entry.comparingByValue());
+	
 	int y = 0;
-	for(var record : recordsByN.entrySet()) {
+	for(var record : recordsSortedByDuration) {
 	    String device = record.getKey();
 	    long duration = record.getValue();
 	    
