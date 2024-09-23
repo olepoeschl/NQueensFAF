@@ -35,6 +35,8 @@ class Records {
     }
     
     public void save(String path) throws FileNotFoundException, IOException {
+	if(records.size() == 0)
+	    return;
 	try (var out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(path))))) {
 	    out.writeObject(records);
 	    out.flush();
