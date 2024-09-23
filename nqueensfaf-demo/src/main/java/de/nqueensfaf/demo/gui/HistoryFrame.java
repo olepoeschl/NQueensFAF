@@ -21,7 +21,7 @@ class HistoryFrame extends JFrame {
 
     private void createUi() {
 	// create table
-	var columns = new String[] { "N", "Solver", "Duration"};
+	var columns = new String[] { "N", "Solver / Device", "Duration"};
 	tableModel = new DefaultTableModel(null, columns);
 	var table = new JTable(tableModel) {
 	    @Override
@@ -53,12 +53,8 @@ class HistoryFrame extends JFrame {
     }
 
     void addEntry(HistoryEntry entry) {
-	tableModel.insertRow(0, new Object[] { entry.n(), entry.solverImplName(), prettyDuration(entry.duration()) });
-    }
-    
-    private static String prettyDuration(long duration) {
-	return ResultsPanel.getDurationUnitlessString(duration) + " " + ResultsPanel.getDurationUnitString(duration);
+	tableModel.insertRow(0, new Object[] { entry.n(), entry.deviceName(), ResultsPanel.getDurationString(entry.duration()) });
     }
 
-    record HistoryEntry(int n, String solverImplName, long duration) {}
+    record HistoryEntry(int n, String deviceName, long duration) {}
 }

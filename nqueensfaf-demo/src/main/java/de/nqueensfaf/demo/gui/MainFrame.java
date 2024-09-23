@@ -459,7 +459,7 @@ public class MainFrame extends JFrame {
 
     private void initHistoryFrame() {
 	historyFrame = new HistoryFrame();
-	historyFrame.setSize(new Dimension(300, 300));
+	historyFrame.setSize(new Dimension(350, 250));
 	historyFrame.setLocationRelativeTo(this);
 
 	model.addSolverListener(new SolverListener() {
@@ -470,7 +470,7 @@ public class MainFrame extends JFrame {
 	    }
 	    @Override
 	    public void solverFinished() {
-		var entry = new HistoryEntry(model.getN(), model.getSelectedSolverImplWithConfig().getName(), model.getDuration());
+		var entry = new HistoryEntry(model.getN(), model.getSelectedSolverImplWithConfig().toString(), model.getDuration());
 		historyFrame.addEntry(entry);
 	    }
 	});
