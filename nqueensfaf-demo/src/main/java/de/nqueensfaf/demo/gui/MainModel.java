@@ -3,6 +3,7 @@ package de.nqueensfaf.demo.gui;
 import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.io.IOException;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -44,12 +45,19 @@ class MainModel {
     private int autoSaveInterval = 0; // disabled by default
     private boolean fileOpened = false;
     private Records records;
+    private final File recordsFile = new File("records");
     
     private volatile boolean saving = false;
     private int lastAutoSave;
     
     public MainModel() {
-	records = new Records("test");
+	records = new Records();
+	if(recordsFile.exists())
+	    try {
+		records.open(recordsFile);
+	    } catch (Exception e) {
+		DialogUtils.error("could not load saved records: " + e.getMessage());
+	    }
 	
 	addSolverListener(new SolverListener() {
 	    @Override
@@ -102,6 +110,16 @@ class MainModel {
 		}
 	};
 	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
+	Runtime.getRuntime().addShutdownHook(new Thread() {
+	    @Override
+	    public void run() {
+		try {
+		    records.save(recordsFile);
+		} catch (IOException e) {
+		    DialogUtils.error("could not save records: " + e.getMessage());
+		}
+	    }
+	});
     }
 
     private void update(float progress, long solutions, long duration) {
