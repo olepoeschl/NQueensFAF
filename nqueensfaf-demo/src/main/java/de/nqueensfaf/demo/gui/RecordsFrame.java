@@ -63,6 +63,8 @@ class RecordsFrame extends JFrame {
 	update();
 	
 	pack();
+	if(records.getRecordsByN(n) == null)
+	    setSize(300, getPreferredSize().height);
 	addKeyListener(new KeyListener() {
 	    @Override
 	    public void keyTyped(KeyEvent e) {

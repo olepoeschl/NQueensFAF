@@ -459,7 +459,7 @@ public class MainFrame extends JFrame {
 
     private void initHistoryFrame() {
 	historyFrame = new HistoryFrame();
-	historyFrame.setSize(new Dimension(350, 250));
+	historyFrame.setSize(350, 250);
 	historyFrame.setLocationRelativeTo(this);
 
 	model.addSolverListener(new SolverListener() {
