@@ -9,4 +9,6 @@ interface SolverImplWithConfig {
     void loaded();
     
     String checkConfigValid();
+    
+    String getName();
 }

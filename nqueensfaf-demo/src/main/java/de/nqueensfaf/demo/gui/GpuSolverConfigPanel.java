@@ -58,6 +58,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 	
 	@Override
+	public String getName() {
+	    return "GPU";
+	}
+	
+	@Override
 	public String toString() {
 	    int usedGpusSize = solver.gpuSelection().get().size();
 	    switch(usedGpusSize) {

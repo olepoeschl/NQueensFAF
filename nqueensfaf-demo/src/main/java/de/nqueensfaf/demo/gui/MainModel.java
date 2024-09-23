@@ -3,7 +3,6 @@ package de.nqueensfaf.demo.gui;
 import java.awt.EventQueue;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.io.File;
 import java.io.IOException;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -14,12 +13,11 @@ import javax.swing.event.EventListenerList;
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
-import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {
-
+    
     private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
     
     private final EventListenerList listenerList = new EventListenerList();
@@ -44,21 +42,13 @@ class MainModel {
     private int updateInterval = 100;
     private int autoSaveInterval = 0; // disabled by default
     private boolean fileOpened = false;
-    private Records records;
-    private final File recordsFile = new File("records");
+//    private Records records;
+//    private final File recordsFile = new File("records");
     
     private volatile boolean saving = false;
     private int lastAutoSave;
     
     public MainModel() {
-	records = new Records();
-	if(recordsFile.exists())
-	    try {
-		records.open(recordsFile);
-	    } catch (Exception e) {
-		DialogUtils.error("could not load saved records: " + e.getMessage());
-	    }
-	
 	addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
@@ -71,12 +61,6 @@ class MainModel {
 	    @Override
 	    public void solverReset() {
 		fileOpened = false;
-	    }
-	    @Override
-	    public void solverFinished() {
-		var solver = selectedSolverImplWithConfig.getSolver();
-		if(records.isNewRecord(solver.getDuration(), solver.getN(), selectedSolverImplWithConfig.toString()))
-		    records.putRecord(solver.getDuration(), solver.getN(), selectedSolverImplWithConfig.toString());
 	    }
 	});
 	
@@ -110,16 +94,6 @@ class MainModel {
 		}
 	};
 	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
-	Runtime.getRuntime().addShutdownHook(new Thread() {
-	    @Override
-	    public void run() {
-		try {
-		    records.save(recordsFile);
-		} catch (IOException e) {
-		    DialogUtils.error("could not save records: " + e.getMessage());
-		}
-	    }
-	});
     }
 
     private void update(float progress, long solutions, long duration) {
@@ -206,10 +180,6 @@ class MainModel {
     boolean isFileOpened() {
 	return fileOpened;
     }
-    
-    Records getRecords() {
-	return records;
-    }
 
     // ------------ actions (data manipulation) -------------
     void startSolver() {
@@ -267,24 +237,6 @@ class MainModel {
 	update();
 	fireSolverReset();
     }
-
-    void addHistoryEntry(int n, AbstractSolver solver, long duration) {
-	var entry = new HistoryEntry(n, getSolverImplName(solver), 
-		ResultsPanel.getDurationUnitlessString(duration) + " " + ResultsPanel.getDurationUnitString(duration));
-	fireHistoryEntryAdded(entry);
-    }
-    
-    static final String getSolverImplName(AbstractSolver solver) {
-	String solverName = solver.getClass().getName();
-	
-	int fromIndex = solverName.lastIndexOf('.');
-	if(fromIndex >= 0)
-	    solverName = solverName.substring(fromIndex + 1);
-	
-	if(solverName.contains("Solver"))
-	    solverName = solverName.replace("Solver", "");
-	return solverName.toUpperCase();
-    }
     
     // ------------ listener handling -------------
     void addPropertyChangeListener(PropertyChangeListener l) {
@@ -309,14 +261,6 @@ class MainModel {
     
     void removeSolverListener(SolverListener l) {
 	listenerList.remove(SolverListener.class, l);
-    }
-    
-    void addHistoryEntryListener(HistoryEntryListener l) {
-	listenerList.add(HistoryEntryListener.class, l);
-    }
-    
-    void removeHistoryEntryListener(HistoryEntryListener l) {
-	listenerList.remove(HistoryEntryListener.class, l);
     }
     
     // ------------ event management -------------
@@ -350,12 +294,6 @@ class MainModel {
 	}
     }
 
-    private void fireHistoryEntryAdded(HistoryEntry entry) {
-	for(var listener : listenerList.getListeners(HistoryEntryListener.class)) {
-	    EventQueue.invokeLater(() -> listener.entryAdded(entry));
-	}
-    }
-
     // ------------ classes and types -------------
     static interface SolverListener extends EventListener {
 	void solverStarted();
@@ -363,11 +301,5 @@ class MainModel {
 	default void solverFinished() {}
 	default void solverFileOpened() {}
 	default void solverReset() {}
-    }
-    
-    record HistoryEntry(int n, String solverImplName, String duration) {}
-    
-    static interface HistoryEntryListener extends EventListener {
-	void entryAdded(HistoryEntry entry);
     }
 }

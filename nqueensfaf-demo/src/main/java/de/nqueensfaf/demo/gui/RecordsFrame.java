@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
-import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.plaf.basic.BasicArrowButton;
 
 @SuppressWarnings("serial")
-class RecordsDialog extends JDialog {
+class RecordsFrame extends JFrame {
 
     private final Records records;
     
@@ -23,10 +23,14 @@ class RecordsDialog extends JDialog {
     private JLabel nLbl;
     private JScrollPane dataPanel = new JScrollPane();
     
-    public RecordsDialog(Records records, int initialN) {
+    public RecordsFrame(Records records, int initialN) {
+	super("Records");
+	
 	this.records = records;
 	n = initialN;
 	createUi();
+	
+	records.addRecordListener(n -> update());
     }
     
     private void createUi() {
@@ -56,12 +60,10 @@ class RecordsDialog extends JDialog {
 	add(nLbl, new QuickGBC(1, 1).weight(0.5, 0).anchor(QuickGBC.ANCHOR_CENTER).left(20).right(20));
 	add(nextNBtn, new QuickGBC(2, 1).fill().weight(0.25, 0));
 	
-	updateDataPanel();
+	update();
 	
 	pack();
-	setModal(true);
-	setTitle("Records");
-	this.addKeyListener(new KeyListener() {
+	addKeyListener(new KeyListener() {
 	    @Override
 	    public void keyTyped(KeyEvent e) {
 	    }
@@ -92,14 +94,14 @@ class RecordsDialog extends JDialog {
 	setN(newN);
     }
     
-    private void setN(int n) {
+    void setN(int n) {
 	this.n = n;
 	nLbl.setText(Integer.toString(n));
-	updateDataPanel();
+	update();
 	refresh();
     }
     
-    private void updateDataPanel() {
+    void update() {
 	var panel = new JPanel(new GridBagLayout());
 	panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	
@@ -145,7 +147,7 @@ class RecordsDialog extends JDialog {
     }
     
     // refresh data panel and frame
-    void refresh() {
+    private void refresh() {
 	getContentPane().revalidate();
 	getContentPane().repaint();
 	setSize(getWidth(), getPreferredSize().height);

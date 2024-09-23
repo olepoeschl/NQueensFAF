@@ -109,7 +109,7 @@ class ResultsPanel extends JPanel {
 	    @Override
 	    public void solverStarted() {
 		updateUsedN(mainModel.getN());
-		updateUsedSolverImplName(MainModel.getSolverImplName(mainModel.getSelectedSolverImplWithConfig().getSolver()));
+		updateUsedSolverImplName(mainModel.getSelectedSolverImplWithConfig().getName());
 		
 		if(!mainModel.isFileOpened()) {
 		    updateDuration(0);
