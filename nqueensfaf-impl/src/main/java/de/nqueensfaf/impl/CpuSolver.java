@@ -138,6 +138,8 @@ public class CpuSolver extends AbstractSolver {
 
     @Override
     public float getProgress() {
+	if(constellations.size() == 0)
+	    return 0;
 	return (float) solvedConstellations.get() / constellations.size();
     }
 

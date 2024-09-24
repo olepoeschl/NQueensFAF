@@ -236,8 +236,6 @@ public class MainFrame extends JFrame {
 	var recordsItem = new JMenuItem(new AbstractAction("Records") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		if(recordsFrame == null)
-		    return;
 		if(recordsFrame.isVisible()) {
 		    recordsFrame.setExtendedState(JFrame.NORMAL);
 		    recordsFrame.toFront();
@@ -435,7 +433,7 @@ public class MainFrame extends JFrame {
     }
 
     private void openFile(String path) {
-	DialogUtils.loading(true);
+	DialogUtils.loadingCursor(true);
 	
 	try {
 	    model.openFile(path);
@@ -443,17 +441,17 @@ public class MainFrame extends JFrame {
 	    DialogUtils.error("could not open file: " + e.getMessage());
 	}
 	
-	DialogUtils.loading(false);
+	DialogUtils.loadingCursor(false);
     }
     
     private void saveToFile(String path) {
-	DialogUtils.loading(true);
+	DialogUtils.loadingCursor(true);
 	try {
 	    model.saveToFile(path);
 	} catch (IOException e) {
 	    DialogUtils.error("could not save to file: " + e.getMessage());
 	}
-	DialogUtils.loading(false);
+	DialogUtils.loadingCursor(false);
 
     }
 

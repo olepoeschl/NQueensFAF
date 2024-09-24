@@ -193,6 +193,8 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public float getProgress() {
+	if(constellations.size() == 0)
+	    return 0;
 	return (float) solvedConstellations.get() / constellations.size();
     }
 

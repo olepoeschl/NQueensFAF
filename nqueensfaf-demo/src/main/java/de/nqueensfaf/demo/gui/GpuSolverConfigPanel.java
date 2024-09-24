@@ -1,8 +1,10 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.EventQueue;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -19,6 +21,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     private final GpuSolverWithConfig model = new GpuSolverWithConfig();
 
     private final PropertyGroupConfigUi propConfigUi;
+    private final GpuSelectionProperty gpuSelectionProp;
 
     public GpuSolverConfigPanel() {
 	propConfigUi = new PropertyGroupConfigUi(this);
@@ -27,8 +30,16 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.addPropertyChangeListener("prequeens", e -> model.setPresetQueens((int) e.getNewValue()));
 	
 	final var gpus = model.getAvailableGpus();
-	propConfigUi.addProperty(
-		new GpuSelectionProperty("gpus", gpus.size() > 0 ? List.of(gpus.get(0)) : List.of(), gpus));
+	gpuSelectionProp = new GpuSelectionProperty("gpus", gpus.size() > 0 ? List.of(gpus.get(0)) : List.of(), gpus);
+	propConfigUi.addProperty(gpuSelectionProp);
+	
+	if(model.getAvailableGpus().size() > 1) {
+	    var autoWeightButton = new JButton("Auto Detect Weight Settings");
+	    autoWeightButton.addActionListener(e -> {
+		autoWeight();
+	    });
+	    add(autoWeightButton, new QuickGBC(0, 5).size(4, 1).weight(1, 0).anchor(QuickGBC.ANCHOR_CENTER).bottom(5));
+	}
     }
 
     @Override
@@ -39,6 +50,56 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
     @Override
     public void setEnabled(boolean enabled) {
 	propConfigUi.setEnabled(enabled);
+    }
+    
+    private void autoWeight() {
+	var threads = new Thread[model.getAvailableGpus().size()];
+	var solvers = new GpuSolver[model.getAvailableGpus().size()];
+	
+	int index = 0;
+	for(var gpu : model.getAvailableGpus()) {
+	    final var solver = new GpuSolver();
+	    var selectedGpu = solver.getAvailableGpus().stream()
+		    .filter(g -> g.getInfo().name().equals(gpu.getInfo().name())).findFirst().get();
+	    selectedGpu.getConfig().setWorkgroupSize(64);
+	    solver.gpuSelection().choose(selectedGpu);
+	    solver.setPresetQueens(6);
+	    solver.setN(18);
+	    
+	    var thread = Thread.ofVirtual().start(() -> solver.start());
+	    
+	    threads[index] = thread;
+	    solvers[index] = solver;
+	    index++;
+	}
+	
+	Thread.ofVirtual().start(() -> {
+	    var progressBar = DialogUtils.loadingWindow(true);
+	    
+	    float progress = 0;
+	    while(progress < 1) {
+		progress = 0;
+		for(var solver : solvers)
+		    progress += solver.getProgress();
+		progress /= solvers.length;
+		final int progressVal = (int) (progress * 100);
+		EventQueue.invokeLater(() -> progressBar.setValue(progressVal));
+		try {
+		    Thread.sleep(500);
+		} catch (InterruptedException e) {
+		}
+	    }
+	    
+	    long durationSum = 0;
+	    for(var solver : solvers)
+		durationSum += solver.getDuration();
+	    for (var solver : solvers) {
+		int portion = (int) ((1 - ((float) solver.getDuration() / durationSum)) * 100);
+		gpuSelectionProp.setWeightForGpu(solver.gpuSelection().get().get(0).getId(), portion);
+	    }
+
+	    DialogUtils.loadingWindow(false);
+	});
     }
     
     class GpuSolverWithConfig implements SolverImplWithConfig {
@@ -102,6 +163,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	private final List<Gpu> availableGpus;
 	
 	private JTable table;
+	private DefaultTableModel tableModel;
 
 	GpuSelectionProperty(String name, List<Gpu> value, List<Gpu> availableGpus) {
 	    super(name, "GPU Selection", value);
@@ -122,7 +184,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		data[i][4] = false;
 	    }
 	    
-	    var tableModel = new DefaultTableModel(data, columns);
+	    tableModel = new DefaultTableModel(data, columns);
 	    tableModel.addTableModelListener(e -> {
 		int row = e.getFirstRow();
 		int col = e.getColumn();
@@ -226,6 +288,18 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	@Override
 	void updateUi(List<Gpu> value) {
 	    // not needed
+	}
+	
+	void setWeightForGpu(long gpuId, int weight) {
+	    for(int i = 0; i < availableGpus.size(); i++) {
+		final int finalI = i;
+		var gpu = availableGpus.get(i);
+		if(gpu.getId() == gpuId) {
+		    gpu.getConfig().setWeight(weight);
+		    EventQueue.invokeLater(() -> tableModel.setValueAt(weight, finalI, 2));
+		    break;
+		}
+	    }
 	}
     }
 
