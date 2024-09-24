@@ -526,8 +526,8 @@ public class MainFrame extends JFrame {
 	    @Override
 	    public void solverFinished() {
 		var solver = model.getSelectedSolverImplWithConfig().getSolver();
-		if(records.isNewRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverImplWithConfig().toString()))
-		    records.putRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverImplWithConfig().toString());
+		if(records.isNewRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverImplWithConfig().getDiscipline()))
+		    records.putRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverImplWithConfig().getDiscipline());
 	    }
 	});
 

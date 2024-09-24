@@ -56,8 +56,15 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 	@Override
 	public String toString() {
 	    if(solver.getThreadCount() == 1)
-		return "CPU Single-Core";
-	    return "CPU Multithreaded";
+		return "CPU: Single-Core";
+	    return "CPU: " + solver.getThreadCount() + " Threads";
+	}
+	
+	@Override
+	public String getDiscipline() {
+	    if(solver.getThreadCount() == 1)
+		return "CPU: Single-Core";
+	    return "CPU: Multithreaded";
 	}
 	
 	void setThreadCount(int threads) {

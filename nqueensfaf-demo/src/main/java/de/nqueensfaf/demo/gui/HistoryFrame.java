@@ -21,7 +21,7 @@ class HistoryFrame extends JFrame {
 
     private void createUi() {
 	// create table
-	var columns = new String[] { "N", "Solver / Device", "Duration"};
+	var columns = new String[] { "N", "Solver / Description", "Duration"};
 	tableModel = new DefaultTableModel(null, columns);
 	var table = new JTable(tableModel) {
 	    @Override

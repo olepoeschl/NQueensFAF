@@ -11,4 +11,6 @@ interface SolverImplWithConfig {
     String checkConfigValid();
     
     String getName();
+    
+    String getDiscipline();
 }
