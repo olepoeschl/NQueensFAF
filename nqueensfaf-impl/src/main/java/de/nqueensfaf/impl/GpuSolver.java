@@ -250,22 +250,23 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public void solve() {
-	if (gpuSelection.get().size() == 0)
-	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
-
 	duration = 0;
 	start = System.currentTimeMillis();
 
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
+	    constellations.clear();
+	    solutions.set(0);
+	    
 	    AbstractSolver simpleSolver = new SimpleSolver(getN());
 	    simpleSolver.start();
 
-	    long solutions = simpleSolver.getSolutions();
-	    constellations.clear();
-	    constellations.add(new Constellation(0, 0, 0, 0, solutions));
+	    solutions.set(simpleSolver.getSolutions());
 	    duration = simpleSolver.getDuration();
 	    return;
 	}
+	
+	if (gpuSelection.get().size() == 0)
+	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
 
 	if (!stateLoaded) {
 	    solutions.set(0);
