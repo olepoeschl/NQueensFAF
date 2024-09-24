@@ -155,14 +155,17 @@ public class CpuSolver extends AbstractSolver {
 	start = System.currentTimeMillis();
 	
 	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
-	    solutions.set(0);
 	    constellations.clear();
+	    solvedConstellations.set(1);
+	    solutions.set(0);
 	    
 	    AbstractSolver simpleSolver = new SimpleSolver(getN());
 	    simpleSolver.start();
-	    
-	    solutions.set(simpleSolver.getSolutions());
+
 	    duration = simpleSolver.getDuration();
+	    constellations.add(new Constellation(0, 0, 0, 0, simpleSolver.getSolutions()));
+	    solvedConstellations.set(1);
+	    solutions.set(simpleSolver.getSolutions());
 	    return;
 	}
 
