@@ -42,8 +42,6 @@ class MainModel {
     private int updateInterval = 100;
     private int autoSaveInterval = 0; // disabled by default
     private boolean fileOpened = false;
-//    private Records records;
-//    private final File recordsFile = new File("records");
     
     private volatile boolean saving = false;
     private int lastAutoSave;
@@ -75,7 +73,7 @@ class MainModel {
 		    try {
 			saveToFile(n + "-queens.faf");
 		    } catch (IOException ex) {
-			DialogUtils.error("could not save to file: " + ex.getMessage());
+			Utils.error(null, "could not save to file: " + ex.getMessage());
 		    }
 		});
 		lastAutoSave = progress;
@@ -90,7 +88,7 @@ class MainModel {
 		try {
 		    Thread.sleep(500);
 		} catch (InterruptedException e) {
-		    DialogUtils.error("could not complete saving to file: " + e.getMessage());
+		    Utils.error(null, "could not complete saving to file: " + e.getMessage());
 		}
 	};
 	Runtime.getRuntime().addShutdownHook(saveOnExitCompletionThreadBuilder.unstarted(saveOnExitCompletion));
@@ -182,24 +180,20 @@ class MainModel {
     }
 
     // ------------ actions (data manipulation) -------------
-    void startSolver() {
+    void startSolver() throws Exception {
 	applyConfigs();
 	
 	String errorMessage = selectedSolverImplWithConfig.checkConfigValid();
-	if(errorMessage.length() > 0) {
-	    DialogUtils.error(errorMessage);
-	    return;
-	}
+	if(errorMessage.length() > 0)
+	    throw new Exception(errorMessage);
 	
 	Thread.ofVirtual().start(() -> symSolvers.get(selectedSolverImplWithConfig).start());
-	Thread.ofVirtual().start(() -> {
-	    try {
-		selectedSolverImplWithConfig.getSolver().start();
-	    } catch(Exception e) {
-		DialogUtils.error(e.getMessage());
-		symSolvers.get(selectedSolverImplWithConfig).cancel();
-	    }
-	});
+	try {
+	    selectedSolverImplWithConfig.getSolver().start();
+	} catch(Exception e) {
+	    symSolvers.get(selectedSolverImplWithConfig).cancel();
+	    throw e;
+	}
     }
     
     private void applyConfigs() {

@@ -7,9 +7,12 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -48,13 +51,9 @@ public class MainFrame extends JFrame {
     
     public MainFrame() {
 	createAndShowUi();
-	DialogUtils.setJFrame(this);
-	
-	initHistoryFrame();
-	initRecordsFrame();
 	
 	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
-	    DialogUtils.error(e.getMessage());
+	    Utils.error(this != null ? this : null, e.getMessage());
 	    e.printStackTrace();
 	});
     }
@@ -64,6 +63,9 @@ public class MainFrame extends JFrame {
 	var container = new JPanel(new BorderLayout(10, 10));
 	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 	setContentPane(container);
+	
+	// init glass pane used for greying out the content
+	setGlassPane(createGlassPane());
 
 	// MenuBar
 	setJMenuBar(createAndGetMenuBar());
@@ -92,6 +94,10 @@ public class MainFrame extends JFrame {
 	// add all initialized components to main container
 	add(mainSplitPane, BorderLayout.CENTER);
 	add(progressBar, BorderLayout.SOUTH);
+
+	// initialize other displayable frames
+	initHistoryFrame();
+	initRecordsFrame();
 	
 	// finalize frame initialization
 	pack();
@@ -260,7 +266,7 @@ public class MainFrame extends JFrame {
 		    try {
 			desktop.browse(URI.create("https://github.com/olepoeschl/NQueensFAF"));
 		    } catch (Exception ex) {
-			DialogUtils.error("could not open link: " + ex.getMessage());
+			Utils.error(MainFrame.this, "could not open link: " + ex.getMessage());
 		    }
 		}
 	    }
@@ -268,7 +274,7 @@ public class MainFrame extends JFrame {
 	aboutMenu.add(new JMenuItem(new AbstractAction("Version") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		DialogUtils.info("<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>", "Version");
+		Utils.info(MainFrame.this, "<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>", "Version");
 	    }
 	}));
 
@@ -386,7 +392,15 @@ public class MainFrame extends JFrame {
     
     private JPanel createAndGetSolverControlPanel() {
 	var startButton = new JButton("Start");
-	startButton.addActionListener(e -> model.startSolver());
+	startButton.addActionListener(e -> {
+	    Thread.ofVirtual().start(() -> {
+		try {
+		    model.startSolver();
+		} catch (Exception ex) {
+		    Utils.error(this, ex.getMessage());
+		}
+	    });
+	});
 	
 	model.addSolverListener(new SolverListener() {
 	    @Override
@@ -433,26 +447,41 @@ public class MainFrame extends JFrame {
     }
 
     private void openFile(String path) {
-	DialogUtils.loadingCursor(true);
-	
+	Utils.loadingCursor(this);
 	try {
 	    model.openFile(path);
 	} catch (IOException e) {
-	    DialogUtils.error("could not open file: " + e.getMessage());
+	    Utils.error(this, "could not open file: " + e.getMessage());
 	}
-	
-	DialogUtils.loadingCursor(false);
+	Utils.defaultCursor(this);
     }
     
     private void saveToFile(String path) {
-	DialogUtils.loadingCursor(true);
+	Utils.loadingCursor(this);
 	try {
 	    model.saveToFile(path);
 	} catch (IOException e) {
-	    DialogUtils.error("could not save to file: " + e.getMessage());
+	    Utils.error(this, "could not save to file: " + e.getMessage());
 	}
-	DialogUtils.loadingCursor(false);
-
+	Utils.defaultCursor(this);
+    }
+    
+    private JPanel createGlassPane() {
+	var glassPane = new JPanel() {
+	    @Override
+	    public void paintComponent(Graphics g) {
+		g.setColor(new Color(0, 0, 0, 140));
+		g.fillRect(0, 0, getWidth(), getHeight());
+	    }
+	};
+	glassPane.addMouseListener(new MouseAdapter() {
+	    @Override
+	    public void mousePressed(MouseEvent e) {
+		e.consume();
+	    }
+	});
+	glassPane.setOpaque(false);
+	return glassPane;
     }
 
     private void initHistoryFrame() {
@@ -481,7 +510,7 @@ public class MainFrame extends JFrame {
 	    try {
 		records.open(path);
 	    } catch (Exception e) {
-		DialogUtils.error("could not load saved records: " + e.getMessage());
+		Utils.error(this, "could not load saved records: " + e.getMessage());
 	    }
 	
 	recordsFrame = new RecordsFrame(records, model.getN());
@@ -509,7 +538,7 @@ public class MainFrame extends JFrame {
 		try {
 		    records.save(path);
 		} catch (IOException e) {
-		    DialogUtils.error("could not save records: " + e.getMessage());
+		    Utils.error(null, "could not save records: " + e.getMessage());
 		}
 	    }
 	});

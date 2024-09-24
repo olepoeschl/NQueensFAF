@@ -5,13 +5,16 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
+import de.nqueensfaf.demo.gui.Utils.LoadingWindow;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
 
@@ -74,7 +77,14 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	}
 	
 	Thread.ofVirtual().start(() -> {
-	    var progressBar = DialogUtils.loadingWindow(true);
+	    var mainFrame = (JFrame) SwingUtilities.getWindowAncestor(GpuSolverConfigPanel.this);
+	    var loadingWindow = new LoadingWindow(mainFrame, "Determining GPU weight distribution");
+	    var progressBar = loadingWindow.getProgressBar();
+	    
+	    mainFrame.getGlassPane().setVisible(true);
+	    for(int i = 0; i < mainFrame.getJMenuBar().getMenuCount(); i++)
+		mainFrame.getJMenuBar().getMenu(i).setEnabled(false);
+	    loadingWindow.setVisible(true);
 	    
 	    float progress = 0;
 	    while(progress < 1) {
@@ -98,7 +108,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		gpuSelectionProp.setWeightForGpu(solver.gpuSelection().get().get(0).getId(), portion);
 	    }
 
-	    DialogUtils.loadingWindow(false);
+	    loadingWindow.setVisible(false);
+	    loadingWindow.dispose();
+	    for(int i = 0; i < mainFrame.getJMenuBar().getMenuCount(); i++)
+		mainFrame.getJMenuBar().getMenu(i).setEnabled(true);
+	    mainFrame.getGlassPane().setVisible(false);
 	});
     }
     
@@ -193,7 +207,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		case 2:
 		    int weight = (int) tableModel.getValueAt(row, col);
 		    if(weight <= 0) {
-			DialogUtils.error("GPU weight must be >= 1");
+			Utils.error(GpuSolverConfigPanel.this, "GPU weight must be >= 1");
 			tableModel.setValueAt(1, row, col);
 			break;
 		    }
@@ -202,7 +216,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		case 3:
 		    int workgroupSize = (int) tableModel.getValueAt(row, col);
 		    if(workgroupSize <= 0) {
-			DialogUtils.error("GPU workgroup size must be >= 1");
+			Utils.error(GpuSolverConfigPanel.this, "GPU workgroup size must be >= 1");
 			tableModel.setValueAt(1, row, col);
 			break;
 		    }
