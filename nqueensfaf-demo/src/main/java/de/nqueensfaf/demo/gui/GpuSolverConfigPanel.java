@@ -67,7 +67,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	    selectedGpu.getConfig().setWorkgroupSize(64);
 	    solver.gpuSelection().choose(selectedGpu);
 	    solver.setPresetQueens(6);
-	    solver.setN(18);
+	    solver.setN(19);
 	    
 	    var thread = Thread.ofVirtual().start(() -> solver.start());
 	    
