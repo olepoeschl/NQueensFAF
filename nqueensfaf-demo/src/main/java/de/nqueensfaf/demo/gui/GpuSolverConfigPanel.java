@@ -34,7 +34,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	propConfigUi.addProperty(gpuSelectionProp);
 	
 	if(model.getAvailableGpus().size() > 1) {
-	    var autoWeightButton = new JButton("Auto Detect Weight Settings");
+	    var autoWeightButton = new JButton("Auto-Configure GPU Weights");
 	    autoWeightButton.addActionListener(e -> {
 		autoWeight();
 	    });
