@@ -250,6 +250,9 @@ public class GpuSolver extends AbstractSolver {
 
     @Override
     public void solve() {
+	if (gpuSelection.get().size() == 0)
+	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
+	
 	duration = 0;
 	start = System.currentTimeMillis();
 
@@ -268,9 +271,6 @@ public class GpuSolver extends AbstractSolver {
 	    return;
 	}
 	
-	if (gpuSelection.get().size() == 0)
-	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
-
 	if (!stateLoaded) {
 	    solutions.set(0);
 	    solvedConstellations.set(0);

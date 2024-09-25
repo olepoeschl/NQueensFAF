@@ -38,9 +38,7 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 	
 	if(model.getAvailableGpus().size() > 1) {
 	    var autoWeightButton = new JButton("Auto-Configure GPU Weights");
-	    autoWeightButton.addActionListener(e -> {
-		autoWeight();
-	    });
+	    autoWeightButton.addActionListener(e -> autoWeight());
 	    add(autoWeightButton, new QuickGBC(0, 5).size(4, 1).weight(1, 0).anchor(QuickGBC.ANCHOR_CENTER).bottom(5));
 	}
     }
@@ -131,6 +129,8 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 		Utils.info(GpuSolverConfigPanel.this, "An alternative, simple solving algorithm is used for N <= 6.", "Information");
 		return "";
 	    }
+	    if(solver.gpuSelection().get().size() == 0)
+		return "No GPUs selected";
 	    if(solver.getPresetQueens() >= solver.getN() - 1)
 		return "Number of pre placed queens must be lower than N - 1";
 	    return "";
