@@ -125,10 +125,9 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
 	@Override
 	public String checkConfigValid() {
-	    if(solver.getN() <= 6) {
-		Utils.info(GpuSolverConfigPanel.this, "An alternative, simple solving algorithm is used for N <= 6.", "Information");
-		return "";
-	    }
+	    if(solver.getN() <= 6)
+		return "This solver is only applicable for N >= 6";
+	    
 	    if(solver.gpuSelection().get().size() == 0)
 		return "No GPUs selected";
 	    if(solver.getPresetQueens() >= solver.getN() - 1)
