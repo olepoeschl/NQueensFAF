@@ -43,10 +43,8 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 
 	@Override
 	public String checkConfigValid() {
-	    if(solver.getN() <= 6) {
-		Utils.info(CpuSolverConfigPanel.this, "An alternative, simple solving algorithm is used for N <= 6.", "Information");
-		return "";
-	    }
+	    if(solver.getN() <= 6)
+		return "This solver is only applicable for N >= 6";
 	    
 	    if(solver.getPresetQueens() >= solver.getN() - 1)
 		return "Number of pre placed queens must be lower than N - 1";

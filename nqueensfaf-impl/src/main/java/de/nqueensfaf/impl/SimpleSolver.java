@@ -6,7 +6,11 @@ public class SimpleSolver extends AbstractSolver {
 
     private long solutions = 0;
     private long duration = 0;
+    private float progress = 0;
 
+    public SimpleSolver() {
+    }
+    
     public SimpleSolver(int n) {
 	setN(n);
     }
@@ -14,13 +18,15 @@ public class SimpleSolver extends AbstractSolver {
     @Override
     public void solve() {
 	solutions = duration = 0;
+	progress = 0;
 	
 	long start = System.currentTimeMillis();
 
 	int mask = (1 << getN()) - 1;
 	backtrack(0, 0, 0, 0, mask, mask);
-
+	
 	duration = System.currentTimeMillis() - start;
+	progress = 1;
     }
 
     private void backtrack(int ld, int rd, int col, int row, int free, int mask) {
@@ -43,12 +49,17 @@ public class SimpleSolver extends AbstractSolver {
     }
 
     @Override
+    public long getDuration() {
+	return duration;
+    }
+    
+    @Override
     public long getSolutions() {
 	return solutions;
     }
-
+    
     @Override
-    public long getDuration() {
-	return duration;
+    public float getProgress() {
+	return progress;
     }
 }

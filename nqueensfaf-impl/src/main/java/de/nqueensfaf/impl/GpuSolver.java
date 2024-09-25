@@ -255,21 +255,6 @@ public class GpuSolver extends AbstractSolver {
 	
 	duration = 0;
 	start = System.currentTimeMillis();
-
-	if (getN() <= 6) { // if n is very small, use the simple Solver from the parent class
-	    constellations.clear();
-	    solvedConstellations.set(1);
-	    solutions.set(0);
-	    
-	    AbstractSolver simpleSolver = new SimpleSolver(getN());
-	    simpleSolver.start();
-
-	    duration = simpleSolver.getDuration();
-	    constellations.add(new Constellation(0, 0, 0, 0, simpleSolver.getSolutions()));
-	    solvedConstellations.set(1);
-	    solutions.set(simpleSolver.getSolutions());
-	    return;
-	}
 	
 	if (!stateLoaded) {
 	    solutions.set(0);

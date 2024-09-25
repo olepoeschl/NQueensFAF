@@ -335,11 +335,15 @@ public class MainFrame extends JFrame {
 	});
 	
 	// add Solver implementations' tabs
+	var simpleRecPanel = new SimpleRecursiveSolverConfigPanel();
 	var cpuPanel = new CpuSolverConfigPanel();
 	var gpuPanel = new GpuSolverConfigPanel();
 
+	solverSelectionPanel.addTab(simpleRecPanel.getModel().getName(), simpleRecPanel);
 	solverSelectionPanel.addTab(cpuPanel.getModel().getName(), cpuPanel);
 	solverSelectionPanel.addTab(gpuPanel.getModel().getName(), gpuPanel);
+	
+	solverSelectionPanel.setSelectedComponent(gpuPanel);
 	
 	for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 	    var component = solverSelectionPanel.getComponentAt(i);
