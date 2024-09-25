@@ -1,7 +1,6 @@
 package de.nqueensfaf.impl;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.SolverExecutionState;
 
 public class SymSolver extends AbstractSolver {
 
@@ -9,8 +8,13 @@ public class SymSolver extends AbstractSolver {
     private long solutions90, solutions180;
     private int mask, L;
 
+    private volatile boolean cancel = false;
+    
     @Override
     public void solve() {
+	cancel = false;
+	end = solutions90 = solutions180 = 0;
+	
 	start = System.currentTimeMillis();
 	L = 1 << (getN() - 1);
 	mask = (L - 1) | L;
@@ -44,6 +48,9 @@ public class SymSolver extends AbstractSolver {
     }
 
     private void rot90Solver(int ld, int rd, int col, int ldbot, int rdbot, int row, int rowidx, int queens) {
+	if(cancel)
+	    return;
+	
 	// in the mid row we are done
 	if (rowidx == getN() / 2) {
 	    solutions90++;
@@ -80,6 +87,9 @@ public class SymSolver extends AbstractSolver {
     // realize occupation by solving board from top to bottom and vice versa
     // simultaneously
     private void rot180Solver(int ld, int rd, int col, int ldbot, int rdbot, int rowidx) {
+	if(cancel)
+	    return;
+	
 	if (rowidx == getN() / 2) {
 	    solutions180++;
 	    return;
@@ -99,21 +109,15 @@ public class SymSolver extends AbstractSolver {
     }
 
     public long getSolutions90() {
-	if (getExecutionState().isBefore(SolverExecutionState.FINISHED))
-	    return 0;
 	return solutions90;
     }
 
     public long getSolutions180() {
-	if (getExecutionState().isBefore(SolverExecutionState.FINISHED))
-	    return 0;
 	return solutions180;
     }
 
     public long getUniqueSolutionsTotal(long solutions) {
-	if (getExecutionState().isBefore(SolverExecutionState.FINISHED))
-	    return 0;
-	return (solutions + 4 * solutions180 + 6 * solutions90) / 8;
+	return solutions == 0 ? 0 : (solutions + 4 * solutions180 + 6 * solutions90) / 8;
     }
 
     @Override
@@ -132,5 +136,15 @@ public class SymSolver extends AbstractSolver {
     @Override
     public long getSolutions() {
 	return 0;
+    }
+    
+    @Override
+    public void reset() {
+	start = end = 0;
+	solutions90 = solutions180 = 0;
+    }
+    
+    public void cancel() {
+	cancel = true;
     }
 }

@@ -3,7 +3,7 @@ package de.nqueensfaf.core;
 /**
  * Defines the possible execution states of a {@link Solver}.
  */
-public enum SolverExecutionState {
+public enum ExecutionState {
 
     /**
      * There are configurations that still have to be applied to the {@link Solver}
@@ -52,7 +52,7 @@ public enum SolverExecutionState {
      * @return true if the ordinal of this execution state is lower than the ordinal
      *         of {@code state}, otherwise false.
      */
-    public boolean isBefore(SolverExecutionState state) {
+    public boolean isBefore(ExecutionState state) {
 	return ordinal() < state.ordinal();
     }
 
@@ -64,7 +64,7 @@ public enum SolverExecutionState {
      * @return true if the ordinal of this execution state is greater than the
      *         ordinal of {@code state}, otherwise false.
      */
-    public boolean isAfter(SolverExecutionState state) {
+    public boolean isAfter(ExecutionState state) {
 	return ordinal() > state.ordinal();
     }
     

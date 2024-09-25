@@ -1,14 +1,15 @@
 package de.nqueensfaf.core;
 
-import static de.nqueensfaf.core.SolverExecutionState.*;
+import static de.nqueensfaf.core.ExecutionState.*;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Consumer;
 
 /**
  * This class provides a skeletal implementation of the {@link Solver} interface
  * to minimize the effort required to implement this interface. It wraps the
- * {@link Solver#solve()}, keeping the {@link SolverExecutionState} updated and
+ * {@link Solver#solve()}, keeping the {@link ExecutionState} updated and
  * providing the possibility to define callbacks for certain events.
  * 
  * @see Solver
@@ -16,19 +17,21 @@ import java.util.TimerTask;
 public abstract class AbstractSolver implements Solver {
 
     private int n = 0;
-    private volatile SolverExecutionState executionState = NOT_INITIALIZED;
+    private volatile ExecutionState executionState = NOT_INITIALIZED;
 
     private Runnable onStart = () -> {
     };
     private Runnable onFinish = () -> {
     };
-    private OnUpdateConsumer onUpdate = (p, s, d) -> {
+    private Consumer<Exception> onCancel = e -> {
+    };
+    private OnProgressUpdateConsumer onProgressUpdate = (p, s, d) -> {
     };
     private int updateInterval = 200;
-    private final Timer timer = new Timer();
+    private Timer timer;
 
     @Override
-    public final void setN(int n) {
+    public void setN(int n) {
 	if (executionState.isBusy()) {
 	    throw new IllegalStateException("could not set board size: solver has already started");
 	}
@@ -46,12 +49,12 @@ public abstract class AbstractSolver implements Solver {
 
     /**
      * Wraps the {@link Solver#solve()} method. Keeps the
-     * {@link SolverExecutionState} updated and executes callbacks (if defined) when
+     * {@link ExecutionState} updated and executes callbacks (if defined) when
      * the {@link Solver} starts, finishes or when it makes progress. The progress
      * is tracked by a background thread that continuously queries the solution
      * count, the progress and the duration of the {@link Solver}.
      * 
-     * @see SolverExecutionState
+     * @see ExecutionState
      */
     public final void start() {
 	preconditions();
@@ -61,12 +64,13 @@ public abstract class AbstractSolver implements Solver {
 	onStart.run();
 
 	if (updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
+	    timer = new Timer();
 	    timer.schedule(new TimerTask() {
 		@Override
 		public void run() {
 		    if(executionState != RUNNING || getProgress() >= 1f)
 			return;
-		    onUpdate.accept(getProgress(), getSolutions(), getDuration());
+		    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration());
 		}
 	    }, 0, updateInterval);
 	}
@@ -76,6 +80,7 @@ public abstract class AbstractSolver implements Solver {
 	    solve();
 	} catch (Exception e) {
 	    executionState = CANCELED;
+	    onCancel.accept(e);
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
 
@@ -83,7 +88,7 @@ public abstract class AbstractSolver implements Solver {
 
 	if (updateInterval > 0) {
 	    timer.cancel();
-	    onUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
+	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	}
 
 	onFinish.run();
@@ -98,14 +103,10 @@ public abstract class AbstractSolver implements Solver {
 	if (executionState.isAfter(READY) && executionState.isBefore(FINISHED))
 	    throw new IllegalStateException(
 		    "starting conditions not fullfilled: solver is neither ready nor finished, nor canceled");
-
-	if (getProgress() == 1.0f)
-	    throw new IllegalStateException(
-		    "starting conditions not fullfilled: solver is already done, nothing to do here");
     }
 
     @Override
-    public final SolverExecutionState getExecutionState() {
+    public final ExecutionState getExecutionState() {
 	return executionState;
     }
 
@@ -125,6 +126,22 @@ public abstract class AbstractSolver implements Solver {
     }
 
     /**
+     * Sets the callback that is executed when an Exception was thrown during
+     * {@link Solver#solve()}, meaning that the {@link Solver} did not finish
+     * successfully.
+     * 
+     * @param cb the runnable to be executed. Must not be {@code null}.
+     * 
+     * @see #start()
+     */
+    public final void onCancel(Consumer<Exception> cb) {
+	if (cb == null) {
+	    throw new IllegalArgumentException("could not set cancel callback: callback must not be null");
+	}
+	onCancel = cb;
+    }
+
+    /**
      * Sets the callback that is executed when {@link Solver#solve()} has returned
      * and, if alive, the background thread for tracking the {@link Solver}'s
      * progress has terminated.
@@ -141,23 +158,6 @@ public abstract class AbstractSolver implements Solver {
     }
 
     /**
-     * Defines the interface of a consumer callback to be executed on progress
-     * updates of the {@link Solver}.
-     */
-    public interface OnUpdateConsumer {
-	/**
-	 * Consumes the current progress, solution count and solving duration of a
-	 * {@link Solver}.
-	 * 
-	 * @param progress  the current progress of the {@link Solver}.
-	 * @param solutions the current total count of solutions found by the
-	 *                  {@link Solver}.
-	 * @param duration  the current duration the {@link Solver} spent computing.
-	 */
-	void accept(float progress, long solutions, long duration);
-    }
-
-    /**
      * Sets the callback that is executed on progress updates of the
      * {@link Solver#solve()}. The callback is executed only during the solving
      * process.
@@ -166,16 +166,16 @@ public abstract class AbstractSolver implements Solver {
      * 
      * @see #start()
      */
-    public final void onUpdate(OnUpdateConsumer onUpdate) {
-	if (onUpdate == null) {
-	    throw new IllegalArgumentException("could not set onUpdate callback: callback must not be null");
+    public final void onProgressUpdate(OnProgressUpdateConsumer onProgressUpdate) {
+	if (onProgressUpdate == null) {
+	    throw new IllegalArgumentException("could not set onProgressUpdate callback: callback must not be null");
 	}
-	this.onUpdate = onUpdate;
+	this.onProgressUpdate = onProgressUpdate;
     }
 
     /**
      * Sets the interval in which the background thread queries the {@link Solver}'s
-     * progress and executes the callback defined in {@link #onUpdate}.
+     * progress and executes the callback defined in {@link #onProgressUpdate}.
      * 
      * @param updateInterval the number of milliseconds to wait between progress
      *                       updates.
@@ -191,11 +191,28 @@ public abstract class AbstractSolver implements Solver {
 
     /**
      * Gets the interval in which the background thread queries the {@link Solver}'s
-     * progress and executes the callback defined in {@link #onUpdate}.
+     * progress and executes the callback defined in {@link #onProgressUpdate}.
      * 
      * @return the number of milliseconds to wait between progress updates.
      */
     public final int getUpdateInterval() {
 	return updateInterval;
+    }
+
+    /**
+     * Defines the interface of a consumer callback to be executed on progress
+     * updates of the {@link Solver}.
+     */
+    public interface OnProgressUpdateConsumer {
+	/**
+	 * Consumes the current progress, solution count and solving duration of a
+	 * {@link Solver}.
+	 * 
+	 * @param progress  the current progress of the {@link Solver}.
+	 * @param solutions the current total count of solutions found by the
+	 *                  {@link Solver}.
+	 * @param duration  the current duration the {@link Solver} spent computing.
+	 */
+	void accept(float progress, long solutions, long duration);
     }
 }

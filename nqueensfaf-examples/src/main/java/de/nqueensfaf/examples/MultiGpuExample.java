@@ -74,7 +74,7 @@ public class MultiGpuExample {
 	    // define callbacks for when the CpuSolver starts and finishes and when it makes
 	    // progress
 	    gpuSolver.onStart(() -> System.out.printf("Starting GpuSolver for N=%d.\n", n));
-	    gpuSolver.onUpdate((progress, solutions, duration) -> System.out.printf("\t%.2f%% [%d solutions, %.2fs]\n",
+	    gpuSolver.onProgressUpdate((progress, solutions, duration) -> System.out.printf("\t%.2f%% [%d solutions, %.2fs]\n",
 		    progress * 100, solutions, duration / 1000f));
 	    gpuSolver.onFinish(() -> System.out.printf("GpuSolver found %d solutions in %d ms for N=%d\n",
 		    gpuSolver.getSolutions(), gpuSolver.getDuration(), n));
@@ -113,10 +113,10 @@ public class MultiGpuExample {
 	    switch (configKey) {
 	    case "bm=":
 		try {
-		    int benchmark = Integer.parseInt(configValue);
-		    gpu.getConfig().setBenchmark(benchmark);
+		    int weight = Integer.parseInt(configValue);
+		    gpu.getConfig().setWeight(weight);
 		} catch (NumberFormatException e) {
-		    throw new NumberFormatException("invalid benchmark: '" + configValue + "' is not an integer");
+		    throw new NumberFormatException("invalid weight: '" + configValue + "' is not an integer");
 		}
 		break;
 	    case "wg=":
