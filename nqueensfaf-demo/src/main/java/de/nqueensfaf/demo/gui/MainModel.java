@@ -14,6 +14,7 @@ import javax.swing.event.SwingPropertyChangeSupport;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
 import de.nqueensfaf.core.ExecutionState;
+import de.nqueensfaf.demo.gui.extension.SolverExtension;
 import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {
@@ -22,7 +23,7 @@ class MainModel {
     
     private final EventListenerList listenerList = new EventListenerList();
     
-    private final Map<SolverImplWithConfig, SymSolver> symSolvers = new HashMap<SolverImplWithConfig, SymSolver>();
+    private final Map<SolverExtension, SymSolver> symSolvers = new HashMap<SolverExtension, SymSolver>();
     
     // solver callbacks
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
@@ -37,20 +38,27 @@ class MainModel {
 	fireSolverTerminated();
     };
 
-    private SolverImplWithConfig selectedSolverImplWithConfig;
-    private int n = 16;
-    private int updateInterval = 100;
-    private int autoSaveInterval = 0; // disabled by default
-    private boolean fileOpened = false;
+    private final SolverExtension[] solverExtensions;
+    private SolverExtension selectedSolverExtension;
     
-    private volatile boolean saving = false;
+    // auto save = 0: disabled by default
+    private final AppConfig appConfig = new AppConfig(16, 100, 0); // TODO
+    
     private int lastAutoSave;
+    private boolean fileOpened = false;
+    private volatile boolean saving = false;
     
     public MainModel() {
+	solverExtensions = new SolverExtension[3];
+	solverExtensions[0] = new CpuSolverExtension();
+	solverExtensions[1] = new GpuSolverExtension();
+	solverExtensions[2] = new SimpleSolverExtension();
+	selectedSolverExtension = solverExtensions[0];
+	
 	addSolverListener(new SolverListener() {
 	    @Override
 	    public void solverStarted() {
-		lastAutoSave = (int) (selectedSolverImplWithConfig.getSolver().getProgress() * 100);
+		lastAutoSave = (int) (selectedSolverExtension.getSolver().getProgress() * 100);
 	    }
 	    @Override
 	    public void solverTerminated() {
@@ -62,16 +70,17 @@ class MainModel {
 	    }
 	});
 	
+	// auto saving logic
 	addPropertyChangeListener("progress", e -> {
-	    if(autoSaveInterval <= 0) 
+	    if(appConfig.getAutoSaveInterval() <= 0) 
 		return;
 	    if(saving)
 		return;
 	    int progress = (int) ((float) e.getNewValue() * 100);
-	    if(progress - lastAutoSave >= autoSaveInterval) {
+	    if(progress - lastAutoSave >= appConfig.getAutoSaveInterval()) {
 		Thread.ofVirtual().start(() -> {
 		    try {
-			saveToFile(n + "-queens.faf");
+			saveToFile(appConfig.getN() + "-queens.faf");
 		    } catch (IOException ex) {
 			Utils.error(null, "could not save to file: " + ex.getMessage());
 		    }
@@ -102,77 +111,77 @@ class MainModel {
     }
     
     private void update() {
-	var solver = selectedSolverImplWithConfig.getSolver();
+	var solver = selectedSolverExtension.getSolver();
 	update(solver.getProgress(), solver.getSolutions(), solver.getDuration());
     }
 
     // ------------ getters and setters -------------
-    void setSelectedSolverImplWithConfig(SolverImplWithConfig solverImplWithConfig) {
-	selectedSolverImplWithConfig = solverImplWithConfig;
-	
-	if(symSolvers.get(solverImplWithConfig) == null) {
+    SolverExtension[] getSolverExtensions() {
+	return solverExtensions;
+    }
+    
+    void setSelectedSolverExtension(SolverExtension solverExtension) {
+	if(symSolvers.get(solverExtension) == null) {
 	    var symSolver = new SymSolver();
 	    symSolver.onProgressUpdate((progress, solutions, duration) -> {
 		// continue unique solutions updates if solver is finished but SymSolver still running
-		var runningSolverImpl = selectedSolverImplWithConfig.getSolver();
+		var runningSolverImpl = solverExtension.getSolver();
 		if(runningSolverImpl.getExecutionState().equals(ExecutionState.FINISHED))
 		    prop.firePropertyChange("uniqueSolutions", null, symSolver.getUniqueSolutionsTotal(runningSolverImpl.getSolutions()));
 	    });
-	    symSolvers.put(selectedSolverImplWithConfig, symSolver);
+	    symSolvers.put(solverExtension, symSolver);
 	}
-	
-//	update();
-	
-	prop.firePropertyChange("selectedSolverImplWithConfig", null, solverImplWithConfig);
+	selectedSolverExtension = solverExtension;
+	prop.firePropertyChange("selectedSolverExtension", null, solverExtension);
     }
     
-    SolverImplWithConfig getSelectedSolverImplWithConfig() {
-	return selectedSolverImplWithConfig;
+    SolverExtension getSelectedSolverExtension() {
+	return selectedSolverExtension;
     }
     
     void setN(int n) {
-	this.n = n;
+	appConfig.setN(n);
 	prop.firePropertyChange("n", null, n);
     }
     
     int getN() {
-	return n;
+	return appConfig.getN();
     }
     
     void setUpdateInterval(int updateInterval) {
-	this.updateInterval = updateInterval;
+	appConfig.setUpdateInterval(updateInterval);
 	prop.firePropertyChange("updateInterval", null, updateInterval);
     }
     
     int getUpdateInterval() {
-	return updateInterval;
+	return appConfig.getUpdateInterval();
     }
     
     void setAutoSaveInterval(int autoSaveInterval) {
 	if(autoSaveInterval > 100)
 	    throw new IllegalArgumentException("invalid config: auto save interval must be <= 100");
-	this.autoSaveInterval = autoSaveInterval;
+	appConfig.setAutoSaveInterval(autoSaveInterval);
 	prop.firePropertyChange("autoSaveInterval", null, autoSaveInterval);
     }
     
     int getAutoSaveInterval() {
-	return autoSaveInterval;
+	return appConfig.getAutoSaveInterval();
     }
     
     float getProgress() {
-	return selectedSolverImplWithConfig.getSolver().getProgress();
+	return selectedSolverExtension.getSolver().getProgress();
     }
     
     long getSolutions() {
-	return selectedSolverImplWithConfig.getSolver().getSolutions();
+	return selectedSolverExtension.getSolver().getSolutions();
     }
     
     long getDuration() {
-	return selectedSolverImplWithConfig.getSolver().getDuration();
+	return selectedSolverExtension.getSolver().getDuration();
     }
     
     long getUniqueSolutions(long solutions) {
-	return symSolvers.get(selectedSolverImplWithConfig).getUniqueSolutionsTotal(solutions);
+	return symSolvers.get(selectedSolverExtension).getUniqueSolutionsTotal(solutions);
     }
 
     boolean isFileOpened() {
@@ -183,36 +192,38 @@ class MainModel {
     void startSolver() throws Exception {
 	applyConfigs();
 	
-	String errorMessage = selectedSolverImplWithConfig.checkConfigValid();
+	String errorMessage = selectedSolverExtension.getConfig().checkIfValid(appConfig);
 	if(errorMessage.length() > 0)
 	    throw new Exception(errorMessage);
 	
-	Thread.ofVirtual().start(() -> symSolvers.get(selectedSolverImplWithConfig).start());
+	Thread.ofVirtual().start(() -> symSolvers.get(selectedSolverExtension).start());
 	try {
-	    selectedSolverImplWithConfig.getSolver().start();
+	    selectedSolverExtension.getSolver().start();
 	} catch(Exception e) {
-	    symSolvers.get(selectedSolverImplWithConfig).cancel();
+	    symSolvers.get(selectedSolverExtension).cancel();
 	    throw e;
 	}
     }
     
     private void applyConfigs() {
-	var solver = selectedSolverImplWithConfig.getSolver();
+	var solver = selectedSolverExtension.getSolver();
 	solver.onProgressUpdate(onProgressUpdate);
 	solver.onStart(onStart);
 	solver.onFinish(onFinish);
 	solver.onCancel(onCancel);
-	solver.setUpdateInterval(updateInterval);
+	solver.setUpdateInterval(appConfig.getUpdateInterval());
 	if(!fileOpened)
-	    solver.setN(n);
+	    solver.setN(appConfig.getN());
 	
-	symSolvers.get(selectedSolverImplWithConfig).setN(n);
+	symSolvers.get(selectedSolverExtension).setN(appConfig.getN());
     }
     
     void openFile(String path) throws IOException {
-	selectedSolverImplWithConfig.getSolver().load(path);
-	selectedSolverImplWithConfig.loaded();
-	setN(selectedSolverImplWithConfig.getSolver().getN());
+	// TODO: use save points
+	
+	selectedSolverExtension.getSolver().load(path);
+	selectedSolverExtension.receiveEvent(new Event(Event.SNAPSHOT_RESTORED));
+	setN(selectedSolverExtension.getSolver().getN());
 	fileOpened = true;
 	
 	update();
@@ -221,13 +232,17 @@ class MainModel {
     
     void saveToFile(String path) throws IOException {
 	saving = true;
-	selectedSolverImplWithConfig.getSolver().save(path);
+	
+	var snapshot = new Snapshot(appConfig, selectedSolverExtension.getSolver().getSavePoint(), selectedSolverExtension.getConfig());
+	// TODO: write the snapshot to a file
+	
+	selectedSolverExtension.getSolver().save(path);
 	saving = false;
     }
     
     void reset() {
-	selectedSolverImplWithConfig.getSolver().reset();
-	symSolvers.get(selectedSolverImplWithConfig).reset();
+	selectedSolverExtension.getSolver().reset();
+	symSolvers.get(selectedSolverExtension).reset();
 	update();
 	fireSolverReset();
     }
