@@ -219,13 +219,21 @@ class MainModel {
     }
     
     void openFile(String path) throws IOException {
-	// TODO: use save points
+	// TODO
+	// read snapshot from file
+	// check, which class the savepoint and config respectively belong to
+	// update appConfig
+	// load savepoint & update solutions, progress, duration
+	// update solver extension config
 	
-	selectedSolverExtension.getSolver().load(path);
-	selectedSolverExtension.receiveEvent(new Event(Event.SNAPSHOT_RESTORED));
-	setN(selectedSolverExtension.getSolver().getN());
+//	selectedSolverExtension.getSolver().load(path);
+//	
+//	fireSnapshotRestored();
+//	
+//	setN(selectedSolverExtension.getSolver().getN());
+	
+	
 	fileOpened = true;
-	
 	update();
 	fireSolverFileOpened();
     }
@@ -301,6 +309,10 @@ class MainModel {
 	for(var listener : listenerList.getListeners(SolverListener.class)) {
 	    EventQueue.invokeLater(() -> listener.solverReset());
 	}
+    }
+    
+    private void fireSnapshotRestored() {
+	selectedSolverExtension.handleEvent(new Event(Event.SNAPSHOT_RESTORED));
     }
 
     // ------------ classes and types -------------

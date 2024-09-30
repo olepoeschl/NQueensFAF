@@ -332,6 +332,9 @@ public class MainFrame extends JFrame {
 	    
 	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
 	    model.setSelectedSolverImplWithConfig(solverImplWithConfig);
+	    
+	    // TODO: use the actual old value in MainModel property changes
+	    // this way prevents loops between propertyChanges and reverse property
 	});
 	
 	// add Solver implementations' tabs
@@ -506,7 +509,7 @@ public class MainFrame extends JFrame {
 	    }
 	});
     }
-
+    
     private void initRecordsFrame() {
 	final String path = Records.DEFAULT_PATH;
 	final Records records = new Records();
