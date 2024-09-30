@@ -455,6 +455,13 @@ public class MainFrame extends JFrame {
 
     private void openFile(String path) {
 	Utils.loadingCursor(this);
+	
+	// TODO
+	// kryo read Snapshot from File
+	// inject SavePoint into current Solver
+	// if exists: apply the loaded SolverExtensionConfig
+	// if exists: apply the loaded AppConfig
+	
 	try {
 	    model.openFile(path);
 	} catch (IOException e) {
@@ -465,6 +472,9 @@ public class MainFrame extends JFrame {
     
     private void saveToFile(String path) {
 	Utils.loadingCursor(this);
+	
+	// TODO
+	
 	try {
 	    model.saveToFile(path);
 	} catch (IOException e) {
