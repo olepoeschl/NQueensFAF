@@ -1,24 +1,17 @@
 package de.nqueensfaf.demo.gui;
 
-public class AppConfig implements ImmutableAppConfig {
+public class Settings {
 
     private int n;
     private int updateInterval;
     private int autoSaveInterval;
     
-    public AppConfig(int n, int updateInterval, int autoSaveInterval) {
+    public Settings(int n, int updateInterval, int autoSaveInterval) {
 	this.n = n;
 	this.updateInterval = updateInterval;
 	this.autoSaveInterval = autoSaveInterval;
     }
-    
-    public void updateFrom(AppConfig appConfig) {
-	setN(appConfig.n);
-	setUpdateInterval(appConfig.updateInterval);
-	setAutoSaveInterval(appConfig.autoSaveInterval);
-    }
 
-    @Override
     public int getN() {
         return n;
     }
@@ -27,7 +20,6 @@ public class AppConfig implements ImmutableAppConfig {
         this.n = n;
     }
 
-    @Override
     public int getUpdateInterval() {
         return updateInterval;
     }
@@ -36,7 +28,6 @@ public class AppConfig implements ImmutableAppConfig {
         this.updateInterval = updateInterval;
     }
 
-    @Override
     public int getAutoSaveInterval() {
         return autoSaveInterval;
     }

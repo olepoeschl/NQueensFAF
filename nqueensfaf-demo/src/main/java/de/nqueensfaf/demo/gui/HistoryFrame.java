@@ -53,7 +53,7 @@ class HistoryFrame extends JFrame {
     }
 
     void addEntry(HistoryEntry entry) {
-	tableModel.insertRow(0, new Object[] { entry.n(), entry.deviceName(), ResultsPanel.getDurationString(entry.duration()) });
+	tableModel.insertRow(0, new Object[] { entry.n(), entry.deviceName(), Utils.getDurationString(entry.duration()) });
     }
 
     record HistoryEntry(int n, String deviceName, long duration) {}

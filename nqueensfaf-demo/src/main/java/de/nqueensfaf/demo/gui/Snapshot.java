@@ -1,7 +1,8 @@
 package de.nqueensfaf.demo.gui;
 
-import de.nqueensfaf.core.AbstractSolver.SavePoint;
-import de.nqueensfaf.demo.gui.extension.SolverExtensionConfig;
+import java.util.Map;
 
-record Snapshot(SavePoint savePoint, SolverExtensionConfig solverExtensionConfig, AppConfig appConfig) {
+import de.nqueensfaf.core.AbstractSolver.SavePoint;
+
+record Snapshot(SavePoint savePoint, Map<String, Object> solverExtensionConfig, Settings settings) {
 }

@@ -76,4 +76,114 @@ class Utils {
 	    return progressBar;
 	}
     }
+
+    static String getDurationUnitlessString(long time) {
+	long h = time / 1000 / 60 / 60;
+	long m = time / 1000 / 60 % 60;
+	long s = time / 1000 % 60;
+	long ms = time % 1000;
+
+	String strh, strm, strs, strms;
+	// hours
+	if (h == 0) {
+	    strh = "00";
+	} else if ((h + "").toString().length() == 3) {
+	    strh = "" + h;
+	} else if ((h + "").toString().length() == 2) {
+	    strh = "0" + h;
+	} else {
+	    strh = "00" + h;
+	}
+	// minutes
+	if ((m + "").toString().length() == 2) {
+	    strm = "" + m;
+	} else {
+	    strm = "0" + m;
+	}
+	// seconds
+	if ((s + "").toString().length() == 2) {
+	    strs = "" + s;
+	} else {
+	    strs = "0" + s;
+	}
+	// milliseconds
+	if ((ms + "").toString().length() == 3) {
+	    strms = "" + ms;
+	} else if ((ms + "").toString().length() == 2) {
+	    strms = "0" + ms;
+	} else {
+	    strms = "00" + ms;
+	}
+	
+	String durationStr;
+	if(h > 0)
+	    durationStr = strh + ":" + strm + ":" + strs + "." + strms;
+	else if(m > 0)
+	    durationStr = strm + ":" + strs + "." + strms;
+	else
+	    durationStr = strs + "." + strms;
+
+	return durationStr.startsWith("0") ? durationStr.substring(1) : durationStr;
+    }
+    
+    static String getDurationUnitString(long duration) {
+	if(duration >= 60 * 60 * 1000)
+	    return "hours";
+	else if(duration >= 60 * 1000)
+	    return "minutes";
+	else
+	    return "seconds";
+    }
+    
+    static String getDurationString(long time) {
+	long h = time / 1000 / 60 / 60;
+	long m = time / 1000 / 60 % 60;
+	long s = time / 1000 % 60;
+	long ms = time % 1000;
+
+	String strh, strm, strs, strms;
+	// hours
+	if (h == 0) {
+	    strh = "00";
+	} else if ((h + "").toString().length() == 3) {
+	    strh = "" + h;
+	} else if ((h + "").toString().length() == 2) {
+	    strh = "0" + h;
+	} else {
+	    strh = "00" + h;
+	}
+	// minutes
+	if ((m + "").toString().length() == 2) {
+	    strm = "" + m;
+	} else {
+	    strm = "0" + m;
+	}
+	// seconds
+	if ((s + "").toString().length() == 2) {
+	    strs = "" + s;
+	} else {
+	    strs = "0" + s;
+	}
+	// milliseconds
+	if ((ms + "").toString().length() == 3) {
+	    strms = "" + ms;
+	} else if ((ms + "").toString().length() == 2) {
+	    strms = "0" + ms;
+	} else {
+	    strms = "00" + ms;
+	}
+	
+	String durationStr = strh + ":" + strm + ":" + strs + "." + strms;
+	return durationStr;
+    }
+    
+    static String getSolutionsString(long solutions) {
+	StringBuilder sb = new StringBuilder(Long.toString(solutions));
+	for (int i = sb.length() - 3; i >= 0; i -= 3) {
+	    if (i <= 0)
+		break;
+	    sb.insert(i, ".");
+	}
+	return sb.toString();
+    }
 }

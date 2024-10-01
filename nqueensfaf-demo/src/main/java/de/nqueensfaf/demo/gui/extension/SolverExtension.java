@@ -1,42 +1,42 @@
 package de.nqueensfaf.demo.gui.extension;
 
-import java.io.File;
+import java.util.Map;
 
 import javax.swing.JComponent;
-
-import com.esotericsoftware.kryo.Kryo;
+import javax.swing.JLabel;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.AppConfig;
-import de.nqueensfaf.demo.gui.Event;
-import de.nqueensfaf.demo.gui.ImmutableAppConfig;
 
 public interface SolverExtension {
     
-    void initialize(Kryo kryo); // e.g. load old config from file
+    default void onStartup() {} // e.g. load old config from file
     
-    void terminate(Kryo kryo); // e.g. save current config to file
+    default void onClose() {} // e.g. save current config to file
     
-    JComponent getConfigUi();
+    default void onSolverStarted() {}
+    
+    default void onSolverFinished() {}
+    
+    default void onSolverCanceled() {}
+    
+    default void onSolverTerminated() {}
+    
+    default void onSolverRestored() {}
+    
+    default void onSolverReset() {}
     
     AbstractSolver getSolver();
     
     String getName();
     
-    String getCurrentRecordCategory();
-    
-    void handleEvent(Event event);
-    
-    // save current solver progress to file. Optionally also the extension config
-    // and the app config
-    default void saveFile(File file, ImmutableAppConfig currentAppConfig) {
-	throw new UnsupportedOperationException("Not supported by this solver");
+    default String getCurrentRecordCategory() {
+	return getName();
     }
     
-    // read current solver progress from file. Optionally also the extension config
-    // and modify the app config
-    default void openFile(File file, AppConfig appConfig) {
-	throw new UnsupportedOperationException("Not supported by this solver");
+    default JComponent getConfigUi() {
+	return new JLabel(":-)");
     }
+    
+    default void getCurrentConfig(Map<String, Object> configMap) {}
     
 }

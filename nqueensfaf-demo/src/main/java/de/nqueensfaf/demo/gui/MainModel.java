@@ -13,8 +13,9 @@ import javax.swing.event.EventListenerList;
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
-import de.nqueensfaf.core.ExecutionState;
+import de.nqueensfaf.demo.gui.extension.SimpleRecursiveSolverExtension;
 import de.nqueensfaf.demo.gui.extension.SolverExtension;
+import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.impl.SymSolver;
 
 class MainModel {
@@ -42,7 +43,7 @@ class MainModel {
     private SolverExtension selectedSolverExtension;
     
     // auto save = 0: disabled by default
-    private final AppConfig appConfig = new AppConfig(16, 100, 0); // TODO
+    private final Settings settings = new Settings(16, 100, 0); // TODO
     
     private int lastAutoSave;
     private boolean fileOpened = false;
@@ -50,9 +51,9 @@ class MainModel {
     
     public MainModel() {
 	solverExtensions = new SolverExtension[3];
-	solverExtensions[0] = new CpuSolverExtension();
-	solverExtensions[1] = new GpuSolverExtension();
-	solverExtensions[2] = new SimpleSolverExtension();
+	solverExtensions[0] = new SimpleRecursiveSolverExtension();
+	solverExtensions[1] = new CpuSolverExtension();
+	solverExtensions[2] = new GpuSolverExtension();
 	selectedSolverExtension = solverExtensions[0];
 	
 	addSolverListener(new SolverListener() {
@@ -72,15 +73,15 @@ class MainModel {
 	
 	// auto saving logic
 	addPropertyChangeListener("progress", e -> {
-	    if(appConfig.getAutoSaveInterval() <= 0) 
+	    if(settings.getAutoSaveInterval() <= 0) 
 		return;
 	    if(saving)
 		return;
 	    int progress = (int) ((float) e.getNewValue() * 100);
-	    if(progress - lastAutoSave >= appConfig.getAutoSaveInterval()) {
+	    if(progress - lastAutoSave >= settings.getAutoSaveInterval()) {
 		Thread.ofVirtual().start(() -> {
 		    try {
-			saveToFile(appConfig.getN() + "-queens.faf");
+			saveToFile(settings.getN() + "-queens.faf");
 		    } catch (IOException ex) {
 			Utils.error(null, "could not save to file: " + ex.getMessage());
 		    }
@@ -140,32 +141,32 @@ class MainModel {
     }
     
     void setN(int n) {
-	appConfig.setN(n);
+	settings.setN(n);
 	prop.firePropertyChange("n", null, n);
     }
     
     int getN() {
-	return appConfig.getN();
+	return settings.getN();
     }
     
     void setUpdateInterval(int updateInterval) {
-	appConfig.setUpdateInterval(updateInterval);
+	settings.setUpdateInterval(updateInterval);
 	prop.firePropertyChange("updateInterval", null, updateInterval);
     }
     
     int getUpdateInterval() {
-	return appConfig.getUpdateInterval();
+	return settings.getUpdateInterval();
     }
     
     void setAutoSaveInterval(int autoSaveInterval) {
 	if(autoSaveInterval > 100)
 	    throw new IllegalArgumentException("invalid config: auto save interval must be <= 100");
-	appConfig.setAutoSaveInterval(autoSaveInterval);
+	settings.setAutoSaveInterval(autoSaveInterval);
 	prop.firePropertyChange("autoSaveInterval", null, autoSaveInterval);
     }
     
     int getAutoSaveInterval() {
-	return appConfig.getAutoSaveInterval();
+	return settings.getAutoSaveInterval();
     }
     
     float getProgress() {
@@ -192,10 +193,6 @@ class MainModel {
     void startSolver() throws Exception {
 	applyConfigs();
 	
-	String errorMessage = selectedSolverExtension.getConfig().checkIfValid(appConfig);
-	if(errorMessage.length() > 0)
-	    throw new Exception(errorMessage);
-	
 	Thread.ofVirtual().start(() -> symSolvers.get(selectedSolverExtension).start());
 	try {
 	    selectedSolverExtension.getSolver().start();
@@ -211,20 +208,19 @@ class MainModel {
 	solver.onStart(onStart);
 	solver.onFinish(onFinish);
 	solver.onCancel(onCancel);
-	solver.setUpdateInterval(appConfig.getUpdateInterval());
+	solver.setUpdateInterval(settings.getUpdateInterval());
 	if(!fileOpened)
-	    solver.setN(appConfig.getN());
+	    solver.setN(settings.getN());
 	
-	symSolvers.get(selectedSolverExtension).setN(appConfig.getN());
+	symSolvers.get(selectedSolverExtension).setN(settings.getN());
     }
     
     void openFile(String path) throws IOException {
 	// TODO
 	// read snapshot from file
-	// check, which class the savepoint and config respectively belong to
-	// update appConfig
 	// load savepoint & update solutions, progress, duration
 	// update solver extension config
+	// update settings
 	
 //	selectedSolverExtension.getSolver().load(path);
 //	
@@ -241,7 +237,9 @@ class MainModel {
     void saveToFile(String path) throws IOException {
 	saving = true;
 	
-	var snapshot = new Snapshot(appConfig, selectedSolverExtension.getSolver().getSavePoint(), selectedSolverExtension.getConfig());
+	var solverExtensionConfig = new HashMap<String, Object>();
+	selectedSolverExtension.getCurrentConfig(solverExtensionConfig);
+	var snapshot = new Snapshot(selectedSolverExtension.getSolver().getSavePoint(), solverExtensionConfig, settings);
 	// TODO: write the snapshot to a file
 	
 	selectedSolverExtension.getSolver().save(path);
@@ -312,7 +310,7 @@ class MainModel {
     }
     
     private void fireSnapshotRestored() {
-	selectedSolverExtension.handleEvent(new Event(Event.SNAPSHOT_RESTORED));
+	selectedSolverExtension.onSolverRestored();
     }
 
     // ------------ classes and types -------------

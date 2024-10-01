@@ -3,6 +3,7 @@ package de.nqueensfaf.demo.gui.test;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.Serializable;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -14,9 +15,7 @@ public class Test1 {
     public static void main(String[] args) {
 
 	final Kryo kryo = new Kryo();
-	kryo.register(Man.class);
-	kryo.register(Woman.class);
-	kryo.register(AgedHuman.class);
+	kryo.setRegistrationRequired(false);
 	
 //	writeSeparate(kryo);
 //	readSeparate(kryo);
@@ -30,7 +29,7 @@ public class Test1 {
 		Output output1 = new Output(new FileOutputStream("man"));
 		Output output2 = new Output(new FileOutputStream("woman"));
 		) {
-	    kryo.writeClassAndObject(output1, new Man("Eric"));
+	    kryo.writeClassAndObject(output1, new Man("Eric", "weak"));
 	    kryo.writeClassAndObject(output2, new Woman("Perry"));
 	} catch (KryoException | FileNotFoundException e) {
 	    e.printStackTrace();
@@ -62,7 +61,7 @@ public class Test1 {
 	try (
 		Output output = new Output(new FileOutputStream("aged_human"));
 		) {
-	    kryo.writeClassAndObject(output, new AgedHuman(new Man("Tom"), 27));
+	    kryo.writeClassAndObject(output, new AgedHuman(new Man("Tom", "weak"), 27));
 	} catch (KryoException | FileNotFoundException e) {
 	    e.printStackTrace();
 	}
@@ -90,13 +89,26 @@ public class Test1 {
     
     public static class Man implements Human {
 	private String name;
+	private Muscles muscles;
 	public Man() {}
-	public Man(String name) {
+	public Man(String name, String musclesLevel) {
 	    this.name = name;
+	    this.muscles = new Muscles(musclesLevel);
 	}
 	@Override
 	public void greet() {
-	    System.out.println("Hello from Man! name=" + name);
+	    System.out.println("Hello from " + muscles + " Man! name=" + name);
+	}
+	public static class Muscles implements Serializable {
+	    private String level;
+	    public Muscles() {}
+	    public Muscles(String level) {
+		this.level = level;
+	    }
+	    @Override
+	    public String toString() {
+		return level;
+	    }
 	}
     }
     

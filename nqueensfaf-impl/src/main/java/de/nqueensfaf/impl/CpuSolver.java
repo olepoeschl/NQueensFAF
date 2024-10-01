@@ -67,6 +67,8 @@ public class CpuSolver extends AbstractSolver {
     public void setN(int n) {
 	if(stateLoaded)
 	    throw new IllegalStateException("could not change N because a solver state was loaded");
+	if(n < 6)
+	    throw new IllegalArgumentException("CpuSolver is only applicable for N>=6");
 	super.setN(n);
     }
 

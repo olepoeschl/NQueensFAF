@@ -40,7 +40,7 @@ class RecordsFrame extends JFrame {
 	
 	// n configuration ui
 	var nEqLbl = new JLabel("N=");
-	nEqLbl.setFont(MainFrame.CAPTION_FONT);
+	nEqLbl.setFont(View.CAPTION_FONT);
 	nEqLbl.setHorizontalAlignment(JLabel.CENTER);
 	
 	var prevNBtn = new BasicArrowButton(BasicArrowButton.WEST);
@@ -52,7 +52,7 @@ class RecordsFrame extends JFrame {
 	nextNBtn.setFocusable(false);
 	
 	nLbl = new JLabel(Integer.toString(n));
-	nLbl.setFont(MainFrame.HIGHLIGHT_FONT);
+	nLbl.setFont(View.HIGHLIGHT_FONT);
 	nLbl.setHorizontalAlignment(JLabel.CENTER);
 	
 	add(nEqLbl, new QuickGBC(0, 0).size(3, 1).anchor(QuickGBC.ANCHOR_CENTER));
@@ -126,11 +126,11 @@ class RecordsFrame extends JFrame {
 	    long duration = record.getValue();
 	    
 	    var deviceLbl = new JLabel(device + ":");
-	    deviceLbl.setFont(MainFrame.CAPTION_FONT);
+	    deviceLbl.setFont(View.CAPTION_FONT);
 	    deviceLbl.setHorizontalAlignment(JLabel.LEFT);
 	    
-	    var durationLbl = new JLabel(ResultsPanel.getDurationString(duration));
-	    durationLbl.setFont(MainFrame.CAPTION_FONT);
+	    var durationLbl = new JLabel(Utils.getDurationString(duration));
+	    durationLbl.setFont(View.CAPTION_FONT);
 	    durationLbl.setHorizontalAlignment(JLabel.RIGHT);
 	    
 	    int topGap = 5;
