@@ -33,6 +33,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.filechooser.FileFilter;
 
 import de.nqueensfaf.demo.Main;
+import de.nqueensfaf.demo.gui.Controller.SolverAdapter;
 import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
 import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
@@ -44,12 +45,14 @@ public class View extends JFrame {
     static final Font HIGHLIGHT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 20);
     static final Font CAPTION_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     
+    private final Controller controller;
     private final Model model;
     
     private HistoryFrame historyFrame;
     private RecordsFrame recordsFrame;
     
-    public View(Model model) {
+    public View(Controller controller, Model model) {
+	this.controller = controller;
 	this.model = model;
 	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
 	    Utils.error(this != null ? this : null, e.getMessage());
@@ -195,7 +198,7 @@ public class View extends JFrame {
 	var resetItem = new JMenuItem(new AbstractAction("Reset") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		oldModel.reset();
+		controller.reset();
 	    }
 	});
 	
@@ -213,7 +216,7 @@ public class View extends JFrame {
 	fileMenu.add(resetItem);
 	fileMenu.add(settingsItem);
 	
-	oldModel.addSolverListener(new SolverListener() {
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
 		openItem.setEnabled(false);
@@ -228,7 +231,7 @@ public class View extends JFrame {
 	    }
 	    
 	    @Override
-	    public void solverFileOpened() {
+	    public void solverRestored() {
 		openItem.setEnabled(false);
 	    }
 	    

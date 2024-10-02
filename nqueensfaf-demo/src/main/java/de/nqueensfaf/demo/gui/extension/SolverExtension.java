@@ -1,5 +1,6 @@
 package de.nqueensfaf.demo.gui.extension;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JComponent;
@@ -37,6 +38,8 @@ public interface SolverExtension {
 	return new JLabel(":-)");
     }
     
-    default void getCurrentConfig(Map<String, Object> configMap) {}
+    default void getConfig(Map<String, Object> configMap) {}
+    
+    default void setConfig(Map<String, Object> configMap) {}
     
 }

@@ -210,6 +210,8 @@ public abstract class AbstractSolver implements Solver {
     // TODO: docs
     public static interface SavePoint {
 	
+	int getN();
+	
 	long getSolutions();
 	
 	long getDuration();

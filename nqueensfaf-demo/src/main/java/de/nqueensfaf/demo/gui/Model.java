@@ -12,12 +12,14 @@ public class Model {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
     
-    private Settings settings = new Settings(16, 120, 0); 
+    private Settings settings = new Settings(120); 
     
     private final SolverExtension[] solverExtensions;
     private int selectedSolverExtensionIdx = 0;
-    
     private final SymSolver[] symSolvers;
+    
+    private int n = 16; // TODO
+    private int autoSaveInterval = 120; // TODO
 
     private float progress;
     private long solutions;
@@ -36,18 +38,14 @@ public class Model {
     }
     
     // configuration for external access
-    public Settings getSettings() {
-	return settings;
-    }
-    
-    public void applyAppConfig(Settings settings) {
+    public void setSettings(Settings settings) {
 	var oldValue = this.settings;
 	this.settings = settings;
 	prop.firePropertyChange("settings", oldValue, settings);
     }
     
-    public SolverExtension getSelectedSolverExtension() {
-	return solverExtensions[selectedSolverExtensionIdx];
+    public Settings getSettings() {
+	return settings;
     }
     
     public void setSelectedSolverExtension(int index) {
@@ -59,8 +57,12 @@ public class Model {
 	selectedSolverExtensionIdx = index;
 	prop.firePropertyChange("selectedSolverExtension", solverExtensions[oldValue], solverExtensions[index]);
     }
+    
+    public SolverExtension getSelectedSolverExtension() {
+	return solverExtensions[selectedSolverExtensionIdx];
+    }
 
-    public SymSolver getConfiguredSymSolver() {
+    public SymSolver configureAndGetSymSolver() {
 	var symSolver = symSolvers[selectedSolverExtensionIdx];
 	symSolver.setN(selectedSolverExtensionIdx);
 	symSolver.onProgressUpdate((progress, solutions, duration) -> {
@@ -71,12 +73,19 @@ public class Model {
 	});
 	return symSolver;
     }
-
+    
     public SymSolver getCurrentSymSolver() {
 	return symSolvers[selectedSolverExtensionIdx];
     }
     
     // current solver progress properties
+    public void updateSolverProgress(float progress, long solutions, long uniqueSolutions, long duration) {
+	setProgress(progress);
+	setSolutions(solutions);
+	setUniqueSolutions(uniqueSolutions);
+	setDuration(duration);
+    }
+    
     public void setProgress(float progress) {
 	var oldValue = this.progress;
 	this.progress = progress;
