@@ -102,7 +102,8 @@ public class Controller {
 	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
-    
+
+    // TODO: does the solver support this?
     private void save(File file) throws IOException {
 	var solverExtensionConfig = new HashMap<String, Object>();
 	model.getSelectedSolverExtension().getConfig(solverExtensionConfig);
@@ -116,7 +117,8 @@ public class Controller {
 	    fireSolverSaved();
 	}
     }
-    
+
+    // TODO: does the solver support this?
     public void restore(File file) {
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
 	
@@ -145,7 +147,8 @@ public class Controller {
 	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
-    
+
+    // TODO: does the solver support this?
     public void reset() {
 	model.getSelectedSolverExtension().getSolver().reset();
 	model.setRestored(false);
@@ -171,7 +174,6 @@ public class Controller {
     }
     
     // solver event listeners
-    // TODO: in View, manipulate all UI elements within EDT thread
     public void addSolverListener(SolverAdapter a) {
 	listeners.add(SolverAdapter.class, a);
     }

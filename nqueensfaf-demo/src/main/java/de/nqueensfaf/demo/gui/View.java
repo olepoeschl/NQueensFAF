@@ -363,7 +363,7 @@ public class View extends JFrame {
 	    }
 	});
 	
-	return nConfigUi.getUi();
+	return nConfigUi;
     }
     
     private JTabbedPane createAndGetSolverSelectionPanel() {

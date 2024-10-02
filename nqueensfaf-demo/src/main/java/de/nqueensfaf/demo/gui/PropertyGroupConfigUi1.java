@@ -24,40 +24,26 @@ import javax.swing.JSlider;
 import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
 
-public class PropertyGroupConfigUi1 {
+@SuppressWarnings("serial")
+public class PropertyGroupConfigUi1 extends JPanel {
 
-    private GridBagLayout layout = new GridBagLayout();
     private int gridy = 0;
 
     private Map<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
-    private final JPanel panel;
-
     public PropertyGroupConfigUi1() {
-	this(new JPanel());
-    }
-
-    public PropertyGroupConfigUi1(JPanel panel) {
-	this.panel = panel;
-	panel.setLayout(layout);
-    }
-
-    public JPanel getUi() {
-	return panel;
+	setLayout(new GridBagLayout());
     }
 
     public  AbstractProperty<?> getProperty(String propertyName) {
 	return properties.get(propertyName);
     }
 
-    public void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
+    public void addConfigPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
     }
-
-    public void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	properties.get(propertyName).removePropertyChangeListener(propertyName, l);
-    }
-
+    
+    @Override
     public void setEnabled(boolean enabled) {
 	for (var prop : properties.values()) {
 	    prop.setEnabled(enabled);
@@ -72,7 +58,7 @@ public class PropertyGroupConfigUi1 {
     
     private void installPropertyUi(AbstractProperty<?> property) {
 	if(properties.size() > 0)
-	    panel.add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
+	    add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
 	
 	int maxGridy = 0;
 	
@@ -81,7 +67,7 @@ public class PropertyGroupConfigUi1 {
 	    if(entry.getValue().gridy > maxGridy)
 		maxGridy = entry.getValue().gridy;
 	    
-	    panel.add(entry.getKey(), entry.getValue());
+	    add(entry.getKey(), entry.getValue());
 	}
 	
 	gridy = maxGridy + 1;
@@ -251,6 +237,6 @@ public class PropertyGroupConfigUi1 {
     }
 
     public void fillRemainingVerticalSpace() {
-	panel.add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
+	add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
     }
 }

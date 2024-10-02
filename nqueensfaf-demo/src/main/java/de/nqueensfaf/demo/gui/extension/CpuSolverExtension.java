@@ -20,10 +20,10 @@ public class CpuSolverExtension implements SolverExtension {
 	propConfigUi = new PropertyGroupConfigUi1();
 	propConfigUi.addIntProperty("threads", "Threads", 1, 
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
-	propConfigUi.addPropertyChangeListener(
+	propConfigUi.addConfigPropertyChangeListener(
 		"threads", e -> solver.setThreadCount((int) e.getNewValue()));
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 5, 1);
-	propConfigUi.addPropertyChangeListener(
+	propConfigUi.addConfigPropertyChangeListener(
 		"prequeens", e -> solver.setPresetQueens((int) e.getNewValue()));
 	propConfigUi.fillRemainingVerticalSpace();
     }
@@ -47,6 +47,6 @@ public class CpuSolverExtension implements SolverExtension {
 
     @Override
     public JComponent getConfigUi() {
-	return propConfigUi.getUi();
+	return propConfigUi;
     }
 }
