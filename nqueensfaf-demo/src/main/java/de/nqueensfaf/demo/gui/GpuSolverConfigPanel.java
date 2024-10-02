@@ -13,7 +13,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.AbstractProperty;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi1.AbstractProperty;
 import de.nqueensfaf.demo.gui.Utils.LoadingWindow;
 import de.nqueensfaf.impl.GpuSolver;
 import de.nqueensfaf.impl.GpuSolver.Gpu;
@@ -23,11 +23,11 @@ class GpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final GpuSolverWithConfig model = new GpuSolverWithConfig();
 
-    private final PropertyGroupConfigUi propConfigUi;
+    private final PropertyGroupConfigUi1 propConfigUi;
     private final GpuSelectionProperty gpuSelectionProp;
 
     public GpuSolverConfigPanel() {
-	propConfigUi = new PropertyGroupConfigUi(this);
+	propConfigUi = new PropertyGroupConfigUi1(this);
 	
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 6, 1);
 	propConfigUi.addPropertyChangeListener("prequeens", e -> model.setPresetQueens((int) e.getNewValue()));

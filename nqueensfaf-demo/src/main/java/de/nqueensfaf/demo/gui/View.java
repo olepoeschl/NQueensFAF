@@ -4,8 +4,10 @@ import static de.nqueensfaf.demo.gui.QuickGBC.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridBagLayout;
@@ -26,6 +28,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
@@ -35,7 +38,7 @@ import javax.swing.filechooser.FileFilter;
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.Controller.SolverAdapter;
 import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi1.IntProperty;
 
 @SuppressWarnings("serial")
 public class View extends JFrame {
@@ -136,20 +139,22 @@ public class View extends JFrame {
 	var resultsPanel = new ResultsPanel();
 	
 	model.addPropertyChangeListener("duration", e -> {
-	    resultsPanel.updateDuration((long) e.getNewValue());
+	    EventQueue.invokeLater(() -> resultsPanel.updateDuration((long) e.getNewValue()));
 	});
 	model.addPropertyChangeListener("solutions", e -> {
-	    resultsPanel.updateSolutions((long) e.getNewValue());
+	    EventQueue.invokeLater(() -> resultsPanel.updateSolutions((long) e.getNewValue()));
 	});
 	model.addPropertyChangeListener("uniqueSolutions", e -> {
-	    resultsPanel.updateUniqueSolutions((long) e.getNewValue());
+	    EventQueue.invokeLater(() -> resultsPanel.updateUniqueSolutions((long) e.getNewValue()));
 	});
 	
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		resultsPanel.updateUsedN(model.getN());
-		resultsPanel.updateUsedSolverImplName(model.getSelectedSolverExtension().getName());
+		EventQueue.invokeLater(() -> {
+		    resultsPanel.updateUsedN(model.getN());
+		    resultsPanel.updateUsedSolverImplName(model.getSelectedSolverExtension().getName());
+		});
 	    }
 	});
 	
@@ -203,7 +208,7 @@ public class View extends JFrame {
 		File selectedFile = saveFileChooser.getSelectedFile();
 		
 		if(selectedFile != null)
-		    controller.save(selectedFile);
+		    controller.manualSave(selectedFile);
 	    }
 	});
 	saveItem.setEnabled(false);
@@ -234,25 +239,27 @@ public class View extends JFrame {
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		openItem.setEnabled(false);
-		saveItem.setEnabled(true);
-		resetItem.setEnabled(false);
-		settingsItem.setEnabled(false);
+		EventQueue.invokeLater(() -> {
+		    openItem.setEnabled(false);
+		    saveItem.setEnabled(true);
+		    resetItem.setEnabled(false);
+		    settingsItem.setEnabled(false);
+		});
 	    }
 	    
 	    @Override
 	    public void solverTerminated() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    @Override
 	    public void solverRestored() {
-		openItem.setEnabled(false);
+		EventQueue.invokeLater(() -> openItem.setEnabled(false));
 	    }
 	    
 	    @Override
 	    public void solverReset() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    private void reset() {
@@ -323,30 +330,32 @@ public class View extends JFrame {
     }
 
     private JPanel createAndGetNConfigPanel() {
-	var nConfigUi = new PropertyGroupConfigUi();
+	var nConfigUi = new PropertyGroupConfigUi1();
 	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, model.getN(), 1);
 	nConfigUi.addPropertyChangeListener("n", e -> model.setN((int) e.getNewValue()));
 	
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		nConfigUi.setEnabled(false);
+		EventQueue.invokeLater(() -> nConfigUi.setEnabled(false));
 	    }
 	    
 	    @Override
 	    public void solverTerminated() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    @Override
 	    public void solverRestored() {
-		nConfigUi.setEnabled(false);
-		((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
+		EventQueue.invokeLater(() -> {
+		    nConfigUi.setEnabled(false);
+		    ((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
+		});
 	    }
 	    
 	    @Override
 	    public void solverReset() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    private void reset() {
@@ -380,31 +389,35 @@ public class View extends JFrame {
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		solverSelectionPanel.getSelectedComponent().setEnabled(false);
-		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
-		    if(i == solverSelectionPanel.getSelectedIndex())
-			continue;
-		    solverSelectionPanel.setEnabledAt(i, false);
-		}
+		EventQueue.invokeLater(() -> {
+		    solverSelectionPanel.getSelectedComponent().setEnabled(false);
+		    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+			if(i == solverSelectionPanel.getSelectedIndex())
+			    continue;
+			solverSelectionPanel.setEnabledAt(i, false);
+		    }
+		});
 	    }
 	    
 	    @Override
 	    public void solverTerminated() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    @Override
 	    public void solverRestored() {
-		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
-		    if(i == solverSelectionPanel.getSelectedIndex())
-			continue;
-		    solverSelectionPanel.setEnabledAt(i, false);
-		}
+		EventQueue.invokeLater(() -> {
+		    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
+			if(i == solverSelectionPanel.getSelectedIndex())
+			    continue;
+			solverSelectionPanel.setEnabledAt(i, false);
+		    }
+		});
 	    }
 	    
 	    @Override
 	    public void solverReset() {
-		reset();
+		EventQueue.invokeLater(() -> reset());
 	    }
 	    
 	    private void reset() {
@@ -435,11 +448,11 @@ public class View extends JFrame {
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		startButton.setEnabled(false);
+		EventQueue.invokeLater(() -> startButton.setEnabled(false));
 	    }
 	    @Override
 	    public void solverTerminated() {
-		startButton.setEnabled(true);
+		EventQueue.invokeLater(() -> startButton.setEnabled(true));
 	    }
 	});
 
@@ -456,19 +469,24 @@ public class View extends JFrame {
 	progressBar.setValue(0);
 
 	model.addPropertyChangeListener("progress", e -> {
-	    float progress = ((float) e.getNewValue()) * 100;
-	    progressBar.setValue((int) progress);
-	    progressBar.setString(String.format("%3.3f %%", progress));
+	    EventQueue.invokeLater(() -> {
+		float progress = ((float) e.getNewValue()) * 100;
+		progressBar.setValue((int) progress);
+		progressBar.setString(String.format("%3.3f %%", progress));
+	    });
 	});
 	
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		progressBar.setValue((int) (model.getProgress() * 100));
+		EventQueue.invokeLater(() -> {
+		    if(!model.isRestored())
+			progressBar.setValue(0);
+		});
 	    }
 	    @Override
 	    public void solverTerminated() {
-		progressBar.setValue((int) (model.getProgress() * 100));
+		EventQueue.invokeLater(() -> progressBar.setValue((int) (model.getProgress() * 100)));
 	    }
 	});
 	
@@ -483,8 +501,11 @@ public class View extends JFrame {
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverFinished() {
-		var entry = new HistoryEntry(model.getN(), model.getSelectedSolverExtension().getName(), model.getDuration());
-		historyFrame.addEntry(entry);
+		EventQueue.invokeLater(() -> {
+		    var entry = new HistoryEntry(model.getN(), model.getSelectedSolverExtension().getName(),
+			    model.getSelectedSolverExtension().getSolver().getDuration());
+		    historyFrame.addEntry(entry);
+		});
 	    }
 	});
     }
@@ -505,9 +526,13 @@ public class View extends JFrame {
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverFinished() {
-		var solver = model.getSelectedSolverExtension().getSolver();
-		if(records.isNewRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverExtension().getCurrentRecordCategory()))
-		    records.putRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverExtension().getCurrentRecordCategory());
+		EventQueue.invokeLater(() -> {
+		    var solver = model.getSelectedSolverExtension().getSolver();
+		    if (records.isNewRecord(model.getSelectedSolverExtension().getSolver().getDuration(), solver.getN(),
+			    model.getSelectedSolverExtension().getCurrentRecordCategory()))
+			records.putRecord(model.getSelectedSolverExtension().getSolver().getDuration(), solver.getN(),
+				model.getSelectedSolverExtension().getCurrentRecordCategory());
+		});
 	    }
 	});
 
@@ -524,4 +549,15 @@ public class View extends JFrame {
 	});
     }
     
+    public void error(String message) {
+	error(this, message);
+    }
+    
+    private static void error(Component parent, String message) {
+	JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void info(String message, String title) {
+	JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
+    }
 }

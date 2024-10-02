@@ -18,7 +18,7 @@ class SettingsDialog extends JDialog {
 	var container = new JPanel(new GridBagLayout());
 	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 	
-	var propConfigUi = new PropertyGroupConfigUi(container);
+	var propConfigUi = new PropertyGroupConfigUi1(container);
 	propConfigUi.addIntProperty("updateInterval", "Update Interval", 0, 60_000, initialUpdateInterval);
 	propConfigUi.addPropertyChangeListener("updateInterval", e -> firePropertyChange("updateInterval", null, (int) e.getNewValue()));
 	propConfigUi.addIntProperty("autoSaveInterval", "Auto Save Interval", 0, 100, initialAutoSaveInterval);

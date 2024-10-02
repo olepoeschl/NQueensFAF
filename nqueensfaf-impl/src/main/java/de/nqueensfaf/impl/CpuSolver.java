@@ -152,6 +152,9 @@ public class CpuSolver extends AbstractSolver {
 
     @Override
     public void solve() {
+	if(presetQueens >= getN() - 1)
+	    throw new IllegalStateException("could not run CpuSolver: number of pre-placed queens must be lower than N-1");
+	
 	duration = 0;
 	threadConstellations.clear();
 	start = System.currentTimeMillis();

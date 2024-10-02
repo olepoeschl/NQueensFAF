@@ -253,7 +253,9 @@ public class GpuSolver extends AbstractSolver {
     @Override
     public void solve() {
 	if (gpuSelection.get().size() == 0)
-	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
+	    throw new IllegalStateException("could not run GpuSolver: no GPUs selected");
+	if(presetQueens >= getN() - 1)
+	    throw new IllegalStateException("could not run GpuSolver: number of pre-placed queens must be lower than N-1");
 	
 	duration = 0;
 	start = System.currentTimeMillis();

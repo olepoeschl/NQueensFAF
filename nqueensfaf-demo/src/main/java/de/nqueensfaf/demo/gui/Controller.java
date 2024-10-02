@@ -1,9 +1,9 @@
 package de.nqueensfaf.demo.gui;
 
+import java.awt.Cursor;
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EventListener;
@@ -15,7 +15,6 @@ import java.util.zip.GZIPOutputStream;
 import javax.swing.event.EventListenerList;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -34,7 +33,8 @@ public class Controller {
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	model.updateSolverProgress(progress, solutions, model.getCurrentSymSolver().getUniqueSolutionsTotal(solutions), 
 		duration);
-	// TODO: auto save
+	// auto save
+	autoSave(progress);
     };
     private final Runnable onStart = this::fireSolverStarted;
     private final Runnable onFinish = () -> {
@@ -43,6 +43,9 @@ public class Controller {
     };
     private final Consumer<Exception> onCancel = e -> fireSolverTerminated();
     
+    private boolean currentlySaving = false;
+    private int lastAutoSave = 0;
+    
     public Controller() {
 	view = new View(this, model);
 	kryo.setRegistrationRequired(false);
@@ -50,8 +53,8 @@ public class Controller {
 	addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		// TODO: only reset progress stuff when solver wasnt restored
-		model.updateSolverProgress(0, 0, 0, 0);
+		if(!model.isRestored())
+		    model.updateSolverProgress(0, 0, 0, 0);
 	    }
 	    @Override
 	    public void solverTerminated() {
@@ -59,6 +62,7 @@ public class Controller {
 		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
 			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()),
 			solver.getDuration());
+		model.setRestored(false);
 	    }
 	});
     }
@@ -83,12 +87,24 @@ public class Controller {
 		solver.start();
 	    } catch(Exception e) {
 		symSolver.cancel();
-		// TODO: tell the View to show an error message
+		view.error(e.getMessage());
 	    }
 	});
     }
     
-    public void save(File file) {
+    public void manualSave(File file) {
+	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
+	
+	try {
+	    save(file);
+	} catch (Exception e) {
+	    view.error("could not save solver: " + e.getMessage());
+	}
+	
+	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
+    }
+    
+    private void save(File file) throws IOException {
 	var solverExtensionConfig = new HashMap<String, Object>();
 	model.getSelectedSolverExtension().getConfig(solverExtensionConfig);
 	
@@ -99,24 +115,16 @@ public class Controller {
 	    kryo.writeClassAndObject(output, snapshot);
 	    
 	    fireSolverSaved();
-	    
-	} catch (KryoException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	} catch (FileNotFoundException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	} catch (IOException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
 	}
     }
     
     public void restore(File file) {
+	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
+	
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(file)))) {
 	    
 	    var snapshot = (Snapshot) kryo.readClassAndObject(input);
-	    model.getSelectedSolverExtension().getSolver().loadSavePoint(snapshot.savePoint());
+	    model.getSelectedSolverExtension().getSolver().restoreSavePoint(snapshot.savePoint());
 	    model.setN(snapshot.savePoint().getN());
 	    model.getSelectedSolverExtension().setConfig(snapshot.solverExtensionConfig());
 	    model.setAutoSaveInterval(snapshot.autoSaveInterval());
@@ -128,23 +136,39 @@ public class Controller {
 		    snapshot.savePoint().getDuration()
 		    );
 	    
+	    model.setRestored(true);
+	    
 	    fireSolverRestored();
 	    
-	} catch (KryoException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	} catch (FileNotFoundException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	} catch (IOException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
+	} catch (Exception e) {
+	    view.error("could not restore solver: " + e.getMessage());
 	}
+	
+	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
     
     public void reset() {
 	model.getSelectedSolverExtension().getSolver().reset();
+	model.setRestored(false);
 	fireSolverReset();
+    }
+    
+    private void autoSave(float progressFloat) {
+	if(model.getAutoSaveInterval() <= 0) 
+	    return;
+	if(currentlySaving)
+	    return;
+	int progress = (int) (progressFloat * 100);
+	if(progress - lastAutoSave >= model.getAutoSaveInterval()) {
+	    Thread.ofVirtual().start(() -> {
+		try {
+		    save(new File(model.getN() + "-queens.faf"));
+		} catch (IOException ex) {
+		    view.error(ex.getMessage());
+		}
+	    });
+	    lastAutoSave = progress;
+	}
     }
     
     // solver event listeners

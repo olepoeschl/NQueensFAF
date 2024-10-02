@@ -24,7 +24,7 @@ import javax.swing.JSlider;
 import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
 
-class PropertyGroupConfigUi {
+public class PropertyGroupConfigUi1 {
 
     private GridBagLayout layout = new GridBagLayout();
     private int gridy = 0;
@@ -33,44 +33,44 @@ class PropertyGroupConfigUi {
 
     private final JPanel panel;
 
-    PropertyGroupConfigUi() {
+    public PropertyGroupConfigUi1() {
 	this(new JPanel());
     }
 
-    PropertyGroupConfigUi(JPanel panel) {
+    public PropertyGroupConfigUi1(JPanel panel) {
 	this.panel = panel;
 	panel.setLayout(layout);
     }
 
-    JPanel getUi() {
+    public JPanel getUi() {
 	return panel;
     }
 
-    AbstractProperty<?> getProperty(String propertyName) {
+    public  AbstractProperty<?> getProperty(String propertyName) {
 	return properties.get(propertyName);
     }
 
-    void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
     }
 
-    void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
+    public void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
 	properties.get(propertyName).removePropertyChangeListener(propertyName, l);
     }
 
-    void setEnabled(boolean enabled) {
+    public void setEnabled(boolean enabled) {
 	for (var prop : properties.values()) {
 	    prop.setEnabled(enabled);
 	}
     }
 
-    <T extends AbstractProperty<?>> void addProperty(T property) {
+    public <T extends AbstractProperty<?>> void addProperty(T property) {
 	property.createUi();
 	installPropertyUi(property);
 	properties.put(property.getName(), property);
     }
     
-    void installPropertyUi(AbstractProperty<?> property) {
+    private void installPropertyUi(AbstractProperty<?> property) {
 	if(properties.size() > 0)
 	    panel.add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
 	
@@ -88,16 +88,16 @@ class PropertyGroupConfigUi {
     }
 
     // only text input
-    void addIntProperty(String name, String title, int min, int max, int value) {
+    public void addIntProperty(String name, String title, int min, int max, int value) {
 	addIntProperty(name, title, min, max, value, 0);
     }
 
     // text input, slider, + and - buttons
-    void addIntProperty(String name, String title, int min, int max, int value, int step) {
+    public void addIntProperty(String name, String title, int min, int max, int value, int step) {
 	addProperty(new IntProperty(name, title, min, max, value, step));
     }
 
-    static abstract class AbstractProperty<T> {
+    public static abstract class AbstractProperty<T> {
 
 	private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
 
@@ -163,7 +163,7 @@ class PropertyGroupConfigUi {
 	abstract void setEnabled(boolean enabled);
     }
 
-    static class IntProperty extends AbstractProperty<Integer> {
+    public static class IntProperty extends AbstractProperty<Integer> {
 
 	final int min, max, step;
 

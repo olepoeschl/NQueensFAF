@@ -4,6 +4,8 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
 import de.nqueensfaf.core.ExecutionState;
+import de.nqueensfaf.demo.gui.extension.CpuSolverExtension;
+import de.nqueensfaf.demo.gui.extension.GpuSolverExtension;
 import de.nqueensfaf.demo.gui.extension.SimpleRecursiveSolverExtension;
 import de.nqueensfaf.demo.gui.extension.SolverExtension;
 import de.nqueensfaf.impl.SymSolver;
@@ -12,7 +14,7 @@ public class Model {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
     
-    private Settings settings = new Settings(120); 
+    private Settings settings = new Settings(120);
     
     private final SolverExtension[] solverExtensions;
     private int selectedSolverExtensionIdx = 0;
@@ -26,11 +28,13 @@ public class Model {
     private long uniqueSolutions;
     private long duration;
     
+    private boolean restored = false;
+    
     public Model() {
-	solverExtensions = new SolverExtension[1];
+	solverExtensions = new SolverExtension[3];
 	solverExtensions[0] = new SimpleRecursiveSolverExtension();
-//	solverExtensions[1] = new CpuSolverExtension(); // TODO
-//	solverExtensions[2] = new GpuSolverExtension(); // TODO
+	solverExtensions[1] = new CpuSolverExtension();
+	solverExtensions[2] = new GpuSolverExtension();
 	
 	symSolvers = new SymSolver[3];
 	for(int i = 0; i < symSolvers.length; i++)
@@ -102,6 +106,16 @@ public class Model {
 	return symSolvers[selectedSolverExtensionIdx];
     }
     
+    public void setRestored(boolean restored) {
+	var oldValue = this.restored;
+	this.restored = restored;
+	prop.firePropertyChange("restored", oldValue, restored);
+    }
+    
+    public boolean isRestored() {
+	return restored;
+    }
+    
     // current solver progress properties
     public void updateSolverProgress(float progress, long solutions, long uniqueSolutions, long duration) {
 	setProgress(progress);
@@ -155,4 +169,20 @@ public class Model {
 	prop.addPropertyChangeListener(propertyName, l);
     }
     
+    // classes and types
+    public static class Settings {
+	private int updateInterval;
+
+	public Settings(int updateInterval) {
+	    this.updateInterval = updateInterval;
+	}
+
+	public int getUpdateInterval() {
+	    return updateInterval;
+	}
+
+	public void setUpdateInterval(int updateInterval) {
+	    this.updateInterval = updateInterval;
+	}
+    }
 }

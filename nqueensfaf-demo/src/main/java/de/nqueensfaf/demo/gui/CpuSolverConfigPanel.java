@@ -8,10 +8,10 @@ class CpuSolverConfigPanel extends SolverImplConfigPanel {
 
     private final CpuSolverWithConfig model = new CpuSolverWithConfig();
     
-    private final PropertyGroupConfigUi propConfigUi;
+    private final PropertyGroupConfigUi1 propConfigUi;
     
     public CpuSolverConfigPanel() {
-	propConfigUi = new PropertyGroupConfigUi(this);
+	propConfigUi = new PropertyGroupConfigUi1(this);
 	propConfigUi.addIntProperty("threads", "Threads", 1, 
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
 	propConfigUi.addPropertyChangeListener(
