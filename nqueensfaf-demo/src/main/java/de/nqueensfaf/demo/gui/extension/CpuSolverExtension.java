@@ -20,11 +20,9 @@ public class CpuSolverExtension implements SolverExtension {
 	propConfigUi = new PropertyGroupConfigUi1();
 	propConfigUi.addIntProperty("threads", "Threads", 1, 
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
-	propConfigUi.addConfigPropertyChangeListener(
-		"threads", e -> solver.setThreadCount((int) e.getNewValue()));
+	propConfigUi.getProperty("threads").addChangeListener(e -> solver.setThreadCount((int) e.getNewValue()));
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 5, 1);
-	propConfigUi.addConfigPropertyChangeListener(
-		"prequeens", e -> solver.setPresetQueens((int) e.getNewValue()));
+	propConfigUi.getProperty("prequeens").addChangeListener(e -> solver.setPresetQueens((int) e.getNewValue()));
 	propConfigUi.fillRemainingVerticalSpace();
     }
 
@@ -42,7 +40,7 @@ public class CpuSolverExtension implements SolverExtension {
     public String getCurrentRecordCategory() {
 	if(solver.getThreadCount() == 1)
 	    return "CPU: Single-Core";
-	return "CPU: " + solver.getThreadCount() + " Threads";
+	return "CPU: Multithreaded";
     }
 
     @Override

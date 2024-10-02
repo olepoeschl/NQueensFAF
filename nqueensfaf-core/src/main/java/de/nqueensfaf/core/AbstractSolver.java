@@ -112,11 +112,12 @@ public abstract class AbstractSolver implements Solver {
     
     // TODO: docs
     public SavePoint getSavePoint() {
-	throw new UnsupportedOperationException("not supported by this solver");
+	return null;
     }
     
+    // TODO: docs
     public void restoreSavePoint(SavePoint savePoint) {
-	throw new UnsupportedOperationException("not supported by this solver");
+	// no-op as default
     }
 
     /**

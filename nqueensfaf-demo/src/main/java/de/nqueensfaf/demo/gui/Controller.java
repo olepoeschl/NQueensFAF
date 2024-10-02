@@ -40,7 +40,10 @@ public class Controller {
 	fireSolverFinished();
 	fireSolverTerminated();
     };
-    private final Consumer<Exception> onCancel = e -> fireSolverTerminated();
+    private final Consumer<Exception> onCancel = e -> {
+	fireSolverCanceled();
+	fireSolverTerminated();
+    };
     
     private boolean currentlySaving = false;
     private int lastAutoSave = 0;
@@ -52,9 +55,25 @@ public class Controller {
 	addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverStarted();
+		
 		if(!model.isRestored())
 		    model.updateSolverProgress(0, 0, 0, 0);
 	    }
+	    
+	    @Override
+	    public void solverFinished() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverFinished();
+	    }
+
+	    @Override
+	    public void solverCanceled() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverCanceled();
+	    }
+	    
 	    @Override
 	    public void solverTerminated() {
 		var solver = model.getSelectedSolverExtension().getSolver();
@@ -63,7 +82,35 @@ public class Controller {
 			solver.getDuration());
 		model.setRestored(false);
 	    }
+
+	    @Override
+	    public void solverSaved() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverSaved();
+	    }
+
+	    @Override
+	    public void solverRestored() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverRestored();
+	    }
+
+	    @Override
+	    public void solverReset() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverReset();
+	    }
 	});
+	
+	// load solver extensions
+	for(var solverExtension : model.getSolverExtensions())
+	    solverExtension.onStartup();
+	
+	// unload solver extensions on application exit
+	Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
+	    for(var solverExtension : model.getSolverExtensions())
+		solverExtension.onClose();
+	}));
     }
 
     public void createAndShowView() {
@@ -103,15 +150,36 @@ public class Controller {
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
 
+    private void autoSave(float progressFloat) {
+	if(model.getAutoSaveInterval() <= 0) 
+	    return;
+	if(currentlySaving)
+	    return;
+	int progress = (int) (progressFloat * 100);
+	if(progress - lastAutoSave >= model.getAutoSaveInterval()) {
+	    Thread.ofVirtual().start(() -> {
+		try {
+		    save(new File(model.getN() + "-queens.faf"));
+		} catch (IOException ex) {
+		    view.error(ex.getMessage());
+		}
+	    });
+	    lastAutoSave = progress;
+	}
+    }
+    
     // TODO: does the solver support this?
     private void save(File file) throws IOException {
+	var savePoint = model.getSelectedSolverExtension().getSolver().getSavePoint();
+	if(savePoint == null) // the selected solver does not support save & restore
+	    return;
+	
 	var solverExtensionConfig = new HashMap<String, Object>();
 	model.getSelectedSolverExtension().getConfig(solverExtensionConfig);
 	
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
-	    
-	    var snapshot = new Snapshot(model.getSelectedSolverExtension().getSolver().getSavePoint(),
-		    solverExtensionConfig, model.getAutoSaveInterval());
+
+	    var snapshot = new Snapshot(savePoint, solverExtensionConfig, model.getAutoSaveInterval());
 	    kryo.writeClassAndObject(output, snapshot);
 	    
 	    fireSolverSaved();
@@ -155,24 +223,6 @@ public class Controller {
 	fireSolverReset();
     }
     
-    private void autoSave(float progressFloat) {
-	if(model.getAutoSaveInterval() <= 0) 
-	    return;
-	if(currentlySaving)
-	    return;
-	int progress = (int) (progressFloat * 100);
-	if(progress - lastAutoSave >= model.getAutoSaveInterval()) {
-	    Thread.ofVirtual().start(() -> {
-		try {
-		    save(new File(model.getN() + "-queens.faf"));
-		} catch (IOException ex) {
-		    view.error(ex.getMessage());
-		}
-	    });
-	    lastAutoSave = progress;
-	}
-    }
-    
     // solver event listeners
     public void addSolverListener(SolverAdapter a) {
 	listeners.add(SolverAdapter.class, a);
@@ -187,6 +237,12 @@ public class Controller {
     private void fireSolverFinished() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
 	    listener.solverFinished();
+	}
+    }
+
+    private void fireSolverCanceled() {
+	for(var listener : listeners.getListeners(SolverAdapter.class)) {
+	    listener.solverCanceled();
 	}
     }
     
@@ -218,6 +274,7 @@ public class Controller {
     public static interface SolverAdapter extends EventListener {
 	default void solverStarted() {}
 	default void solverFinished() {}
+	default void solverCanceled() {}
 	default void solverTerminated() {}
 	default void solverSaved() {}
 	default void solverRestored() {}

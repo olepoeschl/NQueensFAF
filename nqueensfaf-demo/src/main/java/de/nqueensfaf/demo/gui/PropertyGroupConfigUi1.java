@@ -38,10 +38,6 @@ public class PropertyGroupConfigUi1 extends JPanel {
     public  AbstractProperty<?> getProperty(String propertyName) {
 	return properties.get(propertyName);
     }
-
-    public void addConfigPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
-    }
     
     @Override
     public void setEnabled(boolean enabled) {
@@ -99,15 +95,11 @@ public class PropertyGroupConfigUi1 extends JPanel {
 	    this.value = value;
 	}
 
-	final void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	    prop.addPropertyChangeListener(propertyName, l);
+	public final void addChangeListener(PropertyChangeListener l) {
+	    prop.addPropertyChangeListener(l);
 	}
 
-	final void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	    prop.removePropertyChangeListener(propertyName, l);
-	}
-
-	final void add(JComponent component, GridBagConstraints constraints) {
+	public final void add(JComponent component, GridBagConstraints constraints) {
 	    componentsWithConstraints
 		    .add(new AbstractMap.SimpleEntry<JComponent, GridBagConstraints>(component, constraints));
 	}
@@ -124,11 +116,11 @@ public class PropertyGroupConfigUi1 extends JPanel {
 	    return title;
 	}
 
-	final T getValue() {
+	public final T getValue() {
 	    return value;
 	}
 
-	final void setValue(T value) {
+	public final void setValue(T value) {
 	    T oldValue = this.value;
 	    this.value = value;
 	    updateUi(value);

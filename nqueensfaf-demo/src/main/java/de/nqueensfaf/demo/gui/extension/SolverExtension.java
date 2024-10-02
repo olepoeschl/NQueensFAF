@@ -1,11 +1,15 @@
 package de.nqueensfaf.demo.gui.extension;
 
+import java.awt.GridBagLayout;
 import java.util.Map;
 
+import javax.swing.Box;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.demo.gui.QuickGBC;
 
 public interface SolverExtension {
     
@@ -21,6 +25,8 @@ public interface SolverExtension {
     
     default void onSolverTerminated() {}
     
+    default void onSolverSaved() {}
+    
     default void onSolverRestored() {}
     
     default void onSolverReset() {}
@@ -34,7 +40,10 @@ public interface SolverExtension {
     }
     
     default JComponent getConfigUi() {
-	return new JLabel(":-)");
+	var panel = new JPanel(new GridBagLayout());
+	panel.add(new JLabel("Nothing to configure :-)"), new QuickGBC(0, 0));
+	panel.add(Box.createVerticalGlue(), new QuickGBC(0, 1));
+	return panel;
     }
     
     default void getConfig(Map<String, Object> configMap) {}
