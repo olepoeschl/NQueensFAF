@@ -171,6 +171,7 @@ public class Controller {
     // TODO: does the solver support this?
     private void save(File file) throws IOException {
 	var savePoint = model.getSelectedSolverExtension().getSolver().getSavePoint();
+	// TODO: really no error catching here? No Sign to the user, that nothing happened?
 	if(savePoint == null) // the selected solver does not support save & restore
 	    return;
 	
