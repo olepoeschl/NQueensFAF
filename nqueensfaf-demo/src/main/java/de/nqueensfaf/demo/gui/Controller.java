@@ -46,6 +46,21 @@ public class Controller {
     public Controller() {
 	view = new View(this, model);
 	kryo.setRegistrationRequired(false);
+	
+	addSolverListener(new SolverAdapter() {
+	    @Override
+	    public void solverStarted() {
+		// TODO: only reset progress stuff when solver wasnt restored
+		model.updateSolverProgress(0, 0, 0, 0);
+	    }
+	    @Override
+	    public void solverTerminated() {
+		var solver = model.getSelectedSolverExtension().getSolver();
+		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
+			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()),
+			solver.getDuration());
+	    }
+	});
     }
 
     public void createAndShowView() {
@@ -58,16 +73,19 @@ public class Controller {
 	solver.onProgressUpdate(onProgressUpdate);
 	solver.onFinish(onFinish);
 	solver.onCancel(onCancel);
+	solver.setN(model.getN());
 	solver.setUpdateInterval(model.getSettings().getUpdateInterval());
 	
 	final var symSolver = model.configureAndGetSymSolver();
 	Thread.ofVirtual().start(() -> symSolver.start());
-	try {
-	    solver.start();
-	} catch(Exception e) {
-	    symSolver.cancel();
-	    // TODO: tell the View to show an error message
-	}
+	Thread.ofVirtual().start(() -> {
+	    try {
+		solver.start();
+	    } catch(Exception e) {
+		symSolver.cancel();
+		// TODO: tell the View to show an error message
+	    }
+	});
     }
     
     public void save(File file) {
@@ -77,7 +95,7 @@ public class Controller {
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
 	    
 	    var snapshot = new Snapshot(model.getSelectedSolverExtension().getSolver().getSavePoint(),
-		    solverExtensionConfig, model.getAutoSaveInterval()); // TODO
+		    solverExtensionConfig, model.getAutoSaveInterval());
 	    kryo.writeClassAndObject(output, snapshot);
 	    
 	    fireSolverSaved();
@@ -99,9 +117,9 @@ public class Controller {
 	    
 	    var snapshot = (Snapshot) kryo.readClassAndObject(input);
 	    model.getSelectedSolverExtension().getSolver().loadSavePoint(snapshot.savePoint());
-	    model.setN(snapshot.savePoint().getN()); // TODO
+	    model.setN(snapshot.savePoint().getN());
 	    model.getSelectedSolverExtension().setConfig(snapshot.solverExtensionConfig());
-	    model.setAutoSaveInterval(snapshot.autoSaveInterval()); // TODO
+	    model.setAutoSaveInterval(snapshot.autoSaveInterval());
 
 	    model.updateSolverProgress(
 		    snapshot.savePoint().getProgress(), 
@@ -130,43 +148,44 @@ public class Controller {
     }
     
     // solver event listeners
+    // TODO: in View, manipulate all UI elements within EDT thread
     public void addSolverListener(SolverAdapter a) {
 	listeners.add(SolverAdapter.class, a);
     }
     
     private void fireSolverStarted() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverStarted());
+	    listener.solverStarted();
 	}
     }
 
     private void fireSolverFinished() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverFinished());
+	    listener.solverFinished();
 	}
     }
     
     private void fireSolverTerminated() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverTerminated());
+	    listener.solverTerminated();
 	}
     }
 
     private void fireSolverSaved() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverSaved());
+	    listener.solverSaved();
 	}
     }
 
     private void fireSolverRestored() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverRestored());
+	    listener.solverRestored();
 	}
     }
 
     private void fireSolverReset() {
 	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    EventQueue.invokeLater(() -> listener.solverReset());
+	    listener.solverReset();
 	}
     }
     

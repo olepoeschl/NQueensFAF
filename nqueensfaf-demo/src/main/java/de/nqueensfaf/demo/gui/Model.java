@@ -18,8 +18,8 @@ public class Model {
     private int selectedSolverExtensionIdx = 0;
     private final SymSolver[] symSolvers;
     
-    private int n = 16; // TODO
-    private int autoSaveInterval = 120; // TODO
+    private int n = 16;
+    private int autoSaveInterval = 0;
 
     private float progress;
     private long solutions;
@@ -27,10 +27,10 @@ public class Model {
     private long duration;
     
     public Model() {
-	solverExtensions = new SolverExtension[3];
+	solverExtensions = new SolverExtension[1];
 	solverExtensions[0] = new SimpleRecursiveSolverExtension();
-//	solverExtensions[1] = new CpuSolverExtension();
-//	solverExtensions[2] = new GpuSolverExtension();
+//	solverExtensions[1] = new CpuSolverExtension(); // TODO
+//	solverExtensions[2] = new GpuSolverExtension(); // TODO
 	
 	symSolvers = new SymSolver[3];
 	for(int i = 0; i < symSolvers.length; i++)
@@ -38,6 +38,26 @@ public class Model {
     }
     
     // configuration for external access
+    public void setN(int n) {
+	var oldValue = this.n;
+	this.n = n;
+	prop.firePropertyChange("n", oldValue, n);
+    }
+    
+    public int getN() {
+	return n;
+    }
+    
+    public void setAutoSaveInterval(int autoSaveInterval) {
+	var oldValue = this.autoSaveInterval;
+	this.autoSaveInterval = autoSaveInterval;
+	prop.firePropertyChange("autoSaveInterval", oldValue, autoSaveInterval);
+    }
+    
+    public int getAutoSaveInterval() {
+	return autoSaveInterval;
+    }
+    
     public void setSettings(Settings settings) {
 	var oldValue = this.settings;
 	this.settings = settings;
@@ -61,10 +81,14 @@ public class Model {
     public SolverExtension getSelectedSolverExtension() {
 	return solverExtensions[selectedSolverExtensionIdx];
     }
+    
+    public SolverExtension[] getSolverExtensions() {
+	return solverExtensions;
+    }
 
     public SymSolver configureAndGetSymSolver() {
 	var symSolver = symSolvers[selectedSolverExtensionIdx];
-	symSolver.setN(selectedSolverExtensionIdx);
+	symSolver.setN(n);
 	symSolver.onProgressUpdate((progress, solutions, duration) -> {
 	    // continue unique solutions updates if solver is finished but SymSolver still running
 	    var runningSolverImpl = solverExtensions[selectedSolverExtensionIdx].getSolver();

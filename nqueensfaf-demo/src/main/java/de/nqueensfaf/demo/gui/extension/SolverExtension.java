@@ -1,6 +1,5 @@
 package de.nqueensfaf.demo.gui.extension;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JComponent;

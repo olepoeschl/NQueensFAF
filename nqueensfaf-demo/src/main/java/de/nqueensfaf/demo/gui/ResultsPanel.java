@@ -12,8 +12,6 @@ import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 
-import de.nqueensfaf.demo.gui.MainModel.SolverListener;
-
 @SuppressWarnings("serial")
 class ResultsPanel extends JPanel {
     
@@ -63,17 +61,6 @@ class ResultsPanel extends JPanel {
 	
 	JLabel lblUniqueSolutionsCaption = new JLabel("unique solutions");
 	lblUniqueSolutionsCaption.setFont(View.CAPTION_FONT);
-
-	// update labels from model listeners
-	mainModel.addPropertyChangeListener("duration", e -> {
-	    updateDuration((long) e.getNewValue());
-	});
-	mainModel.addPropertyChangeListener("solutions", e -> {
-	    updateSolutions((long) e.getNewValue());
-	});
-	mainModel.addPropertyChangeListener("uniqueSolutions", e -> {
-	    updateUniqueSolutions((long) e.getNewValue());
-	});
 	
 	// result panels
 	JPanel pnlDuration = new JPanel(new GridBagLayout());
@@ -101,28 +88,6 @@ class ResultsPanel extends JPanel {
 	setLayout(new BorderLayout());
 	add(usedConfigs, BorderLayout.NORTH);
 	add(resultsPanel, BorderLayout.CENTER);
-	
-	mainModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-		updateUsedN(mainModel.getN());
-		updateUsedSolverImplName(mainModel.getSelectedSolverExtension().getName());
-		
-		if(!mainModel.isFileOpened()) {
-		    updateDuration(0);
-		    updateSolutions(0);
-		    updateUniqueSolutions(0);
-		}
-	    }
-	    
-	    @Override
-	    public void solverTerminated() {
-		updateDuration(mainModel.getDuration());
-		final var solutions = mainModel.getSolutions();
-		updateSolutions(solutions);
-		updateUniqueSolutions(mainModel.getUniqueSolutions(solutions));
-	    }
-	});
     }
     
     void updateUsedN(int n) {

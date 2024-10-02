@@ -35,7 +35,6 @@ import javax.swing.filechooser.FileFilter;
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.Controller.SolverAdapter;
 import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
-import de.nqueensfaf.demo.gui.MainModel.SolverListener;
 import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 
 @SuppressWarnings("serial")
@@ -136,6 +135,24 @@ public class View extends JFrame {
     private JPanel createAndGetResultsPanel() {
 	var resultsPanel = new ResultsPanel();
 	
+	model.addPropertyChangeListener("duration", e -> {
+	    resultsPanel.updateDuration((long) e.getNewValue());
+	});
+	model.addPropertyChangeListener("solutions", e -> {
+	    resultsPanel.updateSolutions((long) e.getNewValue());
+	});
+	model.addPropertyChangeListener("uniqueSolutions", e -> {
+	    resultsPanel.updateUniqueSolutions((long) e.getNewValue());
+	});
+	
+	controller.addSolverListener(new SolverAdapter() {
+	    @Override
+	    public void solverStarted() {
+		resultsPanel.updateUsedN(model.getN());
+		resultsPanel.updateUsedSolverImplName(model.getSelectedSolverExtension().getName());
+	    }
+	});
+	
 	return resultsPanel;
     }
 
@@ -175,7 +192,7 @@ public class View extends JFrame {
 		File selectedFile = openFileChooser.getSelectedFile();
 		
 		if(selectedFile != null)
-		    openFile(selectedFile.getAbsolutePath());
+		    controller.restore(selectedFile);
 	    }
 	});
 	
@@ -185,12 +202,8 @@ public class View extends JFrame {
 		saveFileChooser.showOpenDialog(View.this);
 		File selectedFile = saveFileChooser.getSelectedFile();
 		
-		if(selectedFile != null) {
-		    String targetPath = selectedFile.getAbsolutePath();
-		    if(!targetPath.endsWith(".faf"))
-			targetPath += ".faf";
-		    saveToFile(targetPath);
-		}
+		if(selectedFile != null)
+		    controller.save(selectedFile);
 	    }
 	});
 	saveItem.setEnabled(false);
@@ -205,7 +218,9 @@ public class View extends JFrame {
 	var settingsItem = new JMenuItem(new AbstractAction("Settings") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		var settingsDialog = new SettingsDialog(View.this, oldModel);
+		var settingsDialog = new SettingsDialog(View.this, model.getSettings().getUpdateInterval(), model.getAutoSaveInterval());
+		settingsDialog.addPropertyChangeListener("updateInterval", ev -> model.getSettings().setUpdateInterval((int) ev.getNewValue()));
+		settingsDialog.addPropertyChangeListener("autoSaveInterval", ev -> model.setAutoSaveInterval((int) ev.getNewValue()));
 		settingsDialog.setVisible(true);
 	    }
 	});
@@ -268,7 +283,7 @@ public class View extends JFrame {
 		    recordsFrame.toFront();
 		    recordsFrame.repaint();
 		} else {
-		    recordsFrame.setN(oldModel.getN());
+		    recordsFrame.setN(model.getN());
 		    recordsFrame.setVisible(true);
 		}
 	    } 
@@ -309,10 +324,10 @@ public class View extends JFrame {
 
     private JPanel createAndGetNConfigPanel() {
 	var nConfigUi = new PropertyGroupConfigUi();
-	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, oldModel.getN(), 1);
-	nConfigUi.addPropertyChangeListener("n", e -> oldModel.setN((int) e.getNewValue()));
+	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, model.getN(), 1);
+	nConfigUi.addPropertyChangeListener("n", e -> model.setN((int) e.getNewValue()));
 	
-	oldModel.addSolverListener(new SolverListener() {
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
 		nConfigUi.setEnabled(false);
@@ -324,9 +339,9 @@ public class View extends JFrame {
 	    }
 	    
 	    @Override
-	    public void solverFileOpened() {
+	    public void solverRestored() {
 		nConfigUi.setEnabled(false);
-		((IntProperty) nConfigUi.getProperty("n")).setValue(oldModel.getN());
+		((IntProperty) nConfigUi.getProperty("n")).setValue(model.getN());
 	    }
 	    
 	    @Override
@@ -350,24 +365,11 @@ public class View extends JFrame {
 	    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++)
 		solverSelectionPanel.setBackgroundAt(i, systemDefaultTabColor);
 	    solverSelectionPanel.setBackgroundAt(solverSelectionPanel.getSelectedIndex(), ACCENT_COLOR);
-	    
-	    var solverImplWithConfig = ((SolverImplConfigPanel) solverSelectionPanel.getSelectedComponent()).getModel();
-	    oldModel.setSelectedSolverImplWithConfig(solverImplWithConfig);
-	    
-	    // TODO: use the actual old value in MainModel property changes
-	    // this way prevents loops between propertyChanges and reverse property
+	    model.setSelectedSolverExtension(solverSelectionPanel.getSelectedIndex());
 	});
 	
-	// add Solver implementations' tabs
-	var simpleRecPanel = new SimpleRecursiveSolverConfigPanel();
-	var cpuPanel = new CpuSolverConfigPanel();
-	var gpuPanel = new GpuSolverConfigPanel();
-
-	solverSelectionPanel.addTab(simpleRecPanel.getModel().getName(), simpleRecPanel);
-	solverSelectionPanel.addTab(cpuPanel.getModel().getName(), cpuPanel);
-	solverSelectionPanel.addTab(gpuPanel.getModel().getName(), gpuPanel);
-	
-	solverSelectionPanel.setSelectedComponent(gpuPanel);
+	for(var solverExtension : model.getSolverExtensions())
+	    solverSelectionPanel.addTab(solverExtension.getName(), solverExtension.getConfigUi());
 	
 	for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 	    var component = solverSelectionPanel.getComponentAt(i);
@@ -375,10 +377,10 @@ public class View extends JFrame {
 	    ((JComponent) component).setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 	}
 	
-	oldModel.addSolverListener(new SolverListener() {
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(false);
+		solverSelectionPanel.getSelectedComponent().setEnabled(false);
 		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 		    if(i == solverSelectionPanel.getSelectedIndex())
 			continue;
@@ -392,7 +394,7 @@ public class View extends JFrame {
 	    }
 	    
 	    @Override
-	    public void solverFileOpened() {
+	    public void solverRestored() {
 		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 		    if(i == solverSelectionPanel.getSelectedIndex())
 			continue;
@@ -406,7 +408,7 @@ public class View extends JFrame {
 	    }
 	    
 	    private void reset() {
-		((JPanel) solverSelectionPanel.getSelectedComponent()).setEnabled(true);
+		solverSelectionPanel.getSelectedComponent().setEnabled(true);
 		for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 		    if(i == solverSelectionPanel.getSelectedIndex())
 			continue;
@@ -423,14 +425,14 @@ public class View extends JFrame {
 	startButton.addActionListener(e -> {
 	    Thread.ofVirtual().start(() -> {
 		try {
-		    oldModel.startSolver();
+		    controller.start();
 		} catch (Exception ex) {
 		    Utils.error(this, ex.getMessage());
 		}
 	    });
 	});
 	
-	oldModel.addSolverListener(new SolverListener() {
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
 		startButton.setEnabled(false);
@@ -453,21 +455,20 @@ public class View extends JFrame {
 	progressBar.setString("0,000 %");
 	progressBar.setValue(0);
 
-	oldModel.addPropertyChangeListener("progress", e -> {
+	model.addPropertyChangeListener("progress", e -> {
 	    float progress = ((float) e.getNewValue()) * 100;
 	    progressBar.setValue((int) progress);
 	    progressBar.setString(String.format("%3.3f %%", progress));
 	});
 	
-	oldModel.addSolverListener(new SolverListener() {
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		if(!oldModel.isFileOpened())
-		    progressBar.setValue(0);
+		progressBar.setValue((int) (model.getProgress() * 100));
 	    }
 	    @Override
 	    public void solverTerminated() {
-		progressBar.setValue((int) (oldModel.getProgress() * 100));
+		progressBar.setValue((int) (model.getProgress() * 100));
 	    }
 	});
 	
@@ -479,15 +480,10 @@ public class View extends JFrame {
 	historyFrame.setSize(350, 250);
 	historyFrame.setLocationRelativeTo(this);
 
-	oldModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-	    }
-	    public void solverTerminated() {
-	    }
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverFinished() {
-		var entry = new HistoryEntry(oldModel.getN(), oldModel.getSelectedSolverImplWithConfig().toString(), oldModel.getDuration());
+		var entry = new HistoryEntry(model.getN(), model.getSelectedSolverExtension().getName(), model.getDuration());
 		historyFrame.addEntry(entry);
 	    }
 	});
@@ -503,21 +499,15 @@ public class View extends JFrame {
 		Utils.error(this, "could not load saved records: " + e.getMessage());
 	    }
 	
-	recordsFrame = new RecordsFrame(records, oldModel.getN());
+	recordsFrame = new RecordsFrame(records, model.getN());
 	recordsFrame.setLocationRelativeTo(this);
 	
-	oldModel.addSolverListener(new SolverListener() {
-	    @Override
-	    public void solverStarted() {
-	    }
-	    @Override
-	    public void solverTerminated() {
-	    }
+	controller.addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverFinished() {
-		var solver = oldModel.getSelectedSolverImplWithConfig().getSolver();
-		if(records.isNewRecord(solver.getDuration(), solver.getN(), oldModel.getSelectedSolverImplWithConfig().getDiscipline()))
-		    records.putRecord(solver.getDuration(), solver.getN(), oldModel.getSelectedSolverImplWithConfig().getDiscipline());
+		var solver = model.getSelectedSolverExtension().getSolver();
+		if(records.isNewRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverExtension().getCurrentRecordCategory()))
+		    records.putRecord(solver.getDuration(), solver.getN(), model.getSelectedSolverExtension().getCurrentRecordCategory());
 	    }
 	});
 
@@ -532,36 +522,6 @@ public class View extends JFrame {
 		}
 	    }
 	});
-    }
-
-    private void openFile(String path) {
-	Utils.loadingCursor(this);
-	
-	// TODO
-	// kryo read Snapshot from File
-	// inject SavePoint into current Solver
-	// if exists: apply the loaded SolverExtensionConfig
-	// if exists: apply the loaded Settings
-	
-	try {
-	    oldModel.openFile(path);
-	} catch (IOException e) {
-	    Utils.error(this, "could not open file: " + e.getMessage());
-	}
-	Utils.defaultCursor(this);
-    }
-    
-    private void saveToFile(String path) {
-	Utils.loadingCursor(this);
-	
-	// TODO
-	
-	try {
-	    oldModel.saveToFile(path);
-	} catch (IOException e) {
-	    Utils.error(this, "could not save to file: " + e.getMessage());
-	}
-	Utils.defaultCursor(this);
     }
     
 }
