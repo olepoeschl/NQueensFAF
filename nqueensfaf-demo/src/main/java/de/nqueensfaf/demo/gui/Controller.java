@@ -33,7 +33,6 @@ public class Controller {
     private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
 	model.updateSolverProgress(progress, solutions, model.getCurrentSymSolver().getUniqueSolutionsTotal(solutions), 
 		duration);
-	// auto save
 	autoSave(progress);
     };
     private final Runnable onStart = this::fireSolverStarted;
