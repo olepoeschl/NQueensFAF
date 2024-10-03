@@ -9,7 +9,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.QuickGBC;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 public interface SolverExtension {
     

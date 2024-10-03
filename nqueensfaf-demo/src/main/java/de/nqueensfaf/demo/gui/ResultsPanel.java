@@ -1,6 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
-import static de.nqueensfaf.demo.gui.QuickGBC.*;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 import java.awt.BorderLayout;
 import java.awt.GridBagLayout;
@@ -11,6 +11,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
+
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.util.Utils;
 
 @SuppressWarnings("serial")
 class ResultsPanel extends JPanel {

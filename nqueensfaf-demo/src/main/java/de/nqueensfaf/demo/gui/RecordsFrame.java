@@ -13,6 +13,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.plaf.basic.BasicArrowButton;
 
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.util.Utils;
+
 @SuppressWarnings("serial")
 class RecordsFrame extends JFrame {
 

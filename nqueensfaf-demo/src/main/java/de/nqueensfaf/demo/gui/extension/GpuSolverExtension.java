@@ -14,9 +14,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi;
-import de.nqueensfaf.demo.gui.QuickGBC;
-import de.nqueensfaf.demo.gui.Utils.LoadingWindow;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.util.Utils.LoadingWindow;
 import de.nqueensfaf.impl.GpuSolver;
 
 public class GpuSolverExtension implements SolverExtension {

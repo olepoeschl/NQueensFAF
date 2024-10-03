@@ -1,6 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
-import static de.nqueensfaf.demo.gui.QuickGBC.*;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -38,7 +38,9 @@ import javax.swing.filechooser.FileFilter;
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.Controller.SolverAdapter;
 import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
+import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi;
+import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi.IntProperty;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 @SuppressWarnings("serial")
 public class View extends JFrame {
@@ -57,7 +59,7 @@ public class View extends JFrame {
 	this.controller = controller;
 	this.model = model;
 	Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
-	    Utils.error(this != null ? this : null, e.getMessage());
+	    error(this != null ? this : null, e.getMessage());
 	    e.printStackTrace();
 	});
     }
@@ -309,7 +311,7 @@ public class View extends JFrame {
 		    try {
 			desktop.browse(URI.create("https://github.com/olepoeschl/NQueensFAF"));
 		    } catch (Exception ex) {
-			Utils.error(View.this, "could not open link: " + ex.getMessage());
+			error("could not open link: " + ex.getMessage());
 		    }
 		}
 	    }
@@ -317,7 +319,7 @@ public class View extends JFrame {
 	aboutMenu.add(new JMenuItem(new AbstractAction("Version") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		Utils.info(View.this, "<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>", "Version");
+		info("<html>Version: <i>" + Main.VERSION + "</i><br>Version Date: <i>" + Main.VERSION_DATE + "</i>", "Version");
 	    }
 	}));
 
@@ -440,7 +442,7 @@ public class View extends JFrame {
 		try {
 		    controller.start();
 		} catch (Exception ex) {
-		    Utils.error(this, ex.getMessage());
+		    error(ex.getMessage());
 		}
 	    });
 	});
@@ -517,7 +519,7 @@ public class View extends JFrame {
 	    try {
 		records.open(path);
 	    } catch (Exception e) {
-		Utils.error(this, "could not load saved records: " + e.getMessage());
+		error("could not load saved records: " + e.getMessage());
 	    }
 	
 	recordsFrame = new RecordsFrame(records, model.getN());
@@ -543,7 +545,7 @@ public class View extends JFrame {
 		try {
 		    records.save(path);
 		} catch (IOException e) {
-		    Utils.error(null, "could not save records: " + e.getMessage());
+		    error("could not save records: " + e.getMessage());
 		}
 	    }
 	});

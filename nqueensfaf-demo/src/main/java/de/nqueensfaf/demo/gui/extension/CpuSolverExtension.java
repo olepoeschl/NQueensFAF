@@ -4,7 +4,6 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi;
 import de.nqueensfaf.impl.CpuSolver;
 
 public class CpuSolverExtension implements SolverExtension {

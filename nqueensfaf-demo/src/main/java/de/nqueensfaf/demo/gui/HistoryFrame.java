@@ -9,6 +9,8 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+import de.nqueensfaf.demo.gui.util.Utils;
+
 @SuppressWarnings("serial")
 class HistoryFrame extends JFrame {
     

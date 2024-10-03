@@ -1,4 +1,4 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.gui.util;
 
 import java.awt.Component;
 import java.awt.Cursor;
@@ -77,7 +77,7 @@ public class Utils {
 	}
     }
 
-    static String getDurationUnitlessString(long time) {
+    public static String getDurationUnitlessString(long time) {
 	long h = time / 1000 / 60 / 60;
 	long m = time / 1000 / 60 % 60;
 	long s = time / 1000 % 60;
@@ -126,7 +126,7 @@ public class Utils {
 	return durationStr.startsWith("0") ? durationStr.substring(1) : durationStr;
     }
     
-    static String getDurationUnitString(long duration) {
+    public static String getDurationUnitString(long duration) {
 	if(duration >= 60 * 60 * 1000)
 	    return "hours";
 	else if(duration >= 60 * 1000)
@@ -135,7 +135,7 @@ public class Utils {
 	    return "seconds";
     }
     
-    static String getDurationString(long time) {
+    public static String getDurationString(long time) {
 	long h = time / 1000 / 60 / 60;
 	long m = time / 1000 / 60 % 60;
 	long s = time / 1000 % 60;
@@ -177,7 +177,7 @@ public class Utils {
 	return durationStr;
     }
     
-    static String getSolutionsString(long solutions) {
+    public static String getSolutionsString(long solutions) {
 	StringBuilder sb = new StringBuilder(Long.toString(solutions));
 	for (int i = sb.length() - 3; i >= 0; i -= 3) {
 	    if (i <= 0)

@@ -1,6 +1,6 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.gui.extension;
 
-import static de.nqueensfaf.demo.gui.QuickGBC.*;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -23,6 +23,8 @@ import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
+
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
 @SuppressWarnings("serial")
 public class PropertyGroupConfigUi extends JPanel {

@@ -7,6 +7,8 @@ import java.awt.Toolkit;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 
+import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi;
+
 @SuppressWarnings("serial")
 class SettingsDialog extends JDialog {
     
