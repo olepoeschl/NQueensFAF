@@ -16,7 +16,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JWindow;
 
 @SuppressWarnings("serial")
-class Utils {
+public class Utils {
     
     static void error(Component parent, String message, Runnable action) {
 	JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
@@ -40,11 +40,11 @@ class Utils {
 	frame.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
     }
     
-    static class LoadingWindow extends JWindow {
+    public static class LoadingWindow extends JWindow {
 	
 	private JProgressBar progressBar;
 	
-	LoadingWindow(JFrame context, String loadingText) {
+	public LoadingWindow(JFrame context, String loadingText) {
 	    super(context);
 	    createUi(context, loadingText);
 	}
@@ -72,7 +72,7 @@ class Utils {
 	    });
 	}
 	
-	JProgressBar getProgressBar() {
+	public JProgressBar getProgressBar() {
 	    return progressBar;
 	}
     }

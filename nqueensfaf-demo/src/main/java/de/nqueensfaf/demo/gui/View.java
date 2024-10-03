@@ -38,7 +38,7 @@ import javax.swing.filechooser.FileFilter;
 import de.nqueensfaf.demo.Main;
 import de.nqueensfaf.demo.gui.Controller.SolverAdapter;
 import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi1.IntProperty;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi.IntProperty;
 
 @SuppressWarnings("serial")
 public class View extends JFrame {
@@ -330,9 +330,9 @@ public class View extends JFrame {
     }
 
     private JPanel createAndGetNConfigPanel() {
-	var nConfigUi = new PropertyGroupConfigUi1();
+	var nConfigUi = new PropertyGroupConfigUi();
 	nConfigUi.addIntProperty("n", "Board Size N", 1, 31, model.getN(), 1);
-	nConfigUi.addPropertyChangeListener("n", e -> model.setN((int) e.getNewValue()));
+	nConfigUi.getProperty("n").addChangeListener(e -> model.setN((int) e.getNewValue()));
 	
 	controller.addSolverListener(new SolverAdapter() {
 	    @Override

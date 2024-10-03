@@ -1,29 +1,32 @@
 package de.nqueensfaf.demo.gui.extension;
 
 import javax.swing.JComponent;
+import javax.swing.JPanel;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.demo.gui.PropertyGroupConfigUi1;
+import de.nqueensfaf.demo.gui.PropertyGroupConfigUi;
 import de.nqueensfaf.impl.CpuSolver;
 
 public class CpuSolverExtension implements SolverExtension {
 
     private final CpuSolver solver = new CpuSolver();
 
-    private PropertyGroupConfigUi1 propConfigUi;
+    private JPanel configUi;
     
     public CpuSolverExtension() {
 	createConfigUi();
     }
     
     private void createConfigUi() {
-	propConfigUi = new PropertyGroupConfigUi1();
+	var propConfigUi = new PropertyGroupConfigUi();
 	propConfigUi.addIntProperty("threads", "Threads", 1, 
 		Runtime.getRuntime().availableProcessors() * 2, 1, 1);
 	propConfigUi.getProperty("threads").addChangeListener(e -> solver.setThreadCount((int) e.getNewValue()));
 	propConfigUi.addIntProperty("prequeens", "Pre-placed Queens", 4, 8, 5, 1);
 	propConfigUi.getProperty("prequeens").addChangeListener(e -> solver.setPresetQueens((int) e.getNewValue()));
 	propConfigUi.fillRemainingVerticalSpace();
+	
+	configUi = propConfigUi;
     }
 
     @Override
@@ -45,6 +48,6 @@ public class CpuSolverExtension implements SolverExtension {
 
     @Override
     public JComponent getConfigUi() {
-	return propConfigUi;
+	return configUi;
     }
 }

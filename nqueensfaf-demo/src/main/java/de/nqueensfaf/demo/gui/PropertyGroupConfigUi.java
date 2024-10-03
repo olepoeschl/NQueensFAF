@@ -25,13 +25,13 @@ import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
 
 @SuppressWarnings("serial")
-public class PropertyGroupConfigUi1 extends JPanel {
+public class PropertyGroupConfigUi extends JPanel {
 
     private int gridy = 0;
 
     private Map<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
-    public PropertyGroupConfigUi1() {
+    public PropertyGroupConfigUi() {
 	setLayout(new GridBagLayout());
     }
 
@@ -230,5 +230,9 @@ public class PropertyGroupConfigUi1 extends JPanel {
 
     public void fillRemainingVerticalSpace() {
 	add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
+    }
+    
+    public int getNextFreeY() {
+	return gridy;
     }
 }

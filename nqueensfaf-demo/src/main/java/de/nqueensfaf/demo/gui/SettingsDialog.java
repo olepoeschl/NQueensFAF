@@ -13,7 +13,7 @@ class SettingsDialog extends JDialog {
     public SettingsDialog(Frame owner, int initialUpdateInterval, int initialAutoSaveInterval) {
 	super(owner, "Settings", true);
 	
-	var propConfigUi = new PropertyGroupConfigUi1();
+	var propConfigUi = new PropertyGroupConfigUi();
 	propConfigUi.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 	propConfigUi.addIntProperty("updateInterval", "Update Interval", 0, 60_000, initialUpdateInterval);
 	propConfigUi.getProperty("updateInterval").addChangeListener(e -> firePropertyChange("updateInterval", null, (int) e.getNewValue()));
