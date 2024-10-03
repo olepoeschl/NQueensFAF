@@ -369,6 +369,10 @@ public class View extends JFrame {
     }
     
     private JTabbedPane createAndGetSolverSelectionPanel() {
+	// TODO: JToolBar for saving the current configuration of the selected SolverExtension
+	// and for pasting configuration from clipboard
+	// (configurations can be copied into the clipboard from records or history entries)
+	
 	var solverSelectionPanel = new JTabbedPane();
 	
 	final Color systemDefaultTabColor = solverSelectionPanel.getBackground();
