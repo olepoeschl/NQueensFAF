@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -175,12 +174,9 @@ public class Controller {
 	if(savePoint == null) // the selected solver does not support save & restore
 	    return;
 	
-	var solverExtensionConfig = new HashMap<String, Object>();
-	model.getSelectedSolverExtension().getConfig(solverExtensionConfig);
-	
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
 
-	    var snapshot = new Snapshot(savePoint, solverExtensionConfig, model.getAutoSaveInterval());
+	    var snapshot = new Snapshot(savePoint, model.getAutoSaveInterval());
 	    kryo.writeClassAndObject(output, snapshot);
 	    
 	    fireSolverSaved();
@@ -196,7 +192,6 @@ public class Controller {
 	    var snapshot = (Snapshot) kryo.readClassAndObject(input);
 	    model.getSelectedSolverExtension().getSolver().restoreSavePoint(snapshot.savePoint());
 	    model.setN(snapshot.savePoint().getN());
-	    model.getSelectedSolverExtension().setConfig(snapshot.solverExtensionConfig());
 	    model.setAutoSaveInterval(snapshot.autoSaveInterval());
 
 	    model.updateSolverProgress(
@@ -222,6 +217,18 @@ public class Controller {
 	model.getSelectedSolverExtension().getSolver().reset();
 	model.setRestored(false);
 	fireSolverReset();
+    }
+    
+    public void saveCurrentSolverExtensionConfig(File file) {
+	// TODO
+    }
+    
+    public void loadSolverExtensionConfig(File file) {
+	// TODO
+    }
+    
+    public void pasteSolverExtensionConfig() {
+	// TODO
     }
     
     // solver event listeners

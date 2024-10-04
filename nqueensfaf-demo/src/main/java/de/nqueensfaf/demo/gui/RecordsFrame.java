@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -136,9 +137,13 @@ class RecordsFrame extends JFrame {
 	    durationLbl.setFont(View.CAPTION_FONT);
 	    durationLbl.setHorizontalAlignment(JLabel.RIGHT);
 	    
+	    var copyConfigBtn = new JButton(Utils.getCopyIcon());
+	    copyConfigBtn.setToolTipText("Copy the used Configuration");
+	    
 	    int topGap = 5;
-	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
-	    panel.add(durationLbl, new QuickGBC(1, y).top(topGap).left(20).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
+	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx());
+	    panel.add(durationLbl, new QuickGBC(1, y).top(topGap).left(20).weight(0.5, 0).fillx());
+	    panel.add(copyConfigBtn, new QuickGBC(2, y).top(topGap).left(5).weight(0, 0));
 	    
 	    y++;
 	}

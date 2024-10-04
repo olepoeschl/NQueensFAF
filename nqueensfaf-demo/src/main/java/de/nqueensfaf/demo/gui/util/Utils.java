@@ -1,43 +1,56 @@
 package de.nqueensfaf.demo.gui.util;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.EventQueue;
 import java.awt.GridBagLayout;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JWindow;
 
+import de.nqueensfaf.demo.gui.View;
+
 @SuppressWarnings("serial")
 public class Utils {
     
-    static void error(Component parent, String message, Runnable action) {
-	JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
-	if(action != null)
-	    EventQueue.invokeLater(action);
+    private static ImageIcon saveIcon, openIcon, pasteIcon, copyIcon;
+    
+    static {
+	try {
+	    var saveBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("save.png"));
+	    var openBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("open.png"));
+	    var pasteBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("paste.png"));
+	    var copyBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("copy.png"));
+
+	    saveIcon = new ImageIcon(saveBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    openIcon = new ImageIcon(openBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    pasteIcon = new ImageIcon(pasteBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    copyIcon = new ImageIcon(copyBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	} catch (IOException e) {
+	    View.error(null, "could not read image resource: " + e.getMessage());
+	}
     }
     
-    static void error(Component parent, String message) {
-	error(parent, message, null);
+    public static ImageIcon getSaveIcon() {
+	return saveIcon;
     }
     
-    static void info(Component parent, String message, String title) {
-	JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
+    public static ImageIcon getOpenIcon() {
+	return openIcon;
     }
     
-    static void loadingCursor(JFrame frame) {
-	frame.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+    public static ImageIcon getPasteIcon() {
+	return pasteIcon;
     }
     
-    static void defaultCursor(JFrame frame) {
-	frame.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+    public static ImageIcon getCopyIcon() {
+	return copyIcon;
     }
     
     public static class LoadingWindow extends JWindow {

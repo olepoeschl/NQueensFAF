@@ -33,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JToolBar;
 import javax.swing.filechooser.FileFilter;
 
 import de.nqueensfaf.demo.Main;
@@ -41,6 +42,7 @@ import de.nqueensfaf.demo.gui.HistoryFrame.HistoryEntry;
 import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi;
 import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi.IntProperty;
 import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.util.Utils;
 
 @SuppressWarnings("serial")
 public class View extends JFrame {
@@ -81,11 +83,13 @@ public class View extends JFrame {
 	
 	var nConfigPanel = createAndGetNConfigPanel();
 	var solverSelectionPanel = createAndGetSolverSelectionPanel();
+	var solverExtensionToolBar = createSolverExtensionToolBar();
 	var solverControlPanel = createAndGetSolverControlPanel();
 	
 	configAndControlPanel.add(nConfigPanel, new QuickGBC(0, 0).weight(1, 0).anchor(ANCHOR_NORTH).fillx());
 	configAndControlPanel.add(solverSelectionPanel, new QuickGBC(0, 1).weight(1, 0.5).anchor(ANCHOR_NORTH).fill().top(5));
-	configAndControlPanel.add(solverControlPanel, new QuickGBC(0, 2).weight(1, 0.5).fill().top(5));
+	configAndControlPanel.add(solverExtensionToolBar, new QuickGBC(0, 2).weight(0, 0).anchor(ANCHOR_NORTH));
+	configAndControlPanel.add(solverControlPanel, new QuickGBC(0, 3).weight(1, 0.5).fill().top(5));
 
 	// solver results
 	var resultsPanel = createAndGetResultsPanel();
@@ -369,10 +373,6 @@ public class View extends JFrame {
     }
     
     private JTabbedPane createAndGetSolverSelectionPanel() {
-	// TODO: JToolBar for saving the current configuration of the selected SolverExtension
-	// and for pasting configuration from clipboard
-	// (configurations can be copied into the clipboard from records or history entries)
-	
 	var solverSelectionPanel = new JTabbedPane();
 	
 	final Color systemDefaultTabColor = solverSelectionPanel.getBackground();
@@ -437,6 +437,26 @@ public class View extends JFrame {
 	});
 	
 	return solverSelectionPanel;
+    }
+    
+    private JToolBar createSolverExtensionToolBar() {
+	var saveConfigBtn = new JButton(Utils.getSaveIcon());
+	saveConfigBtn.addActionListener(e -> controller.saveCurrentSolverExtensionConfig(new File("")));
+	
+	var openConfigBtn = new JButton(Utils.getOpenIcon());
+	openConfigBtn.addActionListener(e -> controller.loadSolverExtensionConfig(new File("")));
+	
+	var pasteConfigBtn = new JButton(Utils.getPasteIcon());
+	pasteConfigBtn.addActionListener(e -> controller.pasteSolverExtensionConfig());
+	
+	var toolBar = new JToolBar();
+	toolBar.setBackground(ACCENT_COLOR);
+	
+	toolBar.add(saveConfigBtn);
+	toolBar.add(openConfigBtn);
+	toolBar.add(pasteConfigBtn);
+	
+	return toolBar;
     }
     
     private JPanel createAndGetSolverControlPanel() {
@@ -559,7 +579,7 @@ public class View extends JFrame {
 	error(this, message);
     }
     
-    private static void error(Component parent, String message) {
+    public static void error(Component parent, String message) {
 	JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
