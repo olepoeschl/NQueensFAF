@@ -75,10 +75,9 @@ class HistoryFrame extends JFrame {
     record HistoryEntry(int n, String deviceName, long duration) {
     }
 
-    class TableButtonHandler extends AbstractCellEditor implements TableCellEditor, TableCellRenderer {
+    private static class TableButtonHandler extends AbstractCellEditor implements TableCellEditor, TableCellRenderer {
 	
 	private JButton button;
-	
 
 	@Override
 	public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
