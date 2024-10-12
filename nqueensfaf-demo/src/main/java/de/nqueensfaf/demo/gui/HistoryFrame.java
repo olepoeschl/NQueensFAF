@@ -3,6 +3,7 @@ package de.nqueensfaf.demo.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 
+import javax.swing.AbstractCellEditor;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -10,6 +11,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
 import de.nqueensfaf.demo.gui.util.Utils;
@@ -26,7 +28,7 @@ class HistoryFrame extends JFrame {
 
     private void createUi() {
 	// create table
-	var columns = new String[] { "N", "Solver / Description", "Duration", "Configuration" };
+	var columns = new String[] { "N", "Solver", "Duration", "Configuration" };
 	tableModel = new DefaultTableModel(null, columns);
 	var table = new JTable(tableModel) {
 	    @Override
@@ -41,7 +43,7 @@ class HistoryFrame extends JFrame {
 	    }
 	    @Override
 	    public boolean isCellEditable(int rowIndex, int colIndex) {
-		return false;
+		return colIndex == 3;
 	    }
 	};
 	
@@ -52,17 +54,9 @@ class HistoryFrame extends JFrame {
 	table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
 	table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
 
-	var buttonRenderer = new TableCellRenderer() {
-	    @Override
-	    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-		    int row, int column) {
-		if(value instanceof JButton)
-		    return (JButton) value;
-		return null;
-	    }
-	};
-	table.getColumnModel().getColumn(3).setCellRenderer(buttonRenderer);
-	// TODO: implement action when copy-Icon is clicked
+	var tableButtonHandler = new TableButtonHandler();
+	table.getColumnModel().getColumn(3).setCellRenderer(tableButtonHandler);
+	table.getColumnModel().getColumn(3).setCellEditor(tableButtonHandler);
 
 	// init frame
 	add(new JScrollPane(table), BorderLayout.CENTER);
@@ -73,11 +67,36 @@ class HistoryFrame extends JFrame {
     void addEntry(HistoryEntry entry) {
 	var copyConfigBtn = new JButton(Utils.getCopyIcon());
 	copyConfigBtn.addActionListener(e -> System.out.println("hi"));
-	// TODO: click not working
-	
+
 	tableModel.insertRow(0, new Object[] { entry.n(), entry.deviceName(), Utils.getDurationString(entry.duration()),
 		copyConfigBtn });
     }
 
-    record HistoryEntry(int n, String deviceName, long duration) {}
+    record HistoryEntry(int n, String deviceName, long duration) {
+    }
+
+    class TableButtonHandler extends AbstractCellEditor implements TableCellEditor, TableCellRenderer {
+	
+	private JButton button;
+	
+
+	@Override
+	public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
+		int column) {
+	    button = (JButton) value;
+	    return button;
+	}
+
+	@Override
+	public Object getCellEditorValue() {
+	    return button;
+	}
+
+	@Override
+	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+		int row, int column) {
+	    return (JButton) value;
+	}
+    }
+    
 }
