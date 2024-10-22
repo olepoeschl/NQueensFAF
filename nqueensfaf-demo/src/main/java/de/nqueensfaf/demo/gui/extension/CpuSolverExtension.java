@@ -1,7 +1,9 @@
 package de.nqueensfaf.demo.gui.extension;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.swing.JComponent;
-import javax.swing.JPanel;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.impl.CpuSolver;
@@ -10,7 +12,7 @@ public class CpuSolverExtension implements SolverExtension {
 
     private final CpuSolver solver = new CpuSolver();
 
-    private JPanel configUi;
+    private PropertyGroupConfigUi configUi;
     
     public CpuSolverExtension() {
 	createConfigUi();
@@ -48,5 +50,24 @@ public class CpuSolverExtension implements SolverExtension {
     @Override
     public JComponent getConfigUi() {
 	return configUi;
+    }
+    
+    @Override
+    public void setConfig(Map<String, Object> configMap) {
+	for(var key : configMap.keySet()) {
+	    switch(key) {
+	    case "threads":
+	    case "prequeens":
+		configUi.getProperty(key).setValue(configMap.get(key));
+	    }
+	}
+    }
+    
+    @Override
+    public Map<String, Object> getConfig() {
+	var configMap = new HashMap<String, Object>();
+	configMap.put("threads", configUi.getProperty("threads").getValue());
+	configMap.put("prequeens", configUi.getProperty("prequeens").getValue());
+	return configMap;
     }
 }

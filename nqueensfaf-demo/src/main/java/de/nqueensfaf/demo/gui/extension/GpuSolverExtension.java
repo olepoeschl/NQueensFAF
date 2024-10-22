@@ -2,6 +2,8 @@ package de.nqueensfaf.demo.gui.extension;
 
 import java.awt.EventQueue;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -248,6 +250,17 @@ public class GpuSolverExtension implements SolverExtension {
     @Override
     public JComponent getConfigUi() {
 	return configUi;
+    }
+    
+    @Override
+    public void setConfig(Map<String, Object> configMap) {
+	// TODO
+    }
+    
+    @Override
+    public Map<String, Object> getConfig(){
+	// TODO
+	return new HashMap<>();
     }
     
     private static final String getShortNameOfGpuVendor(String vendor) {

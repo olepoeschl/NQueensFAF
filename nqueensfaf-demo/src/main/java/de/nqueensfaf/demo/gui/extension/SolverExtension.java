@@ -1,6 +1,7 @@
 package de.nqueensfaf.demo.gui.extension;
 
 import java.awt.GridBagLayout;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.Box;
@@ -46,7 +47,9 @@ public interface SolverExtension {
 	return panel;
     }
     
-    default void getConfig(Map<String, Object> configMap) {}
+    default Map<String, Object> getConfig() {
+	return new HashMap<>();
+    }
     
     default void setConfig(Map<String, Object> configMap) {}
     

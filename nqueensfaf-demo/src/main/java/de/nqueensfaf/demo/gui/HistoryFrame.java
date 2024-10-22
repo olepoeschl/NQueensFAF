@@ -2,6 +2,7 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.util.Map;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.JButton;
@@ -66,13 +67,12 @@ class HistoryFrame extends JFrame {
 
     void addEntry(HistoryEntry entry) {
 	var copyConfigBtn = new JButton(Utils.getCopyIcon());
-	copyConfigBtn.addActionListener(e -> System.out.println("hi"));
-
-	tableModel.insertRow(0, new Object[] { entry.n(), entry.deviceName(), Utils.getDurationString(entry.duration()),
+	copyConfigBtn.addActionListener(e -> SolverExtensionConfigClipboard.getInstance().set(entry.solverExtensionConfig()));
+	tableModel.insertRow(0, new Object[] { entry.n(), entry.solverName(), Utils.getDurationString(entry.duration()),
 		copyConfigBtn });
     }
 
-    record HistoryEntry(int n, String deviceName, long duration) {
+    record HistoryEntry(int n, String solverName, long duration, Map<String, Object> solverExtensionConfig) {
     }
 
     private static class TableButtonHandler extends AbstractCellEditor implements TableCellEditor, TableCellRenderer {

@@ -228,7 +228,8 @@ public class Controller {
     }
     
     public void pasteSolverExtensionConfig() {
-	// TODO
+	if(SolverExtensionConfigClipboard.getInstance().get() != null)
+	    model.getSelectedSolverExtension().setConfig(SolverExtensionConfigClipboard.getInstance().get());
     }
     
     // solver event listeners

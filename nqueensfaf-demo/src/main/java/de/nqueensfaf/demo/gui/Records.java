@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,16 +22,16 @@ class Records {
     
     private final EventListenerList listeners = new EventListenerList();
     
-    private Map<Integer, Map<String, Long>> records;
+    private Map<Integer, Map<String, RecordData>> records;
     
     public Records() {	  
-	records = new HashMap<Integer, Map<String, Long>>();
+	records = new HashMap<>();
     }
     
     @SuppressWarnings("unchecked")
     void open(String path) throws FileNotFoundException, IOException, ClassNotFoundException {
 	try (var in = new ObjectInputStream(new BufferedInputStream(new FileInputStream(new File(path))))) {
-	    records = (HashMap<Integer, Map<String, Long>>) in.readObject();
+	    records = (HashMap<Integer, Map<String, RecordData>>) in.readObject();
 	}
     }
     
@@ -48,20 +49,20 @@ class Records {
 	    return true;
 	if(records.get(n).get(device) == null)
 	    return true;
-	return records.get(n).get(device) > duration;
+	return records.get(n).get(device).duration() > duration;
     }
     
-    void putRecord(long duration, int n, String device) {
+    void putRecord(long duration, int n, String device, Map<String, Object> configMap) {
 	if(records.get(n) == null)
-	    records.put(n, new HashMap<String, Long>());
-	records.get(n).put(device, duration);
+	    records.put(n, new HashMap<String, RecordData>());
+	records.get(n).put(device, new RecordData(duration, configMap));
 	
 	for(var l : listeners.getListeners(RecordListener.class))
 	    l.newRecord(n);
     }
     
-    // Map: deviceName -> duration
-    Map<String, Long> getRecordsByN(int n) {
+    // Map: deviceName -> record data
+    Map<String, RecordData> getRecordsByN(int n) {
 	return records.get(n);
     }
     
@@ -76,4 +77,6 @@ class Records {
     static interface RecordListener extends EventListener {
 	void newRecord(int n);
     }
+    
+    static record RecordData (long duration, Map<String, Object> configMap) implements Serializable {}
 }

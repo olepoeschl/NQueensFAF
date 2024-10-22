@@ -122,11 +122,13 @@ public class PropertyGroupConfigUi extends JPanel {
 	    return value;
 	}
 
-	public final void setValue(T value) {
+	public final void setValue(Object object) {
+	    @SuppressWarnings("unchecked")
+	    var newValue = (T) object;
 	    T oldValue = this.value;
-	    this.value = value;
-	    updateUi(value);
-	    prop.firePropertyChange(name, oldValue, value);
+	    this.value = newValue;
+	    updateUi(newValue);
+	    prop.firePropertyChange(name, oldValue, newValue);
 	}
 
 	void createUi() {

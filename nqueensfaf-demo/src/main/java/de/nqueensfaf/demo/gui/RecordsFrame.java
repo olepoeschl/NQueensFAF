@@ -4,7 +4,6 @@ import java.awt.GridBagLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -122,12 +121,12 @@ class RecordsFrame extends JFrame {
 	}
 	
 	final var recordsSortedByDuration = new ArrayList<>(recordsByN.entrySet());
-	recordsSortedByDuration.sort(Entry.comparingByValue());
+	recordsSortedByDuration.sort((entry1, entry2) -> Long.compare(entry1.getValue().duration(), entry2.getValue().duration()));
 	
 	int y = 0;
 	for(var record : recordsSortedByDuration) {
 	    String device = record.getKey();
-	    long duration = record.getValue();
+	    long duration = record.getValue().duration();
 	    
 	    var deviceLbl = new JLabel(device + ":");
 	    deviceLbl.setFont(View.CAPTION_FONT);
@@ -139,6 +138,7 @@ class RecordsFrame extends JFrame {
 	    
 	    var copyConfigBtn = new JButton(Utils.getCopyIcon());
 	    copyConfigBtn.setToolTipText("Copy the used Configuration");
+	    copyConfigBtn.addActionListener(e -> SolverExtensionConfigClipboard.getInstance().set(record.getValue().configMap()));
 	    
 	    int topGap = 5;
 	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx());

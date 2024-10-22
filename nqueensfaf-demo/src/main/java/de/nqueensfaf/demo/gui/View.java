@@ -529,7 +529,8 @@ public class View extends JFrame {
 	    public void solverFinished() {
 		EventQueue.invokeLater(() -> {
 		    var entry = new HistoryEntry(model.getN(), model.getSelectedSolverExtension().getName(),
-			    model.getSelectedSolverExtension().getSolver().getDuration());
+			    model.getSelectedSolverExtension().getSolver().getDuration(),
+			    model.getSelectedSolverExtension().getConfig());
 		    historyFrame.addEntry(entry);
 		});
 	    }
@@ -557,7 +558,7 @@ public class View extends JFrame {
 		    if (records.isNewRecord(model.getSelectedSolverExtension().getSolver().getDuration(), solver.getN(),
 			    model.getSelectedSolverExtension().getCurrentRecordCategory()))
 			records.putRecord(model.getSelectedSolverExtension().getSolver().getDuration(), solver.getN(),
-				model.getSelectedSolverExtension().getCurrentRecordCategory());
+				model.getSelectedSolverExtension().getCurrentRecordCategory(), model.getSelectedSolverExtension().getConfig());
 		});
 	    }
 	});
