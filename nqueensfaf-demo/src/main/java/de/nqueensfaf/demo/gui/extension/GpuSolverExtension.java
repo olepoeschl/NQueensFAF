@@ -2,13 +2,13 @@ package de.nqueensfaf.demo.gui.extension;
 
 import java.awt.EventQueue;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
@@ -23,7 +23,9 @@ import de.nqueensfaf.impl.GpuSolver;
 public class GpuSolverExtension implements SolverExtension {
 
     private final GpuSolver solver = new GpuSolver();
-    private JPanel configUi;
+    
+    private PropertyGroupConfigUi configUi;
+    private JTable gpuSelectionTable;
     
     public GpuSolverExtension() {
 	createConfigUi();
@@ -35,15 +37,15 @@ public class GpuSolverExtension implements SolverExtension {
 	propConfigUi.getProperty("prequeens").addChangeListener(e -> solver.setPresetQueens((int) e.getNewValue()));
 	
 	int gridy = propConfigUi.getNextFreeY();
-	var table = createGpuSelectionTable();
-	propConfigUi.add(new JScrollPane(table), new QuickGBC(0, gridy).fill().size(4, 1).weight(1, 1).top(5).bottom(5));
+	gpuSelectionTable = createGpuSelectionTable();
+	propConfigUi.add(new JScrollPane(gpuSelectionTable), new QuickGBC(0, gridy).fill().size(4, 1).weight(1, 1).top(5).bottom(5));
 	gridy++;
 	
 	configUi = propConfigUi;
 	
 	if(solver.getAvailableGpus().size() > 1) {
 	    var autoWeightButton = new JButton("Auto-Configure GPU Weights");
-	    autoWeightButton.addActionListener(e -> autoWeight((DefaultTableModel) table.getModel()));
+	    autoWeightButton.addActionListener(e -> autoWeight((DefaultTableModel) gpuSelectionTable.getModel()));
 	    propConfigUi.add(autoWeightButton, new QuickGBC(0, gridy).size(4, 1).weight(1, 0).anchor(QuickGBC.ANCHOR_CENTER).bottom(5));
 	}
     }
@@ -254,13 +256,73 @@ public class GpuSolverExtension implements SolverExtension {
     
     @Override
     public void setConfig(Map<String, Object> configMap) {
-	// TODO
+	if(!configMap.containsKey("gpu"))
+	    throw new IllegalArgumentException("invalid config for this solver");
+	
+	for(var key : configMap.keySet()) {
+	    switch(key) {
+	    case "prequeens":
+		configUi.getProperty(key).setValue(configMap.get(key));
+		break;
+	    case "gpuSelection":
+		@SuppressWarnings("unchecked")
+		var gpuSelectionList = (ArrayList<String>) configMap.get(key);
+		
+		for(var entry : gpuSelectionList) {
+		    var properties = entry.split("[0-9a-zA-Z]*,");
+		    
+		    String name;
+		    boolean selected;
+		    int weight, workgroupSize;
+		    
+		    for(var prop : properties) {
+			if(prop.startsWith("name="))
+			    name = prop.substring(5);
+			else if(prop.startsWith("selected="))
+			    selected = Boolean.parseBoolean(prop.substring(9));
+			else if(prop.startsWith("weight="))
+			    weight = Integer.parseInt(prop.substring(7));
+			else if(prop.startsWith("workgroupSize="))
+			    workgroupSize = Integer.parseInt(prop.substring(14));
+		    }
+		    
+		    // TODO: update table ui and solver data
+		}
+		break;
+	    }
+	}
     }
     
     @Override
-    public Map<String, Object> getConfig(){
-	// TODO
-	return new HashMap<>();
+    public Map<String, Object> getConfig() {
+	var tableModel = gpuSelectionTable.getModel();
+	
+	int toggleSelectionIndex = gpuSelectionTable.getColumnModel().getColumnIndex("X");
+	int nameIndex = gpuSelectionTable.getColumnModel().getColumnIndex("Name");
+	int weightIndex = gpuSelectionTable.getColumnModel().getColumnIndex("Weight");
+	int workgroupSizeIndex = gpuSelectionTable.getColumnModel().getColumnIndex("WGS");
+	
+	var configMap = new HashMap<String, Object>();
+	configMap.put("prequeens", configUi.getProperty("prequeens").getValue());
+	
+	var gpuSelectionList = new ArrayList<String>();
+	for(int row = 0; row < gpuSelectionTable.getRowCount(); row++) {
+	    var name = tableModel.getValueAt(row, nameIndex);
+	    var selected = (Boolean) tableModel.getValueAt(row, toggleSelectionIndex);
+	    var weight = (Integer) tableModel.getValueAt(row, weightIndex);
+	    var workgroupSize = (Integer) tableModel.getValueAt(row, workgroupSizeIndex);
+	    
+	    var stringBuilder = new StringBuilder();
+	    stringBuilder.append("name=").append(name);
+	    stringBuilder.append(',').append("selected=").append(selected);
+	    stringBuilder.append(',').append("weight=").append(weight);
+	    stringBuilder.append(',').append("workgroupSize=").append(workgroupSize);
+	    
+	    gpuSelectionList.add(stringBuilder.toString());
+	}
+	configMap.put("gpuSelection", gpuSelectionList);
+	
+	return configMap;
     }
     
     private static final String getShortNameOfGpuVendor(String vendor) {

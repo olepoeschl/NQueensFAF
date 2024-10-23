@@ -1,8 +1,8 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.gui.extension;
 
 import java.util.Map;
 
-class SolverExtensionConfigClipboard {
+public class SolverExtensionConfigClipboard {
 
     private static final SolverExtensionConfigClipboard instance = new SolverExtensionConfigClipboard();
     
@@ -11,15 +11,15 @@ class SolverExtensionConfigClipboard {
     private SolverExtensionConfigClipboard() {
     }
 
-    static SolverExtensionConfigClipboard getInstance() {
+    public static SolverExtensionConfigClipboard getInstance() {
 	return instance;
     }
     
-    synchronized void set(Map<String, Object> configMap) {
+    public synchronized void set(Map<String, Object> configMap) {
 	this.configMap = configMap;
     }
     
-    Map<String, Object> get(){
+    public Map<String, Object> get(){
 	return configMap;
     }
 }

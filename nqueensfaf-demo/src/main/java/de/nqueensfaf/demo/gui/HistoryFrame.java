@@ -15,6 +15,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
+import de.nqueensfaf.demo.gui.extension.SolverExtensionConfigClipboard;
 import de.nqueensfaf.demo.gui.util.Utils;
 
 @SuppressWarnings("serial")

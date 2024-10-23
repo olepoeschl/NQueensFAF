@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.EventListener;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -18,6 +19,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
+import de.nqueensfaf.demo.gui.extension.SolverExtensionConfigClipboard;
 
 public class Controller {
 
@@ -220,11 +222,21 @@ public class Controller {
     }
     
     public void saveCurrentSolverExtensionConfig(File file) {
-	// TODO
+	try (Output output = new Output(new FileOutputStream(file))) {
+	    kryo.writeClassAndObject(output, model.getSelectedSolverExtension().getConfig());
+	} catch (Exception e) {
+	    view.error("could not save solver extension config: " + e.getMessage());
+	}
     }
     
     public void loadSolverExtensionConfig(File file) {
-	// TODO
+	try (Input input = new Input(new FileInputStream(file))) {
+	    @SuppressWarnings("unchecked")
+	    var configMap = (Map<String, Object>) kryo.readClassAndObject(input);
+	    model.getSelectedSolverExtension().setConfig(configMap);
+	} catch (Exception e) {
+	    view.error("could not restore solver extension config: " + e.getMessage());
+	}
     }
     
     public void pasteSolverExtensionConfig() {

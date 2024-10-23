@@ -172,7 +172,7 @@ public class View extends JFrame {
 	openFileChooser.setFileFilter(new FileFilter() {
 	    @Override
 	    public String getDescription() {
-		return "NQueensFAF files";
+		return "Solver SavePoint Files";
 	    }
 	    @Override
 	    public boolean accept(File f) {
@@ -186,7 +186,7 @@ public class View extends JFrame {
 	saveFileChooser.setFileFilter(new FileFilter() {
 	    @Override
 	    public String getDescription() {
-		return "NQueensFAF files";
+		return "Solver SavePoint Files";
 	    }
 	    @Override
 	    public boolean accept(File f) {
@@ -201,7 +201,6 @@ public class View extends JFrame {
 	    public void actionPerformed(ActionEvent e) {
 		openFileChooser.showOpenDialog(View.this);
 		File selectedFile = openFileChooser.getSelectedFile();
-		
 		if(selectedFile != null)
 		    controller.restore(selectedFile);
 	    }
@@ -210,9 +209,8 @@ public class View extends JFrame {
 	var saveItem = new JMenuItem(new AbstractAction("Save") {
 	    @Override
 	    public void actionPerformed(ActionEvent e) {
-		saveFileChooser.showOpenDialog(View.this);
+		saveFileChooser.showSaveDialog(View.this);
 		File selectedFile = saveFileChooser.getSelectedFile();
-		
 		if(selectedFile != null)
 		    controller.manualSave(selectedFile);
 	    }
@@ -440,11 +438,49 @@ public class View extends JFrame {
     }
     
     private JToolBar createSolverExtensionToolBar() {
+	final var openFileChooser = new JFileChooser();
+	openFileChooser.setFileFilter(new FileFilter() {
+	    @Override
+	    public String getDescription() {
+		return "Solver Extension Config Files";
+	    }
+	    @Override
+	    public boolean accept(File f) {
+		return f.getName().endsWith(".sec");
+	    }
+	});
+	openFileChooser.setMultiSelectionEnabled(false);
+	openFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+	final var saveFileChooser = new JFileChooser();
+	saveFileChooser.setFileFilter(new FileFilter() {
+	    @Override
+	    public String getDescription() {
+		return "Solver Extension Config Files";
+	    }
+	    @Override
+	    public boolean accept(File f) {
+		return f.getName().endsWith(".sec");
+	    }
+	});
+	saveFileChooser.setMultiSelectionEnabled(false);
+	saveFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	
 	var saveConfigBtn = new JButton(Utils.getSaveIcon());
-	saveConfigBtn.addActionListener(e -> controller.saveCurrentSolverExtensionConfig(new File("")));
+	saveConfigBtn.addActionListener(e -> {
+	    saveFileChooser.showSaveDialog(View.this);
+	    File selectedFile = saveFileChooser.getSelectedFile();
+	    if(selectedFile != null)
+		controller.saveCurrentSolverExtensionConfig(selectedFile);
+	});
 	
 	var openConfigBtn = new JButton(Utils.getOpenIcon());
-	openConfigBtn.addActionListener(e -> controller.loadSolverExtensionConfig(new File("")));
+	openConfigBtn.addActionListener(e -> {
+	    saveFileChooser.showOpenDialog(View.this);
+	    File selectedFile = saveFileChooser.getSelectedFile();
+	    if(selectedFile != null)
+		controller.saveCurrentSolverExtensionConfig(selectedFile);
+	});
 	
 	var pasteConfigBtn = new JButton(Utils.getPasteIcon());
 	pasteConfigBtn.addActionListener(e -> controller.pasteSolverExtensionConfig());

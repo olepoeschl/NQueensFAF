@@ -54,6 +54,8 @@ public class CpuSolverExtension implements SolverExtension {
     
     @Override
     public void setConfig(Map<String, Object> configMap) {
+	if(!configMap.containsKey("cpu"))
+	    throw new IllegalArgumentException("invalid config for this solver");
 	for(var key : configMap.keySet()) {
 	    switch(key) {
 	    case "threads":
@@ -66,6 +68,7 @@ public class CpuSolverExtension implements SolverExtension {
     @Override
     public Map<String, Object> getConfig() {
 	var configMap = new HashMap<String, Object>();
+	configMap.put("cpu", null);
 	configMap.put("threads", configUi.getProperty("threads").getValue());
 	configMap.put("prequeens", configUi.getProperty("prequeens").getValue());
 	return configMap;
