@@ -169,24 +169,23 @@ public class Controller {
 	}
     }
     
-    // TODO: does the solver support this?
     private void save(File file) throws IOException {
-	var savePoint = model.getSelectedSolverExtension().getSolver().getSavePoint();
-	// TODO: really no error catching here? No Sign to the user, that nothing happened?
-	if(savePoint == null) // the selected solver does not support save & restore
-	    return;
+	if(model.getSelectedSolverExtension().getSolver().supportsSavePoints())
+	    view.error("Selected Solver does not support being saved");
+	
+	var savePoint = model.getSelectedSolverExtension().getSolver().createSavePoint();
 	
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
-
 	    var snapshot = new Snapshot(savePoint, model.getAutoSaveInterval());
 	    kryo.writeClassAndObject(output, snapshot);
-	    
 	    fireSolverSaved();
 	}
     }
 
-    // TODO: does the solver support this?
     public void restore(File file) {
+	if(model.getSelectedSolverExtension().getSolver().supportsSavePoints())
+	    view.error("Selected Solver does not support being restored");
+	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
 	
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(file)))) {
@@ -213,8 +212,7 @@ public class Controller {
 	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
-
-    // TODO: does the solver support this?
+    
     public void reset() {
 	model.getSelectedSolverExtension().getSolver().reset();
 	model.setRestored(false);

@@ -126,6 +126,8 @@ public class GpuSolver extends AbstractSolver {
 	this.presetQueens = presetQueens;
     }
 
+    // TODO: implement SavePoint-logic
+
     @Override
     public void save(String path) throws IOException {
 	if (!getExecutionState().isBusy())

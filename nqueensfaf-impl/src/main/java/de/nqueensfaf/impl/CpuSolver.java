@@ -72,6 +72,8 @@ public class CpuSolver extends AbstractSolver {
 	super.setN(n);
     }
 
+    // TODO: implement SavePoint-logic
+    
     @Override
     public void save(String path) throws IOException {
 	if (!getExecutionState().isBusy())

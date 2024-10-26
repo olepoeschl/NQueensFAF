@@ -111,7 +111,12 @@ public abstract class AbstractSolver implements Solver {
     }
     
     // TODO: docs
-    public SavePoint getSavePoint() {
+    public boolean supportsSavePoints() {
+	return false;
+    }
+    
+    // TODO: docs
+    public SavePoint createSavePoint() {
 	return null;
     }
     

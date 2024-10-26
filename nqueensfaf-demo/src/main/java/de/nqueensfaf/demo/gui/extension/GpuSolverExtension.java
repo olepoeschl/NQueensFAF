@@ -259,34 +259,66 @@ public class GpuSolverExtension implements SolverExtension {
 	if(!configMap.containsKey("gpu"))
 	    throw new IllegalArgumentException("invalid config for this solver");
 	
+	int toggleSelectionIndex = gpuSelectionTable.getColumnModel().getColumnIndex("X");
+	int nameIndex = gpuSelectionTable.getColumnModel().getColumnIndex("Name");
+	int weightIndex = gpuSelectionTable.getColumnModel().getColumnIndex("Weight");
+	int workgroupSizeIndex = gpuSelectionTable.getColumnModel().getColumnIndex("WGS");
+	
 	for(var key : configMap.keySet()) {
 	    switch(key) {
 	    case "prequeens":
-		configUi.getProperty(key).setValue(configMap.get(key));
+		    EventQueue.invokeLater(() -> 
+			configUi.getProperty(key).setValue(configMap.get(key)));
 		break;
 	    case "gpuSelection":
 		@SuppressWarnings("unchecked")
 		var gpuSelectionList = (ArrayList<String>) configMap.get(key);
+		var editedGpusRows = new boolean[gpuSelectionList.size()];
 		
 		for(var entry : gpuSelectionList) {
-		    var properties = entry.split("[0-9a-zA-Z]*,");
+		    var properties = entry.split(";;;");
 		    
-		    String name;
-		    boolean selected;
-		    int weight, workgroupSize;
-		    
+		    var propsArr = new Object[4];
 		    for(var prop : properties) {
-			if(prop.startsWith("name="))
-			    name = prop.substring(5);
-			else if(prop.startsWith("selected="))
-			    selected = Boolean.parseBoolean(prop.substring(9));
-			else if(prop.startsWith("weight="))
-			    weight = Integer.parseInt(prop.substring(7));
-			else if(prop.startsWith("workgroupSize="))
-			    workgroupSize = Integer.parseInt(prop.substring(14));
+			try {
+			    if(prop.startsWith("name="))
+				propsArr[0] = prop.substring(5);
+			    else if(prop.startsWith("selected="))
+				propsArr[3] = Boolean.parseBoolean(prop.substring(9));
+			    else if(prop.startsWith("weight="))
+				propsArr[1] = Integer.parseInt(prop.substring(7));
+			    else if(prop.startsWith("workgroupSize="))
+				propsArr[2] = Integer.parseInt(prop.substring(14));
+			} catch (Exception e) {
+			    throw new IllegalArgumentException("could not apply config: " + e.getMessage());
+			}
 		    }
+
+		    if(propsArr[0] == null)
+			throw new IllegalArgumentException("invalid gpu selection entry: no value for 'name'");
+		    if(propsArr[3] == null)
+			throw new IllegalArgumentException("invalid gpu selection entry: no value for 'selected'");
+		    if(propsArr[1] == null)
+			throw new IllegalArgumentException("invalid gpu selection entry: no value for 'weight'");
+		    if(propsArr[2] == null)
+			throw new IllegalArgumentException("invalid gpu selection entry: no value for 'workgroupSize'");
 		    
-		    // TODO: update table ui and solver data
+		    int row;
+		    inner: for(row = 0; row < gpuSelectionTable.getRowCount(); row++) {
+			var tableModel = gpuSelectionTable.getModel();
+			var finalRow = row;
+			if(!editedGpusRows[row] && tableModel.getValueAt(row, nameIndex).equals(propsArr[0])) {
+			    EventQueue.invokeLater(() -> {
+				// prevent a gpu from being added to or removed from the solver two times
+				if((boolean) tableModel.getValueAt(finalRow, toggleSelectionIndex) != (boolean) propsArr[3])
+				    tableModel.setValueAt(propsArr[3], finalRow, toggleSelectionIndex);
+				tableModel.setValueAt(propsArr[2], finalRow, workgroupSizeIndex);
+				tableModel.setValueAt(propsArr[1], finalRow, weightIndex);
+			    });
+			    editedGpusRows[row] = true;
+			    break inner;
+			}
+		    }
 		}
 		break;
 	    }
@@ -314,14 +346,15 @@ public class GpuSolverExtension implements SolverExtension {
 	    
 	    var stringBuilder = new StringBuilder();
 	    stringBuilder.append("name=").append(name);
-	    stringBuilder.append(',').append("selected=").append(selected);
-	    stringBuilder.append(',').append("weight=").append(weight);
-	    stringBuilder.append(',').append("workgroupSize=").append(workgroupSize);
+	    stringBuilder.append(";;;").append("selected=").append(selected);
+	    stringBuilder.append(";;;").append("weight=").append(weight);
+	    stringBuilder.append(";;;").append("workgroupSize=").append(workgroupSize);
 	    
 	    gpuSelectionList.add(stringBuilder.toString());
 	}
 	configMap.put("gpuSelection", gpuSelectionList);
 	
+	configMap.put("gpu", null);
 	return configMap;
     }
     

@@ -89,7 +89,7 @@ public interface Solver {
      * @see ExecutionState
      */
     ExecutionState getExecutionState();
-
+    
     /**
      * Saves the current state of a {@link Solver} into a file under the path
      * {@code path}.

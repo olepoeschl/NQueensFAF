@@ -202,6 +202,8 @@ public class View extends JFrame {
 		openFileChooser.showOpenDialog(View.this);
 		File selectedFile = openFileChooser.getSelectedFile();
 		if(selectedFile != null)
+		    if(!selectedFile.getAbsolutePath().endsWith(".faf"))
+			selectedFile = new File(selectedFile.getAbsolutePath() + ".faf");
 		    controller.restore(selectedFile);
 	    }
 	});
@@ -212,6 +214,8 @@ public class View extends JFrame {
 		saveFileChooser.showSaveDialog(View.this);
 		File selectedFile = saveFileChooser.getSelectedFile();
 		if(selectedFile != null)
+		    if(!selectedFile.getAbsolutePath().endsWith(".faf"))
+			selectedFile = new File(selectedFile.getAbsolutePath() + ".faf");
 		    controller.manualSave(selectedFile);
 	    }
 	});
@@ -442,11 +446,11 @@ public class View extends JFrame {
 	openFileChooser.setFileFilter(new FileFilter() {
 	    @Override
 	    public String getDescription() {
-		return "Solver Extension Config Files";
+		return "N-Queens Solver Config Files";
 	    }
 	    @Override
 	    public boolean accept(File f) {
-		return f.getName().endsWith(".sec");
+		return f.isDirectory() || f.getName().endsWith(".nqc");
 	    }
 	});
 	openFileChooser.setMultiSelectionEnabled(false);
@@ -456,11 +460,11 @@ public class View extends JFrame {
 	saveFileChooser.setFileFilter(new FileFilter() {
 	    @Override
 	    public String getDescription() {
-		return "Solver Extension Config Files";
+		return "N-Queens Solver Config Files";
 	    }
 	    @Override
 	    public boolean accept(File f) {
-		return f.getName().endsWith(".sec");
+		return f.isDirectory() || f.getName().endsWith(".nqc");
 	    }
 	});
 	saveFileChooser.setMultiSelectionEnabled(false);
@@ -471,19 +475,26 @@ public class View extends JFrame {
 	    saveFileChooser.showSaveDialog(View.this);
 	    File selectedFile = saveFileChooser.getSelectedFile();
 	    if(selectedFile != null)
+		if(!selectedFile.getAbsolutePath().endsWith(".nqc"))
+		    selectedFile = new File(selectedFile.getAbsolutePath() + ".nqc");
 		controller.saveCurrentSolverExtensionConfig(selectedFile);
 	});
+	saveConfigBtn.setToolTipText("Save the current configuration of this solver");
 	
 	var openConfigBtn = new JButton(Utils.getOpenIcon());
 	openConfigBtn.addActionListener(e -> {
 	    saveFileChooser.showOpenDialog(View.this);
 	    File selectedFile = saveFileChooser.getSelectedFile();
 	    if(selectedFile != null)
-		controller.saveCurrentSolverExtensionConfig(selectedFile);
+		if(!selectedFile.getAbsolutePath().endsWith(".nqc"))
+		    selectedFile = new File(selectedFile.getAbsolutePath() + ".nqc");
+		controller.loadSolverExtensionConfig(selectedFile);
 	});
+	openConfigBtn.setToolTipText("Load a saved configuration for this solver");
 	
 	var pasteConfigBtn = new JButton(Utils.getPasteIcon());
 	pasteConfigBtn.addActionListener(e -> controller.pasteSolverExtensionConfig());
+	pasteConfigBtn.setToolTipText("Apply a solver configuration that was copied from a History or Record entry");
 	
 	var toolBar = new JToolBar();
 	toolBar.setBackground(ACCENT_COLOR);
@@ -617,10 +628,14 @@ public class View extends JFrame {
     }
     
     public static void error(Component parent, String message) {
-	JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
+	EventQueue.invokeLater(() -> 
+		JOptionPane.showMessageDialog(
+			parent, message, "Error", JOptionPane.ERROR_MESSAGE));
     }
 
     public void info(String message, String title) {
-	JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
+	EventQueue.invokeLater(() -> 
+		JOptionPane.showMessageDialog(
+			this, message, title, JOptionPane.INFORMATION_MESSAGE));
     }
 }

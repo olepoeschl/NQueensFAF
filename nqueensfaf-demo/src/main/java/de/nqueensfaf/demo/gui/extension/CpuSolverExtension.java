@@ -1,5 +1,6 @@
 package de.nqueensfaf.demo.gui.extension;
 
+import java.awt.EventQueue;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,7 +61,8 @@ public class CpuSolverExtension implements SolverExtension {
 	    switch(key) {
 	    case "threads":
 	    case "prequeens":
-		configUi.getProperty(key).setValue(configMap.get(key));
+		EventQueue.invokeLater(() -> 
+			configUi.getProperty(key).setValue(configMap.get(key)));
 	    }
 	}
     }

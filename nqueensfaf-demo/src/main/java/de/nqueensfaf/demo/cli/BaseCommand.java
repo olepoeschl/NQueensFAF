@@ -72,6 +72,7 @@ public class BaseCommand {
 			&& (autoSaveFuture == null || autoSaveFuture.isDone())) {
 		    autoSaveFuture = autoSaveExecutorService.submit(() -> {
 			try {
+			    // TODO
 			    solver.save(solver.getN() + "-queens.faf");
 			} catch (IOException e) {
 			    System.err.println("could not save solver state: " + e.getMessage());
@@ -126,6 +127,7 @@ public class BaseCommand {
 
 	if (NOrFile.path != null) {
 	    try {
+		// TODO
 		solver.load(NOrFile.path);
 	    } catch (IOException e) {
 		throw new IOException("could not apply solver config: " + e.getMessage(), e);
