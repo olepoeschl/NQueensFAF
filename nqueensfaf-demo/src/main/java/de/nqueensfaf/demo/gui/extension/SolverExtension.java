@@ -30,8 +30,6 @@ public interface SolverExtension {
     
     default void onSolverRestored() {}
     
-    default void onSolverReset() {}
-    
     AbstractSolver getSolver();
     
     String getName();

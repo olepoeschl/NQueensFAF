@@ -30,7 +30,7 @@ public class CpuSolverExtension implements SolverExtension {
 	
 	configUi = propConfigUi;
     }
-
+    
     @Override
     public AbstractSolver getSolver() {
 	return solver;

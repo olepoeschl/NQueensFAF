@@ -14,14 +14,18 @@ public class Model {
 
     private final PropertyChangeSupport prop = new PropertyChangeSupport(this);
     
-    private Settings settings = new Settings(120);
-    
     private final SolverExtension[] solverExtensions;
     private int selectedSolverExtensionIdx = 0;
     private final SymSolver[] symSolvers;
+
+    private static final int defaultN = 16;
+    private static final int defaultAutoSaveInterval = 0;
+    private static final int defaultUpdateInterval = 120;
     
-    private int n = 16;
-    private int autoSaveInterval = 0;
+    private Settings settings = new Settings(defaultUpdateInterval);
+    
+    private int n = defaultN;
+    private int autoSaveInterval = defaultAutoSaveInterval;
 
     private float progress;
     private long solutions;

@@ -24,6 +24,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
+import de.nqueensfaf.impl.GpuSolver.GpuSavePoint;
 
 public class CpuSolver extends AbstractSolver {
 
@@ -39,7 +40,7 @@ public class CpuSolver extends AbstractSolver {
     private final Kryo kryo = new Kryo();
 
     public CpuSolver() {
-	kryo.register(CpuSolverProgressState.class);
+	kryo.register(CpuSavePoint.class);
 	kryo.register(ArrayList.class);
 	kryo.register(Constellation.class);
     }
@@ -72,7 +73,30 @@ public class CpuSolver extends AbstractSolver {
 	super.setN(n);
     }
 
-    // TODO: implement SavePoint-logic
+    @Override
+    public boolean supportsSavePoints() {
+	return true;
+    }
+    
+    @Override
+    public SavePoint createSavePoint() {
+	// TODO: create a deep copy of constellations and return that
+	return new CpuSavePoint(getN(), getDuration(), constellations);
+    }
+    
+    @Override
+    public void restoreSavePoint(SavePoint savePoint) {
+	if(savePoint instanceof CpuSavePoint) {
+	    var cpuSavePoint = (CpuSavePoint) savePoint;
+	    load(cpuSavePoint.n(), cpuSavePoint.storedDuration(), cpuSavePoint.constellations());
+	} else if(savePoint instanceof GpuSavePoint) {
+	    // CpuSavePoint and GpuSavePoint are identical
+	    var gpuSavePoint = (GpuSavePoint) savePoint;
+	    load(gpuSavePoint.n(), gpuSavePoint.storedDuration(), gpuSavePoint.constellations());
+	} else {
+	    throw new IllegalArgumentException("this SavePoint is instance of ('" + savePoint.getClass().getName() + "'), which is not compatible with CpuSolver");
+	}
+    }
     
     @Override
     public void save(String path) throws IOException {
@@ -80,7 +104,7 @@ public class CpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
 
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(path)))) {
-	    kryo.writeObject(output, new CpuSolverProgressState(getN(), getDuration(), constellations));
+	    kryo.writeObject(output, new CpuSavePoint(getN(), getDuration(), constellations));
 	    output.flush();
 	} catch (IOException e) {
 	    throw new IOException("could not write cpu solver progress to file: " + e.getMessage(), e);
@@ -93,7 +117,7 @@ public class CpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("solver progress can only be restored from a file when idle");
 
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
-	    CpuSolverProgressState progress = kryo.readObject(input, CpuSolverProgressState.class);
+	    CpuSavePoint progress = kryo.readObject(input, CpuSavePoint.class);
 	    load(progress.n(), progress.storedDuration(), progress.constellations());
 	} catch (Exception e) {
 	    throw new IOException("could not read solver state from file: " + e.getMessage(), e);
@@ -202,7 +226,39 @@ public class CpuSolver extends AbstractSolver {
 	stateLoaded = false;
     }
 
-    private record CpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
+    public static record CpuSavePoint(int n, long storedDuration, List<Constellation> constellations) implements SavePoint {
+	
+	@Override
+	public int getN() {
+	    return n;
+	}
+
+	@Override
+	public long getSolutions() {
+	    long solutions = 0;
+	    for (var c : constellations) {
+		if (c.getSolutions() >= 0) {
+		    solutions += c.getSolutions();
+		}
+	    }
+	    return solutions;
+	}
+
+	@Override
+	public float getProgress() {
+	    int solvedConstellations = 0;
+	    for (var c : constellations) {
+		if (c.getSolutions() >= 0) {
+		    solvedConstellations++;
+		}
+	    }
+	    return (float) solvedConstellations / constellations.size();
+	}
+	
+	@Override
+	public long getDuration() {
+	    return storedDuration;
+	}
     }
 
     // worker thread

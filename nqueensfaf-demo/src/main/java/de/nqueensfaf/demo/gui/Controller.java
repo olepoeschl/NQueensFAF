@@ -98,8 +98,8 @@ public class Controller {
 
 	    @Override
 	    public void solverReset() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverReset();
+		model.getSelectedSolverExtension().getSolver().reset();
+		model.updateSolverProgress(0, 0, 0, 0);
 	    }
 	});
 	
@@ -124,7 +124,8 @@ public class Controller {
 	solver.onProgressUpdate(onProgressUpdate);
 	solver.onFinish(onFinish);
 	solver.onCancel(onCancel);
-	solver.setN(model.getN());
+	if(!model.isRestored()) // setN() does not work when the solver is restored
+	    solver.setN(model.getN());
 	solver.setUpdateInterval(model.getSettings().getUpdateInterval());
 	
 	final var symSolver = model.configureAndGetSymSolver();
@@ -170,8 +171,10 @@ public class Controller {
     }
     
     private void save(File file) throws IOException {
-	if(model.getSelectedSolverExtension().getSolver().supportsSavePoints())
+	if(!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
 	    view.error("Selected Solver does not support being saved");
+	    return;
+	}
 	
 	var savePoint = model.getSelectedSolverExtension().getSolver().createSavePoint();
 	
@@ -183,8 +186,10 @@ public class Controller {
     }
 
     public void restore(File file) {
-	if(model.getSelectedSolverExtension().getSolver().supportsSavePoints())
+	if(!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
 	    view.error("Selected Solver does not support being restored");
+	    return;
+	}
 	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
 	
