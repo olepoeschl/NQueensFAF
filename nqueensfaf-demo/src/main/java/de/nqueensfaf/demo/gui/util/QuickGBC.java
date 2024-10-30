@@ -1,4 +1,4 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.gui.util;
 
 import java.awt.GridBagConstraints;
 import java.awt.Insets;

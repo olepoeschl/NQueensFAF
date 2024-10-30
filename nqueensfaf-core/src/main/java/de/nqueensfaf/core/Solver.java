@@ -89,7 +89,7 @@ public interface Solver {
      * @see ExecutionState
      */
     ExecutionState getExecutionState();
-
+    
     /**
      * Saves the current state of a {@link Solver} into a file under the path
      * {@code path}.
@@ -113,13 +113,11 @@ public interface Solver {
     default void load(String path) throws IOException {
 	throw new UnsupportedOperationException("Not implemented");
     }
-
+    
     /**
      * Resets the solver after a file was loaded, so that it can be used normally again.
      * 
      * @see #load(String)
      */
-    default void reset() {
-	throw new UnsupportedOperationException("Not implemented");
-    }
+    default void reset() {}
 }

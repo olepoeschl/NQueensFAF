@@ -1,12 +1,10 @@
 package de.nqueensfaf.demo;
 
-import java.awt.EventQueue;
-
 import com.formdev.flatlaf.FlatLightLaf;
 
 import de.nqueensfaf.demo.cli.BaseCommand;
 import de.nqueensfaf.demo.cli.ExceptionHandler;
-import de.nqueensfaf.demo.gui.MainFrame;
+import de.nqueensfaf.demo.gui.Controller;
 import picocli.CommandLine;
 
 public class Main {
@@ -18,7 +16,8 @@ public class Main {
 	if (args.length == 0) {
 	    // show gui
 	    FlatLightLaf.setup();
-	    EventQueue.invokeLater(MainFrame::new);
+	    var controller = new Controller();
+	    controller.createAndShowView();
 	} else {
 	    // handle command line arguments
 	    ExceptionHandler exceptionHandler = new ExceptionHandler();

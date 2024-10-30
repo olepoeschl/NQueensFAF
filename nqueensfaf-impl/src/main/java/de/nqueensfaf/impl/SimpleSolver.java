@@ -7,6 +7,8 @@ public class SimpleSolver extends AbstractSolver {
     private long solutions = 0;
     private long duration = 0;
     private float progress = 0;
+    
+    private long start = 0;
 
     public SimpleSolver() {
     }
@@ -20,7 +22,7 @@ public class SimpleSolver extends AbstractSolver {
 	solutions = duration = 0;
 	progress = 0;
 	
-	long start = System.currentTimeMillis();
+	start = System.currentTimeMillis();
 
 	int mask = (1 << getN()) - 1;
 	backtrack(0, 0, 0, 0, mask, mask);
@@ -50,7 +52,9 @@ public class SimpleSolver extends AbstractSolver {
 
     @Override
     public long getDuration() {
-	return duration;
+	if(duration != 0)
+	    return duration;
+	return System.currentTimeMillis() - start;
     }
     
     @Override

@@ -2,32 +2,29 @@ package de.nqueensfaf.demo.gui;
 
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
-import javax.swing.JPanel;
+
+import de.nqueensfaf.demo.gui.extension.PropertyGroupConfigUi;
 
 @SuppressWarnings("serial")
 class SettingsDialog extends JDialog {
     
-    public SettingsDialog(Frame owner, MainModel model) {
+    public SettingsDialog(Frame owner, int initialUpdateInterval, int initialAutoSaveInterval) {
 	super(owner, "Settings", true);
 	
-	var container = new JPanel(new GridBagLayout());
-	container.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	var propConfigUi = new PropertyGroupConfigUi();
+	propConfigUi.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+	propConfigUi.addIntProperty("updateInterval", "Update Interval", 0, 60_000, initialUpdateInterval);
+	propConfigUi.getProperty("updateInterval").addChangeListener(e -> firePropertyChange("updateInterval", null, (int) e.getNewValue()));
+	propConfigUi.addIntProperty("autoSaveInterval", "Auto Save Interval", 0, 100, initialAutoSaveInterval);
+	propConfigUi.getProperty("autoSaveInterval").addChangeListener(e -> firePropertyChange("autoSaveInterval", null, (int) e.getNewValue()));
 	
-	var propConfigUi = new PropertyGroupConfigUi(container);
-	propConfigUi.addIntProperty("updateInterval", "Update Interval", 0, 60_000, model.getUpdateInterval());
-	propConfigUi.addPropertyChangeListener("updateInterval", e -> model.setUpdateInterval((int) e.getNewValue()));
-	propConfigUi.addIntProperty("autoSaveInterval", "Auto Save Interval", 0, 100, model.getAutoSaveInterval());
-	propConfigUi.addPropertyChangeListener("autoSaveInterval", e -> model.setAutoSaveInterval((int) e.getNewValue()));
-	
-	setContentPane(container);
+	setContentPane(propConfigUi);
 	pack();
 	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	setLocation(screenSize.width / 2 - getPreferredSize().width / 2, screenSize.height / 2 - getPreferredSize().height / 2);
-	
     }
 }
