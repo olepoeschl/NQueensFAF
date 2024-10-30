@@ -4,14 +4,18 @@ import java.awt.GridBagLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.plaf.basic.BasicArrowButton;
+
+import de.nqueensfaf.demo.gui.extension.SolverExtensionConfigClipboard;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
+import de.nqueensfaf.demo.gui.util.Utils;
 
 @SuppressWarnings("serial")
 class RecordsFrame extends JFrame {
@@ -40,7 +44,7 @@ class RecordsFrame extends JFrame {
 	
 	// n configuration ui
 	var nEqLbl = new JLabel("N=");
-	nEqLbl.setFont(MainFrame.CAPTION_FONT);
+	nEqLbl.setFont(View.CAPTION_FONT);
 	nEqLbl.setHorizontalAlignment(JLabel.CENTER);
 	
 	var prevNBtn = new BasicArrowButton(BasicArrowButton.WEST);
@@ -52,7 +56,7 @@ class RecordsFrame extends JFrame {
 	nextNBtn.setFocusable(false);
 	
 	nLbl = new JLabel(Integer.toString(n));
-	nLbl.setFont(MainFrame.HIGHLIGHT_FONT);
+	nLbl.setFont(View.HIGHLIGHT_FONT);
 	nLbl.setHorizontalAlignment(JLabel.CENTER);
 	
 	add(nEqLbl, new QuickGBC(0, 0).size(3, 1).anchor(QuickGBC.ANCHOR_CENTER));
@@ -118,24 +122,29 @@ class RecordsFrame extends JFrame {
 	}
 	
 	final var recordsSortedByDuration = new ArrayList<>(recordsByN.entrySet());
-	recordsSortedByDuration.sort(Entry.comparingByValue());
+	recordsSortedByDuration.sort((entry1, entry2) -> Long.compare(entry1.getValue().duration(), entry2.getValue().duration()));
 	
 	int y = 0;
 	for(var record : recordsSortedByDuration) {
 	    String device = record.getKey();
-	    long duration = record.getValue();
+	    long duration = record.getValue().duration();
 	    
 	    var deviceLbl = new JLabel(device + ":");
-	    deviceLbl.setFont(MainFrame.CAPTION_FONT);
+	    deviceLbl.setFont(View.CAPTION_FONT);
 	    deviceLbl.setHorizontalAlignment(JLabel.LEFT);
 	    
-	    var durationLbl = new JLabel(ResultsPanel.getDurationString(duration));
-	    durationLbl.setFont(MainFrame.CAPTION_FONT);
+	    var durationLbl = new JLabel(Utils.getDurationString(duration));
+	    durationLbl.setFont(View.CAPTION_FONT);
 	    durationLbl.setHorizontalAlignment(JLabel.RIGHT);
 	    
+	    var copyConfigBtn = new JButton(Utils.getCopyIcon());
+	    copyConfigBtn.setToolTipText("Copy the used Configuration");
+	    copyConfigBtn.addActionListener(e -> SolverExtensionConfigClipboard.getInstance().set(record.getValue().configMap()));
+	    
 	    int topGap = 5;
-	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
-	    panel.add(durationLbl, new QuickGBC(1, y).top(topGap).left(20).weight(0.5, 0).fillx().anchor(QuickGBC.ANCHOR_NORTHEAST));
+	    panel.add(deviceLbl, new QuickGBC(0, y).top(topGap).weight(0.5, 0).fillx());
+	    panel.add(durationLbl, new QuickGBC(1, y).top(topGap).left(20).weight(0.5, 0).fillx());
+	    panel.add(copyConfigBtn, new QuickGBC(2, y).top(topGap).left(5).weight(0, 0));
 	    
 	    y++;
 	}

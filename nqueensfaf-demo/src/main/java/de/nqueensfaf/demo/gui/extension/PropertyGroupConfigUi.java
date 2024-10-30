@@ -1,6 +1,6 @@
-package de.nqueensfaf.demo.gui;
+package de.nqueensfaf.demo.gui.extension;
 
-import static de.nqueensfaf.demo.gui.QuickGBC.*;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -24,55 +24,39 @@ import javax.swing.JSlider;
 import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.text.NumberFormatter;
 
-class PropertyGroupConfigUi {
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
-    private GridBagLayout layout = new GridBagLayout();
+@SuppressWarnings("serial")
+public class PropertyGroupConfigUi extends JPanel {
+
     private int gridy = 0;
 
     private Map<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
-    private final JPanel panel;
-
-    PropertyGroupConfigUi() {
-	this(new JPanel());
+    public PropertyGroupConfigUi() {
+	setLayout(new GridBagLayout());
     }
 
-    PropertyGroupConfigUi(JPanel panel) {
-	this.panel = panel;
-	panel.setLayout(layout);
-    }
-
-    JPanel getUi() {
-	return panel;
-    }
-
-    AbstractProperty<?> getProperty(String propertyName) {
+    public  AbstractProperty<?> getProperty(String propertyName) {
 	return properties.get(propertyName);
     }
-
-    void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	properties.get(propertyName).addPropertyChangeListener(propertyName, l);
-    }
-
-    void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	properties.get(propertyName).removePropertyChangeListener(propertyName, l);
-    }
-
-    void setEnabled(boolean enabled) {
+    
+    @Override
+    public void setEnabled(boolean enabled) {
 	for (var prop : properties.values()) {
 	    prop.setEnabled(enabled);
 	}
     }
 
-    <T extends AbstractProperty<?>> void addProperty(T property) {
+    public <T extends AbstractProperty<?>> void addProperty(T property) {
 	property.createUi();
 	installPropertyUi(property);
 	properties.put(property.getName(), property);
     }
     
-    void installPropertyUi(AbstractProperty<?> property) {
+    private void installPropertyUi(AbstractProperty<?> property) {
 	if(properties.size() > 0)
-	    panel.add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
+	    add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
 	
 	int maxGridy = 0;
 	
@@ -81,23 +65,23 @@ class PropertyGroupConfigUi {
 	    if(entry.getValue().gridy > maxGridy)
 		maxGridy = entry.getValue().gridy;
 	    
-	    panel.add(entry.getKey(), entry.getValue());
+	    add(entry.getKey(), entry.getValue());
 	}
 	
 	gridy = maxGridy + 1;
     }
 
     // only text input
-    void addIntProperty(String name, String title, int min, int max, int value) {
+    public void addIntProperty(String name, String title, int min, int max, int value) {
 	addIntProperty(name, title, min, max, value, 0);
     }
 
     // text input, slider, + and - buttons
-    void addIntProperty(String name, String title, int min, int max, int value, int step) {
+    public void addIntProperty(String name, String title, int min, int max, int value, int step) {
 	addProperty(new IntProperty(name, title, min, max, value, step));
     }
 
-    static abstract class AbstractProperty<T> {
+    public static abstract class AbstractProperty<T> {
 
 	private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
 
@@ -113,15 +97,11 @@ class PropertyGroupConfigUi {
 	    this.value = value;
 	}
 
-	final void addPropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	    prop.addPropertyChangeListener(propertyName, l);
+	public final void addChangeListener(PropertyChangeListener l) {
+	    prop.addPropertyChangeListener(l);
 	}
 
-	final void removePropertyChangeListener(String propertyName, PropertyChangeListener l) {
-	    prop.removePropertyChangeListener(propertyName, l);
-	}
-
-	final void add(JComponent component, GridBagConstraints constraints) {
+	public final void add(JComponent component, GridBagConstraints constraints) {
 	    componentsWithConstraints
 		    .add(new AbstractMap.SimpleEntry<JComponent, GridBagConstraints>(component, constraints));
 	}
@@ -138,15 +118,17 @@ class PropertyGroupConfigUi {
 	    return title;
 	}
 
-	final T getValue() {
+	public final T getValue() {
 	    return value;
 	}
 
-	final void setValue(T value) {
+	public final void setValue(Object object) {
+	    @SuppressWarnings("unchecked")
+	    var newValue = (T) object;
 	    T oldValue = this.value;
-	    this.value = value;
-	    updateUi(value);
-	    prop.firePropertyChange(name, oldValue, value);
+	    this.value = newValue;
+	    updateUi(newValue);
+	    prop.firePropertyChange(name, oldValue, newValue);
 	}
 
 	void createUi() {
@@ -163,7 +145,7 @@ class PropertyGroupConfigUi {
 	abstract void setEnabled(boolean enabled);
     }
 
-    static class IntProperty extends AbstractProperty<Integer> {
+    public static class IntProperty extends AbstractProperty<Integer> {
 
 	final int min, max, step;
 
@@ -251,6 +233,10 @@ class PropertyGroupConfigUi {
     }
 
     public void fillRemainingVerticalSpace() {
-	panel.add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
+	add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
+    }
+    
+    public int getNextFreeY() {
+	return gridy;
     }
 }

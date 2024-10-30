@@ -81,6 +81,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver;
 import de.nqueensfaf.core.ExecutionState;
+import de.nqueensfaf.impl.CpuSolver.CpuSavePoint;
 
 public class GpuSolver extends AbstractSolver {
 
@@ -101,7 +102,7 @@ public class GpuSolver extends AbstractSolver {
     private final Kryo kryo = new Kryo();
 
     public GpuSolver() {
-	kryo.register(GpuSolverProgressState.class);
+	kryo.register(GpuSavePoint.class);
 	kryo.register(ArrayList.class);
 	kryo.register(Constellation.class);
 
@@ -112,6 +113,8 @@ public class GpuSolver extends AbstractSolver {
     public void setN(int n) {
 	if(stateLoaded)
 	    throw new IllegalStateException("could not change N because a solver state was loaded");
+	if(n < 6)
+	    throw new IllegalArgumentException("GpuSolver is only applicable for N>=6");
 	super.setN(n);
     }
 
@@ -123,14 +126,40 @@ public class GpuSolver extends AbstractSolver {
     public void setPresetQueens(int presetQueens) {
 	this.presetQueens = presetQueens;
     }
-
+    
+    @Override
+    public boolean supportsSavePoints() {
+	return true;
+    }
+    
+    @Override
+    public SavePoint createSavePoint() {
+	// TODO: create a deep copy of constellations and return that
+	return new GpuSavePoint(getN(), getDuration(), constellations);
+    }
+    
+    @Override
+    public void restoreSavePoint(SavePoint savePoint) {
+	if(savePoint instanceof GpuSavePoint) {
+	    var gpuSavePoint = (GpuSavePoint) savePoint;
+	    load(gpuSavePoint.n(), gpuSavePoint.storedDuration(), gpuSavePoint.constellations());
+	} else if(savePoint instanceof CpuSavePoint) {
+	    // CpuSavePoint and GpuSavePoint are identical
+	    var cpuSavePoint = (CpuSavePoint) savePoint;
+	    load(cpuSavePoint.n(), cpuSavePoint.storedDuration(), cpuSavePoint.constellations());
+	} else {
+	    throw new IllegalArgumentException("this SavePoint is instance of ('"
+		    + savePoint.getClass().getName() + "'), which is not compatible with GpuSolver");
+	}
+    }
+    
     @Override
     public void save(String path) throws IOException {
 	if (!getExecutionState().isBusy())
 	    throw new IllegalStateException("progress of CpuSolver can only be saved during the solving process");
 
 	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(path)))) {
-	    kryo.writeObject(output, new GpuSolverProgressState(getN(), getDuration(), constellations));
+	    kryo.writeObject(output, new GpuSavePoint(getN(), getDuration(), constellations));
 	    output.flush();
 	} catch (IOException e) {
 	    throw new IOException("could not write cpu solver progress to file: " + e.getMessage(), e);
@@ -143,7 +172,7 @@ public class GpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("solver progress can only be restored from a file when idle");
 
 	try (Input input = new Input(new GZIPInputStream(new FileInputStream(path)))) {
-	    GpuSolverProgressState progress = kryo.readObject(input, GpuSolverProgressState.class);
+	    GpuSavePoint progress = kryo.readObject(input, GpuSavePoint.class);
 	    load(progress.n(), progress.storedDuration(), progress.constellations());
 	} catch (Exception e) {
 	    throw new IOException("could not load solver state from file: " + e.getMessage(), e);
@@ -251,7 +280,9 @@ public class GpuSolver extends AbstractSolver {
     @Override
     public void solve() {
 	if (gpuSelection.get().size() == 0)
-	    throw new IllegalStateException("could not run GPUSolver: no GPUs selected");
+	    throw new IllegalStateException("could not run GpuSolver: no GPUs selected");
+	if(presetQueens >= getN() - 1)
+	    throw new IllegalStateException("could not run GpuSolver: number of pre-placed queens must be lower than N-1");
 	
 	duration = 0;
 	start = System.currentTimeMillis();
@@ -471,7 +502,39 @@ public class GpuSolver extends AbstractSolver {
 	constellations.add(new Constellation((1 << getN()) - 1, (1 << getN()) - 1, (1 << getN()) - 1, (69 << 20), -2));
     }
 
-    private record GpuSolverProgressState(int n, long storedDuration, List<Constellation> constellations) {
+    public static record GpuSavePoint(int n, long storedDuration, List<Constellation> constellations) implements SavePoint {
+
+	@Override
+	public int getN() {
+	    return n;
+	}
+
+	@Override
+	public long getSolutions() {
+	    long solutions = 0;
+	    for (var c : constellations) {
+		if (c.getSolutions() >= 0) {
+		    solutions += c.getSolutions();
+		}
+	    }
+	    return solutions;
+	}
+
+	@Override
+	public float getProgress() {
+	    int solvedConstellations = 0;
+	    for (var c : constellations) {
+		if (c.getSolutions() >= 0) {
+		    solvedConstellations++;
+		}
+	    }
+	    return (float) solvedConstellations / constellations.size();
+	}
+	
+	@Override
+	public long getDuration() {
+	    return storedDuration;
+	}
     }
 
     public final class GpuSelection {

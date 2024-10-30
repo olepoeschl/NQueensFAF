@@ -109,6 +109,21 @@ public abstract class AbstractSolver implements Solver {
     public final ExecutionState getExecutionState() {
 	return executionState;
     }
+    
+    // TODO: docs
+    public boolean supportsSavePoints() {
+	return false;
+    }
+    
+    // TODO: docs
+    public SavePoint createSavePoint() {
+	return null;
+    }
+    
+    // TODO: docs
+    public void restoreSavePoint(SavePoint savePoint) {
+	// no-op as default
+    }
 
     /**
      * Sets the callback that is executed when {@link #start()} is called, just
@@ -199,6 +214,18 @@ public abstract class AbstractSolver implements Solver {
 	return updateInterval;
     }
 
+    // TODO: docs
+    public static interface SavePoint {
+	
+	int getN();
+	
+	long getSolutions();
+	
+	long getDuration();
+	
+	float getProgress();
+    }
+    
     /**
      * Defines the interface of a consumer callback to be executed on progress
      * updates of the {@link Solver}.
