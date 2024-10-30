@@ -67,6 +67,10 @@ public class Controller {
 	    public void solverFinished() {
 		for(var solverExtension : model.getSolverExtensions())
 		    solverExtension.onSolverFinished();
+		
+		var solver = model.getSelectedSolverExtension().getSolver();
+		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
+			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()), solver.getDuration());
 	    }
 
 	    @Override
@@ -77,6 +81,9 @@ public class Controller {
 	    
 	    @Override
 	    public void solverTerminated() {
+		for(var solverExtension : model.getSolverExtensions())
+		    solverExtension.onSolverTerminated();
+		
 		var solver = model.getSelectedSolverExtension().getSolver();
 		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
 			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()),
@@ -213,6 +220,7 @@ public class Controller {
 	    
 	} catch (Exception e) {
 	    view.error("could not restore solver: " + e.getMessage());
+	    reset();
 	}
 	
 	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));

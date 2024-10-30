@@ -75,4 +75,14 @@ public class CpuSolverExtension implements SolverExtension {
 	configMap.put("prequeens", configUi.getProperty("prequeens").getValue());
 	return configMap;
     }
+    
+    @Override
+    public void onSolverStarted() {
+	configUi.setEnabled(false);
+    }
+    
+    @Override
+    public void onSolverTerminated() {
+	configUi.setEnabled(true);
+    }
 }

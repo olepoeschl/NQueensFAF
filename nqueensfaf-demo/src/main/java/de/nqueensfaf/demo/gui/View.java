@@ -201,10 +201,11 @@ public class View extends JFrame {
 	    public void actionPerformed(ActionEvent e) {
 		openFileChooser.showOpenDialog(View.this);
 		File selectedFile = openFileChooser.getSelectedFile();
-		if(selectedFile != null)
+		if(selectedFile != null) {
 		    if(!selectedFile.getAbsolutePath().endsWith(".faf"))
 			selectedFile = new File(selectedFile.getAbsolutePath() + ".faf");
 		    controller.restore(selectedFile);
+		}
 	    }
 	});
 	
@@ -213,10 +214,11 @@ public class View extends JFrame {
 	    public void actionPerformed(ActionEvent e) {
 		saveFileChooser.showSaveDialog(View.this);
 		File selectedFile = saveFileChooser.getSelectedFile();
-		if(selectedFile != null)
+		if(selectedFile != null) {
 		    if(!selectedFile.getAbsolutePath().endsWith(".faf"))
 			selectedFile = new File(selectedFile.getAbsolutePath() + ".faf");
 		    controller.manualSave(selectedFile);
+		}
 	    }
 	});
 	saveItem.setEnabled(false);
@@ -398,7 +400,6 @@ public class View extends JFrame {
 	    @Override
 	    public void solverStarted() {
 		EventQueue.invokeLater(() -> {
-		    solverSelectionPanel.getSelectedComponent().setEnabled(false);
 		    for(int i = 0; i < solverSelectionPanel.getTabCount(); i++) {
 			if(i == solverSelectionPanel.getSelectedIndex())
 			    continue;
@@ -474,10 +475,11 @@ public class View extends JFrame {
 	saveConfigBtn.addActionListener(e -> {
 	    saveFileChooser.showSaveDialog(View.this);
 	    File selectedFile = saveFileChooser.getSelectedFile();
-	    if(selectedFile != null)
+	    if(selectedFile != null) {
 		if(!selectedFile.getAbsolutePath().endsWith(".nqc"))
 		    selectedFile = new File(selectedFile.getAbsolutePath() + ".nqc");
 		controller.saveCurrentSolverExtensionConfig(selectedFile);
+	    }
 	});
 	saveConfigBtn.setToolTipText("Save the current configuration of this solver");
 	
@@ -485,10 +487,11 @@ public class View extends JFrame {
 	openConfigBtn.addActionListener(e -> {
 	    saveFileChooser.showOpenDialog(View.this);
 	    File selectedFile = saveFileChooser.getSelectedFile();
-	    if(selectedFile != null)
+	    if(selectedFile != null) {
 		if(!selectedFile.getAbsolutePath().endsWith(".nqc"))
 		    selectedFile = new File(selectedFile.getAbsolutePath() + ".nqc");
 		controller.loadSolverExtensionConfig(selectedFile);
+	    }
 	});
 	openConfigBtn.setToolTipText("Load a saved configuration for this solver");
 	

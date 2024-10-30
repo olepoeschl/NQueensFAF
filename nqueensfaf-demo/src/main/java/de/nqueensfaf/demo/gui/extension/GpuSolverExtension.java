@@ -26,6 +26,7 @@ public class GpuSolverExtension implements SolverExtension {
     
     private PropertyGroupConfigUi configUi;
     private JTable gpuSelectionTable;
+    private JButton autoWeightButton;
     
     public GpuSolverExtension() {
 	createConfigUi();
@@ -44,7 +45,7 @@ public class GpuSolverExtension implements SolverExtension {
 	configUi = propConfigUi;
 	
 	if(solver.getAvailableGpus().size() > 1) {
-	    var autoWeightButton = new JButton("Auto-Configure GPU Weights");
+	    autoWeightButton = new JButton("Auto-Configure GPU Weights");
 	    autoWeightButton.addActionListener(e -> autoWeight((DefaultTableModel) gpuSelectionTable.getModel()));
 	    propConfigUi.add(autoWeightButton, new QuickGBC(0, gridy).size(4, 1).weight(1, 0).anchor(QuickGBC.ANCHOR_CENTER).bottom(5));
 	}
@@ -368,6 +369,22 @@ public class GpuSolverExtension implements SolverExtension {
 	    return "Intel";
 	else
 	    return vendor;
+    }
+    
+    @Override
+    public void onSolverStarted() {
+	EventQueue.invokeLater(() -> {
+	    configUi.setEnabled(false);
+	    autoWeightButton.setEnabled(false);
+	});
+    }
+    
+    @Override
+    public void onSolverTerminated() {
+	EventQueue.invokeLater(() -> {
+	    configUi.setEnabled(true);
+	    autoWeightButton.setEnabled(true);
+	});
     }
 
 }
