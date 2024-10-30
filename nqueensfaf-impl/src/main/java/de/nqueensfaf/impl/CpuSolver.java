@@ -80,8 +80,8 @@ public class CpuSolver extends AbstractSolver {
     
     @Override
     public SavePoint createSavePoint() {
-	// TODO: create a deep copy of constellations and return that
-	return new CpuSavePoint(getN(), getDuration(), constellations);
+	var currentConstellations = kryo.copy(constellations);
+	return new CpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override

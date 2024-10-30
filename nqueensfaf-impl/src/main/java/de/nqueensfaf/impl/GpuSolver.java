@@ -134,8 +134,8 @@ public class GpuSolver extends AbstractSolver {
     
     @Override
     public SavePoint createSavePoint() {
-	// TODO: create a deep copy of constellations and return that
-	return new GpuSavePoint(getN(), getDuration(), constellations);
+	var currentConstellations = kryo.copy(constellations);
+	return new GpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override
@@ -198,6 +198,9 @@ public class GpuSolver extends AbstractSolver {
 		solvedConstellations.incrementAndGet();
 	    }
 	}
+	
+	if(solvedConstellations.get() == constellations.size())
+	    throw new IllegalArgumentException("could not restore solver: nothing to do: all constellations are already solved");
 	
 	stateLoaded = true;
     }
@@ -295,11 +298,10 @@ public class GpuSolver extends AbstractSolver {
 	} else {
 	    stateLoaded = false;
 	}
-
+	
+	sortConstellationsByJkl(constellations);
 	var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		.collect(Collectors.toList());
-	if (remainingConstellations.size() == 0)
-	    return; // nothing to do
 
 	for (var gpu : gpuSelection.get()) {
 	    gpu.setN(getN());
@@ -332,7 +334,15 @@ public class GpuSolver extends AbstractSolver {
     }
 
     private void multiGpu(List<Constellation> constellations) {
-	sortConstellationsByJkl(constellations);
+	
+	/*
+	 * queue = new Queue(constellations);
+	 * 
+	 * 
+	 * 
+	 */
+	
+	
 	var selectedGpus = gpuSelection.get();
 
 	// calculate workload percentage for each gpu depending on its weight
