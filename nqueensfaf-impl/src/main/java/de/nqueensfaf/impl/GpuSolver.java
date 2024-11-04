@@ -134,8 +134,8 @@ public class GpuSolver extends AbstractSolver {
     
     @Override
     public SavePoint createSavePoint() {
-	// TODO: create a deep copy of constellations and return that
-	return new GpuSavePoint(getN(), getDuration(), constellations);
+	var currentConstellations = kryo.copy(constellations);
+	return new GpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override
@@ -197,6 +197,11 @@ public class GpuSolver extends AbstractSolver {
 		solutions.addAndGet(c.getSolutions());
 		solvedConstellations.incrementAndGet();
 	    }
+	}
+	
+	if(solvedConstellations.get() == constellations.size()) {
+	    reset();
+	    throw new IllegalArgumentException("could not restore solver: nothing to do: all constellations are already solved");
 	}
 	
 	stateLoaded = true;
@@ -295,11 +300,10 @@ public class GpuSolver extends AbstractSolver {
 	} else {
 	    stateLoaded = false;
 	}
-
+	
+	sortConstellationsByJkl(constellations);
 	var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
 		.collect(Collectors.toList());
-	if (remainingConstellations.size() == 0)
-	    return; // nothing to do
 
 	for (var gpu : gpuSelection.get()) {
 	    gpu.setN(getN());
@@ -324,7 +328,7 @@ public class GpuSolver extends AbstractSolver {
 
     private void singleGpu(Gpu gpu, List<Constellation> constellations) {
 	constellations = new ArrayList<>(
-		fillWithPseudoConstellations(constellations, gpuSelection.get().get(0).getConfig().getWorkgroupSize()));
+		fillWithPseudoConstellations(constellations, gpu.getConfig().getWorkgroupSize()));
 
 	gpu.createBuffers(constellations.size());
 	gpu.executeWorkload(constellations);
@@ -332,7 +336,15 @@ public class GpuSolver extends AbstractSolver {
     }
 
     private void multiGpu(List<Constellation> constellations) {
-	sortConstellationsByJkl(constellations);
+	
+	/*
+	 * queue = new Queue(constellations);
+	 * 
+	 * 
+	 * 
+	 */
+	
+	
 	var selectedGpus = gpuSelection.get();
 
 	// calculate workload percentage for each gpu depending on its weight
@@ -464,23 +476,6 @@ public class GpuSolver extends AbstractSolver {
     }
 
     // utils
-    private String readKernelSource(String filepath) throws IOException {
-	String resultString = null;
-	try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
-		BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
-	    String line = null;
-	    StringBuilder result = new StringBuilder();
-	    while ((line = br.readLine()) != null) {
-		result.append(line);
-		result.append("\n");
-	    }
-	    resultString = result.toString();
-	} catch (IOException e) {
-	    throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
-	}
-	return resultString;
-    }
-
     private void sortConstellationsByJkl(List<Constellation> constellations) {
 	Collections.sort(constellations, new Comparator<Constellation>() {
 	    @Override
@@ -779,33 +774,35 @@ public class GpuSolver extends AbstractSolver {
 	    this.maxNumOfConstellationsPerRun = maxNumOfConstellationsPerRun;
 	    maxNumOfJklQueensArrays = maxNumOfConstellationsPerRun / config.getWorkgroupSize(); // 1 jkl queens array
 												// per workgroup
-
 	    try (MemoryStack stack = MemoryStack.stackPush()) {
 		IntBuffer errBuf = stack.callocInt(1);
 
-		if (info.vendor.toLowerCase().contains("nvidia"))
+		if (info.vendor.toLowerCase().contains("nvidia")) {
 		    constellationsMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
 			    CL_MEM_PINNED_NV, maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
-		else
-		    constellationsMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			    maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
-		checkCLError(errBuf);
-
-		if (info.vendor.toLowerCase().contains("nvidia"))
+		    checkCLError(errBuf);
+		    
 		    jklQueensMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
 			    maxNumOfJklQueensArrays * n * 4, errBuf);
-		else
-		    jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-			    maxNumOfJklQueensArrays * n * 4, errBuf);
-		checkCLError(errBuf);
+		    checkCLError(errBuf);
 
-		if (info.vendor.toLowerCase().contains("nvidia"))
 		    resMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
 			    maxNumOfConstellationsPerRun * 8, errBuf);
-		else
+		    checkCLError(errBuf);
+		} 
+		else {
+		    constellationsMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
+		    checkCLError(errBuf);
+		    
+		    jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+			    maxNumOfJklQueensArrays * n * 4, errBuf);
+		    checkCLError(errBuf);
+		    
 		    resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
 			    maxNumOfConstellationsPerRun * 8, errBuf);
-		checkCLError(errBuf);
+		    checkCLError(errBuf);
+		}
 
 		checkCLError(clFlush(memQueue));
 		checkCLError(clFinish(memQueue));
@@ -958,6 +955,24 @@ public class GpuSolver extends AbstractSolver {
 
 	private float getProgress() {
 	    return progress;
+	}
+
+	// utils
+	private static String readKernelSource(String filepath) throws IOException {
+	    String resultString = null;
+	    try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
+		    BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
+		String line = null;
+		StringBuilder result = new StringBuilder();
+		while ((line = br.readLine()) != null) {
+		    result.append(line);
+		    result.append("\n");
+		}
+		resultString = result.toString();
+	    } catch (IOException e) {
+		throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
+	    }
+	    return resultString;
 	}
     }
 }

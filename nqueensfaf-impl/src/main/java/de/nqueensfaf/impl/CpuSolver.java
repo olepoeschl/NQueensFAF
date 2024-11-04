@@ -80,8 +80,8 @@ public class CpuSolver extends AbstractSolver {
     
     @Override
     public SavePoint createSavePoint() {
-	// TODO: create a deep copy of constellations and return that
-	return new CpuSavePoint(getN(), getDuration(), constellations);
+	var currentConstellations = kryo.copy(constellations);
+	return new CpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override
@@ -140,6 +140,11 @@ public class CpuSolver extends AbstractSolver {
 		solutions.addAndGet(c.getSolutions());
 		solvedConstellations.incrementAndGet();
 	    }
+	}
+	
+	if(solvedConstellations.get() == constellations.size()) {
+	    reset();
+	    throw new IllegalArgumentException("could not restore solver: nothing to do: all constellations are already solved");
 	}
 	
 	stateLoaded = true;
