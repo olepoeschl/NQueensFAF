@@ -199,8 +199,10 @@ public class GpuSolver extends AbstractSolver {
 	    }
 	}
 	
-	if(solvedConstellations.get() == constellations.size())
+	if(solvedConstellations.get() == constellations.size()) {
+	    reset();
 	    throw new IllegalArgumentException("could not restore solver: nothing to do: all constellations are already solved");
+	}
 	
 	stateLoaded = true;
     }
