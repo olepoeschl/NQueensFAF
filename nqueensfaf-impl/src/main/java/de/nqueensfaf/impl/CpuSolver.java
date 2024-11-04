@@ -78,14 +78,15 @@ public class CpuSolver extends AbstractSolver {
 	return true;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
-    public SavePoint createSavePoint() {
+    public CpuSavePoint createSavePoint() {
 	var currentConstellations = kryo.copy(constellations);
 	return new CpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override
-    public void restoreSavePoint(SavePoint savePoint) {
+    public <T extends SavePoint> void restoreSavePoint(T savePoint) {
 	if(savePoint instanceof CpuSavePoint) {
 	    var cpuSavePoint = (CpuSavePoint) savePoint;
 	    load(cpuSavePoint.n(), cpuSavePoint.storedDuration(), cpuSavePoint.constellations());
