@@ -132,14 +132,15 @@ public class GpuSolver extends AbstractSolver {
 	return true;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
-    public SavePoint createSavePoint() {
+    public GpuSavePoint createSavePoint() {
 	var currentConstellations = kryo.copy(constellations);
 	return new GpuSavePoint(getN(), getDuration(), currentConstellations);
     }
     
     @Override
-    public void restoreSavePoint(SavePoint savePoint) {
+    public <T extends SavePoint> void restoreSavePoint(T savePoint) {
 	if(savePoint instanceof GpuSavePoint) {
 	    var gpuSavePoint = (GpuSavePoint) savePoint;
 	    load(gpuSavePoint.n(), gpuSavePoint.storedDuration(), gpuSavePoint.constellations());

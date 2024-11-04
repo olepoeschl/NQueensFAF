@@ -116,12 +116,12 @@ public abstract class AbstractSolver implements Solver {
     }
     
     // TODO: docs
-    public SavePoint createSavePoint() {
+    public <T extends SavePoint> T createSavePoint() {
 	return null;
     }
     
     // TODO: docs
-    public void restoreSavePoint(SavePoint savePoint) {
+    public <T extends SavePoint> void restoreSavePoint(T savePoint) {
 	// no-op as default
     }
 
