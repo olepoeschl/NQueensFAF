@@ -28,8 +28,7 @@ __NOTE:__ While the GPU-solver is tested successfully for a range of NVIDIA and 
 # 1 Distributed Computing 
 We recently started a distributed computing project for solving the N Queens
 problem! The goals are: 
-1) Solve N=27 and confirm the results of the TU Dresden. (currently in progress)<br>
-You can check the current progress on the 27 queens problem [here](http://nqueensfaf.de:14772/progress). 
+1) Solve N=27 and confirm the results of the TU Dresden. (currently paused)
 2) Solve N=28 and set the new world record.
 
 ## 1.1 How to contribute
