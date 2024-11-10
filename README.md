@@ -1,19 +1,29 @@
-# NQueensFAF
-Highly optimized Solvers for the N queens problem, one for GPUs (definitely try
-this one) and one for CPUs. Also provides useful utilities for implementing
-custom N queens problem solving algorithms.<br>
-Features are:
-1) supports GPU-computing and also CPU-Multithreading<br> 
-2) distribution among multiple GPUs (soon done automatically in proportion to performance)<br>
-3) auto progress save and continuing from save file<br>
-4) some advanced settings, see explanation of the command line usage<br>
 
-Can run on Windows, Linux and also Mac (for download and installation see
-below).<br> 
-The standard version uses a command line interface, which is easy to use
-(examples below). However we also linked a GUI program of an older version. <br>
-Built with Java 17.<br>
-__NOTE:__ currently only works for NVIDIA and integrated Intel GPUs.
+
+NQueensFAF provides highly optimized solvers for the N-Queens problem. It is platform independent and can the solvers can be tested through the GUI or CLI of our demo or embedded in your project.
+Built with Java 21.
+
+Currently included:
+* a solver for CPUs using Java Threads, also supporting multi-threading
+* a solver for GPUs using OpenCL, also supporting distribution among multiple GPUs (multi-GPU)
+* a simple, recursive, single-threaded solver for comparison purposes.
+
+__NOTE:__ While the GPU-solver is tested successfully for a range of NVIDIA and Intel Integrated GPUs, it is not working on AMD GPUs and still untested for Intel Arc GPUs. If you happen to have an Intel Arc GPU, feel free to test it and let us know if it worked or not :)
+
+
+## Features
+| Description | GUI | CLI |
+| :--- | :---: | :---: |
+| save the progress of a solver run manually | ✓ |  |
+| save the progress of a solver run automatically in a configurable interval | ✓ | ✓ |
+| restore the progress of a solver run | ✓ | ✓ |
+| manually configure the weight of each selected GPU<br>(for multi-GPU) | ✓ | ✓ |
+| automatically determine the weight of all available GPUs | ✓ |  |
+| save the configuration of a solver to a file | ✓ |  |
+| load the configuration for a solver from a file | ✓ |  |
+| see a history of all finished runs during the current session | ✓ |  |
+| see the records for a certain N <br>(record = shortest duration for finishing a run) | ✓ |  |
+| apply the solver configuration of a record or history entry to the current solver | ✓ |  |
 
 # 1 Distributed Computing 
 We recently started a distributed computing project for solving the N Queens
