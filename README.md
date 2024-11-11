@@ -191,13 +191,13 @@ The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slight
 
 ## References
 
-This solution is based on three ideas, especially the first two:
+The CPU-solver and the GPU-solver are based on following concepts:
 
-- using bits to represent the occupancy of the board; based on the <a href="http://users.rcn.com/liusomers/nqueen_demo/nqueens.html">implementation by Jeff Somers </a>
+- using bits to represent the occupancy of the board; based on the [implementation by Jeff Somers](http://users.rcn.com/liusomers/nqueen_demo/nqueens.html)
       
-- calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the <a href="https://github.com/preusser/q27">implementation by the TU Dresden</a> (a very good description of this method can be found <a href="http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html">here</a>)
+- calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the [implementation by the TU Dresden](https://github.com/preusser/q27) (click [here](http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html) for a very good description fo this method)
 
-- GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in Ping Che Chen's implementation (https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's. 
+- GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in [Ping Che Chen's implementation](https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's
 
 ## Contact
 If you have a comment, question, idea or whatever, we will be happy to answer!
