@@ -53,7 +53,8 @@ show the potential of our program.
 |   Ryzen 5800X multi   |      0.28s      |   0.70s   |   4.06s   |   30.3s   |     4:04m    |    33:53m    | not measured |
 
 Single stands for single-threaded and multi for multi-threaded with the maximum number of threads.
-The CPUs and the GPUs are used with stock settings. 
+The CPUs and the GPUs are used with stock settings.
+
 __Note:__ Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 ## Installation
