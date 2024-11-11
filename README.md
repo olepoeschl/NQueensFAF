@@ -1,4 +1,4 @@
-![14x14-chessboard-logo](https://github.com/user-attachments/assets/35975dec-496a-4b87-8d84-3eb5b1cb6c7a)
+![14x14-chessboard-logo](https://github.com/user-attachments/assets/c678aff5-babf-47ce-bc31-73cf13895870)
 
 NQueensFAF provides highly optimized solvers for the N-Queens problem. It is platform independent and can the solvers can be tested through the GUI or CLI of our demo or embedded in your project.
 Built with Java 21.
