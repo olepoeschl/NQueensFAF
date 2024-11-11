@@ -68,7 +68,7 @@ jobs:
     - name: Extract lwjgl native shared library
       run: |
         cd nqueensfaf-demo/target
-        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/liblwjgl.so
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
@@ -92,7 +92,7 @@ jobs:
     - name: Extract lwjgl native shared library
       run: |
         cd nqueensfaf-demo/target
-        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar macosx/x64/org/lwjgl/liblwjgl.dylib
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar macosx/x64/liblwjgl.dylib
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
@@ -116,7 +116,7 @@ jobs:
     - name: Extract lwjgl native shared library
       run: |
         cd nqueensfaf-demo/target
-        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar windows/x64/org/lwjgl/lwjgl.dll
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar windows/x64/lwjgl.dll
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
