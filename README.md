@@ -198,7 +198,3 @@ The CPU-solver and the GPU-solver are based on following concepts:
 - calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the [implementation by the TU Dresden](https://github.com/preusser/q27) (click [here](http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html) for a very good description fo this method)
 
 - GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in [Ping Che Chen's implementation](https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's
-
-## Contact
-If you have a comment, question, idea or whatever, we will be happy to answer!
-Mail: olepoeschl.developing@gmail.com
