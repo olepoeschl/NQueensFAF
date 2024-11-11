@@ -92,7 +92,7 @@ jobs:
     - name: Extract lwjgl native shared library
       run: |
         cd nqueensfaf-demo/target
-        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar macos/x64/org/lwjgl/liblwjgl.dylib
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar macosx/x64/org/lwjgl/liblwjgl.dylib
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
