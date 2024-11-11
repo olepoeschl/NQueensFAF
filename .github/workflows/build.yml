@@ -33,16 +33,22 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package
     - name: Extract Maven project version
       run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
       id: bump-version
-    - name: Rename artifact to contain "nightly"
-      run: mv target/nqueensfaf-${{ steps.bump-version.outputs.version }}.jar target/nqueensfaf-${{ steps.bump-version.outputs.version }}-nightly.jar
-    - name: Upload artifact to nightly release
+    - name: Rename artifact core to contain "nightly"
+      run: mv nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}.jar nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar
+    - name: Rename artifact impl to contain "nightly"
+      run: mv nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}.jar nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar
+    - name: Upload artifact core to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
+      run: gh release upload nightly nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
+    - name: Upload artifact impl to nightly release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release upload nightly nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v3
 
@@ -58,24 +64,18 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - name: Rename artifact to contain "nightly"
-      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-linux.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-linux.zip
-    - name: Upload artifact to nightly release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-linux.zip --clobber
+      run: mvn -B package
     - name: Extract lwjgl native shared library
       run: |
-        cd target
-        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
+        cd nqueensfaf-demo/target
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar linux/x64/org/lwjgl/liblwjgl.so
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
         name: lwjgl-linux-native
         path: target/liblwjgl.so
         retention-days: 1
-      
+
   build-macos:
     runs-on: macos-latest
     needs: build-jar
@@ -88,17 +88,11 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - name: Rename artifact to contain "nightly"
-      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-mac.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-mac.zip
-    - name: Upload artifact to nightly release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-mac.zip --clobber
+      run: mvn -B package
     - name: Extract lwjgl native shared library
       run: |
-        cd target
-        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar macos/x64/org/lwjgl/liblwjgl.dylib
+        cd nqueensfaf-demo/target
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar macos/x64/org/lwjgl/liblwjgl.dylib
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
@@ -118,17 +112,11 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
-    - name: Rename artifact to contain "nightly"
-      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-windows.zip target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-windows.zip
-    - name: Upload artifact to nightly release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly-windows.zip --clobber
+      run: mvn -B package
     - name: Extract lwjgl native shared library
       run: |
-        cd target
-        7z e nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar windows/x64/org/lwjgl/lwjgl.dll
+        cd nqueensfaf-demo/target
+        7z e nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar windows/x64/org/lwjgl/lwjgl.dll
     - name: Upload shared library
       uses: actions/upload-artifact@v3
       with:
@@ -136,7 +124,7 @@ jobs:
         path: target/lwjgl.dll
         retention-days: 1
 
-  build-jar-cli:
+  build-demo:
     runs-on: ubuntu-latest
     needs: [build-jar, build-linux, build-macos, build-windows] 
     steps:
@@ -148,27 +136,27 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package
     - name: Download lwjgl natives
       uses: actions/download-artifact@v3
     - name: Inject lwjgl natives into runnable jar
       run: |
-        mkdir -p target/macos/x64/org/lwjgl
-        mkdir -p target/windows/x64/org/lwjgl
-        mv lwjgl-macos-native/liblwjgl.dylib target/macos/x64/org/lwjgl
-        mv lwjgl-windows-native/lwjgl.dll target/windows/x64/org/lwjgl
-        cd target
-        7z a nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar  macos windows
+        mkdir -p nqueensfaf-demo/target/macos/x64/org/lwjgl
+        mkdir -p nqueensfaf-demo/target/windows/x64/org/lwjgl
+        mv lwjgl-macos-native/liblwjgl.dylib nqueensfaf-demo/target/macos/x64/org/lwjgl
+        mv lwjgl-windows-native/lwjgl.dll nqueensfaf-demo/target/windows/x64/org/lwjgl
+        cd nqueensfaf-demo/target
+        7z a nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar  macos windows
     - name: Rename artifact to contain "nightly"
-      run: mv target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}.jar target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly.jar
+      run: mv nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}-nightly.jar
     - name: Upload artifact to nightly release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly target/nqueensfaf-cli-${{ needs.build-jar.outputs.project-version }}-nightly.jar --clobber
+      run: gh release upload nightly nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}-nightly.jar --clobber
         
   update-nightly-tag:
     runs-on: ubuntu-latest
-    needs: [build-jar, build-jar-cli] 
+    needs: [build-jar, build-demo] 
     steps:
       #- name: Delete release drafts
       #  uses: hugo19941994/delete-draft-releases@v1.0.1
