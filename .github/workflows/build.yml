@@ -73,7 +73,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: lwjgl-linux-native
-        path: nqueensfaf-demo/target/liblwjgl.so
+        path: nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar
         retention-days: 1
 
   build-macos:
@@ -97,7 +97,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: lwjgl-macos-native
-        path: nqueensfaf-demo/target/liblwjgl.dylib
+        path: nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar
         retention-days: 1
 
   build-windows:
@@ -121,7 +121,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: lwjgl-windows-native
-        path: nqueensfaf-demo/target/lwjgl.dll
+        path: nqueensfaf-demo/target/nqueensfaf-demo-${{ needs.build-jar.outputs.project-version }}.jar
         retention-days: 1
 
   build-demo:
