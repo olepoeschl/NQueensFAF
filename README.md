@@ -54,8 +54,7 @@ show the potential of our program.
 
 Single stands for single-threaded and multi for multi-threaded with the maximum number of threads.
 The CPUs and the GPUs are used with stock settings. 
-
-Attention: Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
+__Note:__ Your graphics card may go into another power state when running the program. To check this and to avoid this, you can use a tool such as "nvidiainfo".
 
 ## Installation
 ### Requirements
