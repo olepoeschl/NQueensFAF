@@ -12,11 +12,13 @@ Currently work in progress:
 * a completely new solving method with outstanding performance and excellent scaling (🔗[News](#news))
 * a server-client system for distributed computing on heterogeneous GPUs and CPUs (🔗[Distributed Computing](#distributed-computing))
 
-__Note:__ While the GPU-solver is tested successfully for a range of NVIDIA and Intel Integrated GPUs, it remains not working on AMD GPUs and untested for Intel Arc GPUs. If you happen to have an Intel Arc GPU, feel free to test it and let us know if it worked or not :)
+__Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and Intel Integrated GPUs, it remains not working on AMD GPUs and untested for Intel Arc GPUs. If you happen to have an Intel Arc GPU, feel free to test it and let us know if it worked or not :)
 
 ## Features
 | Description | GUI | CLI |
 | :--- | :---: | :---: |
+| CPU-Solver | ✓ | ✓ |
+| GPU-Solver | ✓ | ✓ |
 | save the progress of a solver run manually | ✓ |  |
 | save the progress of a solver run automatically in a configurable interval | ✓ | ✓ |
 | restore the progress of a solver run | ✓ | ✓ |
@@ -62,7 +64,7 @@ __Note:__ Your graphics card may go into another power state when running the pr
 Java21 (or a newer version) needs to be installed on your computer.
 
 ### Demo
-The demo application can be downloaded [here](...).
+The demo application can be downloaded from the [Releases](https://github.com/olepoeschl/NQueensFAF/releases) page.
 
 ### Code
 There are two artifacts potentially useful for external projects:
@@ -76,79 +78,80 @@ Their jar's can be downloaded from the [Releases](https://github.com/olepoeschl/
 The GUI is self-explanatory. If you do have a question though, feel free to ask.
 
 ### CLI
-Show the general help message by using `nqueensfaf-cli -h`and the device
-specific help messages by using either `nqueensfaf-cli -n 20 gpu -h` or
-`nqueensfaf-cli -n 20 cpu -h`.<br>
-If you just want to get started maybe read __5.2 Extended Explanation with Examples__ first. 
-#### Compact Explanation
-The command format reads as follows:<br>
-`nqueensfaf-cli [-u=<update-interval>] [-s=<auto-save-interval>] (-n=<N> |
--r=<path-to-save-file>) (cpu | gpu) [<extra device options>] [-h]`
-The symbol "|" means that either the first or second option (exclusively, not both) can be specified. <br> 
+Command format:<br>
+`nqueensfaf-demo [<general_options>] (-n=<N> | -r=<path_to_save_file>) <solver_command> [<solver_options>] [-h]`
 
-Explanation of the Options:
-- `-s=<value>` ⟶ auto-save interval as a decimal, for example -s=0.05 for
-  auto-saving in 5% intervals
-- `-u=<value>` ⟶ update time and solution and progress after \<value\> milliseconds
-- `-n=<N>` ⟶ substitute the board size for starting a new computation OR
-- `-r=<path-to-save-file>` ⟶ path to a save-file to continue a computation from the last checkpoint, for example `./20-queens.faf`
-- `cpu` | `gpu` ⟶ write cpu for choosing cpu and gpu for choosing gpu (device
-  specific options see below)
-- `-h`  ⟶ print device specific help message<br>
-__NOTE:__ You must enable auto-saving again each time you resume from a save-file.
+If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#options-for-cpu-solver) section and the 🔗[GPU-Solver](#options-for-gpu-solver) section.
 
-Device options for the CPU: `nqueensfaf [...] 20 cpu [-t=<threadcount>] [-p=<pre-queens>] [-h] `
-- `-t=<value>` ⟶ use \<value\> threads<br>
-- `-p=<value>` ⟶ default is 6. A higher number means more but smaller tasks by setting
-  additional queens before sending to the solver device. Most of the time 6 is
+#### General Options
+* `-s=<percentage>` ⟶ auto-save percentage interval in decimal, for example -s=0.05 for auto-saving in 5% intervals
+* `-u=<interval>` ⟶ update duration, solutions and progress after each \<interval\> milliseconds
+* `-n=<N>` ⟶ substitute the board size for starting a new computation OR
+* `-r=<path_to_save_file>` ⟶ path to a save-file generated using_auto-save to continue a computation from the last checkpoint, for example `20-queens.faf`
+* `-h` ⟶ print device specific help message
+<br>__Note:__ You must re-enable auto-saving again each time you resume from a save-file.
+
+#### Solver Commands
+* `cpu` ⟶ use CPU-Solver
+* `gpu` ⟶ use GPU-Solver
+
+#### Options for CPU-Solver
+Command format: <br>
+`cpu [-t=<threadcount>] [-p=<pre_queens>] [-h]`
+
+* `-t=<threads>` ⟶ number of threads that should be used
+* `-p=<pre_queens>` ⟶ number of pre-placed queens, default is 6. A higher number means more but smaller tasks by placing
+  additional queens before starting the worker threads. Most of the time 6 is
   the best option.
-- `-h`  ⟶ print CPU specific help message
+* `-h` ⟶ print CPU-Solver specific help message
 
-Device options for GPUs: `nqueensfaf [...] 20 gpu [-p=<pre-queens>] [-h]` 
-- `-h`  ⟶ print GPU specific help message
+##### Examples
+* N=16 on CPU with 1 thread<br>
+`nqueensfaf-demo -n=16 cpu`
+* N=18 on CPU with 8 threads<br>
+`nqueensfaf-demo -n=18 cpu -t=8`
+* N=20 with 8 threads and auto-saves in 5% steps<br>
+`nqueensfaf-demo -n=20 -s=0.05 cpu -t=8`
+* continue the solution of the 20 queens problem from the save-file 20-queens.faf and auto-save in 5% steps <br>
+`nqueensfaf-demo -s=0.05 -r=./20-queens.faf cpu -t=8`
 
-#### Extended Explanation with Examples
-Depending on your way of installation you start the command with<br>
-- `nqueensfaf-cli` (Windows)
-- `./nqueensfaf-cli` (Linux and Mac)
-- `java -jar nqueensfaf-cli.jar` (Java). 
-Here we always use `nqueensfaf-cli`.<br>
-The board size (N) and the device (cpu or gpu) must always be specified.<br>
-#### Explanation for CPU
-- N=16 on CPU with 1 thread<br>
-`nqueensfaf-cli -n=16 cpu`
-- N=18 on CPU with 8 threads<br>
-`nqueensfaf-cli -n=18 cpu -t=8`
-- N=20 with 8 threads and auto-saves in 5% steps<br>
-`nqueensfaf-cli -n=20 -s=0.05 cpu -t=8`
-- continue the solution of the 20 queens problem from the save-file
-20-queens.faf<br>
-`nqueensfaf-cli -s=0.05 -r=./20-queens.faf cpu -t=8`
-#### Explanation for GPUs
-- compute N=20 on the default GPU <br>
-`nqueensfaf-cli -n=20 gpu`<br>
+#### Options for GPU-Solver
+Command format: <br>
+`gpu [-p=<pre_queens>] [-h]`
+* `-0` ⟶ use the default GPU
+* `-p=<pre_queens>` ⟶ see 🔗[Options for CPU-Solver](#options-for-cpu-solver)
+* `-h` ⟶ print GPU-Solver specific help message
 
-##### Selecting GPUs
-When choosing GPU mode, you will see a list of all available GPUs provided with indices.
-You can select which GPUs should be used by entering their indices, separated by commata.
-For example: `0,1,3` if you have minimum 4 GPUs available and just don't want to use the third one.
+When `-0` is not specified, the 🔗[selection of GPUs](#selecting-gpus) is done interactively when executing the command.
 
-Multiple GPU option flags can be set, separated by `:`. Possible flags are 
-  - `ws` ⟶ workgroup size on the GPU, standard option 64 is best for NVIDIA GPUs.
-  Only set it to 24 for integrated Intel GPUs. (also automatically set)
-  - `bm` ⟶ represents the benchmark and is required, but only takes effect if multiple GPUs are used, each one with its own benchmark score.
-  A lower score shifts more work towards a GPU.<br>
-  __Note:__ A good way to choose the `bm` value is to solve the same board size with all wanted GPUs
-            and use the rounded time as the benchmark value.<br>
+##### Examples
+- compute N=18 on the default GPU <br>
+`nqueensfaf-demo -n=18 gpu -0`<br>
+- compute N=20 and select the GPUs interactively <br>
+`nqueensfaf-demo -n=20 gpu`<br>
+- compute N=20, select the GPUs interactively and do auto-saves each 10% <br>
+`nqueensfaf-demo -n=20 -s=0.1 gpu`<br>
 
-Some Examples:
-- For GPU with index 0 (default GPU) with the workgroup size 128, use<br>
-`0:ws128`
-- In case you have 3 GPUs and all should contribute equally, use<br>
-`0,1,2` 
-- In case you have 2 GPUs with different performance and the one with index 0 should get twice as much
-work as the other one, use<br> 
-  `0:bm1, 1:bm2`
+#### Selecting GPUs
+When starting the GPU-Solver, you will see a list of all available GPUs provided with indices.
+To select a GPU, you simply enter its index and its configuration, separated by commata. Multiple GPUs are selected one after another.
+
+Selection / Configuration format: <br>
+`<index>[,wg=<workgroup_size>][,mw=<weight>]`
+* `wg` ⟶ workgroup size on the GPU, default value 64 is best for NVIDIA GPUs. A value of 24 has proven best for Integrated Intel GPUs.
+* `mw` ⟶ the weight, for multi-GPU, represents the portion of the workload that the respective GPU should process.
+  In other words, it ideally should represent the GPU's performance relative to the other selected GPUs. Default value is 1.
+  
+##### Examples
+* select GPU 0 (default GPU) and set its workgroup size to 128 <br>
+`0,wg=128`
+* select GPUs 0 and 1, GPU 0 should use workgroup size 24 and GPU 1 should do twice the work of GPU 0 <br>
+`0,mw=1,wg=24`⏎ <br>
+`1,mw=2` <br>
+* select GPUs 0, 1 and 2 and let them all contribute equally (use default weight 1) <br>
+`0`⏎ <br>
+`1`⏎ <br>
+`2`
 
 ### Code
 ```
@@ -160,10 +163,12 @@ cs.solve();
 
 GpuSolver gs = new GpuSolver();
 List<Gpu> availableGpus = gs.getAvailableGpus();
-gs.gpuSelection().add(availableGpus.get(0).getId());
+gs.gpuSelection().choose(availableGpus.get(0));
 gs.setN(18);
 gs.solve();
 ```
+
+For more examples, take a look at the [examples module](https://github.com/olepoeschl/NQueensFAF/tree/readme3.0.0/nqueensfaf-examples/src/main/java/de/nqueensfaf/examples).
 
 #### Implement your own algorithm
 The abstract class `AbstractSolver` provides a good structure and handy features for implementing your own solver. Just extend it and fill the abstract methods with your code.
@@ -176,7 +181,7 @@ The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden.
 2) Solve N=28 and set the new world record.
 
-Updates on this are expected for summer 2025.
+Further updates on this are expected for summer 2025.
 
 ## News
 - We are currently developing a new solver which is based on a completely new method.
@@ -191,10 +196,7 @@ The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slight
 
 ## References
 
-The CPU-solver and the GPU-solver are based on following concepts:
-
-- using bits to represent the occupancy of the board; based on the [implementation by Jeff Somers](http://users.rcn.com/liusomers/nqueen_demo/nqueens.html)
-      
-- calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the [implementation by the TU Dresden](https://github.com/preusser/q27) (click [here](http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html) for a very good description fo this method)
-
-- GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in [Ping Che Chen's implementation](https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's
+The CPU-Solver and the GPU-Solver are based on following concepts:
+* using bits to represent the occupancy of the board; based on the [implementation by Jeff Somers](http://users.rcn.com/liusomers/nqueen_demo/nqueens.html)    
+* calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the [implementation by the TU Dresden](https://github.com/preusser/q27) (click [here](http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html) for a very good description fo this method)
+* GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in [Ping Che Chen's implementation](https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's
