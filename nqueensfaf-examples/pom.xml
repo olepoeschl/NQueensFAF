@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>de.nqueensfaf</groupId>
 			<artifactId>nqueensfaf-impl</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>3.0.0</version>
 		</dependency>
 		<!-- show ascii tables in console -->
 		<dependency>
