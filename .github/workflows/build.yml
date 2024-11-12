@@ -49,7 +49,8 @@ jobs:
           gh release delete "nightly" -y --cleanup-tag
         fi
         gh release create "nightly" \
-          nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar,nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar \
+          nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar \
+          nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar \
           -t "Latest Nightly Build" -p --generate-notes
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v4
