@@ -17,18 +17,18 @@ __Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and 
 ## Features
 | Description | GUI | CLI |
 | :--- | :---: | :---: |
-| CPU-Solver | ✓ | ✓ |
-| GPU-Solver | ✓ | ✓ |
+| adjust the number of CPU threads | ✓ | ✓ |
+| adjust the number of pre-placed queens | ✓ | ✓ |
+| view, select and configure available GPUs | ✓ | ✓ |
+| automatically determine the weight of all available GPUs<br>(for multi-GPU) | ✓ |  |
 | save the progress of a solver run manually | ✓ |  |
 | save the progress of a solver run automatically in a configurable interval | ✓ | ✓ |
 | restore the progress of a solver run | ✓ | ✓ |
-| manually configure the weight of each selected GPU<br>(for multi-GPU) | ✓ | ✓ |
-| automatically determine the weight of all available GPUs<br>(for multi-GPU) | ✓ |  |
 | save a solver configuration to a file | ✓ |  |
 | load a solver configuration from a file | ✓ |  |
 | see a history of all finished runs during the current session | ✓ |  |
 | see the records for a certain N <br>(record = shortest duration for finishing a run) | ✓ |  |
-| apply the solver configuration of a record or history entry to the current solver | ✓ |  |
+| copy the solver configuration of a record or history entry | ✓ |  |
 
 ## Benchmarks
 During the time we have spent developing NQueensFAF, we have been able to
