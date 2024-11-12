@@ -21,11 +21,8 @@ __Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and 
 | adjust the number of pre-placed queens | ✓ | ✓ |
 | view, select and configure available GPUs | ✓ | ✓ |
 | automatically determine the weight of all available GPUs<br>(for multi-GPU) | ✓ |  |
-| save the progress of a solver run manually | ✓ |  |
-| save the progress of a solver run automatically in a configurable interval | ✓ | ✓ |
-| restore the progress of a solver run | ✓ | ✓ |
-| save a solver configuration to a file | ✓ |  |
-| load a solver configuration from a file | ✓ |  |
+| save&restore the progress of a solver run (includes auto-save) | ✓ | ✓ |
+| save/load solver configurations to/from files | ✓ |  |
 | see a history of all finished runs during the current session | ✓ |  |
 | see the records for a certain N <br>(record = shortest duration for finishing a run) | ✓ |  |
 | copy the solver configuration of a record or history entry | ✓ |  |
