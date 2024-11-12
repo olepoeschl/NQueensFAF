@@ -80,6 +80,7 @@ public abstract class AbstractSolver implements Solver {
 	    solve();
 	} catch (Exception e) {
 	    executionState = CANCELED;
+	    timer.cancel();
 	    onCancel.accept(e);
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
