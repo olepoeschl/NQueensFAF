@@ -5,7 +5,7 @@ Built with Java 21.
 
 Included:
 * a solver for CPUs using Java Threads, supports multi-threading
-* a solver for GPUs using OpenCL, supports distribution among multiple GPUs (multi-GPU)
+* a solver for GPUs using OpenCL, supports automated distribution among multiple GPUs (multi-GPU)
 * a simple, recursive, single-threaded solver for comparison purposes.
 
 Currently work in progress:
