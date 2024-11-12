@@ -79,23 +79,22 @@ The GUI is self-explanatory. If you do have a question though, feel free to ask.
 
 ### CLI
 Command format:<br>
-`nqueensfaf-demo [<general_options>] (-n=<N> | -r=<path_to_save_file>) <solver_command> [<solver_options>] [-h]`
+`nqueensfaf-demo (-n=<N> | -r=<path_to_save_file>) [<general_options>] <solver_command>`
 
 If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#options-for-cpu-solver) section and the 🔗[GPU-Solver](#options-for-gpu-solver) section.
+
+#### Required Parameters
+Specify exactly one of them:
+* `-n=<N>` ⟶ substitute the board size for starting a new computation
+* `-r=<path_to_save_file>` ⟶ path to a save-file generated using_auto-save to continue a computation from the last checkpoint, for example `20-queens.faf`
 
 #### General Options
 * `-s=<percentage>` ⟶ auto-save percentage interval in decimal, for example -s=0.05 for auto-saving in 5% intervals
 * `-u=<interval>` ⟶ update duration, solutions and progress after each \<interval\> milliseconds
-* `-n=<N>` ⟶ substitute the board size for starting a new computation OR
-* `-r=<path_to_save_file>` ⟶ path to a save-file generated using_auto-save to continue a computation from the last checkpoint, for example `20-queens.faf`
 * `-h` ⟶ print device specific help message
 <br>__Note:__ You must re-enable auto-saving again each time you resume from a save-file.
 
-#### Solver Commands
-* `cpu` ⟶ use CPU-Solver
-* `gpu` ⟶ use GPU-Solver
-
-#### Options for CPU-Solver
+#### Command for CPU-Solver
 Command format: <br>
 `cpu [-t=<threadcount>] [-p=<pre_queens>] [-h]`
 
@@ -115,7 +114,7 @@ Command format: <br>
 * continue the solution of the 20 queens problem from the save-file 20-queens.faf and auto-save in 5% steps <br>
 `nqueensfaf-demo -s=0.05 -r=./20-queens.faf cpu -t=8`
 
-#### Options for GPU-Solver
+#### Command for GPU-Solver
 Command format: <br>
 `gpu [-p=<pre_queens>] [-h]`
 * `-0` ⟶ use the default GPU
