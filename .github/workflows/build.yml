@@ -41,14 +41,16 @@ jobs:
       run: mv nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}.jar nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar
     - name: Rename artifact impl to contain "nightly"
       run: mv nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}.jar nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar
-    - name: Upload artifact core to nightly release
+    - name: Delete old nightly Release if there is one, create new nightly Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
-    - name: Upload artifact impl to nightly release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload nightly nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar --clobber
+      run: |
+        if $(gh release list | grep -q -e "nightly"); then
+          gh release delete "nightly" -y --cleanup-tag
+        fi
+        gh release create "nightly" \
+          nqueensfaf-core/target/nqueensfaf-core-${{ steps.bump-version.outputs.version }}-nightly.jar,nqueensfaf-impl/target/nqueensfaf-impl-${{ steps.bump-version.outputs.version }}-nightly.jar \
+          -t "Latest Nightly Build" -p --generate-notes
     - name: Submit Dependency Snapshot
       uses: advanced-security/maven-dependency-submission-action@v4
 
