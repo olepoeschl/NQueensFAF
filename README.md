@@ -170,7 +170,7 @@ The abstract class `AbstractSolver` provides a good structure and handy features
 The documentation of `nqueensfaf-core` can help you here.
 
 ## Distributed Computing
-Another subproject of NQueensFAF is the development and administration of a distributed computing system in the context of the N-Queens problem. We aim to deploy an easy-to-use client program that supports Windows and Linux as well as macOS, while also keeping the setup-process to a minimum, so that anybody with a computer can contribute.
+A subproject of NQueensFAF is the development and administration of a distributed computing system in the context of the N-Queens problem. We aim to deploy an easy-to-use client program that supports Windows and Linux as well as macOS, while also keeping the setup-process to a minimum, so that anybody with a computer can contribute.
 
 The goals are: 
 1) Solve N=27 and confirm the results of the TU Dresden.
