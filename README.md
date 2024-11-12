@@ -78,7 +78,7 @@ The GUI is self-explanatory. If you do have a question though, feel free to ask.
 Command format:<br>
 `nqueensfaf-demo (-n=<N> | -r=<path_to_save_file>) [<general_options>] <solver_command>`
 
-If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#command-for-cpu-solver) section and the 🔗[GPU-Solver](#command-for-gpu-solver) section.
+If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#cpu-solver-command) section and the 🔗[GPU-Solver](#gpu-solver-command) section.
 
 ### Required Parameters
 Specify exactly one of them:
@@ -92,7 +92,7 @@ Specify exactly one of them:
 
 __Note:__ You must re-enable auto-saving again each time you resume from a save-file.
 
-### Command for CPU-Solver
+### CPU-Solver-Command
 Command format: <br>
 `cpu [-t=<threadcount>] [-p=<pre_queens>] [-h]`
 
@@ -112,11 +112,11 @@ Command format: <br>
 * continue the solution of the 20 queens problem from the save-file 20-queens.faf and auto-save in 5% steps <br>
 `nqueensfaf-demo -s=0.05 -r=./20-queens.faf cpu -t=8`
 
-### Command for GPU-Solver
+### GPU-Solver-Command
 Command format: <br>
 `gpu [-p=<pre_queens>] [-h]`
 * `-0` ⟶ use the default GPU
-* `-p=<pre_queens>` ⟶ see 🔗[Command for CPU-Solver](#command-for-cpu-solver)
+* `-p=<pre_queens>` ⟶ see 🔗[CPU-Solver](#cpu-solver-command)
 * `-h` ⟶ print GPU-Solver specific help message
 
 When `-0` is not specified, the 🔗[selection of GPUs](#selecting-gpus) is done interactively when executing the command.
