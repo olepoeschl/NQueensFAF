@@ -66,7 +66,7 @@ public class GpuCommand implements Runnable {
 	    // let user choose which GPUs should be used
 	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
 		System.out.println("Which GPUs should be used? \nSpecify them one by one in the format of "
-			+ "\"<Index>[,bm=<Benchmark>][,wg=<Workgroup-size>]\". (without the double quotes)");
+			+ "\"<Index>[,mw=<multi-gpu-weight>][,wg=<workgroup-size>]\". (without the double quotes)");
 		String input = null;
 
 		System.out.printf("GPU #%d: ", solver.gpuSelection().get().size() + 1);
@@ -113,12 +113,12 @@ public class GpuCommand implements Runnable {
 	    String configValue = config.substring(3).trim();
 
 	    switch (configKey) {
-	    case "bm=":
+	    case "mw=":
 		try {
 		    int weight = Integer.parseInt(configValue);
 		    gpu.getConfig().setWeight(weight);
 		} catch (NumberFormatException e) {
-		    throw new NumberFormatException("invalid benchmark: '" + configValue + "' is not an integer");
+		    throw new NumberFormatException("invalid weight: '" + configValue + "' is not an integer");
 		}
 		break;
 	    case "wg=":
