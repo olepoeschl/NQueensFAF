@@ -118,7 +118,7 @@ Command format: <br>
 Command format: <br>
 `gpu [-p=<pre_queens>] [-h]`
 * `-0` ⟶ use the default GPU
-* `-p=<pre_queens>` ⟶ see 🔗[Options for CPU-Solver](#options-for-cpu-solver)
+* `-p=<pre_queens>` ⟶ see 🔗[Command for CPU-Solver](#command-for-cpu-solver)
 * `-h` ⟶ print GPU-Solver specific help message
 
 When `-0` is not specified, the 🔗[selection of GPUs](#selecting-gpus) is done interactively when executing the command.
