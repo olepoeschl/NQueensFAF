@@ -1,8 +1,6 @@
 package de.nqueensfaf.demo.gui;
 
-import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Toolkit;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -24,7 +22,6 @@ class SettingsDialog extends JDialog {
 	
 	setContentPane(propConfigUi);
 	pack();
-	final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-	setLocation(screenSize.width / 2 - getPreferredSize().width / 2, screenSize.height / 2 - getPreferredSize().height / 2);
+	setLocationRelativeTo(owner);
     }
 }
