@@ -85,8 +85,8 @@ If you just want to get started, take a look at the examples in the 🔗[CPU-Sol
 
 #### Required Parameters
 Specify exactly one of them:
-* `-n=<N>` ⟶ substitute the board size for starting a new computation
-* `-r=<path_to_save_file>` ⟶ path to a save-file generated using_auto-save to continue a computation from the last checkpoint, for example `20-queens.faf`
+* `-n=<N>` ⟶ specify the board size to start a new computation
+* `-r=<path_to_save_file>` ⟶ specify the path to a save-file generated using_auto-save to continue an old computation
 
 #### General Options
 * `-s=<percentage>` ⟶ auto-save percentage interval in decimal, for example -s=0.05 for auto-saving in 5% intervals
