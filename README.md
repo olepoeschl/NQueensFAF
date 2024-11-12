@@ -12,8 +12,6 @@ Currently work in progress:
 * a completely new solving method with outstanding performance and excellent scaling (🔗[News](#news))
 * a server-client system for distributed computing on heterogeneous GPUs and CPUs (🔗[Distributed Computing](#distributed-computing))
 
-__Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and Intel Integrated GPUs, it remains not working on AMD GPUs and untested for Intel Arc GPUs. If you happen to have an Intel Arc GPU, feel free to test it and let us know if it worked or not :)
-
 # Features
 | Description | GUI | CLI |
 | :--- | :---: | :---: |
@@ -26,6 +24,8 @@ __Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and 
 | see a history of all finished runs during the current session | ✓ |  |
 | see the records for a certain N <br>(record = shortest duration for finishing a run) | ✓ |  |
 | copy the solver configuration of a record or history entry | ✓ |  |
+
+__Note:__ While the GPU-Solver is tested successfully for a range of NVIDIA and Intel Integrated GPUs, it remains not working on AMD GPUs and untested for Intel Arc GPUs. If you happen to have an Intel Arc GPU, feel free to test it and let us know if it worked or not :)
 
 # Benchmarks
 During the time we have spent developing NQueensFAF, we have been able to
@@ -197,3 +197,7 @@ The CPU-Solver and the GPU-Solver are based on following concepts:
 * using bits to represent the occupancy of the board; based on the [implementation by Jeff Somers](http://users.rcn.com/liusomers/nqueen_demo/nqueens.html)    
 * calculating start constellations, in which the borders of the board are already occupied by 3 or 4 queens; based on the [implementation by the TU Dresden](https://github.com/preusser/q27) (click [here](http://www.nqueens.de/sub/SearchAlgoUseSymm.en.html) for a very good description fo this method)
 * GPU: remember board-leaving diagonals when going to the next row, so that they can be reinserted when we go backwards. This has also been done in [Ping Che Chen's implementation](https://forum.beyond3d.com/threads/n-queen-solver-for-opencl.47785/) of the N Queens Problem for GPU's
+
+# Special Thanks
+* Volker Berndt, for introducing us to the chess world
+* Vincent Hindriksen, for mentioning NQueensFAF in his [blog at StreamHPC](https://streamhpc.com/blog/2023-08-10/ancient-n-queens-project/)
