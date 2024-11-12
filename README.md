@@ -81,7 +81,7 @@ The GUI is self-explanatory. If you do have a question though, feel free to ask.
 Command format:<br>
 `nqueensfaf-demo (-n=<N> | -r=<path_to_save_file>) [<general_options>] <solver_command>`
 
-If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#options-for-cpu-solver) section and the 🔗[GPU-Solver](#options-for-gpu-solver) section.
+If you just want to get started, take a look at the examples in the 🔗[CPU-Solver](#command-for-cpu-solver) section and the 🔗[GPU-Solver](#command-for-gpu-solver) section.
 
 #### Required Parameters
 Specify exactly one of them:
