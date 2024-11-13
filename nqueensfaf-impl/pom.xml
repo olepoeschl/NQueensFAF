@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>de.nqueensfaf</groupId>
 		<artifactId>nqueensfaf</artifactId>
-		<version>3.0.0</version>
+		<version>3.0.1</version>
 	</parent>
 	<artifactId>nqueensfaf-impl</artifactId>
 	<name>nqueensfaf-impl</name>
@@ -142,7 +142,7 @@
 		<dependency>
 			<groupId>de.nqueensfaf</groupId>
 			<artifactId>nqueensfaf-core</artifactId>
-			<version>3.0.0</version>
+			<version>3.0.1</version>
 		</dependency>
 		<!-- lwjgl for OpenCL access -->
 		<dependency>
