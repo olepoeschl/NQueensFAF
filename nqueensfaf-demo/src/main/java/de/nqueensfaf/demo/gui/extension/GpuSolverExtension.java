@@ -375,7 +375,8 @@ public class GpuSolverExtension implements SolverExtension {
     public void onSolverStarted() {
 	EventQueue.invokeLater(() -> {
 	    configUi.setEnabled(false);
-	    autoWeightButton.setEnabled(false);
+	    if(autoWeightButton != null)
+		autoWeightButton.setEnabled(false);
 	});
     }
     
@@ -383,7 +384,8 @@ public class GpuSolverExtension implements SolverExtension {
     public void onSolverTerminated() {
 	EventQueue.invokeLater(() -> {
 	    configUi.setEnabled(true);
-	    autoWeightButton.setEnabled(true);
+	    if(autoWeightButton != null)
+		autoWeightButton.setEnabled(true);
 	});
     }
 

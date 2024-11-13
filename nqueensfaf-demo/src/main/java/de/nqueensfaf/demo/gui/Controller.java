@@ -56,8 +56,7 @@ public class Controller {
 	addSolverListener(new SolverAdapter() {
 	    @Override
 	    public void solverStarted() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverStarted();
+		model.getSelectedSolverExtension().onSolverStarted();
 		
 		if(!model.isRestored())
 		    model.updateSolverProgress(0, 0, 0, 0);
@@ -65,8 +64,7 @@ public class Controller {
 	    
 	    @Override
 	    public void solverFinished() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverFinished();
+		model.getSelectedSolverExtension().onSolverFinished();
 		
 		var solver = model.getSelectedSolverExtension().getSolver();
 		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
@@ -75,14 +73,12 @@ public class Controller {
 
 	    @Override
 	    public void solverCanceled() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverCanceled();
+		model.getSelectedSolverExtension().onSolverCanceled();
 	    }
 	    
 	    @Override
 	    public void solverTerminated() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverTerminated();
+		model.getSelectedSolverExtension().onSolverTerminated();
 		
 		var solver = model.getSelectedSolverExtension().getSolver();
 		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
@@ -93,14 +89,12 @@ public class Controller {
 
 	    @Override
 	    public void solverSaved() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverSaved();
+		model.getSelectedSolverExtension().onSolverSaved();
 	    }
 
 	    @Override
 	    public void solverRestored() {
-		for(var solverExtension : model.getSolverExtensions())
-		    solverExtension.onSolverRestored();
+		model.getSelectedSolverExtension().onSolverRestored();
 	    }
 
 	    @Override
