@@ -3,7 +3,7 @@ package de.nqueensfaf.core;
 import java.io.IOException;
 
 /**
- * Defines the interface for a solver capable of finding the solution count to
+ * Defines the interface for a reusable solver capable of finding the solution count to
  * the N-Queens problem. Provides methods for configuring and controlling the
  * solver and for retrieving its results.
  * 
