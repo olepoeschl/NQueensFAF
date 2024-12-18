@@ -9,8 +9,8 @@ import picocli.CommandLine;
 
 public class Main {
     
-    public static final String VERSION = "3.0.1";
-    public static final String VERSION_DATE = "13.11.2024";
+    public static final String VERSION = "3.0.2";
+    public static final String VERSION_DATE = "18.12.2024";
 
     public static void main(String[] args) {
 	if (args.length == 0) {
