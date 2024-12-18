@@ -49,6 +49,6 @@ public interface SolverExtension {
 	return new HashMap<>();
     }
     
-    default void setConfig(Map<String, Object> configMap) {}
+    default void setConfig(Map<String, Object> configMap) throws IllegalArgumentException {}
     
 }

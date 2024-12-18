@@ -246,7 +246,11 @@ public class Controller {
     
     public void pasteSolverExtensionConfig() {
 	if(SolverExtensionConfigClipboard.getInstance().get() != null)
-	    model.getSelectedSolverExtension().setConfig(SolverExtensionConfigClipboard.getInstance().get());
+	    try {
+		model.getSelectedSolverExtension().setConfig(SolverExtensionConfigClipboard.getInstance().get());
+	    } catch (IllegalArgumentException e) {
+		view.error("cannot to paste incompatible solver config");
+	    }
     }
     
     // solver event listeners

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>de.nqueensfaf</groupId>
 		<artifactId>nqueensfaf</artifactId>
-		<version>3.0.1</version>
+		<version>3.0.2</version>
 	</parent>
 	<artifactId>nqueensfaf-examples</artifactId>
 	<name>nqueensfaf-examples</name>
@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>de.nqueensfaf</groupId>
 			<artifactId>nqueensfaf-impl</artifactId>
-			<version>3.0.1</version>
+			<version>3.0.2</version>
 		</dependency>
 		<!-- show ascii tables in console -->
 		<dependency>
@@ -26,13 +26,13 @@
 	</dependencies>
 
 	<build>
-    		<resources> 
-        		<resource>
-                		<directory>src/main/java</directory>
-                		<includes>
-                    			<include>**/*.java</include>
-                		</includes>
-        		</resource>
-    		</resources>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.java</include>
+				</includes>
+			</resource>
+		</resources>
 	</build>
 </project>

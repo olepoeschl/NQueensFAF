@@ -641,4 +641,13 @@ public class View extends JFrame {
 		JOptionPane.showMessageDialog(
 			this, message, title, JOptionPane.INFORMATION_MESSAGE));
     }
+
+    public static void errorAndExit(Component parent, String message) {
+	EventQueue
+		.invokeLater(() -> {
+		    JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
+		    System.exit(0);
+		});
+    }
+
 }

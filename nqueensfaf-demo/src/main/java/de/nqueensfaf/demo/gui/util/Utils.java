@@ -3,7 +3,6 @@ package de.nqueensfaf.demo.gui.util;
 import java.awt.GridBagLayout;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -21,35 +20,51 @@ public class Utils {
     
     private static ImageIcon saveIcon, openIcon, pasteIcon, copyIcon;
     
-    static {
-	try {
-	    var saveBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("save.png"));
-	    var openBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("open.png"));
-	    var pasteBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("paste.png"));
-	    var copyBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("copy.png"));
-
-	    saveIcon = new ImageIcon(saveBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
-	    openIcon = new ImageIcon(openBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
-	    pasteIcon = new ImageIcon(pasteBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
-	    copyIcon = new ImageIcon(copyBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
-	} catch (IOException e) {
-	    View.error(null, "could not read image resource: " + e.getMessage());
-	}
-    }
-    
     public static ImageIcon getSaveIcon() {
+	if(saveIcon == null) {
+	    try {
+		var saveBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("save.png"));
+		saveIcon = new ImageIcon(saveBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    } catch (Exception e) {
+		View.errorAndExit(null, "could not load resource for save icon");
+	    }
+	}
 	return saveIcon;
     }
     
     public static ImageIcon getOpenIcon() {
+	if(openIcon == null) {
+	    try {
+		var openBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("open.png"));
+		openIcon = new ImageIcon(openBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    } catch (Exception e) {
+		View.errorAndExit(null, "could not load resource for open icon");
+	    }
+	}
 	return openIcon;
     }
     
     public static ImageIcon getPasteIcon() {
+	if(pasteIcon == null) {
+	    try {
+		var pasteBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("paste.png"));
+		pasteIcon = new ImageIcon(pasteBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    } catch (Exception e) {
+		View.errorAndExit(null, "could not load resource for paste icon");
+	    }
+	}
 	return pasteIcon;
     }
     
     public static ImageIcon getCopyIcon() {
+	if(copyIcon == null) {
+	    try {
+		var copyBufImg = ImageIO.read(Utils.class.getClassLoader().getResourceAsStream("copy.png"));
+		copyIcon = new ImageIcon(copyBufImg.getScaledInstance(20, 20, java.awt.Image.SCALE_AREA_AVERAGING));
+	    } catch (Exception e) {
+		View.errorAndExit(null, "could not load resource for copy icon");
+	    }
+	}
 	return copyIcon;
     }
     

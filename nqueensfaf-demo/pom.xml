@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>de.nqueensfaf</groupId>
 		<artifactId>nqueensfaf</artifactId>
-		<version>3.0.1</version>
+		<version>3.0.2</version>
 	</parent>
 	<artifactId>nqueensfaf-demo</artifactId>
 	<name>nqueensfaf-demo</name>
@@ -15,12 +15,12 @@
 		<dependency>
 			<groupId>de.nqueensfaf</groupId>
 			<artifactId>nqueensfaf-core</artifactId>
-			<version>3.0.1</version>
+			<version>3.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>de.nqueensfaf</groupId>
 			<artifactId>nqueensfaf-impl</artifactId>
-			<version>3.0.1</version>
+			<version>3.0.2</version>
 		</dependency>
 		<!-- picocli -->
 		<dependency>
@@ -49,14 +49,20 @@
 	</dependencies>
 
 	<build>
-    		<resources> 
-        		<resource>
-                		<directory>src/main/java</directory>
-                		<includes>
-                    			<include>**/*.java</include>
-                		</includes>
-        		</resource>
-    		</resources>
+		<resources>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.java</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include>**/*.*</include>
+				</includes>
+			</resource>
+		</resources>
 		<sourceDirectory>src/main/java</sourceDirectory>
 		<plugins>
 			<plugin>
