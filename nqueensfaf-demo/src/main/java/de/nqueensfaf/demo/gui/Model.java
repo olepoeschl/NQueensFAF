@@ -40,7 +40,7 @@ public class Model {
 	solverExtensions[1] = new CpuSolverExtension();
 	solverExtensions[2] = new GpuSolverExtension();
 	
-	symSolvers = new SymSolver[3];
+	symSolvers = new SymSolver[solverExtensions.length];
 	for(int i = 0; i < symSolvers.length; i++)
 	    symSolvers[i] = new SymSolver();
     }
