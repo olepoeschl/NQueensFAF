@@ -83,13 +83,15 @@ public abstract class AbstractSolver implements Solver {
 	    tEnd = System.currentTimeMillis();
 	} catch (Exception e) {
 	    executionState = CANCELED;
-	    updateExecutor.shutdown();
-	    try {
-		updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
-	    } catch (InterruptedException e1) {
-		// ignore
+	    if (updateInterval > 0) {
+		updateExecutor.shutdown();
+		try {
+		    updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException _) {
+		    // ignore
+		}
+		onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	    }
-	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	    onCancel.accept(e);
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
@@ -100,7 +102,7 @@ public abstract class AbstractSolver implements Solver {
 	    updateExecutor.shutdown();
 	    try {
 		updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
-	    } catch (InterruptedException e) {
+	    } catch (InterruptedException _) {
 		// ignore
 	    }
 	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
