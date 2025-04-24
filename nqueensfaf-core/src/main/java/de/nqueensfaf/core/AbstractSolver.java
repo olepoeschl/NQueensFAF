@@ -2,8 +2,9 @@ package de.nqueensfaf.core;
 
 import static de.nqueensfaf.core.ExecutionState.*;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -23,12 +24,15 @@ public abstract class AbstractSolver implements Solver {
     };
     private Runnable onFinish = () -> {
     };
-    private Consumer<Exception> onCancel = e -> {
+    private Consumer<Exception> onCancel = _ -> {
     };
-    private OnProgressUpdateConsumer onProgressUpdate = (p, s, d) -> {
+    private OnProgressUpdateConsumer onProgressUpdate = (_, _, _) -> {
     };
     private int updateInterval = 200;
-    private Timer timer;
+    private ScheduledExecutorService updateExecutor;
+    private long tStart = 0;
+    private long tEnd = 0;
+    private long storedDuration = 0;
 
     @Override
     public void setN(int n) {
@@ -64,23 +68,31 @@ public abstract class AbstractSolver implements Solver {
 	onStart.run();
 
 	if (updateInterval > 0) { // if updateInterval is 0, it means disable progress updates
-	    timer = new Timer();
-	    timer.schedule(new TimerTask() {
-		@Override
-		public void run() {
-		    if(executionState != RUNNING || getProgress() >= 1f)
-			return;
-		    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration());
-		}
-	    }, 0, updateInterval);
+	    updateExecutor = Executors.newSingleThreadScheduledExecutor();
+	    updateExecutor.scheduleWithFixedDelay(() -> {
+		if(executionState.isAfter(RUNNING))
+		    return;
+		onProgressUpdate.accept(getProgress(), getSolutions(), getDuration());
+	    }, updateInterval, updateInterval, TimeUnit.MILLISECONDS);
 	}
 
 	executionState = RUNNING;
 	try {
+	    tStart = System.currentTimeMillis();
 	    solve();
+	    tEnd = System.currentTimeMillis();
 	} catch (Exception e) {
+	    tEnd = System.currentTimeMillis();
 	    executionState = CANCELED;
-	    timer.cancel();
+	    if (updateInterval > 0) {
+		updateExecutor.shutdown();
+		try {
+		    updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException _) {
+		    // ignore
+		}
+		onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
+	    }
 	    onCancel.accept(e);
 	    throw new RuntimeException("error while running solver: " + e.getMessage(), e);
 	}
@@ -88,7 +100,12 @@ public abstract class AbstractSolver implements Solver {
 	executionState = TERMINATING;
 
 	if (updateInterval > 0) {
-	    timer.cancel();
+	    updateExecutor.shutdown();
+	    try {
+		updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
+	    } catch (InterruptedException _) {
+		// ignore
+	    }
 	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
 	}
 
@@ -111,6 +128,29 @@ public abstract class AbstractSolver implements Solver {
 	return executionState;
     }
     
+    @Override
+    public long getDuration() {
+	if (executionState.isBefore(RUNNING))
+	    return storedDuration;
+	else if (executionState.isAfter(RUNNING))
+	    return tEnd - tStart + storedDuration;
+	else
+	    return System.currentTimeMillis() - tStart + storedDuration;
+    }
+    
+    /**
+     * This method is intended to be overridden by subclasses to reset any internal state.
+     */
+    protected void resetInternal() {
+	// no-op by default
+    }
+    
+    @Override
+    public void reset() {
+	storedDuration = 0;
+	resetInternal();
+    }
+    
     // TODO: docs
     public boolean supportsSavePoints() {
 	return false;
@@ -121,9 +161,14 @@ public abstract class AbstractSolver implements Solver {
 	return null;
     }
     
+    protected <T extends SavePoint> void restoreSavePointInternal(T savePoint) {
+	// no-op by default
+    }
+    
     // TODO: docs
     public <T extends SavePoint> void restoreSavePoint(T savePoint) {
-	// no-op as default
+	storedDuration = savePoint.getDuration();
+	restoreSavePointInternal(savePoint);
     }
 
     /**

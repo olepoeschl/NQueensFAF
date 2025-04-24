@@ -23,14 +23,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.impl.GpuSolver.GpuSavePoint;
 
 public class CpuSolver extends AbstractSolver {
 
     private List<Constellation> constellations = new ArrayList<Constellation>();
     private final List<List<Constellation>> threadConstellations = new ArrayList<List<Constellation>>();
-    private long start, duration, storedDuration;
     private boolean stateLoaded;
     private int presetQueens = 5, threadCount = 1;
     
@@ -86,7 +84,7 @@ public class CpuSolver extends AbstractSolver {
     }
     
     @Override
-    public <T extends SavePoint> void restoreSavePoint(T savePoint) {
+    public <T extends SavePoint> void restoreSavePointInternal(T savePoint) {
 	if(savePoint instanceof CpuSavePoint) {
 	    var cpuSavePoint = (CpuSavePoint) savePoint;
 	    load(cpuSavePoint.n(), cpuSavePoint.storedDuration(), cpuSavePoint.constellations());
@@ -130,7 +128,6 @@ public class CpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("solver progress can only be injected when idle");
 
 	setN(n);
-	this.storedDuration = storedDuration;
 	this.constellations = constellations;
 	
 	// update solvedConstellations and solution count
@@ -152,22 +149,12 @@ public class CpuSolver extends AbstractSolver {
     }
 
     @Override
-    public void reset() {
+    public void resetInternal() {
 	solutions.set(0);
 	solvedConstellations.set(0);
-	duration = start = storedDuration = 0;
 	threadConstellations.clear();
 	constellations.clear();
 	stateLoaded = false;
-    }
-
-    @Override
-    public long getDuration() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0)
-	    return System.currentTimeMillis() - start + storedDuration;
-	else if (getExecutionState().isIdle() && stateLoaded)
-	    return storedDuration;
-	return duration;
     }
 
     @Override
@@ -187,17 +174,12 @@ public class CpuSolver extends AbstractSolver {
 	if(presetQueens >= getN() - 1)
 	    throw new IllegalStateException("could not run CpuSolver: number of pre-placed queens must be lower than N-1");
 	
-	duration = 0;
 	threadConstellations.clear();
-	start = System.currentTimeMillis();
 
 	if (!stateLoaded) {
 	    solutions.set(0);
 	    solvedConstellations.set(0);
-	    storedDuration = 0;
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-	} else {
-	    stateLoaded = false;
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
@@ -222,10 +204,7 @@ public class CpuSolver extends AbstractSolver {
 	// wait for the threads to finish
 	executor.shutdown();
 	try {
-	    if (executor.awaitTermination(365, TimeUnit.DAYS)) {
-		// finished
-		duration = System.currentTimeMillis() - start + storedDuration;
-	    }
+	    executor.awaitTermination(365, TimeUnit.DAYS);
 	} catch (InterruptedException e) {
 	    throw new RuntimeException("could not wait for solver cpu threads to terminate: " + e.getMessage(), e);
 	}

@@ -80,7 +80,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.core.ExecutionState;
 import de.nqueensfaf.impl.CpuSolver.CpuSavePoint;
 
 public class GpuSolver extends AbstractSolver {
@@ -91,7 +90,6 @@ public class GpuSolver extends AbstractSolver {
     private List<Constellation> constellations = new ArrayList<Constellation>();
     private int presetQueens = 6;
 
-    private long start, duration, storedDuration;
     private boolean stateLoaded;
 
     private int L;
@@ -140,7 +138,7 @@ public class GpuSolver extends AbstractSolver {
     }
     
     @Override
-    public <T extends SavePoint> void restoreSavePoint(T savePoint) {
+    public <T extends SavePoint> void restoreSavePointInternal(T savePoint) {
 	if(savePoint instanceof GpuSavePoint) {
 	    var gpuSavePoint = (GpuSavePoint) savePoint;
 	    load(gpuSavePoint.n(), gpuSavePoint.storedDuration(), gpuSavePoint.constellations());
@@ -185,7 +183,6 @@ public class GpuSolver extends AbstractSolver {
 	    throw new IllegalStateException("solver progress can only be injected when idle");
 
 	setN(n);
-	this.storedDuration = storedDuration;
 	this.constellations = constellations;
 	
 	// update solvedConstellations and solution count
@@ -209,23 +206,13 @@ public class GpuSolver extends AbstractSolver {
     }
 
     @Override
-    public void reset() {
+    public void resetInternal() {
 	solutions.set(0);
 	solvedConstellations.set(0);
-	duration = start = storedDuration = 0;
 	constellations.clear();
 	stateLoaded = false;
     }
-
-    @Override
-    public long getDuration() {
-	if (getExecutionState().isBefore(ExecutionState.FINISHED) && start != 0)
-	    return System.currentTimeMillis() - start + storedDuration;
-	else if (start == 0 && stateLoaded)
-	    return storedDuration;
-	return duration;
-    }
-
+    
     @Override
     public float getProgress() {
 	if(constellations.size() == 0)
@@ -290,16 +277,10 @@ public class GpuSolver extends AbstractSolver {
 	if(presetQueens >= getN() - 1)
 	    throw new IllegalStateException("could not run GpuSolver: number of pre-placed queens must be lower than N-1");
 	
-	duration = 0;
-	start = System.currentTimeMillis();
-	
 	if (!stateLoaded) {
 	    solutions.set(0);
 	    solvedConstellations.set(0);
-	    storedDuration = 0;
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-	} else {
-	    stateLoaded = false;
 	}
 	
 	sortConstellationsByJkl(constellations);
@@ -318,8 +299,6 @@ public class GpuSolver extends AbstractSolver {
 	} else {
 	    multiGpu(remainingConstellations);
 	}
-
-	duration = System.currentTimeMillis() - start + storedDuration;
 
 	for (var gpu : gpuSelection.get()) {
 	    gpu.releaseOpenClObjects();

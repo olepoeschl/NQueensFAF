@@ -4,7 +4,6 @@ import de.nqueensfaf.core.AbstractSolver;
 
 public class SymSolver extends AbstractSolver {
 
-    private long start, end;
     private long solutions90, solutions180;
     private int mask, L;
 
@@ -13,9 +12,7 @@ public class SymSolver extends AbstractSolver {
     @Override
     public void solve() {
 	cancel = false;
-	end = solutions90 = solutions180 = 0;
-	
-	start = System.currentTimeMillis();
+	solutions90 = solutions180 = 0;
 	L = 1 << (getN() - 1);
 	mask = (L - 1) | L;
 
@@ -43,8 +40,6 @@ public class SymSolver extends AbstractSolver {
 	solutions180 -= solutions90;
 	solutions180 /= 4;
 	solutions90 /= 2;
-
-	end = System.currentTimeMillis();
     }
 
     private void rot90Solver(int ld, int rd, int col, int ldbot, int rdbot, int row, int rowidx, int queens) {
@@ -121,14 +116,6 @@ public class SymSolver extends AbstractSolver {
     }
 
     @Override
-    public long getDuration() {
-	if (end != 0)
-	    return end - start;
-	else
-	    return System.currentTimeMillis() - start;
-    }
-
-    @Override
     public float getProgress() {
 	return 0;
     }
@@ -139,8 +126,7 @@ public class SymSolver extends AbstractSolver {
     }
     
     @Override
-    public void reset() {
-	start = end = 0;
+    public void resetInternal() {
 	solutions90 = solutions180 = 0;
     }
     
