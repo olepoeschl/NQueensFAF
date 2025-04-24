@@ -5,10 +5,7 @@ import de.nqueensfaf.core.AbstractSolver;
 public class SimpleSolver extends AbstractSolver {
 
     private long solutions = 0;
-    private long duration = 0;
     private float progress = 0;
-    
-    private long start = 0;
 
     public SimpleSolver() {
     }
@@ -19,15 +16,12 @@ public class SimpleSolver extends AbstractSolver {
 
     @Override
     public void solve() {
-	solutions = duration = 0;
+	solutions = 0;
 	progress = 0;
-	
-	start = System.currentTimeMillis();
 
 	int mask = (1 << getN()) - 1;
 	backtrack(0, 0, 0, 0, mask, mask);
 	
-	duration = System.currentTimeMillis() - start;
 	progress = 1;
     }
 
@@ -48,13 +42,6 @@ public class SimpleSolver extends AbstractSolver {
 	    if (nextfree > 0)
 		backtrack((ld | bit) << 1, (rd | bit) >> 1, col | bit, row + 1, nextfree, mask);
 	}
-    }
-
-    @Override
-    public long getDuration() {
-	if(duration != 0)
-	    return duration;
-	return System.currentTimeMillis() - start;
     }
     
     @Override
