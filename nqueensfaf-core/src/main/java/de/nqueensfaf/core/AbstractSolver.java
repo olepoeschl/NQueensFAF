@@ -135,6 +135,9 @@ public abstract class AbstractSolver implements Solver {
 	    return System.currentTimeMillis() - tStart + storedDuration;
     }
     
+    /**
+     * This method is intended to be overridden by subclasses to reset any internal state.
+     */
     protected void resetInternal() {
 	// no-op by default
     }
