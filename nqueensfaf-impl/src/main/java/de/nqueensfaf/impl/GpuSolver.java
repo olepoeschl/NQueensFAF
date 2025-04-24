@@ -281,8 +281,6 @@ public class GpuSolver extends AbstractSolver {
 	    solutions.set(0);
 	    solvedConstellations.set(0);
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-	} else {
-	    stateLoaded = false;
 	}
 	
 	sortConstellationsByJkl(constellations);

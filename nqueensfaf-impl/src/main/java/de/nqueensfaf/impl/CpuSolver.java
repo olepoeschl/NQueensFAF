@@ -180,8 +180,6 @@ public class CpuSolver extends AbstractSolver {
 	    solutions.set(0);
 	    solvedConstellations.set(0);
 	    constellations = new ConstellationsGenerator(getN()).generate(presetQueens);
-	} else {
-	    stateLoaded = false;
 	}
 
 	// split starting constellations in [threadcount] lists (splitting the work for
