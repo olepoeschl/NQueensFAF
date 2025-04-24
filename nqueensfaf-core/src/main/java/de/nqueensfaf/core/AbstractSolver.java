@@ -82,6 +82,7 @@ public abstract class AbstractSolver implements Solver {
 	    solve();
 	    tEnd = System.currentTimeMillis();
 	} catch (Exception e) {
+	    tEnd = System.currentTimeMillis();
 	    executionState = CANCELED;
 	    if (updateInterval > 0) {
 		updateExecutor.shutdown();
