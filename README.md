@@ -1,6 +1,6 @@
 ![14x14-chessboard-logo](https://github.com/user-attachments/assets/c678aff5-babf-47ce-bc31-73cf13895870)
 
-NQueensFAF is an independent research project dedicated to the development of highly optimized or generally new algorithms for solving the N-Queens problem. It is platform independent and the included solvers can be tested through the GUI or CLI of the demo application or embedded in your project (🔗[Installation](#installation)).
+NQueensFAF (**F**ast **A**nd **F**un) is an independent research project dedicated to the development of highly optimized or generally new algorithms for solving the N-Queens problem. It is platform independent and the included solvers can be tested through the GUI or CLI of the demo application or embedded in your project (🔗[Installation](#installation)).
 Built with Java 21.
 
 Included:
