@@ -179,7 +179,7 @@ The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden.
 2) Solve N=28 and set the new world record.
 
-Further updates on this are expected for summer 2025.
+Further updates on this are expected for summer 2026.
 
 # News
 - We are currently developing a new solver which is based on a completely new method.
