@@ -1,7 +1,8 @@
 ![14x14-chessboard-logo](https://github.com/user-attachments/assets/c678aff5-babf-47ce-bc31-73cf13895870)
+<h1></h1>
 
-NQueensFAF is an independent research project dedicated to the development of highly optimized or generally new algorithms for solving the N-Queens problem. It is platform independent and the included solvers can be tested through the GUI or CLI of the demo application or embedded in your project (🔗[Installation](#installation)).
-Built with Java 21.
+NQueensFAF (**F**ast **A**nd **F**un) is an independent research project dedicated to the development of highly optimized or generally new algorithms for solving the N-Queens problem. It is platform independent and the included solvers can be tested through the GUI or CLI of the demo application or embedded in your project (🔗[Installation](#installation)).
+Built with Java 24.
 
 Included:
 * a solver for CPUs using Java Threads, supports multi-threading
@@ -58,7 +59,7 @@ __Note:__ Your graphics card may go into another power state when running the pr
 
 # Installation
 ## Requirements
-Java21 (or a newer version) needs to be installed on your computer.
+Java24 (or a newer version) needs to be installed on your computer.
 
 ## Demo
 The demo application can be downloaded from the [Releases](https://github.com/olepoeschl/NQueensFAF/releases) page.
@@ -178,7 +179,7 @@ The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden.
 2) Solve N=28 and set the new world record.
 
-Further updates on this are expected for summer 2025.
+Further updates on this are expected for summer 2026.
 
 # News
 - We are currently developing a new solver which is based on a completely new method.
