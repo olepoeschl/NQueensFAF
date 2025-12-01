@@ -24,9 +24,9 @@ public abstract class AbstractSolver implements Solver {
     };
     private Runnable onFinish = () -> {
     };
-    private Consumer<Exception> onCancel = _ -> {
+    private Consumer<Exception> onCancel = e -> {
     };
-    private OnProgressUpdateConsumer onProgressUpdate = (_, _, _) -> {
+    private OnProgressUpdateConsumer onProgressUpdate = (e1, e2, e3) -> {
     };
     private int updateInterval = 200;
     private ScheduledExecutorService updateExecutor;
@@ -88,7 +88,7 @@ public abstract class AbstractSolver implements Solver {
 		updateExecutor.shutdown();
 		try {
 		    updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
-		} catch (InterruptedException _) {
+		} catch (InterruptedException e1) {
 		    // ignore
 		}
 		onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update
@@ -103,7 +103,7 @@ public abstract class AbstractSolver implements Solver {
 	    updateExecutor.shutdown();
 	    try {
 		updateExecutor.awaitTermination(10, TimeUnit.SECONDS);
-	    } catch (InterruptedException _) {
+	    } catch (InterruptedException e1) {
 		// ignore
 	    }
 	    onProgressUpdate.accept(getProgress(), getSolutions(), getDuration()); // one last update

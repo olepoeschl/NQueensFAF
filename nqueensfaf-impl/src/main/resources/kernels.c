@@ -64,7 +64,7 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
     // this is the actual solver (via backtracking with Jeff Somers Bit method) 
     // the structure is slightly complicated since we have to take into account the queens at the border, that have already been placed 
     while(row >= start) {
-	// while we haven't tried everything 
+	// while we haven't tried everything
 	if(free) {
 	    /* if there are free slots in the current row,
 	     * place a queen and go to the next row
@@ -90,10 +90,10 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 		// remember the diagonals leaving the board
 		ld_mem = ld_mem << 1 | ld >> 31;
 		rd_mem = rd_mem >> 1 | rd << 31;
-		ld = (ld | queen) << 1;							
-		rd = (rd | queen) >> 1;	
+		ld = (ld | queen) << 1;
+		rd = (rd | queen) >> 1;
 	    }
-	} 
+	}
 	else {
 	    /* if there aren't any free slots in the current row,
 	     * go one row back, remove the last queen and continue with the next free slot
@@ -106,21 +106,21 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	    ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;
 	    rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
 	    ld_mem >>= 1;
-	    rd_mem <<= 1;						
+	    rd_mem <<= 1;
 	}
 	/* calculate the occupancy of the next row
 	 * (free is 1 if a queen can be set at the queens location)
 	 * free slots are searched and occupied from right to left
 	 */
 	free = ~(jkl_queens[row] | ld | rd | col);
-	free &= ~(queen + direction-1); 
+	free &= ~(queen + direction-1);
 	col ^= queen;
 
 	// unroll 1 iteration
 	if(row < start)
 	    break;
 
-	// while we haven't tried everything 
+	// while we haven't tried everything
 	if(free) {
 	    /* if there are free slots in the current row,
 	     * place a queen and go to the next row
@@ -146,10 +146,10 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 		// remember the diagonals leaving the board
 		ld_mem = ld_mem << 1 | ld >> 31;
 		rd_mem = rd_mem >> 1 | rd << 31;
-		ld = (ld | queen) << 1;							
-		rd = (rd | queen) >> 1;	
+		ld = (ld | queen) << 1;
+		rd = (rd | queen) >> 1;
 	    }
-	} 
+	}
 	else {
 	    /* if there aren't any free slots in the current row,
 	     * go one row back, remove the last queen and continue with the next free slot
@@ -162,14 +162,14 @@ kernel void nqfaf_nvidia(global struct constellation *constellation_arr, global 
 	    ld = ((ld >> 1) | (ld_mem << 31)) & ~queen;
 	    rd = ((rd << 1) | (rd_mem >> 31)) & ~queen;
 	    ld_mem >>= 1;
-	    rd_mem <<= 1;						
+	    rd_mem <<= 1;
 	}
 	/* calculate the occupancy of the next row
 	 * (free is 1 if a queen can be set at the queens location)
 	 * free slots are searched and occupied from right to left
 	 */
 	free = ~(jkl_queens[row] | ld | rd | col);
-	free &= ~(queen + direction-1); 
+	free &= ~(queen + direction-1);
 	col ^= queen;
     }
     // write the number of solutions for this work item back to global memory
