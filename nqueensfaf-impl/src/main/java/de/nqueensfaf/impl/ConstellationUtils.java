@@ -5,44 +5,44 @@ import java.util.HashSet;
 public class ConstellationUtils {
 
     // functions for ijkl manipulation
-    static int toIjkl(int i, int j, int k, int l) {
+    public static int toIjkl(int i, int j, int k, int l) {
 	return (i << 15) + (j << 10) + (k << 5) + l;
     }
 
-    static int geti(int ijkl) {
+    public static int geti(int ijkl) {
 	return ijkl >> 15 & 31;
     }
 
-    static int getj(int ijkl) {
+    public static int getj(int ijkl) {
 	return (ijkl >> 10) & 31;
     }
 
-    static int getk(int ijkl) {
+    public static int getk(int ijkl) {
 	return (ijkl >> 5) & 31;
     }
 
-    static int getl(int ijkl) {
+    public static int getl(int ijkl) {
 	return ijkl & 31;
     }
 
-    static int getJkl(int ijkl) {
+    public static int getJkl(int ijkl) {
 	return ijkl & 0b111111111111111;
     }
 
-    static int getLD(int ijkl, int L) {
+    public static int getLD(int ijkl, int L) {
 	return (L >>> getj(ijkl)) | (L >>> getl(ijkl));
     }
 
-    static int getRD(int ijkl, int L) {
+    public static int getRD(int ijkl, int L) {
 	return (L >>> getj(ijkl)) | (1 << getk(ijkl));
     }
 
-    static boolean oneQueenInCorner(int n, int ijkl) {
+    public static boolean oneQueenInCorner(int n, int ijkl) {
 	return getj(ijkl) == n - 1 && getl(ijkl) == n - 1;
     }
 
     // true, if starting constellation rotated by any angle has already been found
-    static boolean checkRotations(int n, HashSet<Integer> ijklList, int i, int j, int k, int l) {
+    public static boolean checkRotations(int n, HashSet<Integer> ijklList, int i, int j, int k, int l) {
 	// rot90
 	if (ijklList.contains(((n - 1 - k) << 15) + ((n - 1 - l) << 10) + (j << 5) + i))
 	    return true;
@@ -60,7 +60,7 @@ public class ConstellationUtils {
 
     // rotate and mirror board, so that the queen closest to a corner is on the
     // right side of the last row
-    static int jAsMin(int n, int ijkl) {
+    public static int jAsMin(int n, int ijkl) {
 	int min = Math.min(getj(ijkl), n - 1 - getj(ijkl)), arg = 0;
 
 	if (Math.min(geti(ijkl), n - 1 - geti(ijkl)) < min) {
@@ -97,7 +97,7 @@ public class ConstellationUtils {
     }
 
     // how often does a found solution count for this start constellation
-    static int symmetry(int n, int ijkl) {
+    public static int symmetry(int n, int ijkl) {
 	if (geti(ijkl) == n - 1 - getj(ijkl) && getk(ijkl) == n - 1 - getl(ijkl)) // starting constellation symmetric by
 										  // rot180?
 	    if (symmetry90(n, ijkl)) // even by rot90?

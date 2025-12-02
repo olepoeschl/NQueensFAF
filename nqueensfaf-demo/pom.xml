@@ -87,7 +87,7 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<finalName>nqueensfaf-demo-${project.version}</finalName>
-					<appendAssemblyId>false</appendAssemblyId>
+					<appendAssemblyId>true</appendAssemblyId>
 				</configuration>
 			</plugin>
 		</plugins>
