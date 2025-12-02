@@ -5,19 +5,19 @@ import de.nqueensfaf.impl.SimpleSolver;
 
 public class SimpleRecursiveSolverExtension implements SolverExtension {
 
-    private final SimpleSolver solver = new SimpleSolver(); 
-    
+    private final SimpleSolver solver = new SimpleSolver();
+
     public SimpleRecursiveSolverExtension() {
     }
 
     @Override
     public AbstractSolver getSolver() {
-	return solver;
+        return solver;
     }
 
     @Override
     public String getName() {
-	return "SimpleRec";
+        return "SimpleRec";
     }
 
 }

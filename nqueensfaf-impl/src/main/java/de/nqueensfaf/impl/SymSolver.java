@@ -8,71 +8,71 @@ public class SymSolver extends AbstractSolver {
     private int mask, L;
 
     private volatile boolean cancel = false;
-    
+
     @Override
     public void solve() {
-	cancel = false;
-	solutions90 = solutions180 = 0;
-	L = 1 << (getN() - 1);
-	mask = (L - 1) | L;
+        cancel = false;
+        solutions90 = solutions180 = 0;
+        L = 1 << (getN() - 1);
+        mask = (L - 1) | L;
 
-	// occupies the middle column, if the board has odd size
-	int mid = (getN() % 2) * (1 << (getN() / 2));
+        // occupies the middle column, if the board has odd size
+        int mid = (getN() % 2) * (1 << (getN() / 2));
 
-	// the main diagonals can only be occupied, if the corresponding queen is in the
-	// middle of
-	// the board
-	// this can only be the case for odd n
-	// the queen in the middle of the board never has to be set - if we reach the
-	// middle row, we
-	// already found a solution
-	rot180Solver(1, L, mid, L, 1, 0);
-	rot90Solver(1, L, mid, L, 1, mid, 0, 0);
+        // the main diagonals can only be occupied, if the corresponding queen is in the
+        // middle of
+        // the board
+        // this can only be the case for odd n
+        // the queen in the middle of the board never has to be set - if we reach the
+        // middle row, we
+        // already found a solution
+        rot180Solver(1, L, mid, L, 1, 0);
+        rot90Solver(1, L, mid, L, 1, mid, 0, 0);
 
-	// solver for 180 degree symmetric solutions counts every 180 symmetric solution
-	// 4 times and
-	// every 90 degree symmetric solution 4 times
-	// the solver for 90 degree symmetric solutions counts every 90 degree symmetric
-	// solution
-	// double
-	// following values are the unique solution number with their respective
-	// symmetry ONLY
-	solutions180 -= solutions90;
-	solutions180 /= 4;
-	solutions90 /= 2;
+        // solver for 180 degree symmetric solutions counts every 180 symmetric solution
+        // 4 times and
+        // every 90 degree symmetric solution 4 times
+        // the solver for 90 degree symmetric solutions counts every 90 degree symmetric
+        // solution
+        // double
+        // following values are the unique solution number with their respective
+        // symmetry ONLY
+        solutions180 -= solutions90;
+        solutions180 /= 4;
+        solutions90 /= 2;
     }
 
     private void rot90Solver(int ld, int rd, int col, int ldbot, int rdbot, int row, int rowidx, int queens) {
-	if(cancel)
-	    return;
-	
-	// in the mid row we are done
-	if (rowidx == getN() / 2) {
-	    solutions90++;
-	    return;
-	}
-	// by rotating 90 degrees we can occupy a row before we reached it
-	// in this case just skip
-	if (((row >>> rowidx) & 1) > 0) {
-	    rot90Solver(ld << 1, rd >>> 1, col, ldbot >>> 1, rdbot << 1, row, rowidx + 1, queens);
-	    return;
-	}
+        if (cancel)
+            return;
 
-	// revbit is reversed bit on the board
-	int bit, revbit, rowbit = (1 << rowidx), revrowbit = Integer.reverse(rowbit) >>> (32 - getN());
-	int free = ~(ld | rd | col | (ldbot >>> (getN() - 1 - 2 * rowidx)) | (rdbot << (getN() - 1 - 2 * rowidx)))
-		& mask;
+        // in the mid row we are done
+        if (rowidx == getN() / 2) {
+            solutions90++;
+            return;
+        }
+        // by rotating 90 degrees we can occupy a row before we reached it
+        // in this case just skip
+        if (((row >>> rowidx) & 1) > 0) {
+            rot90Solver(ld << 1, rd >>> 1, col, ldbot >>> 1, rdbot << 1, row, rowidx + 1, queens);
+            return;
+        }
 
-	while ((free & mask) > 0) {
+        // revbit is reversed bit on the board
+        int bit, revbit, rowbit = (1 << rowidx), revrowbit = Integer.reverse(rowbit) >>> (32 - getN());
+        int free = ~(ld | rd | col | (ldbot >>> (getN() - 1 - 2 * rowidx)) | (rdbot << (getN() - 1 - 2 * rowidx)))
+            & mask;
 
-	    bit = free & (-free);
-	    revbit = Integer.reverse(bit) >>> (32 - getN());
-	    free &= ~bit;
+        while ((free & mask) > 0) {
 
-	    rot90Solver((ld | bit | revbit) << 1, (rd | bit | revbit) >>> 1, col | bit | revbit | rowbit | revrowbit,
-		    (ldbot | bit | revbit) >>> 1, (rdbot | bit | revbit) << 1, row | rowbit | revrowbit | bit | revbit,
-		    rowidx + 1, queens + 1);
-	}
+            bit = free & (-free);
+            revbit = Integer.reverse(bit) >>> (32 - getN());
+            free &= ~bit;
+
+            rot90Solver((ld | bit | revbit) << 1, (rd | bit | revbit) >>> 1, col | bit | revbit | rowbit | revrowbit,
+                (ldbot | bit | revbit) >>> 1, (rdbot | bit | revbit) << 1, row | rowbit | revrowbit | bit | revbit,
+                rowidx + 1, queens + 1);
+        }
     }
 
     // similar to 90 degree symmetric solver, just with less extra constraints
@@ -82,55 +82,55 @@ public class SymSolver extends AbstractSolver {
     // realize occupation by solving board from top to bottom and vice versa
     // simultaneously
     private void rot180Solver(int ld, int rd, int col, int ldbot, int rdbot, int rowidx) {
-	if(cancel)
-	    return;
-	
-	if (rowidx == getN() / 2) {
-	    solutions180++;
-	    return;
-	}
-	int free = (~(ld | rd | col | (ldbot >>> (getN() - 1 - 2 * rowidx)) | (rdbot << (getN() - 1 - 2 * rowidx))))
-		& (int) mask;
-	int bit, revbit;
+        if (cancel)
+            return;
 
-	while ((free & mask) > 0) {
-	    bit = free & (-free);
-	    revbit = Integer.reverse(bit) >>> (32 - getN());
-	    free &= ~bit;
+        if (rowidx == getN() / 2) {
+            solutions180++;
+            return;
+        }
+        int free = (~(ld | rd | col | (ldbot >>> (getN() - 1 - 2 * rowidx)) | (rdbot << (getN() - 1 - 2 * rowidx))))
+            & (int) mask;
+        int bit, revbit;
 
-	    rot180Solver((ld | bit) << 1, (rd | bit) >>> 1, col | bit | revbit, (ldbot | revbit) >>> 1,
-		    (rdbot | revbit) << 1, rowidx + 1);
-	}
+        while ((free & mask) > 0) {
+            bit = free & (-free);
+            revbit = Integer.reverse(bit) >>> (32 - getN());
+            free &= ~bit;
+
+            rot180Solver((ld | bit) << 1, (rd | bit) >>> 1, col | bit | revbit, (ldbot | revbit) >>> 1,
+                (rdbot | revbit) << 1, rowidx + 1);
+        }
     }
 
     public long getSolutions90() {
-	return solutions90;
+        return solutions90;
     }
 
     public long getSolutions180() {
-	return solutions180;
+        return solutions180;
     }
 
     public long getUniqueSolutionsTotal(long solutions) {
-	return solutions == 0 ? 0 : (solutions + 4 * solutions180 + 6 * solutions90) / 8;
+        return solutions == 0 ? 0 : (solutions + 4 * solutions180 + 6 * solutions90) / 8;
     }
 
     @Override
     public float getProgress() {
-	return 0;
+        return 0;
     }
 
     @Override
     public long getSolutions() {
-	return 0;
+        return 0;
     }
-    
+
     @Override
     public void resetInternal() {
-	solutions90 = solutions180 = 0;
+        solutions90 = solutions180 = 0;
     }
-    
+
     public void cancel() {
-	cancel = true;
+        cancel = true;
     }
 }

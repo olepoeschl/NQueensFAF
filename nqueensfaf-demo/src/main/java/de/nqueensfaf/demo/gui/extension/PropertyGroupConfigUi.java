@@ -1,30 +1,20 @@
 package de.nqueensfaf.demo.gui.extension;
 
-import static de.nqueensfaf.demo.gui.util.QuickGBC.*;
+import de.nqueensfaf.demo.gui.util.QuickGBC;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import javax.swing.*;
+import javax.swing.event.SwingPropertyChangeSupport;
+import javax.swing.text.NumberFormatter;
+import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.text.NumberFormat;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.event.SwingPropertyChangeSupport;
-import javax.swing.text.NumberFormatter;
-
-import de.nqueensfaf.demo.gui.util.QuickGBC;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.ANCHOR_NORTH;
+import static de.nqueensfaf.demo.gui.util.QuickGBC.ANCHOR_WEST;
 
 @SuppressWarnings("serial")
 public class PropertyGroupConfigUi extends JPanel {
@@ -34,209 +24,209 @@ public class PropertyGroupConfigUi extends JPanel {
     private Map<String, AbstractProperty<?>> properties = new HashMap<String, AbstractProperty<?>>();
 
     public PropertyGroupConfigUi() {
-	setLayout(new GridBagLayout());
+        setLayout(new GridBagLayout());
     }
 
-    public  AbstractProperty<?> getProperty(String propertyName) {
-	return properties.get(propertyName);
+    public AbstractProperty<?> getProperty(String propertyName) {
+        return properties.get(propertyName);
     }
-    
+
     @Override
     public void setEnabled(boolean enabled) {
-	for (var prop : properties.values()) {
-	    prop.setEnabled(enabled);
-	}
+        for (var prop : properties.values()) {
+            prop.setEnabled(enabled);
+        }
     }
 
     public <T extends AbstractProperty<?>> void addProperty(T property) {
-	property.createUi();
-	installPropertyUi(property);
-	properties.put(property.getName(), property);
+        property.createUi();
+        installPropertyUi(property);
+        properties.put(property.getName(), property);
     }
-    
+
     private void installPropertyUi(AbstractProperty<?> property) {
-	if(properties.size() > 0)
-	    add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
-	
-	int maxGridy = 0;
-	
-	for(var entry : property.getComponentsWithConstraints()) {
-	    entry.getValue().gridy += gridy;
-	    if(entry.getValue().gridy > maxGridy)
-		maxGridy = entry.getValue().gridy;
-	    
-	    add(entry.getKey(), entry.getValue());
-	}
-	
-	gridy = maxGridy + 1;
+        if (properties.size() > 0)
+            add(Box.createVerticalStrut(5), new QuickGBC(0, gridy++));
+
+        int maxGridy = 0;
+
+        for (var entry : property.getComponentsWithConstraints()) {
+            entry.getValue().gridy += gridy;
+            if (entry.getValue().gridy > maxGridy)
+                maxGridy = entry.getValue().gridy;
+
+            add(entry.getKey(), entry.getValue());
+        }
+
+        gridy = maxGridy + 1;
     }
 
     // only text input
     public void addIntProperty(String name, String title, int min, int max, int value) {
-	addIntProperty(name, title, min, max, value, 0);
+        addIntProperty(name, title, min, max, value, 0);
     }
 
     // text input, slider, + and - buttons
     public void addIntProperty(String name, String title, int min, int max, int value, int step) {
-	addProperty(new IntProperty(name, title, min, max, value, step));
+        addProperty(new IntProperty(name, title, min, max, value, step));
+    }
+
+    public void fillRemainingVerticalSpace() {
+        add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
+    }
+
+    public int getNextFreeY() {
+        return gridy;
     }
 
     public static abstract class AbstractProperty<T> {
 
-	private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
+        private final PropertyChangeSupport prop = new SwingPropertyChangeSupport(this);
 
-	private final List<Map.Entry<JComponent, GridBagConstraints>> componentsWithConstraints = new ArrayList<Entry<JComponent, GridBagConstraints>>();
+        private final List<Map.Entry<JComponent, GridBagConstraints>> componentsWithConstraints = new ArrayList<Entry<JComponent, GridBagConstraints>>();
 
-	private final String name;
-	private final String title;
-	private T value;
+        private final String name;
+        private final String title;
+        private T value;
 
-	AbstractProperty(String name, String title, T value) {
-	    this.name = name;
-	    this.title = title;
-	    this.value = value;
-	}
+        AbstractProperty(String name, String title, T value) {
+            this.name = name;
+            this.title = title;
+            this.value = value;
+        }
 
-	public final void addChangeListener(PropertyChangeListener l) {
-	    prop.addPropertyChangeListener(l);
-	}
+        public final void addChangeListener(PropertyChangeListener l) {
+            prop.addPropertyChangeListener(l);
+        }
 
-	public final void add(JComponent component, GridBagConstraints constraints) {
-	    componentsWithConstraints
-		    .add(new AbstractMap.SimpleEntry<JComponent, GridBagConstraints>(component, constraints));
-	}
-	
-	final List<Map.Entry<JComponent, GridBagConstraints>> getComponentsWithConstraints(){
-	    return componentsWithConstraints;
-	}
+        public final void add(JComponent component, GridBagConstraints constraints) {
+            componentsWithConstraints
+                .add(new AbstractMap.SimpleEntry<JComponent, GridBagConstraints>(component, constraints));
+        }
 
-	final String getName() {
-	    return name;
-	}
+        final List<Map.Entry<JComponent, GridBagConstraints>> getComponentsWithConstraints() {
+            return componentsWithConstraints;
+        }
 
-	final String getTitle() {
-	    return title;
-	}
+        final String getName() {
+            return name;
+        }
 
-	public final T getValue() {
-	    return value;
-	}
+        final String getTitle() {
+            return title;
+        }
 
-	public final void setValue(Object object) {
-	    @SuppressWarnings("unchecked")
-	    var newValue = (T) object;
-	    T oldValue = this.value;
-	    this.value = newValue;
-	    updateUi(newValue);
-	    prop.firePropertyChange(name, oldValue, newValue);
-	}
+        public final T getValue() {
+            return value;
+        }
 
-	void createUi() {
-	    JLabel lblTitle = new JLabel(getTitle());
-	    add(lblTitle, new QuickGBC(0, 0).fillx().anchor(ANCHOR_WEST));
+        public final void setValue(Object object) {
+            @SuppressWarnings("unchecked")
+            var newValue = (T) object;
+            T oldValue = this.value;
+            this.value = newValue;
+            updateUi(newValue);
+            prop.firePropertyChange(name, oldValue, newValue);
+        }
 
-	    createConfigUi();
-	}
-	
-	abstract void updateUi(T value);
+        void createUi() {
+            JLabel lblTitle = new JLabel(getTitle());
+            add(lblTitle, new QuickGBC(0, 0).fillx().anchor(ANCHOR_WEST));
 
-	abstract protected void createConfigUi();
+            createConfigUi();
+        }
 
-	abstract void setEnabled(boolean enabled);
+        abstract void updateUi(T value);
+
+        abstract protected void createConfigUi();
+
+        abstract void setEnabled(boolean enabled);
     }
 
     public static class IntProperty extends AbstractProperty<Integer> {
 
-	final int min, max, step;
+        final int min, max, step;
 
-	boolean textInputOnly = false;
+        boolean textInputOnly = false;
 
-	JFormattedTextField txtValue;
-	JButton btnMinus, btnPlus;
-	JSlider slider;
+        JFormattedTextField txtValue;
+        JButton btnMinus, btnPlus;
+        JSlider slider;
 
-	IntProperty(String name, String title, int min, int max, int value, int step) {
-	    super(name, title, value);
+        IntProperty(String name, String title, int min, int max, int value, int step) {
+            super(name, title, value);
 
-	    this.min = min;
-	    this.max = max;
-	    this.step = step;
-	    if (step == 0)
-		textInputOnly = true;
-	}
+            this.min = min;
+            this.max = max;
+            this.step = step;
+            if (step == 0)
+                textInputOnly = true;
+        }
 
-	@Override
-	public void createConfigUi() {
-	    int gridy = 1; // title is on y=0 so we start at y=1
-	    
-	    NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
-	    formatter.setValueClass(Integer.class);
-	    formatter.setMinimum(min);
-	    formatter.setMaximum(max);
-	    formatter.setAllowsInvalid(true);
-	    formatter.setCommitsOnValidEdit(false);
-	    txtValue = new JFormattedTextField(formatter);
-	    txtValue.setText(Integer.toString(getValue()));
-	    txtValue.addPropertyChangeListener("value", e -> {
-		int newValue = e.getNewValue() != null ? (int) e.getNewValue() : getValue();
-		setValueIfValid(newValue);
-	    });
-	    add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx());
+        @Override
+        public void createConfigUi() {
+            int gridy = 1; // title is on y=0 so we start at y=1
 
-	    if (textInputOnly)
-		return;
+            NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
+            formatter.setValueClass(Integer.class);
+            formatter.setMinimum(min);
+            formatter.setMaximum(max);
+            formatter.setAllowsInvalid(true);
+            formatter.setCommitsOnValidEdit(false);
+            txtValue = new JFormattedTextField(formatter);
+            txtValue.setText(Integer.toString(getValue()));
+            txtValue.addPropertyChangeListener("value", e -> {
+                int newValue = e.getNewValue() != null ? (int) e.getNewValue() : getValue();
+                setValueIfValid(newValue);
+            });
+            add(txtValue, new QuickGBC(0, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx());
 
-	    btnMinus = new JButton("-");
-	    btnMinus.addActionListener(e -> {
-		int newValue = getValue() - step;
-		setValueIfValid(newValue);
-	    });
-	    add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
+            if (textInputOnly)
+                return;
 
-	    slider = new JSlider(min, max, getValue());
-	    slider.addChangeListener(e -> {
-		int newValue = slider.getValue();
-		setValueIfValid(newValue);
-	    });
-	    add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTH).top(2).weight(1, 0).fillx().left(5));
+            btnMinus = new JButton("-");
+            btnMinus.addActionListener(e -> {
+                int newValue = getValue() - step;
+                setValueIfValid(newValue);
+            });
+            add(btnMinus, new QuickGBC(1, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
 
-	    btnPlus = new JButton("+");
-	    btnPlus.addActionListener(e -> {
-		int newValue = getValue() + step;
-		setValueIfValid(newValue);
-	    });
-	    add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
-	}
-	
-	void setValueIfValid(int newValue){
-	    if (newValue < min)
-		newValue = min;
-	    if (newValue > max)
-		newValue = max;
-	    setValue(newValue);
-	}
-	
-	@Override
-	void updateUi(Integer newValue) {
-	    txtValue.setText(Integer.toString(newValue));
-	    if (!textInputOnly)
-		slider.setValue(newValue);
-	}
+            slider = new JSlider(min, max, getValue());
+            slider.addChangeListener(e -> {
+                int newValue = slider.getValue();
+                setValueIfValid(newValue);
+            });
+            add(slider, new QuickGBC(2, gridy).anchor(ANCHOR_NORTH).top(2).weight(1, 0).fillx().left(5));
 
-	@Override
-	void setEnabled(boolean enabled) {
-	    txtValue.setEditable(enabled);
-	    btnMinus.setEnabled(enabled);
-	    btnPlus.setEnabled(enabled);
-	    slider.setEnabled(enabled);
-	}
-    }
+            btnPlus = new JButton("+");
+            btnPlus.addActionListener(e -> {
+                int newValue = getValue() + step;
+                setValueIfValid(newValue);
+            });
+            add(btnPlus, new QuickGBC(3, gridy).anchor(ANCHOR_NORTH).top(2).weight(0, 0).fillx().left(5));
+        }
 
-    public void fillRemainingVerticalSpace() {
-	add(Box.createVerticalGlue(), new QuickGBC(0, gridy).weight(0, 1).filly());
-    }
-    
-    public int getNextFreeY() {
-	return gridy;
+        void setValueIfValid(int newValue) {
+            if (newValue < min)
+                newValue = min;
+            if (newValue > max)
+                newValue = max;
+            setValue(newValue);
+        }
+
+        @Override
+        void updateUi(Integer newValue) {
+            txtValue.setText(Integer.toString(newValue));
+            if (!textInputOnly)
+                slider.setValue(newValue);
+        }
+
+        @Override
+        void setEnabled(boolean enabled) {
+            txtValue.setEditable(enabled);
+            btnMinus.setEnabled(enabled);
+            btnPlus.setEnabled(enabled);
+            slider.setEnabled(enabled);
+        }
     }
 }

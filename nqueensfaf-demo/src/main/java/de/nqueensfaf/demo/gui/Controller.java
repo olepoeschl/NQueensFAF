@@ -1,7 +1,13 @@
 package de.nqueensfaf.demo.gui;
 
-import java.awt.Cursor;
-import java.awt.EventQueue;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
+import de.nqueensfaf.demo.gui.extension.SolverExtensionConfigClipboard;
+
+import javax.swing.event.EventListenerList;
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,302 +18,304 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import javax.swing.event.EventListenerList;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
-import de.nqueensfaf.core.AbstractSolver.OnProgressUpdateConsumer;
-import de.nqueensfaf.demo.gui.extension.SolverExtensionConfigClipboard;
-
 public class Controller {
 
     private final EventListenerList listeners = new EventListenerList();
-    
+
     private final Model model = new Model();
     private final View view;
-    
+
     private final Kryo kryo = new Kryo();
-    
-    // solver instance callbacks
-    private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
-	model.updateSolverProgress(progress, solutions, model.getCurrentSymSolver().getUniqueSolutionsTotal(solutions), 
-		duration);
-	autoSave(progress);
-    };
     private final Runnable onStart = this::fireSolverStarted;
     private final Runnable onFinish = () -> {
-	fireSolverFinished();
-	fireSolverTerminated();
+        fireSolverFinished();
+        fireSolverTerminated();
     };
     private final Consumer<Exception> onCancel = e -> {
-	fireSolverCanceled();
-	fireSolverTerminated();
+        fireSolverCanceled();
+        fireSolverTerminated();
     };
-    
     private boolean currentlySaving = false;
     private int lastAutoSave = 0;
-    
+    // solver instance callbacks
+    private final OnProgressUpdateConsumer onProgressUpdate = (progress, solutions, duration) -> {
+        model.updateSolverProgress(progress, solutions, model.getCurrentSymSolver().getUniqueSolutionsTotal(solutions),
+            duration);
+        autoSave(progress);
+    };
+
     public Controller() {
-	view = new View(this, model);
-	kryo.setRegistrationRequired(false);
-	
-	addSolverListener(new SolverAdapter() {
-	    @Override
-	    public void solverStarted() {
-		model.getSelectedSolverExtension().onSolverStarted();
-		
-		if(!model.isRestored())
-		    model.updateSolverProgress(0, 0, 0, 0);
-	    }
-	    
-	    @Override
-	    public void solverFinished() {
-		model.getSelectedSolverExtension().onSolverFinished();
-		
-		var solver = model.getSelectedSolverExtension().getSolver();
-		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
-			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()), solver.getDuration());
-	    }
+        view = new View(this, model);
+        kryo.setRegistrationRequired(false);
 
-	    @Override
-	    public void solverCanceled() {
-		model.getSelectedSolverExtension().onSolverCanceled();
-	    }
-	    
-	    @Override
-	    public void solverTerminated() {
-		model.getSelectedSolverExtension().onSolverTerminated();
-		
-		var solver = model.getSelectedSolverExtension().getSolver();
-		model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
-			model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()),
-			solver.getDuration());
-		model.setRestored(false);
-	    }
+        addSolverListener(new SolverAdapter() {
+            @Override
+            public void solverStarted() {
+                model.getSelectedSolverExtension().onSolverStarted();
 
-	    @Override
-	    public void solverSaved() {
-		model.getSelectedSolverExtension().onSolverSaved();
-	    }
+                if (!model.isRestored())
+                    model.updateSolverProgress(0, 0, 0, 0);
+            }
 
-	    @Override
-	    public void solverRestored() {
-		model.getSelectedSolverExtension().onSolverRestored();
-	    }
+            @Override
+            public void solverFinished() {
+                model.getSelectedSolverExtension().onSolverFinished();
 
-	    @Override
-	    public void solverReset() {
-		model.getSelectedSolverExtension().getSolver().reset();
-		model.updateSolverProgress(0, 0, 0, 0);
-	    }
-	});
-	
-	// load solver extensions
-	for(var solverExtension : model.getSolverExtensions())
-	    solverExtension.onStartup();
-	
-	// unload solver extensions on application exit
-	Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
-	    for(var solverExtension : model.getSolverExtensions())
-		solverExtension.onClose();
-	}));
+                var solver = model.getSelectedSolverExtension().getSolver();
+                model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
+                    model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()), solver.getDuration());
+            }
+
+            @Override
+            public void solverCanceled() {
+                model.getSelectedSolverExtension().onSolverCanceled();
+            }
+
+            @Override
+            public void solverTerminated() {
+                model.getSelectedSolverExtension().onSolverTerminated();
+
+                var solver = model.getSelectedSolverExtension().getSolver();
+                model.updateSolverProgress(solver.getProgress(), solver.getSolutions(),
+                    model.getCurrentSymSolver().getUniqueSolutionsTotal(solver.getSolutions()),
+                    solver.getDuration());
+                model.setRestored(false);
+            }
+
+            @Override
+            public void solverSaved() {
+                model.getSelectedSolverExtension().onSolverSaved();
+            }
+
+            @Override
+            public void solverRestored() {
+                model.getSelectedSolverExtension().onSolverRestored();
+            }
+
+            @Override
+            public void solverReset() {
+                model.getSelectedSolverExtension().getSolver().reset();
+                model.updateSolverProgress(0, 0, 0, 0);
+            }
+        });
+
+        // load solver extensions
+        for (var solverExtension : model.getSolverExtensions())
+            solverExtension.onStartup();
+
+        // unload solver extensions on application exit
+        Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
+            for (var solverExtension : model.getSolverExtensions())
+                solverExtension.onClose();
+        }));
     }
 
     public void createAndShowView() {
-	EventQueue.invokeLater(view::createAndShowUi);
+        EventQueue.invokeLater(view::createAndShowUi);
     }
-    
+
     public void start() {
-	var solver = model.getSelectedSolverExtension().getSolver();
-	solver.onStart(onStart);
-	solver.onProgressUpdate(onProgressUpdate);
-	solver.onFinish(onFinish);
-	solver.onCancel(onCancel);
-	if(!model.isRestored()) // setN() does not work when the solver is restored
-	    solver.setN(model.getN());
-	solver.setUpdateInterval(model.getSettings().getUpdateInterval());
-	
-	final var symSolver = model.configureAndGetSymSolver();
-	Thread.ofVirtual().start(() -> symSolver.start());
-	Thread.ofVirtual().start(() -> {
-	    try {
-		solver.start();
-	    } catch(Exception e) {
-		symSolver.cancel();
-		view.error(e.getMessage());
-	    }
-	});
+        var solver = model.getSelectedSolverExtension().getSolver();
+        solver.onStart(onStart);
+        solver.onProgressUpdate(onProgressUpdate);
+        solver.onFinish(onFinish);
+        solver.onCancel(onCancel);
+        if (!model.isRestored()) // setN() does not work when the solver is restored
+            solver.setN(model.getN());
+        solver.setUpdateInterval(model.getSettings().getUpdateInterval());
+
+        final var symSolver = model.configureAndGetSymSolver();
+        Thread.ofVirtual().start(() -> symSolver.start());
+        Thread.ofVirtual().start(() -> {
+            try {
+                solver.start();
+            } catch (Exception e) {
+                symSolver.cancel();
+                view.error(e.getMessage());
+            }
+        });
     }
-    
+
     public void manualSave(File file) {
-	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
-	
-	try {
-	    save(file);
-	} catch (Exception e) {
-	    view.error("could not save solver: " + e.getMessage());
-	}
-	
-	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
+        EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
+
+        try {
+            save(file);
+        } catch (Exception e) {
+            view.error("could not save solver: " + e.getMessage());
+        }
+
+        EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
 
     private void autoSave(float progressFloat) {
-	if(model.getAutoSaveInterval() <= 0) 
-	    return;
-	if(currentlySaving)
-	    return;
-	int progress = (int) (progressFloat * 100);
-	if(progress - lastAutoSave >= model.getAutoSaveInterval()) {
-	    Thread.ofVirtual().start(() -> {
-		try {
-		    save(new File(model.getN() + "-queens.faf"));
-		} catch (IOException ex) {
-		    view.error(ex.getMessage());
-		}
-	    });
-	    lastAutoSave = progress;
-	}
+        if (model.getAutoSaveInterval() <= 0)
+            return;
+        if (currentlySaving)
+            return;
+        int progress = (int) (progressFloat * 100);
+        if (progress - lastAutoSave >= model.getAutoSaveInterval()) {
+            Thread.ofVirtual().start(() -> {
+                try {
+                    save(new File(model.getN() + "-queens.faf"));
+                } catch (IOException ex) {
+                    view.error(ex.getMessage());
+                }
+            });
+            lastAutoSave = progress;
+        }
     }
-    
+
     private void save(File file) throws IOException {
-	if(!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
-	    view.error("Selected Solver does not support being saved");
-	    return;
-	}
-	
-	var savePoint = model.getSelectedSolverExtension().getSolver().createSavePoint();
-	
-	try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
-	    var snapshot = new Snapshot(savePoint, model.getAutoSaveInterval());
-	    kryo.writeClassAndObject(output, snapshot);
-	    fireSolverSaved();
-	}
+        if (!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
+            view.error("Selected Solver does not support being saved");
+            return;
+        }
+
+        var savePoint = model.getSelectedSolverExtension().getSolver().createSavePoint();
+
+        try (Output output = new Output(new GZIPOutputStream(new FileOutputStream(file)))) {
+            var snapshot = new Snapshot(savePoint, model.getAutoSaveInterval());
+            kryo.writeClassAndObject(output, snapshot);
+            fireSolverSaved();
+        }
     }
 
     public void restore(File file) {
-	if(!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
-	    view.error("Selected Solver does not support being restored");
-	    return;
-	}
-	
-	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
-	
-	try (Input input = new Input(new GZIPInputStream(new FileInputStream(file)))) {
-	    
-	    var snapshot = (Snapshot) kryo.readClassAndObject(input);
-	    model.getSelectedSolverExtension().getSolver().restoreSavePoint(snapshot.savePoint());
-	    model.setN(snapshot.savePoint().getN());
-	    model.setAutoSaveInterval(snapshot.autoSaveInterval());
+        if (!model.getSelectedSolverExtension().getSolver().supportsSavePoints()) {
+            view.error("Selected Solver does not support being restored");
+            return;
+        }
 
-	    model.updateSolverProgress(
-		    snapshot.savePoint().getProgress(), 
-		    snapshot.savePoint().getSolutions(), 
-		    0, 
-		    snapshot.savePoint().getDuration()
-		    );
-	    
-	    model.setRestored(true);
-	    
-	    fireSolverRestored();
-	    
-	} catch (Exception e) {
-	    view.error("could not restore solver: " + e.getMessage());
-	    reset();
-	}
-	
-	EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
+        EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.WAIT_CURSOR)));
+
+        try (Input input = new Input(new GZIPInputStream(new FileInputStream(file)))) {
+
+            var snapshot = (Snapshot) kryo.readClassAndObject(input);
+            model.getSelectedSolverExtension().getSolver().restoreSavePoint(snapshot.savePoint());
+            model.setN(snapshot.savePoint().getN());
+            model.setAutoSaveInterval(snapshot.autoSaveInterval());
+
+            model.updateSolverProgress(
+                snapshot.savePoint().getProgress(),
+                snapshot.savePoint().getSolutions(),
+                0,
+                snapshot.savePoint().getDuration()
+            );
+
+            model.setRestored(true);
+
+            fireSolverRestored();
+
+        } catch (Exception e) {
+            view.error("could not restore solver: " + e.getMessage());
+            reset();
+        }
+
+        EventQueue.invokeLater(() -> view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)));
     }
-    
+
     public void reset() {
-	model.getSelectedSolverExtension().getSolver().reset();
-	model.setRestored(false);
-	fireSolverReset();
+        model.getSelectedSolverExtension().getSolver().reset();
+        model.setRestored(false);
+        fireSolverReset();
     }
-    
+
     public void saveCurrentSolverExtensionConfig(File file) {
-	try (Output output = new Output(new FileOutputStream(file))) {
-	    kryo.writeClassAndObject(output, model.getSelectedSolverExtension().getConfig());
-	} catch (Exception e) {
-	    view.error("could not save solver extension config: " + e.getMessage());
-	}
+        try (Output output = new Output(new FileOutputStream(file))) {
+            kryo.writeClassAndObject(output, model.getSelectedSolverExtension().getConfig());
+        } catch (Exception e) {
+            view.error("could not save solver extension config: " + e.getMessage());
+        }
     }
-    
+
     public void loadSolverExtensionConfig(File file) {
-	try (Input input = new Input(new FileInputStream(file))) {
-	    @SuppressWarnings("unchecked")
-	    var configMap = (Map<String, Object>) kryo.readClassAndObject(input);
-	    model.getSelectedSolverExtension().setConfig(configMap);
-	} catch (Exception e) {
-	    view.error("could not restore solver extension config: " + e.getMessage());
-	}
+        try (Input input = new Input(new FileInputStream(file))) {
+            @SuppressWarnings("unchecked")
+            var configMap = (Map<String, Object>) kryo.readClassAndObject(input);
+            model.getSelectedSolverExtension().setConfig(configMap);
+        } catch (Exception e) {
+            view.error("could not restore solver extension config: " + e.getMessage());
+        }
     }
-    
+
     public void pasteSolverExtensionConfig() {
-	if(SolverExtensionConfigClipboard.getInstance().get() != null)
-	    try {
-		model.getSelectedSolverExtension().setConfig(SolverExtensionConfigClipboard.getInstance().get());
-	    } catch (IllegalArgumentException e) {
-		view.error("cannot to paste incompatible solver config");
-	    }
+        if (SolverExtensionConfigClipboard.getInstance().get() != null)
+            try {
+                model.getSelectedSolverExtension().setConfig(SolverExtensionConfigClipboard.getInstance().get());
+            } catch (IllegalArgumentException e) {
+                view.error("cannot to paste incompatible solver config");
+            }
     }
-    
+
     // solver event listeners
     public void addSolverListener(SolverAdapter a) {
-	listeners.add(SolverAdapter.class, a);
+        listeners.add(SolverAdapter.class, a);
     }
-    
+
     private void fireSolverStarted() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverStarted();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverStarted();
+        }
     }
 
     private void fireSolverFinished() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverFinished();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverFinished();
+        }
     }
 
     private void fireSolverCanceled() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverCanceled();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverCanceled();
+        }
     }
-    
+
     private void fireSolverTerminated() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverTerminated();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverTerminated();
+        }
     }
 
     private void fireSolverSaved() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverSaved();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverSaved();
+        }
     }
 
     private void fireSolverRestored() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverRestored();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverRestored();
+        }
     }
 
     private void fireSolverReset() {
-	for(var listener : listeners.getListeners(SolverAdapter.class)) {
-	    listener.solverReset();
-	}
+        for (var listener : listeners.getListeners(SolverAdapter.class)) {
+            listener.solverReset();
+        }
     }
-    
+
     // classes and types
     public static interface SolverAdapter extends EventListener {
-	default void solverStarted() {}
-	default void solverFinished() {}
-	default void solverCanceled() {}
-	default void solverTerminated() {}
-	default void solverSaved() {}
-	default void solverRestored() {}
-	default void solverReset() {}
+        default void solverStarted() {
+        }
+
+        default void solverFinished() {
+        }
+
+        default void solverCanceled() {
+        }
+
+        default void solverTerminated() {
+        }
+
+        default void solverSaved() {
+        }
+
+        default void solverRestored() {
+        }
+
+        default void solverReset() {
+        }
     }
 }

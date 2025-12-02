@@ -1,68 +1,19 @@
 package de.nqueensfaf.impl;
 
-import static de.nqueensfaf.impl.InfoUtil.checkCLError;
-import static de.nqueensfaf.impl.InfoUtil.getDeviceInfoStringUTF8;
-import static de.nqueensfaf.impl.InfoUtil.getProgramBuildInfoStringASCII;
-import static de.nqueensfaf.impl.ConstellationUtils.getJkl;
-import static de.nqueensfaf.impl.ConstellationUtils.getj;
-import static de.nqueensfaf.impl.ConstellationUtils.getk;
-import static de.nqueensfaf.impl.ConstellationUtils.getl;
-import static de.nqueensfaf.impl.ConstellationUtils.symmetry;
-import static org.lwjgl.opencl.CL12.CL_COMPLETE;
-import static org.lwjgl.opencl.CL12.CL_CONTEXT_PLATFORM;
-import static org.lwjgl.opencl.CL12.CL_DEVICE_NAME;
-import static org.lwjgl.opencl.CL12.CL_DEVICE_NOT_FOUND;
-import static org.lwjgl.opencl.CL12.CL_DEVICE_TYPE_GPU;
-import static org.lwjgl.opencl.CL12.CL_DEVICE_VENDOR;
-import static org.lwjgl.opencl.CL12.CL_EVENT_COMMAND_EXECUTION_STATUS;
-import static org.lwjgl.opencl.CL12.CL_MAP_WRITE;
-import static org.lwjgl.opencl.CL12.CL_MEM_ALLOC_HOST_PTR;
-import static org.lwjgl.opencl.CL12.CL_MEM_READ_ONLY;
-import static org.lwjgl.opencl.CL12.CL_MEM_WRITE_ONLY;
-import static org.lwjgl.opencl.CL12.CL_PROGRAM_BUILD_LOG;
-import static org.lwjgl.opencl.CL12.CL_QUEUE_PROFILING_ENABLE;
-import static org.lwjgl.opencl.CL12.clBuildProgram;
-import static org.lwjgl.opencl.CL12.clCreateBuffer;
-import static org.lwjgl.opencl.CL12.clCreateCommandQueue;
-import static org.lwjgl.opencl.CL12.clCreateContext;
-import static org.lwjgl.opencl.CL12.clCreateKernel;
-import static org.lwjgl.opencl.CL12.clCreateProgramWithSource;
-import static org.lwjgl.opencl.CL12.clEnqueueMapBuffer;
-import static org.lwjgl.opencl.CL12.clEnqueueNDRangeKernel;
-import static org.lwjgl.opencl.CL12.clEnqueueReadBuffer;
-import static org.lwjgl.opencl.CL12.clEnqueueUnmapMemObject;
-import static org.lwjgl.opencl.CL12.clFinish;
-import static org.lwjgl.opencl.CL12.clFlush;
-import static org.lwjgl.opencl.CL12.clGetDeviceIDs;
-import static org.lwjgl.opencl.CL12.clGetEventInfo;
-import static org.lwjgl.opencl.CL12.clGetPlatformIDs;
-import static org.lwjgl.opencl.CL12.clReleaseCommandQueue;
-import static org.lwjgl.opencl.CL12.clReleaseContext;
-import static org.lwjgl.opencl.CL12.clReleaseEvent;
-import static org.lwjgl.opencl.CL12.clReleaseKernel;
-import static org.lwjgl.opencl.CL12.clReleaseMemObject;
-import static org.lwjgl.opencl.CL12.clReleaseProgram;
-import static org.lwjgl.opencl.CL12.clSetKernelArg;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.opencl.NVCreateBuffer.clCreateBufferNV;
-import static org.lwjgl.opencl.NVCreateBuffer.CL_MEM_PINNED_NV;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import de.nqueensfaf.core.AbstractSolver;
+import de.nqueensfaf.impl.CpuSolver.CpuSavePoint;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,33 +22,24 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.lwjgl.BufferUtils;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
-import de.nqueensfaf.core.AbstractSolver;
-import de.nqueensfaf.impl.CpuSolver.CpuSavePoint;
+import static de.nqueensfaf.impl.ConstellationUtils.*;
+import static de.nqueensfaf.impl.InfoUtil.*;
+import static org.lwjgl.opencl.CL12.*;
+import static org.lwjgl.opencl.NVCreateBuffer.CL_MEM_PINNED_NV;
+import static org.lwjgl.opencl.NVCreateBuffer.clCreateBufferNV;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GpuSolver extends AbstractSolver {
 
-    private List<Gpu> availableGpus;
-    private GpuSelection gpuSelection = new GpuSelection();
-
-    private List<Constellation> constellations = new ArrayList<Constellation>();
-    private int presetQueens = 6;
-
-    private boolean stateLoaded;
-
-    private int L;
-
     private final AtomicLong solutions = new AtomicLong(0);
     private final AtomicInteger solvedConstellations = new AtomicInteger(0);
-
     private final Kryo kryo = new Kryo();
+    private List<Gpu> availableGpus;
+    private GpuSelection gpuSelection = new GpuSelection();
+    private List<Constellation> constellations = new ArrayList<Constellation>();
+    private int presetQueens = 6;
+    private boolean stateLoaded;
+    private int L;
 
     public GpuSolver() {
         kryo.register(GpuSavePoint.class);
@@ -105,6 +47,19 @@ public class GpuSolver extends AbstractSolver {
         kryo.register(Constellation.class);
 
         fetchAvailableGpus();
+    }
+
+    public static void main(String[] args) {
+        var solver = new GpuSolver();
+        solver.setN(19);
+        solver.gpuSelection().choose(solver.getAvailableGpus().get(0));
+        solver.onProgressUpdate((progress, solutions, duration) -> {
+            System.out.println((progress * 100) + "% - " + solver.getDuration() + "ms");
+        });
+        solver.onFinish(() -> {
+            System.out.println(solver.getSolutions() + " solutions found in " + solver.getDuration() + "ms");
+        });
+        solver.start();
     }
 
     @Override
@@ -148,7 +103,7 @@ public class GpuSolver extends AbstractSolver {
             load(cpuSavePoint.n(), cpuSavePoint.storedDuration(), cpuSavePoint.constellations());
         } else {
             throw new IllegalArgumentException("this SavePoint is instance of ('"
-                    + savePoint.getClass().getName() + "'), which is not compatible with GpuSolver");
+                + savePoint.getClass().getName() + "'), which is not compatible with GpuSolver");
         }
     }
 
@@ -250,7 +205,7 @@ public class GpuSolver extends AbstractSolver {
                 for (int g = 0; g < gpusBuf.capacity(); g++) {
                     long id = gpusBuf.get(g);
                     GpuInfo info = new GpuInfo(getDeviceInfoStringUTF8(id, CL_DEVICE_VENDOR),
-                            getDeviceInfoStringUTF8(id, CL_DEVICE_NAME));
+                        getDeviceInfoStringUTF8(id, CL_DEVICE_NAME));
 
                     Gpu gpu = new Gpu(id, platform, info);
 
@@ -285,7 +240,7 @@ public class GpuSolver extends AbstractSolver {
 
         sortConstellationsByJkl(constellations);
         var remainingConstellations = constellations.stream().filter(c -> c.getSolutions() < 0)
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
 
         for (var gpu : gpuSelection.get()) {
             gpu.setN(getN());
@@ -308,7 +263,7 @@ public class GpuSolver extends AbstractSolver {
 
     private void singleGpu(Gpu gpu, List<Constellation> constellations) {
         constellations = new ArrayList<>(
-                fillWithPseudoConstellations(constellations, gpu.getConfig().getWorkgroupSize()));
+            fillWithPseudoConstellations(constellations, gpu.getConfig().getWorkgroupSize()));
 
         gpu.createBuffers(constellations.size());
         gpu.executeWorkload(constellations);
@@ -354,7 +309,7 @@ public class GpuSolver extends AbstractSolver {
             }
 
             var gpuFirstWorkload = fillWithPseudoConstellations(gpuFirstWork,
-                    selectedGpus.get(gpuIdx).getConfig().getWorkgroupSize());
+                selectedGpus.get(gpuIdx).getConfig().getWorkgroupSize());
             firstWorkloads.add(gpuFirstWorkload);
 
             var gpu = selectedGpus.get(gpuIdx);
@@ -416,7 +371,7 @@ public class GpuSolver extends AbstractSolver {
                     while (workload.size() < workloadSize && !queue.isEmpty()) {
                         synchronized (queue) {
                             for (int i = 0; i < gpu.getConfig().getWorkgroupSize() && workload.size() < workloadSize
-                                    && !queue.isEmpty(); i++) {
+                                && !queue.isEmpty(); i++) {
                                 workload.add(queue.remove());
                             }
                         }
@@ -530,56 +485,6 @@ public class GpuSolver extends AbstractSolver {
         }
     }
 
-    public final class GpuSelection {
-
-        private List<Gpu> selectedGpus = new ArrayList<Gpu>();
-        private boolean chosen = false;
-
-        private GpuSelection() {
-        }
-
-        public void choose(Gpu gpu) {
-            add(gpu);
-            chosen = true;
-        }
-
-        public void add(Gpu gpu) {
-            if (chosen)
-                throw new IllegalStateException("unable to add more GPU's after choosing one");
-
-            if (!availableGpus.contains(gpu))
-                throw new IllegalArgumentException(
-                        "no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
-
-            if (selectedGpus.contains(gpu))
-                throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was already added");
-
-            selectedGpus.add(gpu);
-        }
-
-        public void remove(Gpu gpu) {
-            if (chosen)
-                throw new IllegalStateException("unable to remove a GPU after choosing one");
-
-            if (!availableGpus.contains(gpu))
-                throw new IllegalArgumentException(
-                        "no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
-
-            if (!selectedGpus.contains(gpu))
-                throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was not added yet");
-
-            selectedGpus.remove(gpu);
-        }
-
-        public List<Gpu> get() {
-            return List.copyOf(selectedGpus);
-        }
-
-        public void reset() {
-            selectedGpus.clear();
-        }
-    }
-
     public static final record GpuInfo(String vendor, String name) {
         @Override
         public String toString() {
@@ -627,33 +532,98 @@ public class GpuSolver extends AbstractSolver {
         }
     }
 
+    public final class GpuSelection {
+
+        private List<Gpu> selectedGpus = new ArrayList<Gpu>();
+        private boolean chosen = false;
+
+        private GpuSelection() {
+        }
+
+        public void choose(Gpu gpu) {
+            add(gpu);
+            chosen = true;
+        }
+
+        public void add(Gpu gpu) {
+            if (chosen)
+                throw new IllegalStateException("unable to add more GPU's after choosing one");
+
+            if (!availableGpus.contains(gpu))
+                throw new IllegalArgumentException(
+                    "no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
+
+            if (selectedGpus.contains(gpu))
+                throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was already added");
+
+            selectedGpus.add(gpu);
+        }
+
+        public void remove(Gpu gpu) {
+            if (chosen)
+                throw new IllegalStateException("unable to remove a GPU after choosing one");
+
+            if (!availableGpus.contains(gpu))
+                throw new IllegalArgumentException(
+                    "no GPU found for id " + gpu.getId() + " ('" + gpu.getInfo().name() + "')");
+
+            if (!selectedGpus.contains(gpu))
+                throw new IllegalArgumentException("GPU with id " + gpu.getId() + " was not added yet");
+
+            selectedGpus.remove(gpu);
+        }
+
+        public List<Gpu> get() {
+            return List.copyOf(selectedGpus);
+        }
+
+        public void reset() {
+            selectedGpus.clear();
+        }
+    }
+
     public final class Gpu {
 
         private final long id; // OpenCL device id
         private final long platform;
+        private final Set<Integer> solvedConstellationsIndexes = new HashSet<Integer>();
         private GpuInfo info;
         private GpuConfig config = new GpuConfig();
-
         // for creating the buffers with sufficient size to be reused in all workloads
         // (for multi gpu)
         private int maxNumOfConstellationsPerRun, maxNumOfJklQueensArrays;
-
         // related opencl objects
         private long context;
         private long program;
         private long kernel;
         private long xQueue, memQueue;
         private long constellationsMem, jklQueensMem, resMem;
-
         // other variables
         private int n;
         private float progress;
-        private final Set<Integer> solvedConstellationsIndexes = new HashSet<Integer>();
 
         private Gpu(long id, long platform, GpuInfo info) {
             this.id = id;
             this.platform = platform;
             this.info = info;
+        }
+
+        // utils
+        private static String readKernelSource(String filepath) throws IOException {
+            String resultString = null;
+            try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
+                String line = null;
+                StringBuilder result = new StringBuilder();
+                while ((line = br.readLine()) != null) {
+                    result.append(line);
+                    result.append("\n");
+                }
+                resultString = result.toString();
+            } catch (IOException e) {
+                throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
+            }
+            return resultString;
         }
 
         public long getId() {
@@ -709,7 +679,7 @@ public class GpuSolver extends AbstractSolver {
                 }
                 // build program
                 String options = "" // "-cl-std=CL1.2"
-                        + " -D N=" + n + " -D WORKGROUP_SIZE=" + config.getWorkgroupSize() + " -Werror";
+                    + " -D N=" + n + " -D WORKGROUP_SIZE=" + config.getWorkgroupSize() + " -Werror";
                 int error = clBuildProgram(program, id, options, null, NULL);
                 if (error != 0) {
                     String buildLog = getProgramBuildInfoStringASCII(program, id, CL_PROGRAM_BUILD_LOG);
@@ -725,7 +695,7 @@ public class GpuSolver extends AbstractSolver {
                 } else if (info.vendor().toLowerCase().contains("nvidia")) {
                     kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
                 } else if (info.vendor().toLowerCase().contains("amd")
-                        || info.vendor().toLowerCase().contains("advanced micro devices")) {
+                    || info.vendor().toLowerCase().contains("advanced micro devices")) {
                     kernel = clCreateKernel(program, "nqfaf_amd", errBuf);
                 } else {
                     kernel = clCreateKernel(program, "nqfaf_nvidia", errBuf);
@@ -760,27 +730,27 @@ public class GpuSolver extends AbstractSolver {
 
                 if (info.vendor.toLowerCase().contains("nvidia")) {
                     constellationsMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                            CL_MEM_PINNED_NV, maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
+                        CL_MEM_PINNED_NV, maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
                     checkCLError(errBuf);
 
                     jklQueensMem = clCreateBufferNV(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
-                            maxNumOfJklQueensArrays * n * 4, errBuf);
+                        maxNumOfJklQueensArrays * n * 4, errBuf);
                     checkCLError(errBuf);
 
                     resMem = clCreateBufferNV(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, CL_MEM_PINNED_NV,
-                            maxNumOfConstellationsPerRun * 8, errBuf);
+                        maxNumOfConstellationsPerRun * 8, errBuf);
                     checkCLError(errBuf);
                 } else {
                     constellationsMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                            maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
+                        maxNumOfConstellationsPerRun * (4 + 4 + 4 + 4), errBuf);
                     checkCLError(errBuf);
 
                     jklQueensMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                            maxNumOfJklQueensArrays * n * 4, errBuf);
+                        maxNumOfJklQueensArrays * n * 4, errBuf);
                     checkCLError(errBuf);
 
                     resMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                            maxNumOfConstellationsPerRun * 8, errBuf);
+                        maxNumOfConstellationsPerRun * 8, errBuf);
                     checkCLError(errBuf);
                 }
 
@@ -816,7 +786,7 @@ public class GpuSolver extends AbstractSolver {
 
                 // write data GPU buffers
                 ByteBuffer constellationPtr = clEnqueueMapBuffer(memQueue, constellationsMem, true, CL_MAP_WRITE, 0,
-                        constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
+                    constellations.size() * (4 + 4 + 4 + 4), null, null, errBuf, null);
                 checkCLError(errBuf);
                 for (int i = 0; i < constellations.size(); i++) {
                     constellationPtr.putInt(i * (4 + 4 + 4 + 4), constellations.get(i).getLd());
@@ -828,7 +798,7 @@ public class GpuSolver extends AbstractSolver {
 
                 int numOfJklQueensArrays = constellations.size() / config.getWorkgroupSize();
                 ByteBuffer jklQueensPtr = clEnqueueMapBuffer(memQueue, jklQueensMem, true, CL_MAP_WRITE, 0,
-                        numOfJklQueensArrays * n * 4, null, null, errBuf, null);
+                    numOfJklQueensArrays * n * 4, null, null, errBuf, null);
                 checkCLError(errBuf);
                 for (int wgIdx = 0; wgIdx < numOfJklQueensArrays; wgIdx++) {
                     var ijkl = constellations.get(wgIdx * config.getWorkgroupSize()).getIjkl();
@@ -841,7 +811,7 @@ public class GpuSolver extends AbstractSolver {
                     int ldiag = (L >> j) | (L >> l);
                     for (int row = 0; row < n; row++) {
                         jklQueensPtr.putInt(wgIdx * n * 4 + ((n - 1 - row) * 4),
-                                (ldiag >> row) | (rdiag << row) | L | 1);
+                            (ldiag >> row) | (rdiag << row) | L | 1);
                     }
                     ldiag = L >> k;
                     rdiag = 1 << l;
@@ -855,7 +825,7 @@ public class GpuSolver extends AbstractSolver {
                 checkCLError(clEnqueueUnmapMemObject(memQueue, jklQueensMem, jklQueensPtr, null, null));
 
                 ByteBuffer resPtr = clEnqueueMapBuffer(memQueue, resMem, true, CL_MAP_WRITE, 0,
-                        constellations.size() * 8, null, null, errBuf, null);
+                    constellations.size() * 8, null, null, errBuf, null);
                 checkCLError(errBuf);
                 for (int i = 0; i < constellations.size(); i++) {
                     resPtr.putLong(i * 8, constellations.get(i).getSolutions());
@@ -875,7 +845,7 @@ public class GpuSolver extends AbstractSolver {
                 // run kernel
                 final PointerBuffer xEventBuf = BufferUtils.createPointerBuffer(1);
                 checkCLError(clEnqueueNDRangeKernel(xQueue, kernel, dimensions, null, globalWorkSize, localWorkSize,
-                        null, xEventBuf));
+                    null, xEventBuf));
                 checkCLError(clFlush(xQueue));
 
                 // read start and end times using an event
@@ -936,36 +906,5 @@ public class GpuSolver extends AbstractSolver {
         private float getProgress() {
             return progress;
         }
-
-        // utils
-        private static String readKernelSource(String filepath) throws IOException {
-            String resultString = null;
-            try (InputStream clSourceFile = GpuSolver.class.getClassLoader().getResourceAsStream(filepath);
-                 BufferedReader br = new BufferedReader(new InputStreamReader(clSourceFile));) {
-                String line = null;
-                StringBuilder result = new StringBuilder();
-                while ((line = br.readLine()) != null) {
-                    result.append(line);
-                    result.append("\n");
-                }
-                resultString = result.toString();
-            } catch (IOException e) {
-                throw new IOException("could not read kernel source file: " + e.getMessage(), e); // should not happen
-            }
-            return resultString;
-        }
     }
-
-	public static void main(String[] args) {
-		var solver = new GpuSolver();
-		solver.setN(19);
-        solver.gpuSelection().choose(solver.getAvailableGpus().get(0));
-        solver.onProgressUpdate((progress, solutions, duration) -> {
-            System.out.println((progress*100) + "% - " + solver.getDuration() + "ms");
-        });
-        solver.onFinish(() -> {
-            System.out.println(solver.getSolutions() + " solutions found in " + solver.getDuration() + "ms");
-        });
-		solver.start();
-	}
 }

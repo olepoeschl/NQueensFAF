@@ -1,27 +1,28 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>de.nqueensfaf</groupId>
-	<artifactId>nqueensfaf</artifactId>
-	<version>3.0.4</version>
-	<name>nqueensfaf</name>
-	<description>Highly optimized Solvers for the N queens problem, one for GPUs
-		and one for CPUs. Also provides useful utilities for implementing custom
-		N-queens problem solving algorithms.</description>
-	<packaging>pom</packaging>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>de.nqueensfaf</groupId>
+    <artifactId>nqueensfaf</artifactId>
+    <version>3.0.4</version>
+    <name>nqueensfaf</name>
+    <description>Highly optimized Solvers for the N queens problem, one for GPUs
+        and one for CPUs. Also provides useful utilities for implementing custom
+        N-queens problem solving algorithms.
+    </description>
+    <packaging>pom</packaging>
 
-	<properties>
-		<maven.compiler.target>21</maven.compiler.target>
-		<maven.compiler.source>21</maven.compiler.source>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-	</properties>
-	
-	<modules>
-		<module>nqueensfaf-core</module>
-		<module>nqueensfaf-impl</module>
-		<module>nqueensfaf-examples</module>
-		<module>nqueensfaf-demo</module>
-	</modules>
+    <properties>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <modules>
+        <module>nqueensfaf-core</module>
+        <module>nqueensfaf-impl</module>
+        <module>nqueensfaf-examples</module>
+        <module>nqueensfaf-demo</module>
+    </modules>
 </project>

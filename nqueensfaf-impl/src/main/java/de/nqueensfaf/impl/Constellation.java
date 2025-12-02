@@ -10,46 +10,46 @@ public final class Constellation {
     }
 
     public Constellation(int ld, int rd, int col, int startIjkl) {
-	this.ld = ld;
-	this.rd = rd;
-	this.col = col;
-	this.startIjkl = startIjkl;
+        this.ld = ld;
+        this.rd = rd;
+        this.col = col;
+        this.startIjkl = startIjkl;
     }
 
     public Constellation(int ld, int rd, int col, int startIjkl, long solutions) {
-	this(ld, rd, col, startIjkl);
-	this.solutions = solutions;
+        this(ld, rd, col, startIjkl);
+        this.solutions = solutions;
     }
 
     public int getLd() {
-	return ld;
+        return ld;
     }
 
     public int getRd() {
-	return rd;
+        return rd;
     }
 
     public int getCol() {
-	return col;
+        return col;
     }
 
     public int getStartIjkl() {
-	return startIjkl;
+        return startIjkl;
     }
 
     public final int getStart() {
-	return startIjkl >> 20;
+        return startIjkl >> 20;
     }
 
     public final int getIjkl() {
-	return startIjkl & ((1 << 20) - 1);
-    }
-
-    public void setSolutions(long solutions) {
-	this.solutions = solutions;
+        return startIjkl & ((1 << 20) - 1);
     }
 
     public long getSolutions() {
-	return solutions;
+        return solutions;
+    }
+
+    public void setSolutions(long solutions) {
+        this.solutions = solutions;
     }
 }
