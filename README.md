@@ -72,7 +72,7 @@ you can use a tool such as "nvidiainfo".
 
 ## Requirements
 
-Java24 (or a newer version) needs to be installed on your computer.
+Java 24 (or later)
 
 ## Demo
 
@@ -85,8 +85,7 @@ There are two artifacts potentially useful for external projects:
 * `nqueensfaf-impl`: contains the classes representing the solvers; depends on `nqueensfaf-core`
 * `nqueensfaf-core`: simplifies the implementation of a new solver algorithm and its usage
 
-Their jar's can be downloaded from the [Releases](https://github.com/olepoeschl/NQueensFAF/releases) page to be added to
-the classpath of your project.
+The jar's can be downloaded from the [Releases](https://github.com/olepoeschl/NQueensFAF/releases) page to be added to the classpath of your project.
 
 # Usage
 
@@ -222,7 +221,7 @@ The goals are:
 1) Solve N=27 and confirm the results of the TU Dresden.
 2) Solve N=28 and set the new world record.
 
-Further updates on this are expected for summer 2026.
+Further updates on this are expected in late 2026.
 
 # News
 
@@ -236,8 +235,7 @@ Further updates on this are expected for summer 2026.
 
 ## Older News
 
-- We are excited to announce that we have successfully verified the number of solutions for the **26-Queens problem
-  **. <br>
+- We are excited to announce that we have successfully verified the number of solutions for the **26-Queens problem**. <br>
   The computation was performed using 3 GPUs (2x3070, 1x3060ti) and it took slightly more than 3 weeks to finish. <br>
 
 # References
