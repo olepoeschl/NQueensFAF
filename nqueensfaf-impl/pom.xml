@@ -11,7 +11,7 @@
     <name>nqueensfaf-impl</name>
 
     <properties>
-        <lwjgl.version>3.4.2</lwjgl.version>
+        <lwjgl.version>3.4.3</lwjgl.version>
     </properties>
 
     <profiles>
